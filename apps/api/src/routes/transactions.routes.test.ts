@@ -3,7 +3,7 @@ import request from 'supertest';
 import * as path from 'path';
 import { createApp } from '../app';
 import { db } from '../db';
-import { users, refreshTokens, accounts, imports, transactions } from '../db/schema';
+import { users, refreshTokens, accounts, imports, transactions, investmentTransactions } from '../db/schema';
 
 const app = createApp();
 
@@ -37,6 +37,7 @@ async function uploadAmex(token: string, accountId: string) {
 
 beforeEach(async () => {
   await db.delete(transactions);
+  await db.delete(investmentTransactions);
   await db.delete(imports);
   await db.delete(accounts);
   await db.delete(refreshTokens);
@@ -117,5 +118,58 @@ describe('GET /api/v1/transactions', () => {
 
     expect(res.body.data).toHaveLength(2);
     expect(res.body.pagination.totalPages).toBe(2);
+  });
+});
+
+describe('GET /api/v1/transactions — date and category filters', () => {
+  // Amex fixture dates: 2025-06-13, 2025-06-14, 2025-06-15
+
+  it('filters by start_date and end_date', async () => {
+    const token = await registerAndLogin();
+    const accountId = await createAccount(token);
+    await uploadAmex(token, accountId);
+
+    const res = await request(app)
+      .get('/api/v1/transactions?start_date=2025-06-14&end_date=2025-06-14')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].date).toBe('2025-06-14');
+  });
+
+  it('returns empty array for date range with no transactions', async () => {
+    const token = await registerAndLogin();
+    const accountId = await createAccount(token);
+    await uploadAmex(token, accountId);
+
+    const res = await request(app)
+      .get('/api/v1/transactions?start_date=2020-01-01&end_date=2020-01-31')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+    expect(res.body.pagination.total).toBe(0);
+  });
+
+  it('filters by category_id', async () => {
+    const token = await registerAndLogin();
+    const accountId = await createAccount(token);
+    await uploadAmex(token, accountId);
+
+    const catRes = await request(app)
+      .get('/api/v1/categories')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(catRes.status).toBe(200);
+    const uncategorized = catRes.body.find((c: { name: string }) => c.name === 'Uncategorized');
+    expect(uncategorized).toBeDefined();
+
+    const res = await request(app)
+      .get(`/api/v1/transactions?category_id=${uncategorized.id}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.pagination.total).toBeGreaterThan(0);
   });
 });

@@ -8,6 +8,7 @@ import authRouter from './routes/auth.routes';
 import accountsRouter from './routes/accounts.routes';
 import importsRouter from './routes/imports.routes';
 import transactionsRouter from './routes/transactions.routes';
+import categoriesRouter from './routes/categories.routes';
 
 export function createApp() {
   const app = express();
@@ -29,6 +30,7 @@ export function createApp() {
   app.use('/api/v1/accounts', accountsRouter);
   app.use('/api/v1/imports', importsRouter);
   app.use('/api/v1/transactions', transactionsRouter);
+  app.use('/api/v1/categories', categoriesRouter);
 
   // 404 handler — must come after all routes
   app.use((_req, res) => {

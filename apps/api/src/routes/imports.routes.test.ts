@@ -3,7 +3,7 @@ import request from 'supertest';
 import * as path from 'path';
 import { createApp } from '../app';
 import { db } from '../db';
-import { users, refreshTokens, accounts, imports, transactions } from '../db/schema';
+import { users, refreshTokens, accounts, imports, transactions, investmentTransactions } from '../db/schema';
 
 const app = createApp();
 
@@ -29,6 +29,7 @@ async function createAccount(token: string) {
 
 beforeEach(async () => {
   await db.delete(transactions);
+  await db.delete(investmentTransactions);
   await db.delete(imports);
   await db.delete(accounts);
   await db.delete(refreshTokens);
