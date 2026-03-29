@@ -6,6 +6,8 @@ import { errorHandler } from './middleware/error';
 import healthRouter from './routes/health.routes';
 import authRouter from './routes/auth.routes';
 import accountsRouter from './routes/accounts.routes';
+import importsRouter from './routes/imports.routes';
+import transactionsRouter from './routes/transactions.routes';
 
 export function createApp() {
   const app = express();
@@ -25,6 +27,8 @@ export function createApp() {
   app.use('/api/v1', healthRouter);
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/accounts', accountsRouter);
+  app.use('/api/v1/imports', importsRouter);
+  app.use('/api/v1/transactions', transactionsRouter);
 
   // 404 handler — must come after all routes
   app.use((_req, res) => {

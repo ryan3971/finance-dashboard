@@ -2,12 +2,16 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app';
 import { db } from '../db';
-import { users, refreshTokens } from '../db/schema';
+import { users, refreshTokens, accounts, imports, transactions, investmentTransactions } from '../db/schema';
 
 const app = createApp();
 
 beforeEach(async () => {
-  // Clean up between tests
+  // Clean up in FK-dependency order (children before parents)
+  await db.delete(transactions);
+  await db.delete(investmentTransactions);
+  await db.delete(imports);
+  await db.delete(accounts);
   await db.delete(refreshTokens);
   await db.delete(users);
 });

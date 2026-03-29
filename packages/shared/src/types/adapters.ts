@@ -40,6 +40,6 @@ export interface CsvAdapter {
   readonly fileType: 'csv' | 'xlsx';
   readonly hasHeaderRow: boolean;
   detect(firstRow: string[]): boolean;
-  parse(rows: string[][]): AdapterOutput[];
+  parse(rows: string[][], accountId: string): AdapterOutput[];
   validate(row: string[]): ValidationResult;
 }

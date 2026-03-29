@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    fileParallelism: false,
     alias: {
       '@finance/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
     },

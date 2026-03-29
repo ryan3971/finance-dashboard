@@ -23,7 +23,8 @@ export function verifyAccessToken(token: string): JwtPayload {
 }
 
 export function signRefreshToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, refreshSecret(), { expiresIn: '7d' });
+  // jti (JWT ID) ensures uniqueness even when two tokens are issued in the same second
+  return jwt.sign({ ...payload, jti: randomBytes(16).toString('hex') }, refreshSecret(), { expiresIn: '7d' });
 }
 
 export function verifyRefreshToken(token: string): JwtPayload {
