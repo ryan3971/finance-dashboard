@@ -50,11 +50,12 @@ jobs:
         run: pnpm db:migrate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_test
-
+      
       - name: Run tests
         run: pnpm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_test
+          DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/finance_test
           JWT_SECRET: test-jwt-secret-for-ci-only
           JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-only
           NODE_ENV: test
