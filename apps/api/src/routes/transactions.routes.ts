@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { db } from '../db';
-import { transactions, accounts, categories } from '../db/schema';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { transactions, accounts, categories, transactionTags, tags } from '../db/schema';
+import { eq, and, gte, lte, desc, sql, inArray } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -60,6 +60,36 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
       .limit(limitNum)
       .offset(offset);
 
+    const txnIds = rows.map(r => r.id);
+    const tagRows = txnIds.length > 0
+      ? await db
+          .select({
+            transactionId: transactionTags.transactionId,
+            tagId: tags.id,
+            tagName: tags.name,
+            tagColor: tags.color,
+          })
+          .from(transactionTags)
+          .innerJoin(tags, eq(transactionTags.tagId, tags.id))
+          .where(inArray(transactionTags.transactionId, txnIds))
+      : [];
+
+    // Group tags by transaction ID
+    const tagsByTxn = tagRows.reduce<Record<string, { id: string; name: string; color: string | null }[]>>(
+      (acc, t) => {
+        if (!acc[t.transactionId]) acc[t.transactionId] = [];
+        acc[t.transactionId].push({ id: t.tagId, name: t.tagName, color: t.tagColor });
+        return acc;
+      },
+      {}
+    );
+
+    // Attach tags to each row before responding
+    const rowsWithTags = rows.map(r => ({
+      ...r,
+      tags: tagsByTxn[r.id] ?? [],
+    }));
+
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(transactions)
@@ -67,7 +97,7 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
       .where(and(...conditions));
 
     res.json({
-      data: rows,
+      data: rowsWithTags,
       pagination: {
         page: pageNum,
         limit: limitNum,

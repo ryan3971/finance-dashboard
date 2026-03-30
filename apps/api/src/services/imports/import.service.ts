@@ -6,6 +6,7 @@ import { parseCsv, parseXlsx } from './parser';
 import { categorize } from '../categorization/pipeline';
 import { buildCompositeKey } from './utils';
 import type { RawTransaction, RawInvestmentTransaction } from '@finance/shared';
+import { detectTransfers } from '../transfers/transfer-detection.service';
 
 export interface ImportResult {
   importId: string;
@@ -15,6 +16,7 @@ export interface ImportResult {
   flaggedCount: number;
   errorCount: number;
   errors: string[];
+  transferCandidateCount: number;
 }
 
 export async function processImport(
@@ -64,6 +66,7 @@ export async function processImport(
     flaggedCount: 0,
     errorCount: 0,
     errors: [],
+    transferCandidateCount: 0,
   };
 
   let parsed: (RawTransaction | RawInvestmentTransaction)[];
@@ -79,12 +82,15 @@ export async function processImport(
 
   result.rowCount = parsed.length;
 
+  const importedTransactionIds: string[] = [];
+
   for (const raw of parsed) {
     try {
       if (isInvestmentTransaction(raw)) {
         await processInvestmentRow(raw, accountId, importRecord.id, result);
       } else {
-        await processTransactionRow(raw, accountId, importRecord.id, userId, result);
+        const insertedId = await processTransactionRow(raw, accountId, importRecord.id, userId, result);
+        if (insertedId) importedTransactionIds.push(insertedId);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -96,6 +102,9 @@ export async function processImport(
       }
     }
   }
+
+  const transferCandidates = await detectTransfers(importedTransactionIds, userId);
+  result.transferCandidateCount = transferCandidates.length;
 
   await db
     .update(imports)
@@ -125,12 +134,12 @@ async function processTransactionRow(
   importId: string,
   userId: string,
   result: ImportResult
-): Promise<void> {
-  const categorization = await categorize(raw.description, userId);
+): Promise<string | null> {
+  const categorization = await categorize(raw.description, userId, raw.amount, raw.currency);
 
   if (categorization.flaggedForReview) result.flaggedCount++;
 
-  await db.insert(transactions).values({
+  const [inserted] = await db.insert(transactions).values({
     accountId,
     importId,
     date: raw.date,
@@ -150,9 +159,10 @@ async function processTransactionRow(
     compositeKey: raw.compositeKey,
     source: 'csv',
     isIncome: raw.amount > 0,
-  });
+  }).returning({ id: transactions.id });
 
   result.importedCount++;
+  return inserted?.id ?? null;
 }
 
 async function processInvestmentRow(
