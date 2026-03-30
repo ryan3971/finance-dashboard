@@ -1,6 +1,7 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
+import { config } from '../lib/config';
 
 // db is initialized lazily so DATABASE_URL is read after dotenv.config() runs,
 // not at module import time (static imports are hoisted before dotenv loads).
@@ -8,7 +9,7 @@ let _db: NodePgDatabase<typeof schema> | undefined;
 
 export function getDb(): NodePgDatabase<typeof schema> {
   if (!_db) {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const pool = new Pool({ connectionString: config.databaseUrl });
     _db = drizzle(pool, { schema });
   }
   return _db;

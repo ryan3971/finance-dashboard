@@ -1,3 +1,4 @@
+import { config } from '../lib/config';
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { registerSchema, loginSchema } from '@finance/shared';
@@ -12,13 +13,16 @@ const router = Router();
 
 // Refresh token cookie config
 const REFRESH_COOKIE_NAME = 'refresh_token';
-const REFRESH_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
-  path: '/api/v1/auth',
-};
+
+function getRefreshCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: 'strict' as const,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    path: '/api/v1/auth',
+  };
+}
 
 // POST /api/v1/auth/register
 router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
@@ -26,7 +30,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     const input = registerSchema.parse(req.body);
     const { user, accessToken, refreshToken } = await registerUser(input);
 
-    res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
 
     res.status(201).json({
       accessToken,
@@ -43,7 +47,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     const input = loginSchema.parse(req.body);
     const { user, accessToken, refreshToken } = await loginUser(input);
 
-    res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
 
     res.json({
       accessToken,
@@ -66,7 +70,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 
     const { accessToken, refreshToken } = await refreshAccessToken(incomingToken);
 
-    res.cookie(REFRESH_COOKIE_NAME, refreshToken, REFRESH_COOKIE_OPTIONS);
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
     res.json({ accessToken });
   } catch (err) {
     next(err);
