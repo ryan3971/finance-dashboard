@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 
+export interface Tag {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 export interface Transaction {
   id: string;
   date: string;
@@ -8,10 +14,20 @@ export interface Transaction {
   sourceName: string | null;
   amount: string;
   currency: string;
-  categoryName: string | null;
-  accountName: string;
-  flaggedForReview: boolean;
   needWant: string | null;
+  isTransfer: boolean;
+  isIncome: boolean;
+  flaggedForReview: boolean;
+  categorySource: string | null;
+  note: string | null;
+  accountId: string;
+  accountName: string;
+  accountInstitution: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
+  tags: Tag[];
 }
 
 interface TransactionsResponse {
@@ -24,12 +40,26 @@ interface TransactionsResponse {
   };
 }
 
-export function useTransactions({ page = 1 }: { page?: number } = {}) {
+export function useTransactions({
+  accountId,
+  startDate,
+  endDate,
+  categoryId,
+  flagged,
+  page = 1,
+}: {
+  accountId?: string;
+  startDate?: string;
+  endDate?: string;
+  categoryId?: string;
+  flagged?: boolean;
+  page?: number;
+} = {}) {
   return useQuery<TransactionsResponse>({
-    queryKey: ['transactions', page],
+    queryKey: ['transactions', { accountId, startDate, endDate, categoryId, flagged, page }],
     queryFn: async () => {
       const { data } = await api.get<TransactionsResponse>('/transactions', {
-        params: { page },
+        params: { accountId, startDate, endDate, categoryId, flagged, page },
       });
       return data;
     },
