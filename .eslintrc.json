@@ -1,10 +1,15 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": true,
+    "tsconfigRootDir": "."
+  },
   "plugins": ["@typescript-eslint"],
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-type-checked"
   ],
   "rules": {
     "sort-imports": [
@@ -13,35 +18,43 @@
         "ignoreCase": true,
         "ignoreDeclarationSort": false,
         "ignoreMemberSort": false,
-        "memberSyntaxSortOrder": [
-          "none",
-          "all",
-          "multiple",
-          "single"
-        ]
+        "memberSyntaxSortOrder": ["none", "all", "multiple", "single"]
       }
     ],
-    // "object-curly-newline": [
-    //   "error",
-    //   {
-    //     "ImportDeclaration": {
-    //       "minProperties": 3
-    //     }
-    //   }
-    // ],
+    "eqeqeq": ["error", "always"],
+    "no-console": "warn",
+    "no-throw-literal": "error",
     "@typescript-eslint/no-unused-vars": [
       "error",
       { "argsIgnorePattern": "^_" }
     ],
-    "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-namespace": [
+    "@typescript-eslint/no-namespace": ["error", { "allowDeclarations": true }],
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/return-await": ["error", "in-try-catch"],
+    "@typescript-eslint/consistent-type-imports": [
       "error",
-      { "allowDeclarations": true }
-    ]
+      { "prefer": "type-imports" }
+    ],
+    "@typescript-eslint/explicit-function-return-type": "off"
   },
   "env": {
     "node": true,
     "es2022": true
-  }
+  },
+  "overrides": [
+    {
+      "files": ["apps/web/src/**/*.{ts,tsx}"],
+      "plugins": ["react-hooks", "react-refresh"],
+      "extends": ["plugin:react-hooks/recommended"],
+      "rules": {
+        "react-refresh/only-export-components": [
+          "warn",
+          { "allowConstantExport": true }
+        ],
+        "no-console": "warn"
+      },
+      "env": { "browser": true, "node": false }
+    }
+  ]
 }
