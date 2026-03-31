@@ -1,6 +1,6 @@
 import { eq, isNull, or } from 'drizzle-orm';
-import { categories } from '../../db/schema';
-import { db } from '../../db';
+import { categories } from '@/db/schema';
+import { db } from '@/db';
 
 export interface ParsedAIResponse {
   category: string;

@@ -1,7 +1,7 @@
 import { desc, eq, isNull, or } from 'drizzle-orm';
 import type { CategorizationResult } from './pipeline.types';
-import { categorizationRules } from '../../db/schema';
-import { db } from '../../db';
+import { categorizationRules } from '@/db/schema';
+import { db } from '@/db';
 
 export async function runRulesEngine(
   description: string,

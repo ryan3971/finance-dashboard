@@ -1,13 +1,9 @@
 import { and, eq } from 'drizzle-orm';
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
-import { db } from '../db';
-import { requireAuth } from '../middleware/auth';
+import type { NextFunction, Request, Response } from 'express';
+import { db } from '@/db';
+import { requireAuth } from '@/middleware/auth';
 import { Router } from 'express';
-import { tags } from '../db/schema';
+import { tags } from '@/db/schema';
 import { z } from 'zod';
 
 const router = Router();
@@ -16,10 +12,7 @@ const createTagSchema = z.object({
   name: z.string().min(1).max(50),
   color: z
     .string()
-    .regex(
-      /^#[0-9A-Fa-f]{6}$/,
-      'Color must be a hex code e.g. #FF5733'
-    )
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a hex code e.g. #FF5733')
     .optional(),
 });
 
@@ -27,11 +20,7 @@ const createTagSchema = z.object({
 router.get(
   '/',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await db
         .select()
@@ -50,11 +39,7 @@ router.get(
 router.post(
   '/',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = createTagSchema.parse(req.body);
 
@@ -74,21 +59,12 @@ router.post(
 router.delete(
   '/:id',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const [tag] = await db
         .select({ id: tags.id })
         .from(tags)
-        .where(
-          and(
-            eq(tags.id, req.params.id),
-            eq(tags.userId, req.user!.id)
-          )
-        )
+        .where(and(eq(tags.id, req.params.id), eq(tags.userId, req.user!.id)))
         .limit(1);
 
       if (!tag) {
@@ -97,9 +73,7 @@ router.delete(
       }
 
       // transactionTags rows deleted automatically via ON DELETE CASCADE
-      await db
-        .delete(tags)
-        .where(eq(tags.id, req.params.id));
+      await db.delete(tags).where(eq(tags.id, req.params.id));
 
       res.status(204).send();
     } catch (err) {

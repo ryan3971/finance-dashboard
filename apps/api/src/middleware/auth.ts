@@ -1,10 +1,6 @@
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
-import { verifyAccessToken } from '../lib/jwt';
+import { verifyAccessToken } from '@/lib/jwt';
 
 // Extends Express Request with the authenticated user
 declare global {
@@ -26,11 +22,9 @@ export function requireAuth(
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res
-      .status(401)
-      .json({
-        error: 'Missing or malformed Authorization header',
-      });
+    res.status(401).json({
+      error: 'Missing or malformed Authorization header',
+    });
     return;
   }
 
@@ -41,8 +35,6 @@ export function requireAuth(
     req.user = { id: payload.sub, email: payload.email };
     next();
   } catch {
-    res
-      .status(401)
-      .json({ error: 'Invalid or expired access token' });
+    res.status(401).json({ error: 'Invalid or expired access token' });
   }
 }

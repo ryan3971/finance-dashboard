@@ -35,32 +35,37 @@ function optionalEnv(name: string, fallback: string): string {
 
 export const config = {
   // App
-  nodeEnv:  optionalEnv('NODE_ENV', 'development'),
-  port:     parseInt(optionalEnv('PORT', '3001'), 10),
+  nodeEnv: optionalEnv('NODE_ENV', 'development'),
+  port: parseInt(optionalEnv('PORT', '3001'), 10),
   logLevel: optionalEnv('LOG_LEVEL', 'info'),
 
   // Database
   databaseUrl: requireEnv('DATABASE_URL'),
 
   // Auth
-  jwtSecret:        requireEnv('JWT_SECRET'),
+  jwtSecret: requireEnv('JWT_SECRET'),
   jwtRefreshSecret: requireEnv('JWT_REFRESH_SECRET'),
 
   // CORS
   corsOrigin: optionalEnv('CORS_ORIGIN', 'http://localhost:5173'),
 
   // AI
-  aiEnabled:             optionalEnv('ENABLE_AI_CATEGORIZATION', 'false') === 'true',
-  aiProvider:            optionalEnv('AI_PROVIDER', 'anthropic') as 'anthropic' | 'openai',
-  aiConfidenceThreshold: parseFloat(optionalEnv('AI_CONFIDENCE_THRESHOLD', '0.70')),
-  anthropicApiKey:       optionalEnv('ANTHROPIC_API_KEY', ''),
-  openaiApiKey:          optionalEnv('OPENAI_API_KEY', ''),
+  aiEnabled: optionalEnv('ENABLE_AI_CATEGORIZATION', 'false') === 'true',
+  aiProvider: optionalEnv('AI_PROVIDER', 'anthropic') as 'anthropic' | 'openai',
+  aiConfidenceThreshold: parseFloat(
+    optionalEnv('AI_CONFIDENCE_THRESHOLD', '0.70')
+  ),
+  anthropicApiKey: optionalEnv('ANTHROPIC_API_KEY', ''),
+  openaiApiKey: optionalEnv('OPENAI_API_KEY', ''),
 
   // Transfer detection
-  transferWindowDays: parseInt(optionalEnv('TRANSFER_DETECTION_WINDOW_DAYS', '3'), 10),
+  transferWindowDays: parseInt(
+    optionalEnv('TRANSFER_DETECTION_WINDOW_DAYS', '3'),
+    10
+  ),
 
   // AWS (Phase 4 — optional until deployment)
-  awsRegion:    optionalEnv('AWS_REGION', 'ca-central-1'),
+  awsRegion: optionalEnv('AWS_REGION', 'ca-central-1'),
   s3BucketName: optionalEnv('S3_BUCKET_NAME', ''),
 } as const;
 
@@ -75,13 +80,13 @@ export const config = {
 // }
 
 /**TODO See below
- * Unsafe parseFloat/parseInt Without Validation 
+ * Unsafe parseFloat/parseInt Without Validation
  * If someone sets AI_CONFIDENCE_THRESHOLD=abc, [parseFloat]
- * silently returns NaN, which will cause all AI results to pass or 
+ * silently returns NaN, which will cause all AI results to pass or
  * fail the threshold check unexpectedly. Add guards:
- * 
- * as const Prevents Runtime Mutation but Not Type Widening on aiProvider 
- * The as 'anthropic' | 'openai' assertion is correct, but it's worth adding a 
+ *
+ * as const Prevents Runtime Mutation but Not Type Widening on aiProvider
+ * The as 'anthropic' | 'openai' assertion is correct, but it's worth adding a
  * runtime guard since the value comes from user input:
- * 
+ *
  */

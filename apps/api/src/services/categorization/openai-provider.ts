@@ -6,8 +6,8 @@ import {
   resolveCategories,
 } from './provider-utils';
 import type { CategorizationResult } from './pipeline.types';
-import { config } from '../../lib/config';
-import { logger } from '../../middleware/logger';
+import { config } from '@/lib/config';
+import { logger } from '@/middleware/logger';
 import OpenAI from 'openai';
 
 let client: OpenAI | null = null;

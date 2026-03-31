@@ -7,7 +7,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     fileParallelism: false,
     alias: {
-      '@finance/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
+      '@finance/shared': path.resolve(
+        __dirname,
+        '../../packages/shared/src/index.ts'
+      ),
+      '@': path.resolve(__dirname, './src'),
     },
   },
 });

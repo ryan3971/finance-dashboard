@@ -7,10 +7,10 @@ import {
   refreshTokens,
   transactions,
   users,
-} from '../db/schema';
+} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
-import { db } from '../db';
+import { createApp } from '@/app';
+import { db } from '@/db';
 import request from 'supertest';
 
 const app = createApp();
@@ -21,19 +21,14 @@ const AMEX_FIXTURE = path.join(
 );
 
 async function registerAndLogin() {
-  const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({
-      email: 'test@example.com',
-      password: 'password123',
-    });
+  const res = await request(app).post('/api/v1/auth/register').send({
+    email: 'test@example.com',
+    password: 'password123',
+  });
   return res.body.accessToken as string;
 }
 
-async function createAccount(
-  token: string,
-  institution = 'amex'
-) {
+async function createAccount(token: string, institution = 'amex') {
   const res = await request(app)
     .post('/api/v1/accounts')
     .set('Authorization', `Bearer ${token}`)
@@ -46,10 +41,7 @@ async function createAccount(
   return res.body.id as string;
 }
 
-async function uploadAmex(
-  token: string,
-  accountId: string
-) {
+async function uploadAmex(token: string, accountId: string) {
   return request(app)
     .post('/api/v1/imports/upload')
     .set('Authorization', `Bearer ${token}`)
@@ -126,9 +118,7 @@ describe('GET /api/v1/transactions', () => {
   });
 
   it('returns 401 without auth token', async () => {
-    const res = await request(app).get(
-      '/api/v1/transactions'
-    );
+    const res = await request(app).get('/api/v1/transactions');
     expect(res.status).toBe(401);
   });
 
@@ -155,9 +145,7 @@ describe('GET /api/v1/transactions — date and category filters', () => {
     await uploadAmex(token, accountId);
 
     const res = await request(app)
-      .get(
-        '/api/v1/transactions?start_date=2025-06-14&end_date=2025-06-14'
-      )
+      .get('/api/v1/transactions?start_date=2025-06-14&end_date=2025-06-14')
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
@@ -171,9 +159,7 @@ describe('GET /api/v1/transactions — date and category filters', () => {
     await uploadAmex(token, accountId);
 
     const res = await request(app)
-      .get(
-        '/api/v1/transactions?start_date=2020-01-01&end_date=2020-01-31'
-      )
+      .get('/api/v1/transactions?start_date=2020-01-01&end_date=2020-01-31')
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
@@ -197,9 +183,7 @@ describe('GET /api/v1/transactions — date and category filters', () => {
     expect(uncategorized).toBeDefined();
 
     const res = await request(app)
-      .get(
-        `/api/v1/transactions?category_id=${uncategorized.id}`
-      )
+      .get(`/api/v1/transactions?category_id=${uncategorized.id}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);

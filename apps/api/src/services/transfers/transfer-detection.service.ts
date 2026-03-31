@@ -1,8 +1,8 @@
 import { and, eq, gte, lte, ne, sql } from 'drizzle-orm';
-import { config } from '../../lib/config';
-import { db } from '../../db';
-import { logger } from '../../middleware/logger';
-import { transactions } from '../../db/schema';
+import { config } from '@/lib/config';
+import { db } from '@/db';
+import { logger } from '@/middleware/logger';
+import { transactions } from '@/db/schema';
 
 const WINDOW_DAYS = () => config.transferWindowDays;
 

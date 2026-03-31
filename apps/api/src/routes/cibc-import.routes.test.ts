@@ -7,10 +7,10 @@ import {
   refreshTokens,
   transactions,
   users,
-} from '../db/schema';
+} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
-import { db } from '../db';
+import { createApp } from '@/app';
+import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 
@@ -22,12 +22,10 @@ const FIXTURE = path.join(
 );
 
 async function registerAndLogin() {
-  const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({
-      email: 'cibc-test@example.com',
-      password: 'password123',
-    });
+  const res = await request(app).post('/api/v1/auth/register').send({
+    email: 'cibc-test@example.com',
+    password: 'password123',
+  });
   return res.body.accessToken as string;
 }
 
@@ -43,10 +41,7 @@ async function createAccount(token: string) {
   return res.body.id as string;
 }
 
-async function uploadCibc(
-  token: string,
-  accountId: string
-) {
+async function uploadCibc(token: string, accountId: string) {
   return request(app)
     .post('/api/v1/imports/upload')
     .set('Authorization', `Bearer ${token}`)
@@ -95,8 +90,7 @@ describe('CIBC import end-to-end', () => {
       .where(eq(transactions.accountId, accountId));
 
     const debits = rows.filter(
-      (r) =>
-        !r.rawDescription.toUpperCase().includes('PAYMENT')
+      (r) => !r.rawDescription.toUpperCase().includes('PAYMENT')
     );
     const credits = rows.filter((r) =>
       r.rawDescription.toUpperCase().includes('PAYMENT')
@@ -104,12 +98,8 @@ describe('CIBC import end-to-end', () => {
 
     expect(debits.length).toBeGreaterThan(0);
     expect(credits.length).toBeGreaterThan(0);
-    debits.forEach((r) =>
-      expect(parseFloat(r.amount)).toBeLessThan(0)
-    );
-    credits.forEach((r) =>
-      expect(parseFloat(r.amount)).toBeGreaterThan(0)
-    );
+    debits.forEach((r) => expect(parseFloat(r.amount)).toBeLessThan(0));
+    credits.forEach((r) => expect(parseFloat(r.amount)).toBeGreaterThan(0));
   });
 
   it('deduplicates on re-upload', async () => {

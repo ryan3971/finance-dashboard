@@ -1,4 +1,4 @@
-import '../lib/config'; // ensures dotenv runs before tests
+import '@/lib/config'; // ensures dotenv runs before tests
 
 import { vi } from 'vitest';
 
@@ -11,7 +11,7 @@ if (process.env.DATABASE_URL_TEST) {
 
 // Silence Pino during tests — log output from services is noise in test runs.
 // Individual tests can restore specific log methods if they need to assert on them.
-vi.mock('../middleware/logger', () => ({
+vi.mock('@/middleware/logger', () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),

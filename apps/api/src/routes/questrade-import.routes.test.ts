@@ -6,11 +6,11 @@ import {
   refreshTokens,
   transactions,
   users,
-} from '../db/schema';
+} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
-import { createQuestradeFixtureBuffer } from '../services/imports/adapters/__fixtures__/questrade-fixture';
-import { db } from '../db';
+import { createApp } from '@/app';
+import { createQuestradeFixtureBuffer } from '@/services/imports/adapters/__fixtures__/questrade-fixture';
+import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 

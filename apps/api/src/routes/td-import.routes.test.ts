@@ -7,10 +7,10 @@ import {
   refreshTokens,
   transactions,
   users,
-} from '../db/schema';
+} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
-import { db } from '../db';
+import { createApp } from '@/app';
+import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 
@@ -22,12 +22,10 @@ const FIXTURE = path.join(
 );
 
 async function registerAndLogin() {
-  const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({
-      email: 'td-test@example.com',
-      password: 'password123',
-    });
+  const res = await request(app).post('/api/v1/auth/register').send({
+    email: 'td-test@example.com',
+    password: 'password123',
+  });
   return res.body.accessToken as string;
 }
 
@@ -90,13 +88,9 @@ describe('TD import end-to-end', () => {
       .from(transactions)
       .where(eq(transactions.accountId, accountId));
 
-    const prodigy = rows.find((r) =>
-      r.rawDescription.includes('PRODIGY')
-    );
+    const prodigy = rows.find((r) => r.rawDescription.includes('PRODIGY'));
     expect(prodigy).toBeDefined();
-    expect(parseFloat(prodigy!.amount)).toBeCloseTo(
-      2549.81
-    );
+    expect(parseFloat(prodigy!.amount)).toBeCloseTo(2549.81);
   });
 
   it('correctly identifies fees as negative', async () => {
@@ -113,9 +107,7 @@ describe('TD import end-to-end', () => {
       .from(transactions)
       .where(eq(transactions.accountId, accountId));
 
-    const fee = rows.find((r) =>
-      r.rawDescription.includes('ACCOUNT FEE')
-    );
+    const fee = rows.find((r) => r.rawDescription.includes('ACCOUNT FEE'));
     expect(fee).toBeDefined();
     expect(parseFloat(fee!.amount)).toBeCloseTo(-11.95);
   });

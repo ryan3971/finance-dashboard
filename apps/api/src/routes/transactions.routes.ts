@@ -4,23 +4,11 @@ import {
   tags,
   transactions,
   transactionTags,
-} from '../db/schema';
-import {
-  and,
-  desc,
-  eq,
-  gte,
-  inArray,
-  lte,
-  sql,
-} from 'drizzle-orm';
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
-import { db } from '../db';
-import { requireAuth } from '../middleware/auth';
+} from '@/db/schema';
+import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import type { NextFunction, Request, Response } from 'express';
+import { db } from '@/db';
+import { requireAuth } from '@/middleware/auth';
 import { Router } from 'express';
 
 const router = Router();
@@ -29,11 +17,7 @@ const router = Router();
 router.get(
   '/',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const {
         account_id,
@@ -46,32 +30,18 @@ router.get(
       } = req.query as Record<string, string>;
 
       const pageNum = Math.max(1, parseInt(page, 10));
-      const limitNum = Math.min(
-        200,
-        Math.max(1, parseInt(limit, 10))
-      );
+      const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10)));
       const offset = (pageNum - 1) * limitNum;
 
-      const conditions = [
-        eq(accounts.userId, req.user!.id),
-      ];
+      const conditions = [eq(accounts.userId, req.user!.id)];
 
-      if (account_id)
-        conditions.push(
-          eq(transactions.accountId, account_id)
-        );
-      if (start_date)
-        conditions.push(gte(transactions.date, start_date));
-      if (end_date)
-        conditions.push(lte(transactions.date, end_date));
+      if (account_id) conditions.push(eq(transactions.accountId, account_id));
+      if (start_date) conditions.push(gte(transactions.date, start_date));
+      if (end_date) conditions.push(lte(transactions.date, end_date));
       if (category_id)
-        conditions.push(
-          eq(transactions.categoryId, category_id)
-        );
+        conditions.push(eq(transactions.categoryId, category_id));
       if (flagged === 'true')
-        conditions.push(
-          eq(transactions.flaggedForReview, true)
-        );
+        conditions.push(eq(transactions.flaggedForReview, true));
 
       const rows = await db
         .select({
@@ -94,14 +64,8 @@ router.get(
           categoryName: categories.name,
         })
         .from(transactions)
-        .innerJoin(
-          accounts,
-          eq(transactions.accountId, accounts.id)
-        )
-        .leftJoin(
-          categories,
-          eq(transactions.categoryId, categories.id)
-        )
+        .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+        .leftJoin(categories, eq(transactions.categoryId, categories.id))
         .where(and(...conditions))
         .orderBy(desc(transactions.date))
         .limit(limitNum)
@@ -112,23 +76,14 @@ router.get(
         txnIds.length > 0
           ? await db
               .select({
-                transactionId:
-                  transactionTags.transactionId,
+                transactionId: transactionTags.transactionId,
                 tagId: tags.id,
                 tagName: tags.name,
                 tagColor: tags.color,
               })
               .from(transactionTags)
-              .innerJoin(
-                tags,
-                eq(transactionTags.tagId, tags.id)
-              )
-              .where(
-                inArray(
-                  transactionTags.transactionId,
-                  txnIds
-                )
-              )
+              .innerJoin(tags, eq(transactionTags.tagId, tags.id))
+              .where(inArray(transactionTags.transactionId, txnIds))
           : [];
 
       // Group tags by transaction ID
@@ -142,8 +97,7 @@ router.get(
           }[]
         >
       >((acc, t) => {
-        if (!acc[t.transactionId])
-          acc[t.transactionId] = [];
+        if (!acc[t.transactionId]) acc[t.transactionId] = [];
         acc[t.transactionId].push({
           id: t.tagId,
           name: t.tagName,
@@ -161,10 +115,7 @@ router.get(
       const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(transactions)
-        .innerJoin(
-          accounts,
-          eq(transactions.accountId, accounts.id)
-        )
+        .innerJoin(accounts, eq(transactions.accountId, accounts.id))
         .where(and(...conditions));
 
       res.json({

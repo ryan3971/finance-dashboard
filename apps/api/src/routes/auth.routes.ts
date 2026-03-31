@@ -1,19 +1,12 @@
-import {
-  loginSchema,
-  registerSchema,
-} from '@finance/shared';
+import { loginSchema, registerSchema } from '@finance/shared';
 import {
   loginUser,
   logoutUser,
   refreshAccessToken,
   registerUser,
-} from '../services/auth.service';
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
-import { config } from '../lib/config';
+} from '@/services/auth.service';
+import type { NextFunction, Request, Response } from 'express';
+import { config } from '@/lib/config';
 import { Router } from 'express';
 
 const router = Router();
@@ -34,21 +27,12 @@ function getRefreshCookieOptions() {
 // POST /api/v1/auth/register
 router.post(
   '/register',
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = registerSchema.parse(req.body);
-      const { user, accessToken, refreshToken } =
-        await registerUser(input);
+      const { user, accessToken, refreshToken } = await registerUser(input);
 
-      res.cookie(
-        REFRESH_COOKIE_NAME,
-        refreshToken,
-        getRefreshCookieOptions()
-      );
+      res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
 
       res.status(201).json({
         accessToken,
@@ -63,21 +47,12 @@ router.post(
 // POST /api/v1/auth/login
 router.post(
   '/login',
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = loginSchema.parse(req.body);
-      const { user, accessToken, refreshToken } =
-        await loginUser(input);
+      const { user, accessToken, refreshToken } = await loginUser(input);
 
-      res.cookie(
-        REFRESH_COOKIE_NAME,
-        refreshToken,
-        getRefreshCookieOptions()
-      );
+      res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
 
       res.json({
         accessToken,
@@ -92,30 +67,20 @@ router.post(
 // POST /api/v1/auth/refresh
 router.post(
   '/refresh',
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const incomingToken =
-        req.cookies[REFRESH_COOKIE_NAME];
+      const incomingToken = req.cookies[REFRESH_COOKIE_NAME];
 
       if (!incomingToken) {
-        res
-          .status(401)
-          .json({ error: 'No refresh token provided' });
+        res.status(401).json({ error: 'No refresh token provided' });
         return;
       }
 
-      const { accessToken, refreshToken } =
-        await refreshAccessToken(incomingToken);
-
-      res.cookie(
-        REFRESH_COOKIE_NAME,
-        refreshToken,
-        getRefreshCookieOptions()
+      const { accessToken, refreshToken } = await refreshAccessToken(
+        incomingToken
       );
+
+      res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
       res.json({ accessToken });
     } catch (err) {
       next(err);
@@ -126,14 +91,9 @@ router.post(
 // POST /api/v1/auth/logout
 router.post(
   '/logout',
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const incomingToken =
-        req.cookies[REFRESH_COOKIE_NAME];
+      const incomingToken = req.cookies[REFRESH_COOKIE_NAME];
 
       if (incomingToken) {
         await logoutUser(incomingToken);

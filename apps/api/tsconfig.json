@@ -11,7 +11,8 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@finance/shared": ["../../packages/shared/src/index.ts"]
+      "@finance/shared": ["../../packages/shared/src/index.ts"],
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],

@@ -2,13 +2,9 @@ import {
   confirmSingleTransfer,
   confirmTransfer,
   dismissTransferFlag,
-} from '../services/transfers/transfer-detection.service';
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
-import { requireAuth } from '../middleware/auth';
+} from '@/services/transfers/transfer-detection.service';
+import type { NextFunction, Request, Response } from 'express';
+import { requireAuth } from '@/middleware/auth';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -18,11 +14,7 @@ const router = Router();
 router.post(
   '/confirm',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = z
         .object({
@@ -39,10 +31,7 @@ router.post(
           req.user!.id
         );
       } else {
-        await confirmSingleTransfer(
-          input.transactionId,
-          req.user!.id
-        );
+        await confirmSingleTransfer(input.transactionId, req.user!.id);
       }
 
       res.status(204).send();
@@ -56,11 +45,7 @@ router.post(
 router.post(
   '/dismiss',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { transactionId } = z
         .object({
@@ -68,10 +53,7 @@ router.post(
         })
         .parse(req.body);
 
-      await dismissTransferFlag(
-        transactionId,
-        req.user!.id
-      );
+      await dismissTransferFlag(transactionId, req.user!.id);
       res.status(204).send();
     } catch (err) {
       next(err);

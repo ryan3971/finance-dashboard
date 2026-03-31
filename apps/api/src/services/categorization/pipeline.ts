@@ -1,10 +1,10 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import { categories } from '../../db/schema';
+import { categories } from '@/db/schema';
 import type { CategorizationResult } from './pipeline.types';
 import { categorizeWithAnthropic } from './anthropic-provider';
 import { categorizeWithOpenAI } from './openai-provider';
-import { config } from '../../lib/config';
-import { db } from '../../db';
+import { config } from '@/lib/config';
+import { db } from '@/db';
 import { runRulesEngine } from './rules-engine';
 
 let uncategorizedId: string | null = null;

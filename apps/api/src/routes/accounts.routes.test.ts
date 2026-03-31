@@ -6,21 +6,19 @@ import {
   refreshTokens,
   transactions,
   users,
-} from '../db/schema';
+} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
-import { db } from '../db';
+import { createApp } from '@/app';
+import { db } from '@/db';
 import request from 'supertest';
 
 const app = createApp();
 
 async function registerAndLogin() {
-  const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({
-      email: 'test@example.com',
-      password: 'password123',
-    });
+  const res = await request(app).post('/api/v1/auth/register').send({
+    email: 'test@example.com',
+    password: 'password123',
+  });
   return res.body.accessToken as string;
 }
 
@@ -85,13 +83,11 @@ describe('POST /api/v1/accounts', () => {
   });
 
   it('returns 401 without auth token', async () => {
-    const res = await request(app)
-      .post('/api/v1/accounts')
-      .send({
-        name: 'Test',
-        type: 'credit',
-        institution: 'cibc',
-      });
+    const res = await request(app).post('/api/v1/accounts').send({
+      name: 'Test',
+      type: 'credit',
+      institution: 'cibc',
+    });
     expect(res.status).toBe(401);
   });
 });
@@ -119,9 +115,7 @@ describe('GET /api/v1/accounts/:id', () => {
   it('returns 404 for unknown id', async () => {
     const token = await registerAndLogin();
     const res = await request(app)
-      .get(
-        '/api/v1/accounts/00000000-0000-0000-0000-000000000000'
-      )
+      .get('/api/v1/accounts/00000000-0000-0000-0000-000000000000')
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(404);

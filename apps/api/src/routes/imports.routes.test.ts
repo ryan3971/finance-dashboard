@@ -7,10 +7,10 @@ import {
   refreshTokens,
   transactions,
   users,
-} from '../db/schema';
+} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
-import { db } from '../db';
+import { createApp } from '@/app';
+import { db } from '@/db';
 import request from 'supertest';
 
 const app = createApp();
@@ -21,12 +21,10 @@ const AMEX_FIXTURE = path.join(
 );
 
 async function registerAndLogin() {
-  const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({
-      email: 'test@example.com',
-      password: 'password123',
-    });
+  const res = await request(app).post('/api/v1/auth/register').send({
+    email: 'test@example.com',
+    password: 'password123',
+  });
   return res.body.accessToken as string;
 }
 
@@ -116,9 +114,7 @@ describe('POST /api/v1/imports/upload', () => {
 
   it('returns 401 without auth token', async () => {
     // Don't attach file — auth middleware fires before multer reads body
-    const res = await request(app).post(
-      '/api/v1/imports/upload'
-    );
+    const res = await request(app).post('/api/v1/imports/upload');
 
     expect(res.status).toBe(401);
   });
@@ -134,14 +130,10 @@ describe('POST /api/v1/imports/upload', () => {
       .attach('file', AMEX_FIXTURE, 'amex.csv');
 
     const txRes = await request(app)
-      .get(
-        `/api/v1/transactions?account_id=${accountId}&flagged=true`
-      )
+      .get(`/api/v1/transactions?account_id=${accountId}&flagged=true`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(txRes.body.data.length).toBeGreaterThan(0);
-    expect(txRes.body.data[0].categoryName).toBe(
-      'Uncategorized'
-    );
+    expect(txRes.body.data[0].categoryName).toBe('Uncategorized');
   });
 });

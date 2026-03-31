@@ -3,14 +3,14 @@ import {
   imports,
   investmentTransactions,
   transactions,
-} from '../../db/schema';
+} from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { detectAdapter, getAdapterByInstitution } from './registry';
 import { parseCsv, parseXlsx } from './parser';
 import type { RawInvestmentTransaction, RawTransaction } from '@finance/shared';
 import { buildCompositeKey } from './utils';
 import { categorize } from '../categorization/pipeline';
-import { db } from '../../db';
+import { db } from '@/db';
 import { detectTransfers } from '../transfers/transfer-detection.service';
 
 export interface ImportResult {

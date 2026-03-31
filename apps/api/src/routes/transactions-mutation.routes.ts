@@ -4,15 +4,11 @@ import {
   tags,
   transactions,
   transactionTags,
-} from '../db/schema';
+} from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
-import { db } from '../db';
-import { requireAuth } from '../middleware/auth';
+import type { NextFunction, Request, Response } from 'express';
+import { db } from '@/db';
+import { requireAuth } from '@/middleware/auth';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -23,10 +19,7 @@ const router = Router();
 const patchTransactionSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   subcategoryId: z.string().uuid().nullable().optional(),
-  needWant: z
-    .enum(['Need', 'Want', 'NA'])
-    .nullable()
-    .optional(),
+  needWant: z.enum(['Need', 'Want', 'NA']).nullable().optional(),
   note: z.string().max(500).nullable().optional(),
   // If true, create a categorization_rule from this override
   createRule: z.boolean().optional().default(false),
@@ -34,31 +27,20 @@ const patchTransactionSchema = z.object({
 
 const createTransactionSchema = z.object({
   accountId: z.string().uuid(),
-  date: z
-    .string()
-    .regex(
-      /^\d{4}-\d{2}-\d{2}$/,
-      'Date must be YYYY-MM-DD'
-    ),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   description: z.string().min(1).max(500),
   amount: z.number(),
   currency: z.string().length(3).default('CAD'),
   categoryId: z.string().uuid().nullable().optional(),
   subcategoryId: z.string().uuid().nullable().optional(),
-  needWant: z
-    .enum(['Need', 'Want', 'NA'])
-    .nullable()
-    .optional(),
+  needWant: z.enum(['Need', 'Want', 'NA']).nullable().optional(),
   note: z.string().max(500).nullable().optional(),
   isIncome: z.boolean().optional(),
 });
 
 // ─── Helper — verify transaction ownership ───────────────────────────────────
 
-async function getOwnedTransaction(
-  transactionId: string,
-  userId: string
-) {
+async function getOwnedTransaction(transactionId: string, userId: string) {
   const [txn] = await db
     .select({
       id: transactions.id,
@@ -66,16 +48,8 @@ async function getOwnedTransaction(
       accountId: transactions.accountId,
     })
     .from(transactions)
-    .innerJoin(
-      accounts,
-      eq(transactions.accountId, accounts.id)
-    )
-    .where(
-      and(
-        eq(transactions.id, transactionId),
-        eq(accounts.userId, userId)
-      )
-    )
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(and(eq(transactions.id, transactionId), eq(accounts.userId, userId)))
     .limit(1);
   return txn ?? null;
 }
@@ -85,20 +59,11 @@ async function getOwnedTransaction(
 router.patch(
   '/:id',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const txn = await getOwnedTransaction(
-        req.params.id,
-        req.user!.id
-      );
+      const txn = await getOwnedTransaction(req.params.id, req.user!.id);
       if (!txn) {
-        res
-          .status(404)
-          .json({ error: 'Transaction not found' });
+        res.status(404).json({ error: 'Transaction not found' });
         return;
       }
 
@@ -117,10 +82,8 @@ router.patch(
       }
       if (input.subcategoryId !== undefined)
         updateData.subcategoryId = input.subcategoryId;
-      if (input.needWant !== undefined)
-        updateData.needWant = input.needWant;
-      if (input.note !== undefined)
-        updateData.note = input.note;
+      if (input.needWant !== undefined) updateData.needWant = input.needWant;
+      if (input.note !== undefined) updateData.note = input.note;
 
       await db
         .update(transactions)
@@ -130,10 +93,7 @@ router.patch(
       // Optionally create a categorization rule from this override
       if (input.createRule && input.categoryId) {
         // Derive a keyword from the transaction description (first 40 chars, lowercased)
-        const keyword = txn.description
-          .slice(0, 40)
-          .toLowerCase()
-          .trim();
+        const keyword = txn.description.slice(0, 40).toLowerCase().trim();
 
         // Check if a rule with this keyword already exists for this user
         const existing = await db
@@ -178,11 +138,7 @@ router.patch(
 router.post(
   '/',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = createTransactionSchema.parse(req.body);
 
@@ -199,9 +155,7 @@ router.post(
         .limit(1);
 
       if (!account) {
-        res
-          .status(404)
-          .json({ error: 'Account not found' });
+        res.status(404).json({ error: 'Account not found' });
         return;
       }
 
@@ -220,21 +174,15 @@ router.post(
           accountId: input.accountId,
           importId: null,
           date: input.date,
-          description: input.description
-            .toLowerCase()
-            .trim(),
+          description: input.description.toLowerCase().trim(),
           rawDescription: input.description,
           amount: String(input.amount),
           currency: input.currency,
           categoryId: input.categoryId ?? null,
           subcategoryId: input.subcategoryId ?? null,
           needWant: input.needWant ?? null,
-          categorySource: input.categoryId
-            ? 'manual'
-            : 'default',
-          categoryConfidence: input.categoryId
-            ? '1.000'
-            : null,
+          categorySource: input.categoryId ? 'manual' : 'default',
+          categoryConfidence: input.categoryId ? '1.000' : null,
           isTransfer: false,
           isIncome,
           flaggedForReview: !input.categoryId,
@@ -256,37 +204,21 @@ router.post(
 router.post(
   '/:id/tags',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const txn = await getOwnedTransaction(
-        req.params.id,
-        req.user!.id
-      );
+      const txn = await getOwnedTransaction(req.params.id, req.user!.id);
       if (!txn) {
-        res
-          .status(404)
-          .json({ error: 'Transaction not found' });
+        res.status(404).json({ error: 'Transaction not found' });
         return;
       }
 
-      const { tagId } = z
-        .object({ tagId: z.string().uuid() })
-        .parse(req.body);
+      const { tagId } = z.object({ tagId: z.string().uuid() }).parse(req.body);
 
       // Verify tag belongs to this user
       const [tag] = await db
         .select({ id: tags.id })
         .from(tags)
-        .where(
-          and(
-            eq(tags.id, tagId),
-            eq(tags.userId, req.user!.id)
-          )
-        )
+        .where(and(eq(tags.id, tagId), eq(tags.userId, req.user!.id)))
         .limit(1);
 
       if (!tag) {
@@ -312,20 +244,11 @@ router.post(
 router.delete(
   '/:id/tags/:tagId',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const txn = await getOwnedTransaction(
-        req.params.id,
-        req.user!.id
-      );
+      const txn = await getOwnedTransaction(req.params.id, req.user!.id);
       if (!txn) {
-        res
-          .status(404)
-          .json({ error: 'Transaction not found' });
+        res.status(404).json({ error: 'Transaction not found' });
         return;
       }
 
@@ -333,10 +256,7 @@ router.delete(
         .delete(transactionTags)
         .where(
           and(
-            eq(
-              transactionTags.transactionId,
-              req.params.id
-            ),
+            eq(transactionTags.transactionId, req.params.id),
             eq(transactionTags.tagId, req.params.tagId)
           )
         );

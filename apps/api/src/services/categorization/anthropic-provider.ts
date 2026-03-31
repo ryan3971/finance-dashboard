@@ -7,8 +7,8 @@ import {
 } from './provider-utils';
 import Anthropic from '@anthropic-ai/sdk';
 import type { CategorizationResult } from './pipeline.types';
-import { config } from '../../lib/config';
-import { logger } from '../../middleware/logger';
+import { config } from '@/lib/config';
+import { logger } from '@/middleware/logger';
 
 let client: Anthropic | null = null;
 

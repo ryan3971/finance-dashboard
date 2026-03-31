@@ -1,12 +1,8 @@
 import { and, eq } from 'drizzle-orm';
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
-import { accounts } from '../db/schema';
-import { db } from '../db';
-import { requireAuth } from '../middleware/auth';
+import type { NextFunction, Request, Response } from 'express';
+import { accounts } from '@/db/schema';
+import { db } from '@/db';
+import { requireAuth } from '@/middleware/auth';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -23,13 +19,7 @@ const createAccountSchema = z.object({
     'rrsp',
     'non-registered',
   ]),
-  institution: z.enum([
-    'amex',
-    'cibc',
-    'td',
-    'questrade',
-    'manual',
-  ]),
+  institution: z.enum(['amex', 'cibc', 'td', 'questrade', 'manual']),
   currency: z.string().length(3).default('CAD'),
   isCredit: z.boolean().default(false),
 });
@@ -38,20 +28,13 @@ const createAccountSchema = z.object({
 router.get(
   '/',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await db
         .select()
         .from(accounts)
         .where(
-          and(
-            eq(accounts.userId, req.user!.id),
-            eq(accounts.isActive, true)
-          )
+          and(eq(accounts.userId, req.user!.id), eq(accounts.isActive, true))
         );
 
       res.json(result);
@@ -65,11 +48,7 @@ router.get(
 router.post(
   '/',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = createAccountSchema.parse(req.body);
 
@@ -89,27 +68,18 @@ router.post(
 router.get(
   '/:id',
   requireAuth,
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const [account] = await db
         .select()
         .from(accounts)
         .where(
-          and(
-            eq(accounts.id, req.params.id),
-            eq(accounts.userId, req.user!.id)
-          )
+          and(eq(accounts.id, req.params.id), eq(accounts.userId, req.user!.id))
         )
         .limit(1);
 
       if (!account) {
-        res
-          .status(404)
-          .json({ error: 'Account not found' });
+        res.status(404).json({ error: 'Account not found' });
         return;
       }
 

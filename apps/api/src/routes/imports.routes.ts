@@ -1,11 +1,7 @@
-import type {
-  NextFunction,
-  Request,
-  Response,
-} from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
-import { processImport } from '../services/imports/import.service';
-import { requireAuth } from '../middleware/auth';
+import { processImport } from '@/services/imports/import.service';
+import { requireAuth } from '@/middleware/auth';
 import { Router } from 'express';
 
 const router = Router();
@@ -27,9 +23,7 @@ const upload = multer({
     ) {
       cb(null, true);
     } else {
-      cb(
-        new Error(`Unsupported file type: ${file.mimetype}`)
-      );
+      cb(new Error(`Unsupported file type: ${file.mimetype}`));
     }
   },
 });
@@ -39,11 +33,7 @@ router.post(
   '/upload',
   requireAuth,
   upload.single('file'),
-  async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
         res.status(400).json({ error: 'No file provided' });
@@ -54,17 +44,11 @@ router.post(
         accountId?: string;
       };
       if (!accountId) {
-        res
-          .status(400)
-          .json({ error: 'accountId is required' });
+        res.status(400).json({ error: 'accountId is required' });
         return;
       }
 
-      const fileType = req.file.originalname.endsWith(
-        '.xlsx'
-      )
-        ? 'xlsx'
-        : 'csv';
+      const fileType = req.file.originalname.endsWith('.xlsx') ? 'xlsx' : 'csv';
 
       const result = await processImport(
         req.user!.id,
