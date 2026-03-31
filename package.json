@@ -16,9 +16,20 @@
     "db:migrate": "pnpm --filter api db:migrate",
     "db:studio": "pnpm --filter api db:studio",
     "seed:rules": "tsx scripts/seed-rules.ts",
-    "seed:dev": "tsx scripts/seed-dev.ts"
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/api/src/**/*.ts": [
+      "eslint --fix --max-warnings=0"
+    ],
+    "apps/web/src/**/*.{ts,tsx}": [
+      "eslint --fix --max-warnings=0"
+    ]
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
   }
