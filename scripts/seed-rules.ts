@@ -1,8 +1,3 @@
-import * as path from 'path';
-import * as dotenv from 'dotenv';
-
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-
 import { db } from '../apps/api/src/db/index';
 import { categorizationRules, categories } from '../apps/api/src/db/schema';
 import { eq, isNull, and } from 'drizzle-orm';

@@ -1,5 +1,6 @@
 import {
   accounts,
+  categorizationRules,
   imports,
   investmentTransactions,
   refreshTokens,
@@ -20,6 +21,7 @@ beforeEach(async () => {
   await db.delete(imports);
   await db.delete(accounts);
   await db.delete(refreshTokens);
+  await db.delete(categorizationRules);
   await db.delete(users);
 });
 
