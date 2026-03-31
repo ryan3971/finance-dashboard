@@ -7,10 +7,25 @@
     "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "sort-imports": [
+      "error",
+      {
+        "ignoreCase": true,
+        "ignoreDeclarationSort": false,
+        "ignoreMemberSort": false,
+        "memberSyntaxSortOrder": ["none", "all", "multiple", "single"]
+      }
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_" }
+    ],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-namespace": ["error", { "allowDeclarations": true }]
+    "@typescript-eslint/no-namespace": [
+      "error",
+      { "allowDeclarations": true }
+    ]
   },
   "env": {
     "node": true,
