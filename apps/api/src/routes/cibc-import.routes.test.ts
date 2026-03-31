@@ -9,6 +9,11 @@ import {
   users,
 } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  createAccount,
+  type ImportSummaryResponse,
+  registerAndLogin,
+} from './test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
@@ -21,25 +26,11 @@ const FIXTURE = path.join(
   '../services/imports/adapters/__fixtures__/cibc.csv'
 );
 
-async function registerAndLogin() {
-  const res = await request(app).post('/api/v1/auth/register').send({
-    email: 'cibc-test@example.com',
-    password: 'password123',
-  });
-  return res.body.accessToken as string;
-}
-
-async function createAccount(token: string) {
-  const res = await request(app)
-    .post('/api/v1/accounts')
-    .set('Authorization', `Bearer ${token}`)
-    .send({
-      name: 'CIBC Chequing',
-      type: 'chequing',
-      institution: 'cibc',
-    });
-  return res.body.id as string;
-}
+const CIBC_ACCOUNT = {
+  name: 'CIBC Chequing',
+  type: 'chequing',
+  institution: 'cibc',
+} as const;
 
 async function uploadCibc(token: string, accountId: string) {
   return request(app)
@@ -64,20 +55,21 @@ beforeEach(async () => {
 
 describe('CIBC import end-to-end', () => {
   it('imports all rows correctly', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app, 'cibc-test@example.com');
+    const accountId = await createAccount(app, token, CIBC_ACCOUNT);
 
     const res = await uploadCibc(token, accountId);
 
+    const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
-    expect(res.body.importedCount).toBe(4);
-    expect(res.body.duplicateCount).toBe(0);
-    expect(res.body.errorCount).toBe(0);
+    expect(body.importedCount).toBe(4);
+    expect(body.duplicateCount).toBe(0);
+    expect(body.errorCount).toBe(0);
   });
 
   it('correctly signs debit amounts as negative and credits as positive', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app, 'cibc-test@example.com');
+    const accountId = await createAccount(app, token, CIBC_ACCOUNT);
 
     await uploadCibc(token, accountId);
 
@@ -103,14 +95,15 @@ describe('CIBC import end-to-end', () => {
   });
 
   it('deduplicates on re-upload', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app, 'cibc-test@example.com');
+    const accountId = await createAccount(app, token, CIBC_ACCOUNT);
 
     await uploadCibc(token, accountId);
 
     const res = await uploadCibc(token, accountId);
 
-    expect(res.body.importedCount).toBe(0);
-    expect(res.body.duplicateCount).toBe(4);
+    const body = res.body as ImportSummaryResponse;
+    expect(body.importedCount).toBe(0);
+    expect(body.duplicateCount).toBe(4);
   });
 });

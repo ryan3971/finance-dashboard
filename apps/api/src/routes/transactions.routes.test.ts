@@ -9,6 +9,11 @@ import {
   users,
 } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  createAccount,
+  type PaginatedResponse,
+  registerAndLogin,
+} from './test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
 import request from 'supertest';
@@ -19,27 +24,6 @@ const AMEX_FIXTURE = path.join(
   __dirname,
   '../services/imports/adapters/__fixtures__/amex.csv'
 );
-
-async function registerAndLogin() {
-  const res = await request(app).post('/api/v1/auth/register').send({
-    email: 'test@example.com',
-    password: 'password123',
-  });
-  return res.body.accessToken as string;
-}
-
-async function createAccount(token: string, institution = 'amex') {
-  const res = await request(app)
-    .post('/api/v1/accounts')
-    .set('Authorization', `Bearer ${token}`)
-    .send({
-      name: 'Test Account',
-      type: 'credit',
-      institution,
-      isCredit: true,
-    });
-  return res.body.id as string;
-}
 
 async function uploadAmex(token: string, accountId: string) {
   return request(app)
@@ -61,58 +45,88 @@ beforeEach(async () => {
 
 describe('GET /api/v1/transactions', () => {
   it('returns paginated transactions after import', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
     await uploadAmex(token, accountId);
 
     const res = await request(app)
       .get('/api/v1/transactions')
       .set('Authorization', `Bearer ${token}`);
 
+    const body = res.body as PaginatedResponse<Record<string, unknown>>;
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(3);
-    expect(res.body.pagination.total).toBe(3);
-    expect(res.body.pagination.page).toBe(1);
+    expect(body.data).toHaveLength(3);
+    expect(body.pagination.total).toBe(3);
+    expect(body.pagination.page).toBe(1);
   });
 
   it('amounts are negative for charges', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
     await uploadAmex(token, accountId);
 
     const res = await request(app)
       .get('/api/v1/transactions')
       .set('Authorization', `Bearer ${token}`);
 
-    for (const tx of res.body.data) {
+    const body = res.body as PaginatedResponse<{ amount: string }>;
+    for (const tx of body.data) {
       expect(Number(tx.amount)).toBeLessThan(0);
     }
   });
 
   it('filters by account_id', async () => {
-    const token = await registerAndLogin();
-    const acc1 = await createAccount(token, 'amex');
-    const acc2 = await createAccount(token, 'cibc');
+    const token = await registerAndLogin(app);
+    const acc1 = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
+    const acc2 = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'cibc',
+      isCredit: true,
+    });
     await uploadAmex(token, acc1);
 
     const res = await request(app)
       .get(`/api/v1/transactions?account_id=${acc2}`)
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.body.data).toHaveLength(0);
+    expect(
+      (res.body as PaginatedResponse<Record<string, unknown>>).data
+    ).toHaveLength(0);
   });
 
   it('filters flagged transactions', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
     await uploadAmex(token, accountId);
 
     const res = await request(app)
       .get(`/api/v1/transactions?flagged=true`)
       .set('Authorization', `Bearer ${token}`);
 
+    const body = res.body as PaginatedResponse<{ flaggedForReview: boolean }>;
     expect(res.status).toBe(200);
-    for (const tx of res.body.data) {
+    for (const tx of body.data) {
       expect(tx.flaggedForReview).toBe(true);
     }
   });
@@ -123,16 +137,22 @@ describe('GET /api/v1/transactions', () => {
   });
 
   it('respects pagination limit', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
     await uploadAmex(token, accountId);
 
     const res = await request(app)
       .get('/api/v1/transactions?limit=2&page=1')
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.body.data).toHaveLength(2);
-    expect(res.body.pagination.totalPages).toBe(2);
+    const body = res.body as PaginatedResponse<Record<string, unknown>>;
+    expect(body.data).toHaveLength(2);
+    expect(body.pagination.totalPages).toBe(2);
   });
 });
 
@@ -140,36 +160,53 @@ describe('GET /api/v1/transactions — date and category filters', () => {
   // Amex fixture dates: 2025-06-13, 2025-06-14, 2025-06-15
 
   it('filters by start_date and end_date', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
     await uploadAmex(token, accountId);
 
     const res = await request(app)
       .get('/api/v1/transactions?start_date=2025-06-14&end_date=2025-06-14')
       .set('Authorization', `Bearer ${token}`);
 
+    const body = res.body as PaginatedResponse<{ date: string }>;
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].date).toBe('2025-06-14');
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].date).toBe('2025-06-14');
   });
 
   it('returns empty array for date range with no transactions', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
     await uploadAmex(token, accountId);
 
     const res = await request(app)
       .get('/api/v1/transactions?start_date=2020-01-01&end_date=2020-01-31')
       .set('Authorization', `Bearer ${token}`);
 
+    const body = res.body as PaginatedResponse<Record<string, unknown>>;
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(0);
-    expect(res.body.pagination.total).toBe(0);
+    expect(body.data).toHaveLength(0);
+    expect(body.pagination.total).toBe(0);
   });
 
   it('filters by category_id', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, {
+      name: 'Test Account',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+    });
     await uploadAmex(token, accountId);
 
     const catRes = await request(app)
@@ -177,16 +214,18 @@ describe('GET /api/v1/transactions — date and category filters', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(catRes.status).toBe(200);
-    const uncategorized = catRes.body.find(
-      (c: { name: string }) => c.name === 'Uncategorized'
-    );
+    const uncategorized = (
+      catRes.body as Array<{ id: string; name: string }>
+    ).find((c) => c.name === 'Uncategorized');
     expect(uncategorized).toBeDefined();
 
     const res = await request(app)
-      .get(`/api/v1/transactions?category_id=${uncategorized.id}`)
+      .get(`/api/v1/transactions?category_id=${uncategorized!.id}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.pagination.total).toBeGreaterThan(0);
+    expect(
+      (res.body as PaginatedResponse<Record<string, unknown>>).pagination.total
+    ).toBeGreaterThan(0);
   });
 });

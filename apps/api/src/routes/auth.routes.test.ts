@@ -8,6 +8,7 @@ import {
   users,
 } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { type AuthResponse } from './test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
 import request from 'supertest';
@@ -32,9 +33,10 @@ describe('POST /api/v1/auth/register', () => {
       password: 'password123',
     });
 
+    const body = res.body as AuthResponse;
     expect(res.status).toBe(201);
-    expect(res.body.accessToken).toBeDefined();
-    expect(res.body.user.email).toBe('test@example.com');
+    expect(body.accessToken).toBeDefined();
+    expect(body.user.email).toBe('test@example.com');
     expect(res.headers['set-cookie']).toBeDefined();
   });
 
@@ -86,7 +88,7 @@ describe('POST /api/v1/auth/login', () => {
     });
 
     expect(res.status).toBe(200);
-    expect(res.body.accessToken).toBeDefined();
+    expect((res.body as AuthResponse).accessToken).toBeDefined();
   });
 
   it('returns 401 for wrong password', async () => {

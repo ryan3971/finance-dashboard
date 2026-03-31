@@ -9,6 +9,11 @@ import {
   users,
 } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  createAccount,
+  type ImportSummaryResponse,
+  registerAndLogin,
+} from './test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
@@ -21,25 +26,11 @@ const FIXTURE = path.join(
   '../services/imports/adapters/__fixtures__/td.csv'
 );
 
-async function registerAndLogin() {
-  const res = await request(app).post('/api/v1/auth/register').send({
-    email: 'td-test@example.com',
-    password: 'password123',
-  });
-  return res.body.accessToken as string;
-}
-
-async function createAccount(token: string) {
-  const res = await request(app)
-    .post('/api/v1/accounts')
-    .set('Authorization', `Bearer ${token}`)
-    .send({
-      name: 'TD Chequing',
-      type: 'chequing',
-      institution: 'td',
-    });
-  return res.body.id as string;
-}
+const TD_ACCOUNT = {
+  name: 'TD Chequing',
+  type: 'chequing',
+  institution: 'td',
+} as const;
 
 async function uploadTd(token: string, accountId: string) {
   return request(app)
@@ -64,19 +55,20 @@ beforeEach(async () => {
 
 describe('TD import end-to-end', () => {
   it('imports all rows correctly', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app, 'td-test@example.com');
+    const accountId = await createAccount(app, token, TD_ACCOUNT);
 
     const res = await uploadTd(token, accountId);
 
+    const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
-    expect(res.body.importedCount).toBe(5);
-    expect(res.body.duplicateCount).toBe(0);
+    expect(body.importedCount).toBe(5);
+    expect(body.duplicateCount).toBe(0);
   });
 
   it('correctly identifies income (PRODIGY) as positive', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app, 'td-test@example.com');
+    const accountId = await createAccount(app, token, TD_ACCOUNT);
 
     await uploadTd(token, accountId);
 
@@ -94,8 +86,8 @@ describe('TD import end-to-end', () => {
   });
 
   it('correctly identifies fees as negative', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app, 'td-test@example.com');
+    const accountId = await createAccount(app, token, TD_ACCOUNT);
 
     await uploadTd(token, accountId);
 

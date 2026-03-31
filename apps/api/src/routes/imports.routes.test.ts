@@ -9,6 +9,12 @@ import {
   users,
 } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  createAccount,
+  type ImportSummaryResponse,
+  type PaginatedResponse,
+  registerAndLogin,
+} from './test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
 import request from 'supertest';
@@ -20,26 +26,12 @@ const AMEX_FIXTURE = path.join(
   '../services/imports/adapters/__fixtures__/amex.csv'
 );
 
-async function registerAndLogin() {
-  const res = await request(app).post('/api/v1/auth/register').send({
-    email: 'test@example.com',
-    password: 'password123',
-  });
-  return res.body.accessToken as string;
-}
-
-async function createAccount(token: string) {
-  const res = await request(app)
-    .post('/api/v1/accounts')
-    .set('Authorization', `Bearer ${token}`)
-    .send({
-      name: 'Amex Gold',
-      type: 'credit',
-      institution: 'amex',
-      isCredit: true,
-    });
-  return res.body.id as string;
-}
+const AMEX_ACCOUNT = {
+  name: 'Amex Gold',
+  type: 'credit',
+  institution: 'amex',
+  isCredit: true,
+} as const;
 
 beforeEach(async () => {
   await db.delete(transactions);
@@ -53,8 +45,8 @@ beforeEach(async () => {
 
 describe('POST /api/v1/imports/upload', () => {
   it('parses Amex CSV and returns import summary', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, AMEX_ACCOUNT);
 
     const res = await request(app)
       .post('/api/v1/imports/upload')
@@ -62,15 +54,16 @@ describe('POST /api/v1/imports/upload', () => {
       .field('accountId', accountId)
       .attach('file', AMEX_FIXTURE, 'amex.csv');
 
+    const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
-    expect(res.body.importedCount).toBe(3);
-    expect(res.body.duplicateCount).toBe(0);
-    expect(res.body.errorCount).toBe(0);
+    expect(body.importedCount).toBe(3);
+    expect(body.duplicateCount).toBe(0);
+    expect(body.errorCount).toBe(0);
   });
 
   it('counts duplicates on re-upload of same file', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, AMEX_ACCOUNT);
 
     await request(app)
       .post('/api/v1/imports/upload')
@@ -84,14 +77,15 @@ describe('POST /api/v1/imports/upload', () => {
       .field('accountId', accountId)
       .attach('file', AMEX_FIXTURE, 'amex.csv');
 
+    const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
-    expect(res.body.importedCount).toBe(0);
-    expect(res.body.duplicateCount).toBe(3);
+    expect(body.importedCount).toBe(0);
+    expect(body.duplicateCount).toBe(3);
   });
 
   it('returns 400 when no file is provided', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, AMEX_ACCOUNT);
 
     const res = await request(app)
       .post('/api/v1/imports/upload')
@@ -102,7 +96,7 @@ describe('POST /api/v1/imports/upload', () => {
   });
 
   it('returns 400 when accountId is missing', async () => {
-    const token = await registerAndLogin();
+    const token = await registerAndLogin(app);
 
     const res = await request(app)
       .post('/api/v1/imports/upload')
@@ -120,8 +114,8 @@ describe('POST /api/v1/imports/upload', () => {
   });
 
   it('assigns Uncategorized to non-matching transactions', async () => {
-    const token = await registerAndLogin();
-    const accountId = await createAccount(token);
+    const token = await registerAndLogin(app);
+    const accountId = await createAccount(app, token, AMEX_ACCOUNT);
 
     await request(app)
       .post('/api/v1/imports/upload')
@@ -133,7 +127,8 @@ describe('POST /api/v1/imports/upload', () => {
       .get(`/api/v1/transactions?account_id=${accountId}&flagged=true`)
       .set('Authorization', `Bearer ${token}`);
 
-    expect(txRes.body.data.length).toBeGreaterThan(0);
-    expect(txRes.body.data[0].categoryName).toBe('Uncategorized');
+    const txBody = txRes.body as PaginatedResponse<{ categoryName: string }>;
+    expect(txBody.data.length).toBeGreaterThan(0);
+    expect(txBody.data[0].categoryName).toBe('Uncategorized');
   });
 });

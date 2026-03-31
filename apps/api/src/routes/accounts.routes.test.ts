@@ -1,3 +1,4 @@
+import { type AccountResponse, registerAndLogin } from './test-helpers';
 import {
   accounts,
   categorizationRules,
@@ -14,14 +15,6 @@ import request from 'supertest';
 
 const app = createApp();
 
-async function registerAndLogin() {
-  const res = await request(app).post('/api/v1/auth/register').send({
-    email: 'test@example.com',
-    password: 'password123',
-  });
-  return res.body.accessToken as string;
-}
-
 beforeEach(async () => {
   await db.delete(transactions);
   await db.delete(investmentTransactions);
@@ -34,7 +27,7 @@ beforeEach(async () => {
 
 describe('GET /api/v1/accounts', () => {
   it('returns empty array for new user', async () => {
-    const token = await registerAndLogin();
+    const token = await registerAndLogin(app);
     const res = await request(app)
       .get('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`);
@@ -51,7 +44,7 @@ describe('GET /api/v1/accounts', () => {
 
 describe('POST /api/v1/accounts', () => {
   it('creates an account and returns it', async () => {
-    const token = await registerAndLogin();
+    const token = await registerAndLogin(app);
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -62,14 +55,15 @@ describe('POST /api/v1/accounts', () => {
         isCredit: true,
       });
 
+    const body = res.body as AccountResponse;
     expect(res.status).toBe(201);
-    expect(res.body.id).toBeDefined();
-    expect(res.body.name).toBe('My CIBC Card');
-    expect(res.body.institution).toBe('cibc');
+    expect(body.id).toBeDefined();
+    expect(body.name).toBe('My CIBC Card');
+    expect(body.institution).toBe('cibc');
   });
 
   it('returns 400 for invalid institution', async () => {
-    const token = await registerAndLogin();
+    const token = await registerAndLogin(app);
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -94,7 +88,7 @@ describe('POST /api/v1/accounts', () => {
 
 describe('GET /api/v1/accounts/:id', () => {
   it('returns account by id', async () => {
-    const token = await registerAndLogin();
+    const token = await registerAndLogin(app);
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -104,16 +98,17 @@ describe('GET /api/v1/accounts/:id', () => {
         institution: 'td',
       });
 
+    const createBody = createRes.body as AccountResponse;
     const res = await request(app)
-      .get(`/api/v1/accounts/${createRes.body.id}`)
+      .get(`/api/v1/accounts/${createBody.id}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.id).toBe(createRes.body.id);
+    expect((res.body as AccountResponse).id).toBe(createBody.id);
   });
 
   it('returns 404 for unknown id', async () => {
-    const token = await registerAndLogin();
+    const token = await registerAndLogin(app);
     const res = await request(app)
       .get('/api/v1/accounts/00000000-0000-0000-0000-000000000000')
       .set('Authorization', `Bearer ${token}`);

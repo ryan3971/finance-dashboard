@@ -8,6 +8,11 @@ import {
   users,
 } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  createAccount,
+  type ImportSummaryResponse,
+  registerAndLogin,
+} from './test-helpers';
 import { createApp } from '@/app';
 import { createQuestradeFixtureBuffer } from '@/services/imports/adapters/__fixtures__/questrade-fixture';
 import { db } from '@/db';
@@ -29,24 +34,15 @@ beforeEach(async () => {
   await db.delete(categorizationRules);
   await db.delete(users);
 
-  const reg = await request(app).post('/api/v1/auth/register').send({
-    email: 'questrade-test@example.com',
-    password: 'password123',
+  accessToken = await registerAndLogin(app, 'questrade-test@example.com');
+  tfsaAccountId = await createAccount(app, accessToken, {
+    name: 'Questrade TFSA',
+    type: 'tfsa',
+    institution: 'questrade',
+    // Account number must match the fixture: 53481057
+    // Store it as metadata — future enhancement; for now the import
+    // service routes by accountId passed in the request
   });
-  accessToken = reg.body.accessToken;
-
-  const tfsa = await request(app)
-    .post('/api/v1/accounts')
-    .set('Authorization', `Bearer ${accessToken}`)
-    .send({
-      name: 'Questrade TFSA',
-      type: 'tfsa',
-      institution: 'questrade',
-      // Account number must match the fixture: 53481057
-      // Store it as metadata — future enhancement; for now the import
-      // service routes by accountId passed in the request
-    });
-  tfsaAccountId = tfsa.body.id;
 
   // const rrsp = await request(app)
   //   .post('/api/v1/accounts')
@@ -73,11 +69,12 @@ describe('Questrade XLSX import end-to-end', () => {
       })
       .field('accountId', tfsaAccountId);
 
+    const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
     // All 3 rows should be imported (the RRSP row is imported under tfsaAccountId
     // because the current import service uses the passed accountId for all rows)
-    expect(res.body.importedCount).toBe(3);
-    expect(res.body.errorCount).toBe(0);
+    expect(body.importedCount).toBe(3);
+    expect(body.errorCount).toBe(0);
   });
 
   it('stores rows in investment_transactions, not transactions', async () => {
@@ -184,7 +181,8 @@ describe('Questrade XLSX import end-to-end', () => {
       })
       .field('accountId', tfsaAccountId);
 
-    expect(res.body.importedCount).toBe(0);
-    expect(res.body.duplicateCount).toBe(3);
+    const body = res.body as ImportSummaryResponse;
+    expect(body.importedCount).toBe(0);
+    expect(body.duplicateCount).toBe(3);
   });
 });
