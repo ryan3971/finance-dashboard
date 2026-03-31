@@ -1,12 +1,12 @@
 import {
   type FilterState,
   TransactionFilters,
-} from '../components/TransactionFilters';
+} from '@/components/TransactionFilters';
 import React, { useState } from 'react';
-import { PageLayout } from '../components/PageLayout';
-import { TransactionReviewPanel } from '../components/TransactionReviewPanel';
-import { TransactionTagsPanel } from '../components/TransactionTagsPanel';
-import { useTransactions } from '../hooks/useTransactions';
+import { PageLayout } from '@/components/PageLayout';
+import { TransactionReviewPanel } from '@/components/TransactionReviewPanel';
+import { TransactionTagsPanel } from '@/components/TransactionTagsPanel';
+import { useTransactions } from '@/hooks/useTransactions';
 
 const DEFAULT_FILTERS: FilterState = {
   accountId: '',

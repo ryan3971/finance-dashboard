@@ -3,8 +3,8 @@ import {
   useCreateTag,
   useDetachTag,
   useTags,
-} from '../hooks/useTags';
-import type { Tag } from '../hooks/useTransactions';
+} from '@/hooks/useTags';
+import type { Tag } from '@/hooks/useTransactions';
 import { useState } from 'react';
 
 interface Props {
@@ -72,7 +72,9 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
         >
           {tag.name}
           <button
-            onClick={() => { void handleDetach(tag.id); }}
+            onClick={() => {
+              void handleDetach(tag.id);
+            }}
             className="hover:opacity-75 leading-none"
             title="Remove tag"
           >
@@ -104,7 +106,12 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
 
       {/* Create new tag */}
       {showCreate ? (
-        <form onSubmit={(e) => { void handleCreate(e); }} className="flex items-center gap-1">
+        <form
+          onSubmit={(e) => {
+            void handleCreate(e);
+          }}
+          className="flex items-center gap-1"
+        >
           <input
             autoFocus
             type="text"

@@ -1,4 +1,4 @@
-import { useCategories } from '../hooks/useCategories';
+import { useCategories } from '@/hooks/useCategories';
 
 interface Props {
   categoryId: string;

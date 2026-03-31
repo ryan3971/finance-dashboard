@@ -1,4 +1,4 @@
-import { AuthContext, type User } from '../hooks/useAuth';
+import { AuthContext, type User } from '@/hooks/useAuth';
 import { type ReactNode, useCallback, useState } from 'react';
 
 export function AuthProvider({ children }: { children: ReactNode }) {

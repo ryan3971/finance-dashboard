@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import api from '../lib/api';
-import { PageLayout } from '../components/PageLayout';
-import { useAccounts } from '../hooks/useAccounts';
+import api from '@/lib/api';
+import { PageLayout } from '@/components/PageLayout';
+import { useAccounts } from '@/hooks/useAccounts';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ImportResult {
@@ -82,7 +82,12 @@ export function ImportPage() {
         </h1>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              void handleSubmit(e);
+            }}
+            className="space-y-4"
+          >
             {/* Account selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, type User } from '../hooks/useAuth';
-import api from '../lib/api';
+import { useAuth, type User } from '@/hooks/useAuth';
+import api from '@/lib/api';
 
 interface AuthResponse {
   accessToken: string;
@@ -22,7 +22,10 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      const { data } = await api.post<AuthResponse>('/auth/login', { email, password });
+      const { data } = await api.post<AuthResponse>('/auth/login', {
+        email,
+        password,
+      });
       login(data.accessToken, data.user);
       navigate('/', { replace: true });
     } catch (err: unknown) {
@@ -45,7 +48,12 @@ export function LoginPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-6">Sign in</h2>
 
-          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              void handleSubmit(e);
+            }}
+            className="space-y-4"
+          >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email

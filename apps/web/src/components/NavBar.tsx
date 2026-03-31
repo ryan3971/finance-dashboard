@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import api from '../lib/api';
-import { useAuth } from '../hooks/useAuth';
+import api from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 
 const NAV_LINKS = [
   { to: '/', label: 'Transactions' },
