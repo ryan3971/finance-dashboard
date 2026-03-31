@@ -1,5 +1,14 @@
-import type { CsvAdapter, RawTransaction, ValidationResult } from '@finance/shared';
-import { parseDate, parseAmount, normaliseDescription, buildCompositeKey } from '../utils';
+import {
+  buildCompositeKey,
+  normaliseDescription,
+  parseAmount,
+  parseDate,
+} from '../utils';
+import type {
+  CsvAdapter,
+  RawTransaction,
+  ValidationResult,
+} from '@finance/shared';
 
 export class AmexAdapter implements CsvAdapter {
   readonly institution = 'amex';
@@ -21,12 +30,15 @@ export class AmexAdapter implements CsvAdapter {
     if (!row[0]?.trim()) errors.push('Missing date');
     if (!row[2]?.trim()) errors.push('Missing description');
     if (!row[3]?.trim()) errors.push('Missing amount');
-    if (row[3] && isNaN(parseFloat(row[3]))) errors.push(`Invalid amount: "${row[3]}"`);
+    if (row[3] && isNaN(parseFloat(row[3])))
+      errors.push(`Invalid amount: "${row[3]}"`);
     return { valid: errors.length === 0, errors };
   }
 
   parse(rows: string[][], accountId: string): RawTransaction[] {
-    const dataRows = rows.slice(1).filter(r => r.some(c => c.trim() !== ''));
+    const dataRows = rows
+      .slice(1)
+      .filter((r) => r.some((c) => c.trim() !== ''));
     const results: RawTransaction[] = [];
 
     for (const row of dataRows) {
@@ -37,7 +49,7 @@ export class AmexAdapter implements CsvAdapter {
       const rawDescription = row[2].trim();
       const description = normaliseDescription(rawDescription);
       // Amex: positive = charge (money out) → negate
-      const amount = -(parseAmount(row[3]));
+      const amount = -parseAmount(row[3]);
 
       results.push({
         date,
@@ -45,7 +57,12 @@ export class AmexAdapter implements CsvAdapter {
         rawDescription,
         amount,
         currency: 'CAD',
-        compositeKey: buildCompositeKey(accountId, date, rawDescription, amount),
+        compositeKey: buildCompositeKey(
+          accountId,
+          date,
+          rawDescription,
+          amount
+        ),
       });
     }
 

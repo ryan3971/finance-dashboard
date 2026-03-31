@@ -1,15 +1,25 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import request from 'supertest';
+import {
+  accounts,
+  imports,
+  investmentTransactions,
+  refreshTokens,
+  transactions,
+  users,
+} from '../db/schema';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../app';
 import { db } from '../db';
-import { users, refreshTokens, accounts, imports, transactions, investmentTransactions } from '../db/schema';
+import request from 'supertest';
 
 const app = createApp();
 
 async function registerAndLogin() {
   const res = await request(app)
     .post('/api/v1/auth/register')
-    .send({ email: 'test@example.com', password: 'password123' });
+    .send({
+      email: 'test@example.com',
+      password: 'password123',
+    });
   return res.body.accessToken as string;
 }
 
@@ -45,7 +55,12 @@ describe('POST /api/v1/accounts', () => {
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'My CIBC Card', type: 'credit', institution: 'cibc', isCredit: true });
+      .send({
+        name: 'My CIBC Card',
+        type: 'credit',
+        institution: 'cibc',
+        isCredit: true,
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.id).toBeDefined();
@@ -58,7 +73,11 @@ describe('POST /api/v1/accounts', () => {
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Bad Account', type: 'credit', institution: 'unknown-bank' });
+      .send({
+        name: 'Bad Account',
+        type: 'credit',
+        institution: 'unknown-bank',
+      });
 
     expect(res.status).toBe(400);
   });
@@ -66,7 +85,11 @@ describe('POST /api/v1/accounts', () => {
   it('returns 401 without auth token', async () => {
     const res = await request(app)
       .post('/api/v1/accounts')
-      .send({ name: 'Test', type: 'credit', institution: 'cibc' });
+      .send({
+        name: 'Test',
+        type: 'credit',
+        institution: 'cibc',
+      });
     expect(res.status).toBe(401);
   });
 });
@@ -77,7 +100,11 @@ describe('GET /api/v1/accounts/:id', () => {
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'TD Chequing', type: 'chequing', institution: 'td' });
+      .send({
+        name: 'TD Chequing',
+        type: 'chequing',
+        institution: 'td',
+      });
 
     const res = await request(app)
       .get(`/api/v1/accounts/${createRes.body.id}`)
@@ -90,7 +117,9 @@ describe('GET /api/v1/accounts/:id', () => {
   it('returns 404 for unknown id', async () => {
     const token = await registerAndLogin();
     const res = await request(app)
-      .get('/api/v1/accounts/00000000-0000-0000-0000-000000000000')
+      .get(
+        '/api/v1/accounts/00000000-0000-0000-0000-000000000000'
+      )
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(404);

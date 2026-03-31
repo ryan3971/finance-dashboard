@@ -1,14 +1,14 @@
-import OpenAI from 'openai';
-import type { CategorizationResult } from './pipeline.types';
-import { logger } from '../../middleware/logger';
-import { config } from '../../lib/config';
 import {
-  fetchCategoryTree,
-  buildCategoryList,
   buildCategorizationPrompt,
-  resolveCategories,
+  buildCategoryList,
+  fetchCategoryTree,
   type ParsedAIResponse,
+  resolveCategories,
 } from './provider-utils';
+import type { CategorizationResult } from './pipeline.types';
+import { config } from '../../lib/config';
+import { logger } from '../../middleware/logger';
+import OpenAI from 'openai';
 
 let client: OpenAI | null = null;
 
@@ -30,7 +30,12 @@ export async function categorizeWithOpenAI(
   try {
     const { topLevel, subcats } = await fetchCategoryTree(userId);
     const categoryList = buildCategoryList(topLevel, subcats);
-    const prompt = buildCategorizationPrompt(description, amount, currency, categoryList);
+    const prompt = buildCategorizationPrompt(
+      description,
+      amount,
+      currency,
+      categoryList
+    );
 
     const response = await getClient().chat.completions.create({
       model: 'gpt-4o-mini',
@@ -47,13 +52,23 @@ export async function categorizeWithOpenAI(
 
     if (parsed.confidence < threshold) {
       logger.debug(
-        { description, confidence: parsed.confidence, threshold, provider: 'openai' },
+        {
+          description,
+          confidence: parsed.confidence,
+          threshold,
+          provider: 'openai',
+        },
         'AI confidence below threshold — falling through to default'
       );
       return null;
     }
 
-    const resolved = resolveCategories(parsed.category, parsed.subcategory, topLevel, subcats);
+    const resolved = resolveCategories(
+      parsed.category,
+      parsed.subcategory,
+      topLevel,
+      subcats
+    );
     if (!resolved) {
       logger.warn(
         { description, category: parsed.category, provider: 'openai' },
@@ -71,7 +86,10 @@ export async function categorizeWithOpenAI(
       flaggedForReview: false,
     };
   } catch (err) {
-    logger.error({ err, description }, 'OpenAI categorization failed — falling through');
+    logger.error(
+      { err, description },
+      'OpenAI categorization failed — falling through'
+    );
     return null;
   }
 }

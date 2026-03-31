@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { AmexAdapter } from './amex.adapter';
 import * as fs from 'fs';
 import * as path from 'path';
+import { describe, expect, it } from 'vitest';
+import { AmexAdapter } from './amex.adapter';
 import { parseCsv } from '../parser';
 
 const adapter = new AmexAdapter();
@@ -9,11 +9,15 @@ const FIXTURE = path.join(__dirname, '__fixtures__', 'amex.csv');
 
 describe('AmexAdapter', () => {
   it('detect() returns true for Amex header row', () => {
-    expect(adapter.detect(['Date', 'Date Processed', 'Description', 'Amount'])).toBe(true);
+    expect(
+      adapter.detect(['Date', 'Date Processed', 'Description', 'Amount'])
+    ).toBe(true);
   });
 
   it('detect() returns false for non-Amex header', () => {
-    expect(adapter.detect(['2026-02-24', 'STARBUCKS', '10.29', '', '5268****'])).toBe(false);
+    expect(
+      adapter.detect(['2026-02-24', 'STARBUCKS', '10.29', '', '5268****'])
+    ).toBe(false);
   });
 
   it('parses fixture file correctly', () => {

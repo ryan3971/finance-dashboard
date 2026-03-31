@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 export interface Tag {
   id: string;
@@ -56,7 +56,10 @@ export function useTransactions({
   page?: number;
 } = {}) {
   return useQuery<TransactionsResponse>({
-    queryKey: ['transactions', { accountId, startDate, endDate, categoryId, flagged, page }],
+    queryKey: [
+      'transactions',
+      { accountId, startDate, endDate, categoryId, flagged, page },
+    ],
     queryFn: async () => {
       const { data } = await api.get<TransactionsResponse>('/transactions', {
         params: { accountId, startDate, endDate, categoryId, flagged, page },

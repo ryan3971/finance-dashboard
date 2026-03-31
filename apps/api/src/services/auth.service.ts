@@ -1,16 +1,19 @@
-import bcrypt from 'bcryptjs';
-import { createHash } from 'crypto';
-import { eq } from 'drizzle-orm';
-import { db } from '../db';
-import { users, refreshTokens } from '../db/schema';
 import {
+  getRefreshTokenExpiry,
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
-  getRefreshTokenExpiry,
 } from '../lib/jwt';
+import type {
+  LoginInput,
+  RegisterInput,
+} from '@finance/shared';
+import { refreshTokens, users } from '../db/schema';
+import bcrypt from 'bcryptjs';
 import { createError } from '../middleware/error';
-import type { RegisterInput, LoginInput } from '@finance/shared';
+import { createHash } from 'crypto';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -26,7 +29,10 @@ export async function registerUser(input: RegisterInput) {
     throw createError('Email already registered', 409);
   }
 
-  const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
+  const passwordHash = await bcrypt.hash(
+    input.password,
+    BCRYPT_ROUNDS
+  );
 
   const [user] = await db
     .insert(users)
@@ -36,7 +42,8 @@ export async function registerUser(input: RegisterInput) {
     })
     .returning({ id: users.id, email: users.email });
 
-  const { accessToken, refreshToken } = await issueTokenPair(user.id, user.email);
+  const { accessToken, refreshToken } =
+    await issueTokenPair(user.id, user.email);
 
   return { user, accessToken, refreshToken };
 }
@@ -50,16 +57,23 @@ export async function loginUser(input: LoginInput) {
 
   if (!user) {
     // Constant-time comparison to prevent user enumeration
-    await bcrypt.compare(input.password, '$2b$12$invalidhashforuserenum');
+    await bcrypt.compare(
+      input.password,
+      '$2b$12$invalidhashforuserenum'
+    );
     throw createError('Invalid email or password', 401);
   }
 
-  const passwordValid = await bcrypt.compare(input.password, user.passwordHash);
+  const passwordValid = await bcrypt.compare(
+    input.password,
+    user.passwordHash
+  );
   if (!passwordValid) {
     throw createError('Invalid email or password', 401);
   }
 
-  const { accessToken, refreshToken } = await issueTokenPair(user.id, user.email);
+  const { accessToken, refreshToken } =
+    await issueTokenPair(user.id, user.email);
 
   return {
     user: { id: user.id, email: user.email },
@@ -68,12 +82,20 @@ export async function loginUser(input: LoginInput) {
   };
 }
 
-export async function refreshAccessToken(incomingRefreshToken: string) {
+export async function refreshAccessToken(
+  incomingRefreshToken: string
+) {
   let payload: { sub: string; email: string };
   try {
-    payload = verifyRefreshToken(incomingRefreshToken) as { sub: string; email: string };
+    payload = verifyRefreshToken(incomingRefreshToken) as {
+      sub: string;
+      email: string;
+    };
   } catch {
-    throw createError('Invalid or expired refresh token', 401);
+    throw createError(
+      'Invalid or expired refresh token',
+      401
+    );
   }
 
   // Hash the incoming token and look it up in the DB
@@ -86,34 +108,50 @@ export async function refreshAccessToken(incomingRefreshToken: string) {
     .limit(1);
 
   if (!stored || stored.expiresAt < new Date()) {
-    throw createError('Refresh token not found or expired', 401);
+    throw createError(
+      'Refresh token not found or expired',
+      401
+    );
   }
 
   // Rotate: delete the old token, issue a new pair
-  await db.delete(refreshTokens).where(eq(refreshTokens.id, stored.id));
+  await db
+    .delete(refreshTokens)
+    .where(eq(refreshTokens.id, stored.id));
 
-  const { accessToken, refreshToken: newRefreshToken } = await issueTokenPair(
-    payload.sub,
-    payload.email
-  );
+  const { accessToken, refreshToken: newRefreshToken } =
+    await issueTokenPair(payload.sub, payload.email);
 
   return { accessToken, refreshToken: newRefreshToken };
 }
 
-export async function logoutUser(incomingRefreshToken: string) {
+export async function logoutUser(
+  incomingRefreshToken: string
+) {
   const tokenHash = hashRefreshToken(incomingRefreshToken);
-  await db.delete(refreshTokens).where(eq(refreshTokens.tokenHash, tokenHash));
+  await db
+    .delete(refreshTokens)
+    .where(eq(refreshTokens.tokenHash, tokenHash));
   // Silently succeed even if the token wasn't found
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
-async function issueTokenPair(userId: string, email: string) {
-  const accessToken = signAccessToken({ sub: userId, email });
+async function issueTokenPair(
+  userId: string,
+  email: string
+) {
+  const accessToken = signAccessToken({
+    sub: userId,
+    email,
+  });
   // The refresh token is a signed JWT stored in the cookie.
   // Its SHA-256 hash is stored in the DB — this enables exact lookup
   // without storing the raw token (which would be a credential).
-  const refreshToken = signRefreshToken({ sub: userId, email });
+  const refreshToken = signRefreshToken({
+    sub: userId,
+    email,
+  });
   const tokenHash = hashRefreshToken(refreshToken);
 
   await db.insert(refreshTokens).values({

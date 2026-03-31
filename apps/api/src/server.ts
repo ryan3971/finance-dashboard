@@ -1,5 +1,4 @@
 import { config } from './lib/config';
-
 import { createApp } from './app';
 import { logger } from './middleware/logger';
 

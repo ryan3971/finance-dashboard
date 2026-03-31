@@ -1,25 +1,32 @@
-import type { CsvAdapter, RawInvestmentTransaction, ValidationResult } from '@finance/shared';
-import { parseDate, parseAmount, buildCompositeKey } from '../utils';
+import { buildCompositeKey, parseAmount, parseDate } from '../utils';
+import type {
+  CsvAdapter,
+  RawInvestmentTransaction,
+  ValidationResult,
+} from '@finance/shared';
 
-const ACCOUNT_TYPE_MAP: Record<string, RawInvestmentTransaction['accountType']> = {
+const ACCOUNT_TYPE_MAP: Record<
+  string,
+  RawInvestmentTransaction['accountType']
+> = {
   'individual tfsa': 'tfsa',
   'individual fhsa': 'fhsa',
   'individual rrsp': 'rrsp',
-  'individual': 'non-registered',
-  'margin': 'non-registered',
+  individual: 'non-registered',
+  margin: 'non-registered',
 };
 
 const ACTION_MAP: Record<string, RawInvestmentTransaction['action']> = {
-  'buy': 'buy',
-  'sell': 'sell',
-  'div': 'dividend',
-  'dep': 'deposit',
-  'wdw': 'withdrawal',
-  'tf6': 'transfer',
-  'tfe': 'transfer',
-  'fch': 'fee',
-  'rei': 'dividend',
-  'con': 'deposit',
+  buy: 'buy',
+  sell: 'sell',
+  div: 'dividend',
+  dep: 'deposit',
+  wdw: 'withdrawal',
+  tf6: 'transfer',
+  tfe: 'transfer',
+  fch: 'fee',
+  rei: 'dividend',
+  con: 'deposit',
 };
 
 export class QuestradeAdapter implements CsvAdapter {
@@ -28,7 +35,7 @@ export class QuestradeAdapter implements CsvAdapter {
   readonly hasHeaderRow = true;
 
   detect(firstRow: string[]): boolean {
-    const normalised = firstRow.map(h => h.trim().toLowerCase());
+    const normalised = firstRow.map((h) => h.trim().toLowerCase());
     return (
       normalised.includes('transaction date') &&
       normalised.includes('action') &&
@@ -47,7 +54,9 @@ export class QuestradeAdapter implements CsvAdapter {
   }
 
   parse(rows: string[][], _accountId: string): RawInvestmentTransaction[] {
-    const dataRows = rows.slice(1).filter(r => r.some(c => String(c).trim() !== ''));
+    const dataRows = rows
+      .slice(1)
+      .filter((r) => r.some((c) => String(c).trim() !== ''));
     const results: RawInvestmentTransaction[] = [];
 
     for (const row of dataRows) {
@@ -55,7 +64,9 @@ export class QuestradeAdapter implements CsvAdapter {
       if (!validation.valid) continue;
 
       const date = parseDate(String(row[0]));
-      const settlementDate = row[1]?.trim() ? parseDate(String(row[1])) : undefined;
+      const settlementDate = row[1]?.trim()
+        ? parseDate(String(row[1]))
+        : undefined;
       const rawAction = String(row[2]).trim();
       const action = ACTION_MAP[rawAction.toLowerCase()] ?? 'transfer';
       const symbol = String(row[3] ?? '').trim() || undefined;
@@ -68,11 +79,18 @@ export class QuestradeAdapter implements CsvAdapter {
       const currency = String(row[10] ?? 'CAD').trim();
       const accountNumber = String(row[11]).trim();
       const activityType = String(row[12] ?? '').trim();
-      const rawAccountType = String(row[13] ?? '').trim().toLowerCase();
+      const rawAccountType = String(row[13] ?? '')
+        .trim()
+        .toLowerCase();
       const accountType = ACCOUNT_TYPE_MAP[rawAccountType] ?? 'non-registered';
 
       // compositeKey uses accountNumber — import service rewrites with real accountId
-      const compositeKey = buildCompositeKey(accountNumber, date, rawDescription, netAmount);
+      const compositeKey = buildCompositeKey(
+        accountNumber,
+        date,
+        rawDescription,
+        netAmount
+      );
 
       results.push({
         date,

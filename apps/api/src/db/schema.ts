@@ -1,14 +1,14 @@
 import {
-  pgTable,
-  uuid,
-  text,
   boolean,
-  timestamp,
   date,
   integer,
-  numeric,
   jsonb,
+  numeric,
+  pgTable,
   primaryKey,
+  text,
+  timestamp,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 

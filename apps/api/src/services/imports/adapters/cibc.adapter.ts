@@ -1,5 +1,14 @@
-import type { CsvAdapter, RawTransaction, ValidationResult } from '@finance/shared';
-import { parseDate, parseAmount, normaliseDescription, buildCompositeKey } from '../utils';
+import {
+  buildCompositeKey,
+  normaliseDescription,
+  parseAmount,
+  parseDate,
+} from '../utils';
+import type {
+  CsvAdapter,
+  RawTransaction,
+  ValidationResult,
+} from '@finance/shared';
 
 export class CibcAdapter implements CsvAdapter {
   readonly institution = 'cibc';
@@ -20,12 +29,13 @@ export class CibcAdapter implements CsvAdapter {
     if (!row[1]?.trim()) errors.push('Missing description');
     const debit = parseAmount(row[2]);
     const credit = parseAmount(row[3]);
-    if (debit === 0 && credit === 0) errors.push('Both debit and credit are empty/zero');
+    if (debit === 0 && credit === 0)
+      errors.push('Both debit and credit are empty/zero');
     return { valid: errors.length === 0, errors };
   }
 
   parse(rows: string[][], accountId: string): RawTransaction[] {
-    const dataRows = rows.filter(r => r.some(c => c.trim() !== ''));
+    const dataRows = rows.filter((r) => r.some((c) => c.trim() !== ''));
     const results: RawTransaction[] = [];
 
     for (const row of dataRows) {
@@ -45,7 +55,12 @@ export class CibcAdapter implements CsvAdapter {
         rawDescription,
         amount,
         currency: 'CAD',
-        compositeKey: buildCompositeKey(accountId, date, rawDescription, amount),
+        compositeKey: buildCompositeKey(
+          accountId,
+          date,
+          rawDescription,
+          amount
+        ),
         metadata: row[4] ? { cardNumber: row[4].trim() } : undefined,
       });
     }

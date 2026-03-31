@@ -1,9 +1,12 @@
+import {
+  type FilterState,
+  TransactionFilters,
+} from '../components/TransactionFilters';
 import React, { useState } from 'react';
-import { useTransactions } from '../hooks/useTransactions';
-import { TransactionFilters, type FilterState } from '../components/TransactionFilters';
+import { PageLayout } from '../components/PageLayout';
 import { TransactionReviewPanel } from '../components/TransactionReviewPanel';
 import { TransactionTagsPanel } from '../components/TransactionTagsPanel';
-import { PageLayout } from '../components/PageLayout';
+import { useTransactions } from '../hooks/useTransactions';
 
 const DEFAULT_FILTERS: FilterState = {
   accountId: '',
@@ -44,7 +47,7 @@ export function TransactionsPage() {
 
   const transactions = data?.data ?? [];
   const pagination = data?.pagination;
-  const flaggedCount = transactions.filter(t => t.flaggedForReview).length;
+  const flaggedCount = transactions.filter((t) => t.flaggedForReview).length;
 
   return (
     <PageLayout>
@@ -53,7 +56,9 @@ export function TransactionsPage() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Transactions</h1>
           {pagination && (
-            <p className="text-sm text-gray-400 mt-0.5">{pagination.total} total</p>
+            <p className="text-sm text-gray-400 mt-0.5">
+              {pagination.total} total
+            </p>
           )}
         </div>
         {flaggedCount > 0 && (
@@ -72,50 +77,76 @@ export function TransactionsPage() {
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Loading...</div>
       ) : isError ? (
-        <div className="text-center py-12 text-red-500">Failed to load transactions.</div>
+        <div className="text-center py-12 text-red-500">
+          Failed to load transactions.
+        </div>
       ) : transactions.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <p>No transactions found.</p>
-          <p className="text-sm mt-1">Try adjusting your filters or import a CSV file.</p>
+          <p className="text-sm mt-1">
+            Try adjusting your filters or import a CSV file.
+          </p>
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tags</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Description
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tags
+                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Account
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {transactions.map(tx => (
+              {transactions.map((tx) => (
                 <React.Fragment key={tx.id}>
                   <tr
                     className={`hover:bg-gray-50 ${
                       tx.flaggedForReview && !tx.isTransfer ? 'bg-amber-50' : ''
                     } ${tx.isTransfer ? 'opacity-60' : ''}`}
                   >
-                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{tx.date}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {tx.date}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-start gap-2">
                         <div>
                           <p className="text-sm text-gray-900 truncate max-w-xs">
                             {tx.sourceName ?? tx.description}
                             {tx.isTransfer && (
-                              <span className="ml-1.5 text-xs text-gray-400">(transfer)</span>
+                              <span className="ml-1.5 text-xs text-gray-400">
+                                (transfer)
+                              </span>
                             )}
                           </p>
                           {tx.note && (
-                            <p className="text-xs text-gray-400 mt-0.5">{tx.note}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {tx.note}
+                            </p>
                           )}
                         </div>
                         {tx.flaggedForReview && !tx.isTransfer && (
                           <button
-                            onClick={() => setReviewingId(reviewingId === tx.id ? null : tx.id)}
+                            onClick={() =>
+                              setReviewingId(
+                                reviewingId === tx.id ? null : tx.id
+                              )
+                            }
                             className="shrink-0 text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors"
                           >
                             {reviewingId === tx.id ? 'Close' : 'Review'}
@@ -127,11 +158,13 @@ export function TransactionsPage() {
                       <div className="flex items-center gap-1.5">
                         <span>{tx.categoryName ?? '—'}</span>
                         {tx.needWant && tx.needWant !== 'NA' && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            tx.needWant === 'Need'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-purple-100 text-purple-700'
-                          }`}>
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded ${
+                              tx.needWant === 'Need'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-purple-100 text-purple-700'
+                            }`}
+                          >
                             {tx.needWant}
                           </span>
                         )}
@@ -143,15 +176,19 @@ export function TransactionsPage() {
                         attachedTags={tx.tags}
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{tx.accountName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {tx.accountName}
+                    </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`font-mono text-sm font-medium ${
-                        tx.isTransfer
-                          ? 'text-gray-400'
-                          : parseFloat(tx.amount) > 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}>
+                      <span
+                        className={`font-mono text-sm font-medium ${
+                          tx.isTransfer
+                            ? 'text-gray-400'
+                            : parseFloat(tx.amount) > 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
                         {formatAmount(tx.amount, tx.isIncome)}
                       </span>
                     </td>
@@ -177,15 +214,19 @@ export function TransactionsPage() {
           {pagination && pagination.totalPages > 1 && (
             <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-50"
               >
                 Previous
               </button>
-              <span>Page {pagination.page} of {pagination.totalPages}</span>
+              <span>
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
               <button
-                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                onClick={() =>
+                  setPage((p) => Math.min(pagination.totalPages, p + 1))
+                }
                 disabled={page === pagination.totalPages}
                 className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40 hover:bg-gray-50"
               >

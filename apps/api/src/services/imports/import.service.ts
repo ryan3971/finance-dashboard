@@ -1,11 +1,16 @@
-import { db } from '../../db';
-import { imports, transactions, investmentTransactions, accounts } from '../../db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getAdapterByInstitution, detectAdapter } from './registry';
+import {
+  accounts,
+  imports,
+  investmentTransactions,
+  transactions,
+} from '../../db/schema';
+import { and, eq } from 'drizzle-orm';
+import { detectAdapter, getAdapterByInstitution } from './registry';
 import { parseCsv, parseXlsx } from './parser';
-import { categorize } from '../categorization/pipeline';
+import type { RawInvestmentTransaction, RawTransaction } from '@finance/shared';
 import { buildCompositeKey } from './utils';
-import type { RawTransaction, RawInvestmentTransaction } from '@finance/shared';
+import { categorize } from '../categorization/pipeline';
+import { db } from '../../db';
 import { detectTransfers } from '../transfers/transfer-detection.service';
 
 export interface ImportResult {
@@ -34,16 +39,18 @@ export async function processImport(
 
   if (!account) throw new Error('Account not found');
 
-  const rows = fileType === 'xlsx'
-    ? parseXlsx(fileBuffer)
-    : parseCsv(fileBuffer.toString('utf-8'));
+  const rows =
+    fileType === 'xlsx'
+      ? parseXlsx(fileBuffer)
+      : parseCsv(fileBuffer.toString('utf-8'));
 
   let adapter = getAdapterByInstitution(account.institution);
   if (!adapter) {
     const firstRow = rows[0] ?? [];
     adapter = detectAdapter(firstRow);
   }
-  if (!adapter) throw new Error(`No adapter found for institution: ${account.institution}`);
+  if (!adapter)
+    throw new Error(`No adapter found for institution: ${account.institution}`);
 
   const s3Key = `imports/${userId}/${accountId}/${Date.now()}-${filename}`;
   const [importRecord] = await db
@@ -89,7 +96,13 @@ export async function processImport(
       if (isInvestmentTransaction(raw)) {
         await processInvestmentRow(raw, accountId, importRecord.id, result);
       } else {
-        const insertedId = await processTransactionRow(raw, accountId, importRecord.id, userId, result);
+        const insertedId = await processTransactionRow(
+          raw,
+          accountId,
+          importRecord.id,
+          userId,
+          result
+        );
         if (insertedId) importedTransactionIds.push(insertedId);
       }
     } catch (err: unknown) {
@@ -103,7 +116,10 @@ export async function processImport(
     }
   }
 
-  const transferCandidates = await detectTransfers(importedTransactionIds, userId);
+  const transferCandidates = await detectTransfers(
+    importedTransactionIds,
+    userId
+  );
   result.transferCandidateCount = transferCandidates.length;
 
   await db
@@ -135,31 +151,40 @@ async function processTransactionRow(
   userId: string,
   result: ImportResult
 ): Promise<string | null> {
-  const categorization = await categorize(raw.description, userId, raw.amount, raw.currency);
+  const categorization = await categorize(
+    raw.description,
+    userId,
+    raw.amount,
+    raw.currency
+  );
 
   if (categorization.flaggedForReview) result.flaggedCount++;
 
-  const [inserted] = await db.insert(transactions).values({
-    accountId,
-    importId,
-    date: raw.date,
-    description: raw.description,
-    rawDescription: raw.rawDescription,
-    sourceName: categorization.sourceName,
-    amount: String(raw.amount),
-    currency: raw.currency,
-    categoryId: categorization.categoryId,
-    subcategoryId: categorization.subcategoryId,
-    needWant: categorization.needWant,
-    categorySource: categorization.categorySource,
-    categoryConfidence: categorization.categoryConfidence > 0
-      ? String(categorization.categoryConfidence)
-      : null,
-    flaggedForReview: categorization.flaggedForReview,
-    compositeKey: raw.compositeKey,
-    source: 'csv',
-    isIncome: raw.amount > 0,
-  }).returning({ id: transactions.id });
+  const [inserted] = await db
+    .insert(transactions)
+    .values({
+      accountId,
+      importId,
+      date: raw.date,
+      description: raw.description,
+      rawDescription: raw.rawDescription,
+      sourceName: categorization.sourceName,
+      amount: String(raw.amount),
+      currency: raw.currency,
+      categoryId: categorization.categoryId,
+      subcategoryId: categorization.subcategoryId,
+      needWant: categorization.needWant,
+      categorySource: categorization.categorySource,
+      categoryConfidence:
+        categorization.categoryConfidence > 0
+          ? String(categorization.categoryConfidence)
+          : null,
+      flaggedForReview: categorization.flaggedForReview,
+      compositeKey: raw.compositeKey,
+      source: 'csv',
+      isIncome: raw.amount > 0,
+    })
+    .returning({ id: transactions.id });
 
   result.importedCount++;
   return inserted?.id ?? null;
@@ -171,7 +196,12 @@ async function processInvestmentRow(
   importId: string,
   result: ImportResult
 ): Promise<void> {
-  const compositeKey = buildCompositeKey(accountId, raw.date, raw.rawDescription, raw.netAmount);
+  const compositeKey = buildCompositeKey(
+    accountId,
+    raw.date,
+    raw.rawDescription,
+    raw.netAmount
+  );
 
   await db.insert(investmentTransactions).values({
     accountId,

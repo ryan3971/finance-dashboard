@@ -12,23 +12,18 @@ interface Props {
   readonly onClose: () => void;
 }
 
-export function TransactionReviewPanel({
-  transaction,
-  onClose,
-}: Props) {
+export function TransactionReviewPanel({ transaction, onClose }: Props) {
   const patch = usePatchTransaction();
   const confirmTransfer = useConfirmTransfer();
   const dismissTransfer = useDismissTransfer();
 
-  const [categoryId, setCategoryId] = useState(
-    transaction.categoryId ?? ''
-  );
+  const [categoryId, setCategoryId] = useState(transaction.categoryId ?? '');
   const [subcategoryId, setSubcategoryId] = useState(
     transaction.subcategoryId ?? ''
   );
-  const [needWant, setNeedWant] = useState<
-    'Need' | 'Want' | 'NA' | ''
-  >((transaction.needWant as 'Need' | 'Want' | 'NA') ?? '');
+  const [needWant, setNeedWant] = useState<'Need' | 'Want' | 'NA' | ''>(
+    (transaction.needWant as 'Need' | 'Want' | 'NA') ?? ''
+  );
   const [note, setNote] = useState(transaction.note ?? '');
   const [createRule, setCreateRule] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,8 +44,7 @@ export function TransactionReviewPanel({
         input: {
           categoryId: categoryId || null,
           subcategoryId: subcategoryId || null,
-          needWant:
-            (needWant as 'Need' | 'Want' | 'NA') || null,
+          needWant: (needWant as 'Need' | 'Want' | 'NA') || null,
           note: note || null,
           createRule,
         },
@@ -87,9 +81,7 @@ export function TransactionReviewPanel({
     <div className="bg-blue-50 border-t border-blue-100 px-4 py-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-900">
-          Review:{' '}
-          {transaction.sourceName ??
-            transaction.description}
+          Review: {transaction.sourceName ?? transaction.description}
         </h3>
         <button
           onClick={onClose}
@@ -103,8 +95,8 @@ export function TransactionReviewPanel({
       {isTransferCandidate && (
         <div className="flex gap-2 items-center p-3 bg-amber-50 border border-amber-200 rounded">
           <span className="text-xs text-amber-700 flex-1">
-            This looks like an internal transfer. Confirm to
-            exclude it from income/expense totals.
+            This looks like an internal transfer. Confirm to exclude it from
+            income/expense totals.
           </span>
           <button
             onClick={handleConfirmTransfer}
@@ -181,8 +173,8 @@ export function TransactionReviewPanel({
           onChange={(e) => setCreateRule(e.target.checked)}
           className="rounded"
         />
-        Save as rule — apply this category to similar
-        transactions in future imports
+        Save as rule — apply this category to similar transactions in future
+        imports
       </label>
 
       {/* Actions */}

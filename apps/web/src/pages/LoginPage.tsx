@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { type FormEvent, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,8 +22,8 @@ export function LoginPage() {
       navigate('/', { replace: true });
     } catch (err: unknown) {
       const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        'Login failed. Please try again.';
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? 'Login failed. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
@@ -49,7 +49,7 @@ export function LoginPage() {
                 type="email"
                 required
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 placeholder="you@example.com"
                 autoComplete="email"
@@ -64,16 +64,14 @@ export function LoginPage() {
                 type="password"
                 required
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
             </div>
 
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
@@ -86,7 +84,10 @@ export function LoginPage() {
 
           <p className="mt-4 text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <Link to="/register" className="text-gray-900 font-medium hover:underline">
+            <Link
+              to="/register"
+              className="text-gray-900 font-medium hover:underline"
+            >
               Create one
             </Link>
           </p>

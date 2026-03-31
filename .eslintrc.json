@@ -13,9 +13,22 @@
         "ignoreCase": true,
         "ignoreDeclarationSort": false,
         "ignoreMemberSort": false,
-        "memberSyntaxSortOrder": ["none", "all", "multiple", "single"]
+        "memberSyntaxSortOrder": [
+          "none",
+          "all",
+          "multiple",
+          "single"
+        ]
       }
     ],
+    // "object-curly-newline": [
+    //   "error",
+    //   {
+    //     "ImportDeclaration": {
+    //       "minProperties": 3
+    //     }
+    //   }
+    // ],
     "@typescript-eslint/no-unused-vars": [
       "error",
       { "argsIgnorePattern": "^_" }

@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { categorizeWithOpenAI } from './openai-provider';
+import OpenAI from 'openai';
 
 vi.mock('openai', () => ({
   default: vi.fn().mockImplementation(() => ({
@@ -8,14 +10,12 @@ vi.mock('openai', () => ({
 
 vi.mock('./provider-utils', () => ({
   fetchCategoryTree: vi.fn().mockResolvedValue({ topLevel: [], subcats: [] }),
-  buildCategoryList: vi.fn().mockReturnValue('Food (Groceries)\nTransport (Gas)'),
+  buildCategoryList: vi
+    .fn()
+    .mockReturnValue('Food (Groceries)\nTransport (Gas)'),
   buildCategorizationPrompt: vi.fn().mockReturnValue('mock prompt'),
   resolveCategories: vi.fn().mockReturnValue(null),
 }));
-
-
-import OpenAI from 'openai';
-import { categorizeWithOpenAI } from './openai-provider';
 
 const mockCreate = vi.fn();
 
@@ -31,25 +31,37 @@ beforeEach(() => {
 describe('categorizeWithOpenAI', () => {
   it('returns null on API error without throwing', async () => {
     mockCreate.mockRejectedValueOnce(new Error('Network error'));
-    const result = await categorizeWithOpenAI('starbucks', -5.50, 'CAD', 'user-1');
+    const result = await categorizeWithOpenAI(
+      'starbucks',
+      -5.5,
+      'CAD',
+      'user-1'
+    );
     expect(result).toBeNull();
   });
 
   it('returns null when confidence is below threshold', async () => {
     mockCreate.mockResolvedValueOnce({
-      choices: [{
-        message: {
-          content: JSON.stringify({
-            category: 'Food',
-            subcategory: 'Coffee',
-            need_want: 'Want',
-            confidence: 0.50,
-            reasoning: 'Starbucks is a coffee shop',
-          }),
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              category: 'Food',
+              subcategory: 'Coffee',
+              need_want: 'Want',
+              confidence: 0.5,
+              reasoning: 'Starbucks is a coffee shop',
+            }),
+          },
         },
-      }],
+      ],
     });
-    const result = await categorizeWithOpenAI('starbucks', -5.50, 'CAD', 'user-1');
+    const result = await categorizeWithOpenAI(
+      'starbucks',
+      -5.5,
+      'CAD',
+      'user-1'
+    );
     expect(result).toBeNull();
   });
 });

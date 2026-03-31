@@ -1,14 +1,17 @@
-import { db } from '../../db';
-import { categorizationRules } from '../../db/schema';
-import { eq, isNull, or, desc } from 'drizzle-orm';
+import { desc, eq, isNull, or } from 'drizzle-orm';
 import type { CategorizationResult } from './pipeline.types';
+import { categorizationRules } from '../../db/schema';
+import { db } from '../../db';
 
 export async function runRulesEngine(
   description: string,
   userId: string | null
 ): Promise<CategorizationResult | null> {
   const conditions = userId
-    ? or(eq(categorizationRules.userId, userId), isNull(categorizationRules.userId))
+    ? or(
+        eq(categorizationRules.userId, userId),
+        isNull(categorizationRules.userId)
+      )
     : isNull(categorizationRules.userId);
 
   const rules = await db

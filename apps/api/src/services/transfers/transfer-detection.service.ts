@@ -1,9 +1,8 @@
-
-import { db } from '../../db';
-import { transactions, categorizationRules, categories } from '../../db/schema';
-import { eq, and, or, isNull, gte, lte, ne, sql } from 'drizzle-orm';
-import { logger } from '../../middleware/logger';
+import { and, eq, gte, lte, ne, sql } from 'drizzle-orm';
 import { config } from '../../lib/config';
+import { db } from '../../db';
+import { logger } from '../../middleware/logger';
+import { transactions } from '../../db/schema';
 
 const WINDOW_DAYS = () => config.transferWindowDays;
 
@@ -22,12 +21,11 @@ const TRANSFER_KEYWORDS = [
   'paiement merci',
   'payment received',
   'bill pymt',
-  
 ];
 
 export interface TransferCandidate {
   transactionId: string;
-  matchedTransactionId: string | null;  // null if only description match, no amount pair
+  matchedTransactionId: string | null; // null if only description match, no amount pair
   detectionMethod: 'description' | 'amount' | 'both';
   confidence: 'high' | 'medium' | 'low';
 }
@@ -63,7 +61,10 @@ export async function detectTransfers(
     })
     .from(transactions)
     .where(
-      sql`${transactions.id} = ANY(${sql.raw(`ARRAY['${importedTransactionIds.join("','")}']::uuid[]`)})`)
+      sql`${transactions.id} = ANY(${sql.raw(
+        `ARRAY['${importedTransactionIds.join("','")}']::uuid[]`
+      )})`
+    );
 
   const candidates: TransferCandidate[] = [];
 
@@ -72,7 +73,9 @@ export async function detectTransfers(
     if (txn.isTransfer) continue;
 
     const descLower = txn.description.toLowerCase();
-    const hasTransferKeyword = TRANSFER_KEYWORDS.some(kw => descLower.includes(kw));
+    const hasTransferKeyword = TRANSFER_KEYWORDS.some((kw) =>
+      descLower.includes(kw)
+    );
 
     // Look for an amount pair in a different account within the time window
     const windowStart = offsetDate(txn.date, -WINDOW_DAYS());
@@ -126,16 +129,21 @@ export async function detectTransfers(
 
   // Flag all candidates for review
   if (candidates.length > 0) {
-    const idsToFlag = candidates.map(c => c.transactionId);
+    const idsToFlag = candidates.map((c) => c.transactionId);
     await db
       .update(transactions)
       .set({ flaggedForReview: true })
       .where(
-        sql`${transactions.id} = ANY(${sql.raw(`ARRAY['${idsToFlag.join("','")}']::uuid[]`)})`
+        sql`${transactions.id} = ANY(${sql.raw(
+          `ARRAY['${idsToFlag.join("','")}']::uuid[]`
+        )})`
       );
 
     logger.info(
-      { count: candidates.length, importedCount: importedTransactionIds.length },
+      {
+        count: candidates.length,
+        importedCount: importedTransactionIds.length,
+      },
       'Transfer candidates detected and flagged'
     );
   }
@@ -162,12 +170,20 @@ export async function confirmTransfer(
 
   await db
     .update(transactions)
-    .set({ isTransfer: true, transferPairId: pairedTransactionId, flaggedForReview: false })
+    .set({
+      isTransfer: true,
+      transferPairId: pairedTransactionId,
+      flaggedForReview: false,
+    })
     .where(eq(transactions.id, transactionId));
 
   await db
     .update(transactions)
-    .set({ isTransfer: true, transferPairId: transactionId, flaggedForReview: false })
+    .set({
+      isTransfer: true,
+      transferPairId: transactionId,
+      flaggedForReview: false,
+    })
     .where(eq(transactions.id, pairedTransactionId));
 }
 

@@ -1,18 +1,18 @@
-import { config } from './lib/config';
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import { httpLogger } from './middleware/logger';
-import { errorHandler } from './middleware/error';
-import healthRouter from './routes/health.routes';
-import authRouter from './routes/auth.routes';
 import accountsRouter from './routes/accounts.routes';
-import importsRouter from './routes/imports.routes';
-import transactionsRouter from './routes/transactions.routes';
+import authRouter from './routes/auth.routes';
 import categoriesRouter from './routes/categories.routes';
-import transfersRouter from './routes/transfers.routes';
+import { config } from './lib/config';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import { errorHandler } from './middleware/error';
+import express from 'express';
+import healthRouter from './routes/health.routes';
+import { httpLogger } from './middleware/logger';
+import importsRouter from './routes/imports.routes';
 import tagsRouter from './routes/tags.routes';
 import transactionsMutationRouter from './routes/transactions-mutation.routes';
+import transactionsRouter from './routes/transactions.routes';
+import transfersRouter from './routes/transfers.routes';
 
 export function createApp() {
   const app = express();
@@ -33,7 +33,11 @@ export function createApp() {
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/accounts', accountsRouter);
   app.use('/api/v1/imports', importsRouter);
-  app.use('/api/v1/transactions', transactionsRouter, transactionsMutationRouter);
+  app.use(
+    '/api/v1/transactions',
+    transactionsRouter,
+    transactionsMutationRouter
+  );
   app.use('/api/v1/categories', categoriesRouter);
   app.use('/api/v1/transfers', transfersRouter);
   app.use('/api/v1/tags', tagsRouter);

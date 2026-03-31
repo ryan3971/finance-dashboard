@@ -1,10 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import request from 'supertest';
 import * as path from 'path';
+import {
+  accounts,
+  imports,
+  investmentTransactions,
+  refreshTokens,
+  transactions,
+  users,
+} from '../db/schema';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../app';
 import { db } from '../db';
-import { users, refreshTokens, accounts, imports, transactions, investmentTransactions } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import request from 'supertest';
 
 const app = createApp();
 
@@ -16,7 +23,10 @@ const FIXTURE = path.join(
 async function registerAndLogin() {
   const res = await request(app)
     .post('/api/v1/auth/register')
-    .send({ email: 'td-test@example.com', password: 'password123' });
+    .send({
+      email: 'td-test@example.com',
+      password: 'password123',
+    });
   return res.body.accessToken as string;
 }
 
@@ -24,7 +34,11 @@ async function createAccount(token: string) {
   const res = await request(app)
     .post('/api/v1/accounts')
     .set('Authorization', `Bearer ${token}`)
-    .send({ name: 'TD Chequing', type: 'chequing', institution: 'td' });
+    .send({
+      name: 'TD Chequing',
+      type: 'chequing',
+      institution: 'td',
+    });
   return res.body.id as string;
 }
 
@@ -33,7 +47,10 @@ async function uploadTd(token: string, accountId: string) {
     .post('/api/v1/imports/upload')
     .set('Authorization', `Bearer ${token}`)
     .field('accountId', accountId)
-    .attach('file', FIXTURE, { contentType: 'text/csv', filename: 'td.csv' });
+    .attach('file', FIXTURE, {
+      contentType: 'text/csv',
+      filename: 'td.csv',
+    });
 }
 
 beforeEach(async () => {
@@ -64,13 +81,20 @@ describe('TD import end-to-end', () => {
     await uploadTd(token, accountId);
 
     const rows = await db
-      .select({ amount: transactions.amount, rawDescription: transactions.rawDescription })
+      .select({
+        amount: transactions.amount,
+        rawDescription: transactions.rawDescription,
+      })
       .from(transactions)
       .where(eq(transactions.accountId, accountId));
 
-    const prodigy = rows.find(r => r.rawDescription.includes('PRODIGY'));
+    const prodigy = rows.find((r) =>
+      r.rawDescription.includes('PRODIGY')
+    );
     expect(prodigy).toBeDefined();
-    expect(parseFloat(prodigy!.amount)).toBeCloseTo(2549.81);
+    expect(parseFloat(prodigy!.amount)).toBeCloseTo(
+      2549.81
+    );
   });
 
   it('correctly identifies fees as negative', async () => {
@@ -80,11 +104,16 @@ describe('TD import end-to-end', () => {
     await uploadTd(token, accountId);
 
     const rows = await db
-      .select({ amount: transactions.amount, rawDescription: transactions.rawDescription })
+      .select({
+        amount: transactions.amount,
+        rawDescription: transactions.rawDescription,
+      })
       .from(transactions)
       .where(eq(transactions.accountId, accountId));
 
-    const fee = rows.find(r => r.rawDescription.includes('ACCOUNT FEE'));
+    const fee = rows.find((r) =>
+      r.rawDescription.includes('ACCOUNT FEE')
+    );
     expect(fee).toBeDefined();
     expect(parseFloat(fee!.amount)).toBeCloseTo(-11.95);
   });

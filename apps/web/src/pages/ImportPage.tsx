@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
-import { useAccounts } from '../hooks/useAccounts';
-import { useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import api from '../lib/api';
 import { PageLayout } from '../components/PageLayout';
+import { useAccounts } from '../hooks/useAccounts';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ImportResult {
   importId: string;
@@ -39,16 +39,20 @@ export function ImportPage() {
     formData.append('accountId', accountId);
 
     try {
-      const { data } = await api.post<ImportResult>('/imports/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await api.post<ImportResult>(
+        '/imports/upload',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
       setResult(data);
       // Invalidate transactions so the list refreshes
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     } catch (err: unknown) {
       const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        'Import failed. Please try again.';
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? 'Import failed. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
@@ -73,7 +77,9 @@ export function ImportPage() {
   return (
     <PageLayout>
       <div className="max-w-lg">
-        <h1 className="text-xl font-semibold text-gray-900 mb-6">Import transactions</h1>
+        <h1 className="text-xl font-semibold text-gray-900 mb-6">
+          Import transactions
+        </h1>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,11 +94,11 @@ export function ImportPage() {
                 <select
                   required
                   value={accountId}
-                  onChange={e => setAccountId(e.target.value)}
+                  onChange={(e) => setAccountId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                 >
                   <option value="">Select an account</option>
-                  {accounts?.map(acc => (
+                  {accounts?.map((acc) => (
                     <option key={acc.id} value={acc.id}>
                       {acc.name} ({acc.institution.toUpperCase()})
                     </option>
@@ -134,17 +140,42 @@ export function ImportPage() {
         {/* Result summary */}
         {result && (
           <div className="mt-4 bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-sm font-medium text-gray-900 mb-3">Import complete</h2>
+            <h2 className="text-sm font-medium text-gray-900 mb-3">
+              Import complete
+            </h2>
             <dl className="space-y-1.5">
-              <ResultRow label="Imported" value={result.importedCount} highlight="green" />
-              <ResultRow label="Duplicates skipped" value={result.duplicateCount} />
-              <ResultRow label="Flagged for review" value={result.flaggedCount} highlight={result.flaggedCount > 0 ? 'yellow' : undefined} />
-              <ResultRow label="Transfer candidates" value={result.transferCandidateCount} highlight={result.transferCandidateCount > 0 ? 'blue' : undefined} />
-              <ResultRow label="Errors" value={result.errorCount} highlight={result.errorCount > 0 ? 'red' : undefined} />
+              <ResultRow
+                label="Imported"
+                value={result.importedCount}
+                highlight="green"
+              />
+              <ResultRow
+                label="Duplicates skipped"
+                value={result.duplicateCount}
+              />
+              <ResultRow
+                label="Flagged for review"
+                value={result.flaggedCount}
+                highlight={result.flaggedCount > 0 ? 'yellow' : undefined}
+              />
+              <ResultRow
+                label="Transfer candidates"
+                value={result.transferCandidateCount}
+                highlight={
+                  result.transferCandidateCount > 0 ? 'blue' : undefined
+                }
+              />
+              <ResultRow
+                label="Errors"
+                value={result.errorCount}
+                highlight={result.errorCount > 0 ? 'red' : undefined}
+              />
             </dl>
             {result.errors.length > 0 && (
               <div className="mt-3 text-xs text-red-600 space-y-0.5">
-                {result.errors.map((e, i) => <p key={i}>{e}</p>)}
+                {result.errors.map((e, i) => (
+                  <p key={i}>{e}</p>
+                ))}
               </div>
             )}
             <button
@@ -179,7 +210,9 @@ function ResultRow({
   return (
     <div className="flex justify-between text-sm">
       <dt className="text-gray-500">{label}</dt>
-      <dd className={highlight ? colors[highlight] : 'text-gray-900'}>{value}</dd>
+      <dd className={highlight ? colors[highlight] : 'text-gray-900'}>
+        {value}
+      </dd>
     </div>
   );
 }

@@ -12,11 +12,18 @@ interface PatchTransactionInput {
 export function usePatchTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: PatchTransactionInput }) => {
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: PatchTransactionInput;
+    }) => {
       const { data } = await api.patch(`/transactions/${id}`, input);
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }
 
@@ -30,9 +37,13 @@ export function useConfirmTransfer() {
       transactionId: string;
       pairedTransactionId?: string;
     }) => {
-      await api.post('/transfers/confirm', { transactionId, pairedTransactionId });
+      await api.post('/transfers/confirm', {
+        transactionId,
+        pairedTransactionId,
+      });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }
 
@@ -42,6 +53,7 @@ export function useDismissTransfer() {
     mutationFn: async (transactionId: string) => {
       await api.post('/transfers/dismiss', { transactionId });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }

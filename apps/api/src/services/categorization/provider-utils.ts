@@ -1,6 +1,6 @@
-import { db } from '../../db';
+import { eq, isNull, or } from 'drizzle-orm';
 import { categories } from '../../db/schema';
-import { isNull, or, eq } from 'drizzle-orm';
+import { db } from '../../db';
 
 export interface ParsedAIResponse {
   category: string;
@@ -37,8 +37,8 @@ export async function fetchCategoryTree(userId: string): Promise<{
     .where(or(isNull(categories.userId), eq(categories.userId, userId)));
 
   return {
-    topLevel: allCategories.filter(c => c.parentId === null),
-    subcats: allCategories.filter(c => c.parentId !== null),
+    topLevel: allCategories.filter((c) => c.parentId === null),
+    subcats: allCategories.filter((c) => c.parentId !== null),
   };
 }
 
@@ -46,11 +46,18 @@ export async function fetchCategoryTree(userId: string): Promise<{
  * Build the category list string used in AI prompts.
  * Format: "Food (Groceries, Eating Out, Coffee)"
  */
-export function buildCategoryList(topLevel: CategoryRow[], subcats: CategoryRow[]): string {
+export function buildCategoryList(
+  topLevel: CategoryRow[],
+  subcats: CategoryRow[]
+): string {
   return topLevel
-    .map(p => {
-      const children = subcats.filter(s => s.parentId === p.id).map(s => s.name);
-      return children.length > 0 ? `${p.name} (${children.join(', ')})` : p.name;
+    .map((p) => {
+      const children = subcats
+        .filter((s) => s.parentId === p.id)
+        .map((s) => s.name);
+      return children.length > 0
+        ? `${p.name} (${children.join(', ')})`
+        : p.name;
     })
     .join('');
 }
@@ -104,13 +111,13 @@ export function resolveCategories(
   subcats: CategoryRow[]
 ): { categoryId: string; subcategoryId: string | null } | null {
   const categoryRow = topLevel.find(
-    c => c.name.toLowerCase() === parsedCategory.toLowerCase()
+    (c) => c.name.toLowerCase() === parsedCategory.toLowerCase()
   );
   if (!categoryRow) return null;
 
   const subcategoryRow = parsedSubcategory
     ? subcats.find(
-        s =>
+        (s) =>
           s.parentId === categoryRow.id &&
           s.name.toLowerCase() === parsedSubcategory.toLowerCase()
       )

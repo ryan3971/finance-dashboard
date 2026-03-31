@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useState,
+} from 'react';
 
 interface User {
   id: string;
@@ -16,8 +22,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(
-    () => localStorage.getItem('accessToken')
+  const [accessToken, setAccessToken] = useState<string | null>(() =>
+    localStorage.getItem('accessToken')
   );
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('user');

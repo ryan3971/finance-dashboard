@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const NAV_LINKS = [
   { to: '/', label: 'Transactions' },
@@ -25,9 +25,11 @@ export function NavBar() {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-0 flex items-center justify-between h-14">
       <div className="flex items-center gap-6">
-        <span className="font-semibold text-gray-900 text-sm">Finance Dashboard</span>
+        <span className="font-semibold text-gray-900 text-sm">
+          Finance Dashboard
+        </span>
         <div className="flex items-center gap-1">
-          {NAV_LINKS.map(link => (
+          {NAV_LINKS.map((link) => (
             <Link
               key={link.to}
               to={link.to}

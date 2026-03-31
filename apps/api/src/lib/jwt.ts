@@ -1,7 +1,8 @@
-import jwt from 'jsonwebtoken';
-import { randomBytes } from 'crypto';
-import type { JwtPayload } from '@finance/shared';
 import { config } from './config';
+import jwt from 'jsonwebtoken';
+import type { JwtPayload } from '@finance/shared';
+import { randomBytes } from 'crypto';
+
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days

@@ -1,7 +1,8 @@
-import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
 import * as schema from './schema';
+import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { config } from '../lib/config';
+import { Pool } from 'pg';
+
 
 // db is initialized lazily so DATABASE_URL is read after dotenv.config() runs,
 // not at module import time (static imports are hoisted before dotenv loads).

@@ -1,14 +1,14 @@
+import {
+  buildCategorizationPrompt,
+  buildCategoryList,
+  fetchCategoryTree,
+  type ParsedAIResponse,
+  resolveCategories,
+} from './provider-utils';
 import Anthropic from '@anthropic-ai/sdk';
 import type { CategorizationResult } from './pipeline.types';
-import { logger } from '../../middleware/logger';
 import { config } from '../../lib/config';
-import {
-  fetchCategoryTree,
-  buildCategoryList,
-  buildCategorizationPrompt,
-  resolveCategories,
-  type ParsedAIResponse,
-} from './provider-utils';
+import { logger } from '../../middleware/logger';
 
 let client: Anthropic | null = null;
 
@@ -30,7 +30,12 @@ export async function categorizeWithAnthropic(
   try {
     const { topLevel, subcats } = await fetchCategoryTree(userId);
     const categoryList = buildCategoryList(topLevel, subcats);
-    const prompt = buildCategorizationPrompt(description, amount, currency, categoryList);
+    const prompt = buildCategorizationPrompt(
+      description,
+      amount,
+      currency,
+      categoryList
+    );
 
     const response = await getClient().messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -38,7 +43,8 @@ export async function categorizeWithAnthropic(
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const raw = response.content[0]?.type === 'text' ? response.content[0].text : null;
+    const raw =
+      response.content[0]?.type === 'text' ? response.content[0].text : null;
     if (!raw) return null;
 
     // Strip any markdown fences the model might add despite instructions
@@ -47,13 +53,23 @@ export async function categorizeWithAnthropic(
 
     if (parsed.confidence < threshold) {
       logger.debug(
-        { description, confidence: parsed.confidence, threshold, provider: 'anthropic' },
+        {
+          description,
+          confidence: parsed.confidence,
+          threshold,
+          provider: 'anthropic',
+        },
         'AI confidence below threshold — falling through to default'
       );
       return null;
     }
 
-    const resolved = resolveCategories(parsed.category, parsed.subcategory, topLevel, subcats);
+    const resolved = resolveCategories(
+      parsed.category,
+      parsed.subcategory,
+      topLevel,
+      subcats
+    );
     if (!resolved) {
       logger.warn(
         { description, category: parsed.category, provider: 'anthropic' },
@@ -71,7 +87,10 @@ export async function categorizeWithAnthropic(
       flaggedForReview: false,
     };
   } catch (err) {
-    logger.error({ err, description }, 'Anthropic categorization failed — falling through');
+    logger.error(
+      { err, description },
+      'Anthropic categorization failed — falling through'
+    );
     return null;
   }
 }

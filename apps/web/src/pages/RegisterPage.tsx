@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { type FormEvent, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,8 +22,8 @@ export function RegisterPage() {
       navigate('/', { replace: true });
     } catch (err: unknown) {
       const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        'Registration failed. Please try again.';
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? 'Registration failed. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
@@ -38,7 +38,9 @@ export function RegisterPage() {
         </h1>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-6">Create account</h2>
+          <h2 className="text-lg font-medium text-gray-900 mb-6">
+            Create account
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -49,7 +51,7 @@ export function RegisterPage() {
                 type="email"
                 required
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 placeholder="you@example.com"
                 autoComplete="email"
@@ -59,23 +61,23 @@ export function RegisterPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Password
-                <span className="ml-1 text-gray-400 font-normal">(min. 8 characters)</span>
+                <span className="ml-1 text-gray-400 font-normal">
+                  (min. 8 characters)
+                </span>
               </label>
               <input
                 type="password"
                 required
                 minLength={8}
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 placeholder="••••••••"
                 autoComplete="new-password"
               />
             </div>
 
-            {error && (
-              <p className="text-sm text-red-600">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
@@ -88,7 +90,10 @@ export function RegisterPage() {
 
           <p className="mt-4 text-center text-sm text-gray-500">
             Already have an account?{' '}
-            <Link to="/login" className="text-gray-900 font-medium hover:underline">
+            <Link
+              to="/login"
+              className="text-gray-900 font-medium hover:underline"
+            >
               Sign in
             </Link>
           </p>

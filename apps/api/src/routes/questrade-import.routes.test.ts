@@ -1,19 +1,23 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import request from 'supertest';
-import { createApp } from '../app';
-import { db } from '../db';
 import {
-  transactions, investmentTransactions, imports,
-  accounts, refreshTokens, users,
+  accounts,
+  imports,
+  investmentTransactions,
+  refreshTokens,
+  transactions,
+  users,
 } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createApp } from '../app';
 import { createQuestradeFixtureBuffer } from '../services/imports/adapters/__fixtures__/questrade-fixture';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
+import request from 'supertest';
 
 const app = createApp();
 
 let accessToken: string;
 let tfsaAccountId: string;
-let rrspAccountId: string;
+//let rrspAccountId: string;
 
 beforeEach(async () => {
   await db.delete(transactions);
@@ -23,9 +27,10 @@ beforeEach(async () => {
   await db.delete(refreshTokens);
   await db.delete(users);
 
-  const reg = await request(app)
-    .post('/api/v1/auth/register')
-    .send({ email: 'questrade-test@example.com', password: 'password123' });
+  const reg = await request(app).post('/api/v1/auth/register').send({
+    email: 'questrade-test@example.com',
+    password: 'password123',
+  });
   accessToken = reg.body.accessToken;
 
   const tfsa = await request(app)
@@ -41,15 +46,15 @@ beforeEach(async () => {
     });
   tfsaAccountId = tfsa.body.id;
 
-  const rrsp = await request(app)
-    .post('/api/v1/accounts')
-    .set('Authorization', `Bearer ${accessToken}`)
-    .send({
-      name: 'Questrade RRSP',
-      type: 'rrsp',
-      institution: 'questrade',
-    });
-  rrspAccountId = rrsp.body.id;
+  // const rrsp = await request(app)
+  //   .post('/api/v1/accounts')
+  //   .set('Authorization', `Bearer ${accessToken}`)
+  //   .send({
+  //     name: 'Questrade RRSP',
+  //     type: 'rrsp',
+  //     institution: 'questrade',
+  //   });
+  // rrspAccountId = rrsp.body.id;
 });
 
 describe('Questrade XLSX import end-to-end', () => {
@@ -59,7 +64,11 @@ describe('Questrade XLSX import end-to-end', () => {
     const res = await request(app)
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', buffer, { filename: 'questrade.xlsx', contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      .attach('file', buffer, {
+        filename: 'questrade.xlsx',
+        contentType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       .field('accountId', tfsaAccountId);
 
     expect(res.status).toBe(201);
@@ -75,7 +84,11 @@ describe('Questrade XLSX import end-to-end', () => {
     await request(app)
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', buffer, { filename: 'questrade.xlsx', contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      .attach('file', buffer, {
+        filename: 'questrade.xlsx',
+        contentType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       .field('accountId', tfsaAccountId);
 
     const invTxns = await db
@@ -100,16 +113,23 @@ describe('Questrade XLSX import end-to-end', () => {
     await request(app)
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', buffer, { filename: 'questrade.xlsx', contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      .attach('file', buffer, {
+        filename: 'questrade.xlsx',
+        contentType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       .field('accountId', tfsaAccountId);
 
     const invTxns = await db
-      .select({ action: investmentTransactions.action, rawAction: investmentTransactions.rawAction })
+      .select({
+        action: investmentTransactions.action,
+        rawAction: investmentTransactions.rawAction,
+      })
       .from(investmentTransactions)
       .where(eq(investmentTransactions.accountId, tfsaAccountId));
 
-    const dividends = invTxns.filter(t => t.rawAction === 'DIV');
-    const transfers = invTxns.filter(t => t.rawAction === 'TF6');
+    const dividends = invTxns.filter((t) => t.rawAction === 'DIV');
+    const transfers = invTxns.filter((t) => t.rawAction === 'TF6');
 
     expect(dividends.length).toBe(2);
     expect(dividends[0].action).toBe('dividend');
@@ -123,14 +143,20 @@ describe('Questrade XLSX import end-to-end', () => {
     await request(app)
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', buffer, { filename: 'questrade.xlsx', contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      .attach('file', buffer, {
+        filename: 'questrade.xlsx',
+        contentType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       .field('accountId', tfsaAccountId);
 
     const invTxns = await db
-      .select({ riskLevel: investmentTransactions.riskLevel })
+      .select({
+        riskLevel: investmentTransactions.riskLevel,
+      })
       .from(investmentTransactions);
 
-    invTxns.forEach(t => expect(t.riskLevel).toBeNull());
+    invTxns.forEach((t) => expect(t.riskLevel).toBeNull());
   });
 
   it('deduplicates on re-upload', async () => {
@@ -139,13 +165,21 @@ describe('Questrade XLSX import end-to-end', () => {
     await request(app)
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', buffer, { filename: 'questrade.xlsx', contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      .attach('file', buffer, {
+        filename: 'questrade.xlsx',
+        contentType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       .field('accountId', tfsaAccountId);
 
     const res = await request(app)
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', buffer, { filename: 'questrade.xlsx', contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      .attach('file', buffer, {
+        filename: 'questrade.xlsx',
+        contentType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
       .field('accountId', tfsaAccountId);
 
     expect(res.body.importedCount).toBe(0);

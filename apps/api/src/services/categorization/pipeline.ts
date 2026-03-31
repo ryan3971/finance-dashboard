@@ -1,11 +1,11 @@
-import { db } from '../../db';
+import { and, eq, isNull } from 'drizzle-orm';
 import { categories } from '../../db/schema';
-import { eq, isNull, and } from 'drizzle-orm';
-import { runRulesEngine } from './rules-engine';
+import type { CategorizationResult } from './pipeline.types';
 import { categorizeWithAnthropic } from './anthropic-provider';
 import { categorizeWithOpenAI } from './openai-provider';
-import type { CategorizationResult } from './pipeline.types';
 import { config } from '../../lib/config';
+import { db } from '../../db';
+import { runRulesEngine } from './rules-engine';
 
 let uncategorizedId: string | null = null;
 
@@ -18,7 +18,10 @@ async function getUncategorizedId(): Promise<string> {
     .where(and(isNull(categories.userId), eq(categories.name, 'Uncategorized')))
     .limit(1);
 
-  if (!cat) throw new Error('Uncategorized system category not found. Run db:seed first.');
+  if (!cat)
+    throw new Error(
+      'Uncategorized system category not found. Run db:seed first.'
+    );
 
   uncategorizedId = cat.id;
   return cat.id;

@@ -1,4 +1,5 @@
 import '../lib/config'; // ensures dotenv runs before tests
+
 import { vi } from 'vitest';
 
 // Override DATABASE_URL for the test environment.
