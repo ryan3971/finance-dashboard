@@ -99,14 +99,14 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
             income/expense totals.
           </span>
           <button
-            onClick={handleConfirmTransfer}
+            onClick={() => { void handleConfirmTransfer(); }}
             disabled={saving}
             className="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 disabled:opacity-50"
           >
             Confirm transfer
           </button>
           <button
-            onClick={handleDismissTransfer}
+            onClick={() => { void handleDismissTransfer(); }}
             disabled={saving}
             className="px-3 py-1 bg-white border border-gray-300 text-xs rounded hover:bg-gray-50 disabled:opacity-50"
           >
@@ -180,7 +180,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
       {/* Actions */}
       <div className="flex gap-2">
         <button
-          onClick={handleSave}
+          onClick={() => { void handleSave(); }}
           disabled={saving || !categoryId}
           className="px-4 py-1.5 bg-gray-900 text-white text-sm rounded hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
         >

@@ -19,8 +19,7 @@ export function usePatchTransaction() {
       id: string;
       input: PatchTransactionInput;
     }) => {
-      const { data } = await api.patch(`/transactions/${id}`, input);
-      return data;
+      await api.patch<unknown>(`/transactions/${id}`, input);
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ['transactions'] }),

@@ -72,7 +72,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
         >
           {tag.name}
           <button
-            onClick={() => handleDetach(tag.id)}
+            onClick={() => { void handleDetach(tag.id); }}
             className="hover:opacity-75 leading-none"
             title="Remove tag"
           >
@@ -85,7 +85,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
       {availableTags.length > 0 && (
         <select
           onChange={(e) => {
-            if (e.target.value) handleAttach(e.target.value);
+            if (e.target.value) void handleAttach(e.target.value);
             e.target.value = '';
           }}
           className="text-xs border border-dashed border-gray-300 rounded px-1 py-0.5 text-gray-400 bg-transparent"
@@ -104,7 +104,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
 
       {/* Create new tag */}
       {showCreate ? (
-        <form onSubmit={handleCreate} className="flex items-center gap-1">
+        <form onSubmit={(e) => { void handleCreate(e); }} className="flex items-center gap-1">
           <input
             autoFocus
             type="text"

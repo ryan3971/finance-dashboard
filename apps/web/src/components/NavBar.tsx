@@ -47,7 +47,9 @@ export function NavBar() {
       <div className="flex items-center gap-3">
         <span className="text-sm text-gray-400">{user?.email}</span>
         <button
-          onClick={handleLogout}
+          onClick={() => {
+            void handleLogout();
+          }}
           className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
         >
           Sign out

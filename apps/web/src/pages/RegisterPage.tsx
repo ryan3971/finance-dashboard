@@ -1,7 +1,12 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth, type User } from '../hooks/useAuth';
 import api from '../lib/api';
-import { useAuth } from '../hooks/useAuth';
+
+interface AuthResponse {
+  accessToken: string;
+  user: User;
+}
 
 export function RegisterPage() {
   const { login } = useAuth();
@@ -17,7 +22,10 @@ export function RegisterPage() {
     setLoading(true);
 
     try {
-      const { data } = await api.post('/auth/register', { email, password });
+      const { data } = await api.post<AuthResponse>('/auth/register', {
+        email,
+        password,
+      });
       login(data.accessToken, data.user);
       navigate('/', { replace: true });
     } catch (err: unknown) {
@@ -42,7 +50,12 @@ export function RegisterPage() {
             Create account
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              void handleSubmit(e);
+            }}
+            className="space-y-4"
+          >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email

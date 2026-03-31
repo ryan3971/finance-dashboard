@@ -48,7 +48,7 @@ export function ImportPage() {
       );
       setResult(data);
       // Invalidate transactions so the list refreshes
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { error?: string } } })?.response?.data
@@ -82,7 +82,7 @@ export function ImportPage() {
         </h1>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
             {/* Account selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

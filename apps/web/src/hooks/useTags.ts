@@ -31,8 +31,8 @@ export function useDeleteTag() {
       await api.delete(`/tags/${tagId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      void queryClient.invalidateQueries({ queryKey: ['tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 }
