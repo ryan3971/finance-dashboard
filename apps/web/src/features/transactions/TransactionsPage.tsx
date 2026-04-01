@@ -1,11 +1,11 @@
 import {
   type FilterState,
   TransactionFilters,
-} from '@/components/TransactionFilters';
+} from '@/features/transactions/TransactionFilters';
 import React, { useState } from 'react';
 import { PageLayout } from '@/components/PageLayout';
 import { TransactionReviewPanel } from '@/components/TransactionReviewPanel';
-import { TransactionTagsPanel } from '@/components/TransactionTagsPanel';
+import { TransactionTagsPanel } from '@/features/transactions/TransactionTagsPanel';
 import { useTransactions } from '@/hooks/useTransactions';
 
 const DEFAULT_FILTERS: FilterState = {

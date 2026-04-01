@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, type User } from '@/hooks/useAuth';
+import { useAuth, type User } from '@/features/auth/useAuth';
 import api from '@/lib/api';
 
 interface AuthResponse {

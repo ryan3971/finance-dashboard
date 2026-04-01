@@ -2,7 +2,7 @@ import {
   useConfirmTransfer,
   useDismissTransfer,
   usePatchTransaction,
-} from '@/hooks/useTransactionMutations';
+} from '@/features/transactions/useTransactionMutations';
 import { CategorySelect } from './CategorySelect';
 import type { Transaction } from '@/hooks/useTransactions';
 import { useState } from 'react';

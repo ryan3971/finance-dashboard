@@ -1,10 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthProvider';
-import { ImportPage } from './pages/ImportPage';
-import { LoginPage } from './pages/LoginPage';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { RegisterPage } from './pages/RegisterPage';
-import { TransactionsPage } from './pages/TransactionsPage';
+import { AuthProvider } from './features/auth/AuthProvider';
+import { ImportPage } from './features/import/ImportPage';
+import { LoginPage } from './features/auth/LoginPage';
+import { ProtectedRoute } from './features/auth/ProtectedRoute';
+import { RegisterPage } from './features/auth/RegisterPage';
+import { TransactionsPage } from './features/transactions/TransactionsPage';
 
 export default function App() {
   return (
