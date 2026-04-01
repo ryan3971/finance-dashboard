@@ -4,28 +4,37 @@ import tseslint from 'typescript-eslint';
 import importPlugin from 'eslint-plugin-import';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
-// @ts-ignore -- no type declarations shipped
+// @ts-expect-error -- no type declarations shipped
 import checkFilePlugin from 'eslint-plugin-check-file';
 import globals from 'globals';
 
 export default defineConfig(
-  // ── Base: all TS/JS files ──────────────────────────────────────────────────
+  // ── Base: all files ────────────────────────────────────────────────────────
+  // JS-only recommended rules applied globally (no type-checking required)
   eslint.configs.recommended,
   tseslint.configs.strict,
   tseslint.configs.stylistic,
-  tseslint.configs.recommendedTypeChecked,
+
+  // ── TypeScript: type-checked rules scoped to TS/TSX files only ─────────────
+  // recommendedTypeChecked requires a TS program, so it must be scoped to files
+  // covered by tsconfig. Applying it globally causes errors on .js/.mjs files.
   {
+    name: 'ts/type-checked',
+    files: ['**/*.{ts,tsx}'],
+    extends: [tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: true,
       },
     },
     rules: {
+      // sort-imports handles member sort only; declaration sort is intentionally
+      // disabled here to avoid conflicts if import/order is added in the future.
       'sort-imports': [
         'error',
         {
           ignoreCase: true,
-          ignoreDeclarationSort: false,
+          ignoreDeclarationSort: true, // defer declaration ordering to import/order if added
           ignoreMemberSort: false,
           memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
         },
@@ -74,8 +83,16 @@ export default defineConfig(
     },
   },
 
+  // ── Plain JS files: disable type-checked rules that require a TS program ──
+  {
+    name: 'js/disable-type-checked',
+    files: ['**/*.{js,mjs,cjs}'],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+
   // ── Web: feature boundary enforcement ─────────────────────────────────────
   {
+    name: 'web/feature-boundaries',
     files: ['apps/web/src/**/*.{ts,tsx}'],
     plugins: { import: importPlugin },
     rules: {
@@ -121,6 +138,7 @@ export default defineConfig(
 
   // ── Web: .tsx filenames must be PascalCase (excludes main.tsx) ────────────
   {
+    name: 'web/filename-tsx-pascal-case',
     files: ['apps/web/src/**/*.tsx'],
     ignores: ['apps/web/src/main.tsx'],
     plugins: { 'check-file': checkFilePlugin },
@@ -135,6 +153,7 @@ export default defineConfig(
 
   // ── Web: .ts filenames must be camelCase (excludes .d.ts) ─────────────────
   {
+    name: 'web/filename-ts-camel-case',
     files: ['apps/web/src/**/*.ts'],
     ignores: ['apps/web/src/**/*.d.ts'],
     plugins: { 'check-file': checkFilePlugin },
@@ -149,6 +168,7 @@ export default defineConfig(
 
   // ── Web: React rules + browser globals ────────────────────────────────────
   {
+    name: 'web/react',
     files: ['apps/web/src/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooksPlugin,
@@ -164,12 +184,13 @@ export default defineConfig(
         'warn',
         { allowConstantExport: true },
       ],
-      'no-console': 'warn',
+      // no-console is already set in ts/type-checked; not repeated here
     },
   },
 
   // ── API: node globals ──────────────────────────────────────────────────────
   {
+    name: 'api/node-globals',
     files: ['apps/api/src/**/*.ts'],
     languageOptions: {
       globals: globals.node,
@@ -178,6 +199,7 @@ export default defineConfig(
 
   // ── API: feature boundary enforcement ─────────────────────────────────────
   {
+    name: 'api/feature-boundaries',
     files: ['apps/api/src/**/*.ts'],
     plugins: { import: importPlugin },
     rules: {
@@ -250,6 +272,7 @@ export default defineConfig(
 
   // ── API: .ts filenames must be kebab-case ─────────────────────────────────
   {
+    name: 'api/filename-ts-kebab-case',
     files: ['apps/api/src/**/*.ts'],
     plugins: { 'check-file': checkFilePlugin },
     rules: {
