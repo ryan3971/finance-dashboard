@@ -1,9 +1,7 @@
-import { and, eq } from 'drizzle-orm';
 import type { NextFunction, Request, Response } from 'express';
-import { db } from '@/db';
+import { createTag, deleteTag, listTags } from './tags.service';
 import { requireAuth } from '@/lib/auth';
 import { Router } from 'express';
-import { tags } from '@/db/schema';
 import { z } from 'zod';
 
 const router = Router();
@@ -22,12 +20,7 @@ router.get(
   requireAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await db
-        .select()
-        .from(tags)
-        .where(eq(tags.userId, req.user!.id))
-        .orderBy(tags.name);
-
+      const result = await listTags(req.user!.id);
       res.json(result);
     } catch (err) {
       next(err);
@@ -42,12 +35,7 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = createTagSchema.parse(req.body);
-
-      const [tag] = await db
-        .insert(tags)
-        .values({ ...input, userId: req.user!.id })
-        .returning();
-
+      const tag = await createTag(req.user!.id, input);
       res.status(201).json(tag);
     } catch (err) {
       next(err);
@@ -61,20 +49,11 @@ router.delete(
   requireAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const [tag] = await db
-        .select({ id: tags.id })
-        .from(tags)
-        .where(and(eq(tags.id, req.params.id), eq(tags.userId, req.user!.id)))
-        .limit(1);
-
-      if (!tag) {
+      const found = await deleteTag(req.params.id, req.user!.id);
+      if (!found) {
         res.status(404).json({ error: 'Tag not found' });
         return;
       }
-
-      // transactionTags rows deleted automatically via ON DELETE CASCADE
-      await db.delete(tags).where(eq(tags.id, req.params.id));
-
       res.status(204).send();
     } catch (err) {
       next(err);
