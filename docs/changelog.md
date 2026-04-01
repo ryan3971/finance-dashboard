@@ -50,3 +50,28 @@ apps/web/src/**/*.tsx	PASCAL_CASE	main.tsx excluded
 apps/web/src/**/*.ts	CAMEL_CASE	*.d.ts excluded
 apps/api/src/**/*.ts	KEBAB_CASE	ignoreMiddleExtensions for .routes.ts, .test.ts etc.
 ---
+Root .eslintrc.json — now only contains universal rules: TypeScript, naming conventions, imports sorting, and general quality rules. All web/api-specific overrides removed.
+
+apps/web/.eslintrc.json — web zones + filename conventions (PascalCase .tsx, camelCase .ts) + react-hooks/react-refresh overrides. ESLint cascades up and merges with the root automatically.
+
+apps/api/.eslintrc.json — api zones for all 9 features (accounts, auth, categories, dashboards, imports, investments, tags, transactions, transfers) with the same isolation pattern as web, plus a shared-modules-cannot-import-features zone, and the kebab-case filename override.
+---
+Service files (all DB/Drizzle logic lives here now):
+
+accounts.services.ts — listAccounts, createAccount, getAccountById
+tags.service.ts — listTags, createTag, deleteTag
+categories.service.ts — getCategoryTree
+transactions.service.ts — listTransactions, patchTransaction, createManualTransaction, addTagToTransaction, removeTagFromTransaction
+Route files (validate → call service → respond, no DB/schema imports):
+
+accounts.routes.ts
+tags.routes.ts
+categories.routes.ts
+transactions.routes.ts
+transactions-mutation.routes.ts
+A few design notes:
+
+deleteTag returns boolean — route maps false → 404
+patchTransaction / createManualTransaction return null for not-found — route maps null → 404
+addTagToTransaction returns a discriminated string ('ok' | 'transaction_not_found' | 'tag_not_found') since the route needs to distinguish which resource was missing
+---
