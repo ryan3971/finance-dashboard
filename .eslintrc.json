@@ -5,7 +5,7 @@
     "project": true,
     "tsconfigRootDir": "."
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "import", "prettier"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
@@ -21,6 +21,51 @@
         "memberSyntaxSortOrder": ["none", "all", "multiple", "single"]
       }
     ],
+    "import/no-restricted-paths": [
+      "error",
+      {
+        "zones": [
+          {
+            "target": "./apps/web/src/features/auth",
+            "from": "./apps/web/src/features",
+            "except": ["./auth"]
+          },
+          {
+            "target": "./apps/web/src/features/dashboard",
+            "from": "./apps/web/src/features",
+            "except": ["./dashboard"]
+          },
+          {
+            "target": "./apps/web/src/features/import",
+            "from": "./apps/web/src/features",
+            "except": ["./import"]
+          },
+          {
+            "target": "./apps/web/src/features/transactions",
+            "from": "./apps/web/src/features",
+            "except": ["./transactions"]
+          },
+          // enforce unidirectional codebase:
+          // e.g. src/app can import from src/features but not the other way around
+          // {
+          //   "target": "./apps/web/src/features",
+          //   "from": "./apps/web/src/app"
+          // },
+          // e.g src/features and src/app can import from these shared modules but not the other way around
+          {
+            "target": [
+              "./apps/web/src/components",
+              "./apps/web/src/hooks",
+              "./apps/web/src/lib",
+              "./packages/shared/src/*",
+              "./apps/web/src/utils"
+            ],
+            "from": ["./apps/web/src/features"]
+          }
+        ]
+      }
+    ],
+    //"import/no-cycle": "error",
     "eqeqeq": ["error", "always"],
     "no-console": "warn",
     "no-throw-literal": "error",
@@ -36,13 +81,80 @@
       "error",
       { "prefer": "type-imports" }
     ],
-    "@typescript-eslint/explicit-function-return-type": "off"
+    "@typescript-eslint/explicit-function-return-type": "off",
+    //"prettier/prettier": ["error", {}, { "usePrettierrc": true }],
+    "@typescript-eslint/naming-convention": [
+      "error",
+      // Default: camelCase for everything not covered below
+      { "selector": "default", "format": ["camelCase"], "leadingUnderscore": "allow" },
+      // Variables: also allow PascalCase (React components) and UPPER_CASE (constants)
+      {
+        "selector": "variable",
+        "format": ["camelCase", "PascalCase", "UPPER_CASE"],
+        "leadingUnderscore": "allow"
+      },
+      // Functions: camelCase (utils/handlers) or PascalCase (React components)
+      { "selector": "function", "format": ["camelCase", "PascalCase"] },
+      // Parameters: camelCase; allow _ prefix for intentionally unused params
+      { "selector": "parameter", "format": ["camelCase"], "leadingUnderscore": "allow" },
+      // Types, interfaces, classes, enums: PascalCase (no I-prefix)
+      { "selector": "typeLike", "format": ["PascalCase"] },
+      // Enum members: UPPER_CASE or PascalCase
+      { "selector": "enumMember", "format": ["UPPER_CASE", "PascalCase"] },
+      // Object literal and type properties: unrestricted (may mirror API/DB/AI response shapes)
+      { "selector": "objectLiteralProperty", "format": null },
+      { "selector": "typeProperty", "format": null },
+      // Destructured variables: unrestricted (shape comes from external data)
+      { "selector": "variable", "modifiers": ["destructured"], "format": null },
+      // Imports: allow PascalCase for default imports of components/classes (e.g. import React)
+      { "selector": "import", "format": ["camelCase", "PascalCase"] }
+    ]
   },
   "env": {
     "node": true,
     "es2022": true
   },
   "overrides": [
+    {
+      // Web component files (.tsx): PascalCase — e.g. NavBar.tsx, LoginPage.tsx
+      // Excludes main.tsx (Vite entry point convention)
+      "files": ["apps/web/src/**/*.tsx"],
+      "excludedFiles": ["apps/web/src/main.tsx"],
+      "plugins": ["check-file"],
+      "rules": {
+        "check-file/filename-naming-convention": [
+          "error",
+          { "**/*.tsx": "PASCAL_CASE" },
+          { "ignoreMiddleExtensions": true }
+        ]
+      }
+    },
+    {
+      // Web non-component files (.ts): camelCase — e.g. useAuth.ts, api.ts
+      // Excludes *.d.ts declaration files (e.g. vite-env.d.ts) which follow framework conventions
+      "files": ["apps/web/src/**/*.ts"],
+      "excludedFiles": ["apps/web/src/**/*.d.ts"],
+      "plugins": ["check-file"],
+      "rules": {
+        "check-file/filename-naming-convention": [
+          "error",
+          { "**/*.ts": "CAMEL_CASE" },
+          { "ignoreMiddleExtensions": true }
+        ]
+      }
+    },
+    {
+      // API files (.ts): kebab-case — e.g. accounts.routes.ts, seed-test.ts
+      "files": ["apps/api/src/**/*.ts"],
+      "plugins": ["check-file"],
+      "rules": {
+        "check-file/filename-naming-convention": [
+          "error",
+          { "**/*.ts": "KEBAB_CASE" },
+          { "ignoreMiddleExtensions": true }
+        ]
+      }
+    },
     {
       "files": ["apps/web/src/**/*.{ts,tsx}"],
       "plugins": ["react-hooks", "react-refresh"],

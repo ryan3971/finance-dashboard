@@ -1,4 +1,4 @@
-import { NavBar } from './NavBar';
+import { NavBar } from '@/components/ui/NavBar';
 import type { ReactNode } from 'react';
 
 export function PageLayout({ children }: { children: ReactNode }) {

@@ -32,3 +32,21 @@ td-import.routes.test.ts — ImportSummaryResponse casts; TD_ACCOUNT constant
 questrade-import.routes.test.ts — ImportSummaryResponse casts; beforeEach now uses the shared helpers
 auth.routes.test.ts — AuthResponse casts on register/login body access
 ---
+@typescript-eslint/naming-convention (identifier naming, global):
+
+Selector	Allowed formats	Notes
+variable	camelCase, PascalCase, UPPER_CASE	React component vars + constants
+function	camelCase, PascalCase	Hooks/utils + React components
+parameter	camelCase	_prefix allowed for unused
+typeLike	PascalCase	interfaces, types, classes, enums
+enumMember	UPPER_CASE, PascalCase	
+import	camelCase, PascalCase	Named + default imports
+objectLiteralProperty / typeProperty	unrestricted	External data shapes (DB/AI/API)
+variable + destructured	unrestricted	Destructuring from external data
+check-file/filename-naming-convention (file naming, per-app overrides):
+
+Glob	Rule	Exceptions
+apps/web/src/**/*.tsx	PASCAL_CASE	main.tsx excluded
+apps/web/src/**/*.ts	CAMEL_CASE	*.d.ts excluded
+apps/api/src/**/*.ts	KEBAB_CASE	ignoreMiddleExtensions for .routes.ts, .test.ts etc.
+---

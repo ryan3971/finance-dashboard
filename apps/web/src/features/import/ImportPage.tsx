@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import api from '@/lib/api';
-import { PageLayout } from '@/components/PageLayout';
+import { PageLayout } from '@/components/layout/PageLayout';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useQueryClient } from '@tanstack/react-query';
 

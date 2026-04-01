@@ -52,6 +52,7 @@
     "@typescript-eslint/parser": "^7.0.0",
     "drizzle-kit": "^0.21.0",
     "eslint": "^8.57.0",
+    "eslint-plugin-check-file": "^2.8.0",
     "pino-pretty": "^11.0.0",
     "supertest": "^6.3.0",
     "tsx": "^4.7.0",

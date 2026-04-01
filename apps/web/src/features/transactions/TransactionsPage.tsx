@@ -3,8 +3,8 @@ import {
   TransactionFilters,
 } from '@/features/transactions/TransactionFilters';
 import React, { useState } from 'react';
-import { PageLayout } from '@/components/PageLayout';
-import { TransactionReviewPanel } from '@/components/TransactionReviewPanel';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { TransactionReviewPanel } from '@/features/transactions/TransactionReviewPanel';
 import { TransactionTagsPanel } from '@/features/transactions/TransactionTagsPanel';
 import { useTransactions } from '@/hooks/useTransactions';
 
@@ -185,8 +185,8 @@ export function TransactionsPage() {
                           tx.isTransfer
                             ? 'text-gray-400'
                             : parseFloat(tx.amount) > 0
-                            ? 'text-green-600'
-                            : 'text-red-600'
+                              ? 'text-green-600'
+                              : 'text-red-600'
                         }`}
                       >
                         {formatAmount(tx.amount, tx.isIncome)}
