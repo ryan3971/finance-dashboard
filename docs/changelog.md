@@ -75,3 +75,24 @@ deleteTag returns boolean — route maps false → 404
 patchTransaction / createManualTransaction return null for not-found — route maps null → 404
 addTagToTransaction returns a discriminated string ('ok' | 'transaction_not_found' | 'tag_not_found') since the route needs to distinguish which resource was missing
 ---
+REFRESH_COOKIE_PATH constant added in auth.routes.ts:16; both getRefreshCookieOptions() and clearCookie now reference it — no more duplicated string literal.
+Service shape consistency — registerUser in auth.service.ts:44 now returns the projected { id, email } shape, matching loginUser. The register handler in auth.routes.ts:36 passes user through directly.
+---
+New files
+
+lib/domain-error.ts — Abstract base class with code: string and httpStatus: number. Services throw subclasses; they never see HTTP status codes. Any future feature creates its own subclass.
+
+features/auth/auth.errors.ts — AuthErrorCode const-enum and AuthError extends DomainError. The HTTP_STATUS and MESSAGES maps are co-located with the error definitions — the right place for that knowledge. The service just does throw new AuthError(AuthErrorCode.EMAIL_TAKEN).
+
+Edited files
+
+db/index.ts — Exports DbTransaction derived via Parameters<Parameters<typeof db.transaction>[0]>[0]. Callers get the correct Drizzle transaction type without importing Drizzle internals.
+
+middleware/error-handler.ts — Added a DomainError branch before the AppError fallback. Responds with { error, code } so clients can match on stable code strings (e.g., AUTH_EMAIL_TAKEN) rather than message text. The code field is a forward-compatibility gift to the web app.
+
+features/auth/auth.service.ts — Three changes:
+
+All createError calls replaced with new AuthError(AuthErrorCode.*).
+loginUser and refreshAccessToken selects scoped to only the columns actually used.
+refreshAccessToken token rotation wrapped in db.transaction(), with the delete and the new insert inside the same transaction. issueTokenPair accepts an optional tx parameter (defaults to db) so it can participate in the caller's transaction without being rewritten.
+---
