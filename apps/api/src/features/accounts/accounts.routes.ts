@@ -1,5 +1,23 @@
-import type { NextFunction, Request, Response } from 'express';
-import { createAccount, getAccountById, listAccounts } from './accounts.services';
+/**
+ * Accounts Routes
+ *
+ * Defines the Express router for the /api/v1/accounts endpoint. All routes
+ * require authentication via the requireAuth middleware.
+ *
+ * Routes:
+ *   GET    /          - List all accounts for the authenticated user
+ *   POST   /          - Create a new account (validated via createAccountSchema)
+ *   GET    /:id       - Retrieve a single account by ID
+ *
+ * Supported account types: chequing, savings, credit, tfsa, fhsa, rrsp, non-registered
+ * Supported institutions:  amex, cibc, td, questrade, manual
+ */
+import type { Request, Response } from 'express';
+import {
+  createAccount,
+  getAccountById,
+  listAccounts,
+} from './accounts.services';
 import { requireAuth } from '@/lib/auth';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -26,13 +44,10 @@ const createAccountSchema = z.object({
 router.get(
   '/',
   requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = await listAccounts(req.user!.id);
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
+  async (req: Request, res: Response) => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = await listAccounts(req.user!.id);
+    res.json(result);
   }
 );
 
@@ -40,14 +55,11 @@ router.get(
 router.post(
   '/',
   requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const input = createAccountSchema.parse(req.body);
-      const account = await createAccount(req.user!.id, input);
-      res.status(201).json(account);
-    } catch (err) {
-      next(err);
-    }
+  async (req: Request, res: Response) => {
+    const input = createAccountSchema.parse(req.body);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const account = await createAccount(req.user!.id, input);
+    res.status(201).json(account);
   }
 );
 
@@ -55,17 +67,16 @@ router.post(
 router.get(
   '/:id',
   requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const account = await getAccountById(req.params.id, req.user!.id);
-      if (!account) {
-        res.status(404).json({ error: 'Account not found' });
-        return;
-      }
-      res.json(account);
-    } catch (err) {
-      next(err);
+  async (req: Request<{ id: string }>, res: Response) => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const account = await getAccountById(req.params.id, req.user!.id);
+
+    if (!account) {
+      res.status(404).json({ error: 'Account not found' });
+      return;
     }
+
+    res.json(account);
   }
 );
 

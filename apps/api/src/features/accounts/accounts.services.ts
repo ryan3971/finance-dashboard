@@ -1,8 +1,15 @@
+/**
+ * Account services — DB queries and business logic for the accounts feature.
+ *
+ * All functions scope queries to the authenticated user's ID to prevent
+ * cross-user data access. Functions return data or null; the route layer is
+ * responsible for translating null into 404 responses.
+ */
 import { and, eq } from 'drizzle-orm';
 import { accounts } from '@/db/schema';
 import { db } from '@/db';
 
-export interface CreateAccountInput {
+interface CreateAccountInput {
   name: string;
   type: 'chequing' | 'savings' | 'credit' | 'tfsa' | 'fhsa' | 'rrsp' | 'non-registered';
   institution: 'amex' | 'cibc' | 'td' | 'questrade' | 'manual';
