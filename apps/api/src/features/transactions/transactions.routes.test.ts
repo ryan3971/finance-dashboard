@@ -22,7 +22,7 @@ const app = createApp();
 
 const AMEX_FIXTURE = path.join(
   __dirname,
-  '../services/imports/adapters/__fixtures__/amex.csv'
+  '../imports/adapters/__fixtures__/amex.csv'
 );
 
 async function uploadAmex(token: string, accountId: string) {

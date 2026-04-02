@@ -23,7 +23,7 @@ const app = createApp();
 
 const AMEX_FIXTURE = path.join(
   __dirname,
-  '../services/imports/adapters/__fixtures__/amex.csv'
+  './adapters/__fixtures__/amex.csv'
 );
 
 const AMEX_ACCOUNT = {

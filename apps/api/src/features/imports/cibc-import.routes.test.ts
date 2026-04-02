@@ -23,7 +23,7 @@ const app = createApp();
 
 const FIXTURE = path.join(
   __dirname,
-  '../services/imports/adapters/__fixtures__/cibc.csv'
+  './adapters/__fixtures__/cibc.csv'
 );
 
 const CIBC_ACCOUNT = {

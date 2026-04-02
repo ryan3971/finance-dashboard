@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     globals: true,
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./src/testing/setup.ts'],
     fileParallelism: false,
     alias: {
       '@finance/shared': path.resolve(

@@ -12,7 +12,7 @@ import importsRouter from './features/imports/imports.routes';
 import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
 import transactionsRouter from './features/transactions/transactions.routes';
-import transfersRouter from './pipelines/transfer-detection/transfers.routes';
+import transfersRouter from '@/features/transfers/transfers.routes';
 
 export function createApp() {
   const app = express();

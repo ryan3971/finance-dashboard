@@ -5,7 +5,7 @@ import { CibcAdapter } from './cibc.adapter';
 import { parseCsv } from '../../pipeline/parser';
 
 const adapter = new CibcAdapter();
-const FIXTURE = path.join(__dirname, '__fixtures__', 'cibc.csv');
+const FIXTURE = path.join(__dirname, './../__fixtures__', 'cibc.csv');
 
 describe('CibcAdapter', () => {
   it('detect() returns true for CIBC data row', () => {

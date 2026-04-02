@@ -5,7 +5,7 @@ import { parseCsv } from '../../pipeline/parser';
 import { TdAdapter } from './td.adapter';
 
 const adapter = new TdAdapter();
-const FIXTURE = path.join(__dirname, '__fixtures__', 'td.csv');
+const FIXTURE = path.join(__dirname, './../__fixtures__', 'td.csv');
 
 describe('TdAdapter', () => {
   it('detect() returns true for TD data row', () => {

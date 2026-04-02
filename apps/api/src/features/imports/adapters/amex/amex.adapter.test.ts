@@ -5,7 +5,7 @@ import { AmexAdapter } from './amex.adapter';
 import { parseCsv } from '../../pipeline/parser';
 
 const adapter = new AmexAdapter();
-const FIXTURE = path.join(__dirname, '__fixtures__', 'amex.csv');
+const FIXTURE = path.join(__dirname, './../__fixtures__', 'amex.csv');
 
 describe('AmexAdapter', () => {
   it('detect() returns true for Amex header row', () => {
