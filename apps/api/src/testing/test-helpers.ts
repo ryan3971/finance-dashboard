@@ -9,7 +9,9 @@ export interface AuthResponse {
 export interface AccountResponse {
   id: string;
   name: string;
+  type: string;
   institution: string;
+  isCredit: boolean;
 }
 
 export interface ImportSummaryResponse {
