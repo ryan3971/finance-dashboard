@@ -14,12 +14,22 @@ interface CreateAccountInput {
   type: 'chequing' | 'savings' | 'credit' | 'tfsa' | 'fhsa' | 'rrsp' | 'non-registered';
   institution: 'amex' | 'cibc' | 'td' | 'questrade' | 'manual';
   currency: string;
-  isCredit: boolean;
 }
+
+const accountColumns = {
+  id: accounts.id,
+  name: accounts.name,
+  type: accounts.type,
+  institution: accounts.institution,
+  currency: accounts.currency,
+  isActive: accounts.isActive,
+  isCredit: accounts.isCredit,
+  createdAt: accounts.createdAt,
+};
 
 export async function listAccounts(userId: string) {
   return db
-    .select()
+    .select(accountColumns)
     .from(accounts)
     .where(and(eq(accounts.userId, userId), eq(accounts.isActive, true)));
 }
@@ -27,14 +37,14 @@ export async function listAccounts(userId: string) {
 export async function createAccount(userId: string, input: CreateAccountInput) {
   const [account] = await db
     .insert(accounts)
-    .values({ ...input, userId })
-    .returning();
+    .values({ ...input, userId, isCredit: input.type === 'credit' })
+    .returning(accountColumns);
   return account;
 }
 
 export async function getAccountById(id: string, userId: string) {
   const [account] = await db
-    .select()
+    .select(accountColumns)
     .from(accounts)
     .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
     .limit(1);

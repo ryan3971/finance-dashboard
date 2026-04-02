@@ -12,14 +12,14 @@
  * Supported account types: chequing, savings, credit, tfsa, fhsa, rrsp, non-registered
  * Supported institutions:  amex, cibc, td, questrade, manual
  */
-import type { Request, Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import {
   createAccount,
   getAccountById,
   listAccounts,
 } from './accounts.services';
+import { AccountError, AccountErrorCode } from './accounts.errors';
 import { requireAuth } from '@/lib/auth';
-import { Router } from 'express';
 import { z } from 'zod';
 
 const router = Router();
@@ -37,7 +37,6 @@ const createAccountSchema = z.object({
   ]),
   institution: z.enum(['amex', 'cibc', 'td', 'questrade', 'manual']),
   currency: z.string().length(3).default('CAD'),
-  isCredit: z.boolean().default(false),
 });
 
 // GET /api/v1/accounts
@@ -72,8 +71,7 @@ router.get(
     const account = await getAccountById(req.params.id, req.user!.id);
 
     if (!account) {
-      res.status(404).json({ error: 'Account not found' });
-      return;
+      throw new AccountError(AccountErrorCode.NOT_FOUND);
     }
 
     res.json(account);
