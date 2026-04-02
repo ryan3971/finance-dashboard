@@ -72,7 +72,6 @@ describe('POST /api/v1/accounts', () => {
         name: 'My CIBC Card',
         type: 'credit',
         institution: 'cibc',
-        isCredit: true,
       });
 
     const body = res.body as AccountResponse;
