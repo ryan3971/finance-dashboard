@@ -14,6 +14,7 @@ import type {
   Request,
   Response,
 } from 'express';
+import { DomainError } from '@/lib/domain-error';
 import { logger } from './logger';
 import { ZodError } from 'zod';
 
@@ -23,7 +24,7 @@ export interface AppError extends Error {
 }
 
 export function errorHandler(
-  err: AppError | ZodError,
+  err: AppError | ZodError | DomainError,
   req: Request,
   res: Response,
   _next: NextFunction
@@ -39,9 +40,17 @@ export function errorHandler(
     return;
   }
 
-  const statusCode = err.statusCode ?? 500;
-  const message = err.isOperational
-    ? err.message
+  // Handle domain errors — code and httpStatus are set by the error definition,
+  // not the service, so no HTTP concepts leak into business logic.
+  if (err instanceof DomainError) {
+    res.status(err.httpStatus).json({ error: err.message, code: err.code });
+    return;
+  }
+
+  const appError = err as AppError;
+  const statusCode = appError.statusCode ?? 500;
+  const message = appError.isOperational
+    ? appError.message
     : 'Internal server error';
 
   if (statusCode >= 500) {

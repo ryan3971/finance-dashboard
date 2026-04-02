@@ -8,7 +8,7 @@ import {
   users,
 } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { type AuthResponse } from './test-helpers';
+import { type AuthResponse } from '@/testing/test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
 import request from 'supertest';

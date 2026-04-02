@@ -23,3 +23,7 @@ export const db = new Proxy({} as NodePgDatabase<typeof schema>, {
 });
 
 export type DB = typeof db;
+
+// Transaction type for functions that can run inside or outside a transaction.
+// Extracted from the callback signature so callers don't import Drizzle internals.
+export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

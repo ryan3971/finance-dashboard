@@ -6,10 +6,10 @@ import {
 } from '@/lib/jwt';
 import type { LoginInput, RegisterInput } from '@finance/shared';
 import { refreshTokens, users } from '@/db/schema';
+import { AuthError, AuthErrorCode } from '@/features/auth/auth.errors';
 import bcrypt from 'bcryptjs';
-import { createError } from '@/middleware/error-handler';
 import { createHash } from 'crypto';
-import { db } from '@/db';
+import { db, type DbTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
 
 const BCRYPT_ROUNDS = 12;
@@ -23,7 +23,7 @@ export async function registerUser(input: RegisterInput) {
     .limit(1);
 
   if (existing.length > 0) {
-    throw createError('Email already registered', 409);
+    throw new AuthError(AuthErrorCode.EMAIL_TAKEN);
   }
 
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
@@ -41,12 +41,20 @@ export async function registerUser(input: RegisterInput) {
     user.email
   );
 
-  return { user, accessToken, refreshToken };
+  return {
+    user: { id: user.id, email: user.email },
+    accessToken,
+    refreshToken,
+  };
 }
 
 export async function loginUser(input: LoginInput) {
   const [user] = await db
-    .select()
+    .select({
+      id: users.id,
+      email: users.email,
+      passwordHash: users.passwordHash,
+    })
     .from(users)
     .where(eq(users.email, input.email.toLowerCase()))
     .limit(1);
@@ -54,12 +62,12 @@ export async function loginUser(input: LoginInput) {
   if (!user) {
     // Constant-time comparison to prevent user enumeration
     await bcrypt.compare(input.password, '$2b$12$invalidhashforuserenum');
-    throw createError('Invalid email or password', 401);
+    throw new AuthError(AuthErrorCode.INVALID_CREDENTIALS);
   }
 
   const passwordValid = await bcrypt.compare(input.password, user.passwordHash);
   if (!passwordValid) {
-    throw createError('Invalid email or password', 401);
+    throw new AuthError(AuthErrorCode.INVALID_CREDENTIALS);
   }
 
   const { accessToken, refreshToken } = await issueTokenPair(
@@ -82,28 +90,31 @@ export async function refreshAccessToken(incomingRefreshToken: string) {
       email: string;
     };
   } catch {
-    throw createError('Invalid or expired refresh token', 401);
+    throw new AuthError(AuthErrorCode.INVALID_REFRESH_TOKEN);
   }
 
   // Hash the incoming token and look it up in the DB
   const tokenHash = hashRefreshToken(incomingRefreshToken);
 
   const [stored] = await db
-    .select()
+    .select({ id: refreshTokens.id, expiresAt: refreshTokens.expiresAt })
     .from(refreshTokens)
     .where(eq(refreshTokens.tokenHash, tokenHash))
     .limit(1);
 
   if (!stored || stored.expiresAt < new Date()) {
-    throw createError('Refresh token not found or expired', 401);
+    throw new AuthError(AuthErrorCode.REFRESH_TOKEN_NOT_FOUND);
   }
 
-  // Rotate: delete the old token, issue a new pair
-  await db.delete(refreshTokens).where(eq(refreshTokens.id, stored.id));
-
-  const { accessToken, refreshToken: newRefreshToken } = await issueTokenPair(
-    payload.sub,
-    payload.email
+  // Rotate: delete the old token and issue a new pair atomically.
+  // If the insert fails, the delete is rolled back — the user's session is preserved.
+  const { accessToken, refreshToken: newRefreshToken } = await db.transaction(
+    async (tx) => {
+      await tx
+        .delete(refreshTokens)
+        .where(eq(refreshTokens.id, stored.id));
+      return issueTokenPair(payload.sub, payload.email, tx);
+    }
   );
 
   return { accessToken, refreshToken: newRefreshToken };
@@ -117,7 +128,11 @@ export async function logoutUser(incomingRefreshToken: string) {
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
-async function issueTokenPair(userId: string, email: string) {
+async function issueTokenPair(
+  userId: string,
+  email: string,
+  tx: typeof db | DbTransaction = db
+) {
   const accessToken = signAccessToken({
     sub: userId,
     email,
@@ -131,7 +146,7 @@ async function issueTokenPair(userId: string, email: string) {
   });
   const tokenHash = hashRefreshToken(refreshToken);
 
-  await db.insert(refreshTokens).values({
+  await tx.insert(refreshTokens).values({
     userId,
     tokenHash,
     expiresAt: getRefreshTokenExpiry(),
