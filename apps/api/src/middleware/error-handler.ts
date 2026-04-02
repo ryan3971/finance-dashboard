@@ -1,3 +1,14 @@
+/**
+ * Error Handling Middleware
+ *
+ * Maps error types to HTTP responses for the Express application.
+ *
+ * Exports:
+ *   AppError       - Error interface extending Error with statusCode and isOperational flags
+ *   errorHandler   - Express error middleware: ZodError → 400, operational AppError → its
+ *                    statusCode, unknown → 500. Logs 5xx errors and exposes stack traces in development.
+ *   createError    - Factory for operational AppErrors with a given message and HTTP status code.
+ */
 import type {
   NextFunction,
   Request,

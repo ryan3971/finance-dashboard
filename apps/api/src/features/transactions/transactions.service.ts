@@ -1,7 +1,7 @@
 import {
   accounts,
-  categorizationRules,
   categories,
+  categorizationRules,
   tags,
   transactions,
   transactionTags,

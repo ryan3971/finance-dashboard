@@ -4,7 +4,7 @@ import categoriesRouter from './features/categories/categories.routes';
 import { config } from './lib/config';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import { errorHandler } from './middleware/error';
+import { errorHandler } from './middleware/error-handler';
 import express from 'express';
 import healthRouter from './routes/health.routes';
 import { httpLogger } from './middleware/logger';

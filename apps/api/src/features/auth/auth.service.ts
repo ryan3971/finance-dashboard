@@ -7,7 +7,7 @@ import {
 import type { LoginInput, RegisterInput } from '@finance/shared';
 import { refreshTokens, users } from '@/db/schema';
 import bcrypt from 'bcryptjs';
-import { createError } from '@/middleware/error';
+import { createError } from '@/middleware/error-handler';
 import { createHash } from 'crypto';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
