@@ -83,6 +83,25 @@ export default defineConfig(
     },
   },
 
+  {
+    name: 'ts/type-checked',
+    files: ['**/*.{ts,tsx}'],
+    extends: [tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: [
+            'apps/api/drizzle.config.ts',
+            'apps/api/drizzle.test.config.ts',
+            'apps/api/vitest.config.ts',
+            'apps/api/scripts/seed-dev.ts',
+            'apps/api/scripts/seed-rules.ts',
+          ],
+        },
+      },
+    },
+  },
+
   // ── Plain JS files: disable type-checked rules that require a TS program ──
   {
     name: 'js/disable-type-checked',
