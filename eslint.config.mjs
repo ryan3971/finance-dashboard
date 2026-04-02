@@ -301,5 +301,27 @@ export default defineConfig(
         { ignoreMiddleExtensions: true },
       ],
     },
-  }
+  },
+  // ── API: allow req.user! assertions in route handlers ────────────────────
+  // {
+  //   name: 'api/routes-non-null-assertion',
+  //   files: ['apps/api/src/**/*.routes.ts'],
+  //   rules: {
+  //     '@typescript-eslint/no-non-null-assertion': 'off',
+  //   },
+  // },
+
+  // Don't need after switching to Express v5
+  // ── API: allow void-returning promises in route handlers ─────────────────
+  // {
+  //   files: ['**/*.routes.ts'],
+  //   rules: {
+  //     '@typescript-eslint/no-misused-promises': [
+  //       'error',
+  //       {
+  //         checksVoidReturn: { arguments: false },
+  //       },
+  //     ],
+  //   },
+  // }
 );
