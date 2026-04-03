@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { listTransactions } from './transactions.service';
-import { requireAuth } from '@/lib/auth';
+import { getAuthUser, requireAuth } from '@/lib/auth';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -29,8 +29,7 @@ router.get(
       listQuerySchema.parse(req.query);
 
     const result = await listTransactions(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      req.user!.id,
+      getAuthUser(req).id,
       {
         accountId: account_id,
         startDate: start_date,

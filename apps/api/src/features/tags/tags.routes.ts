@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { createTag, deleteTag, listTags } from './tags.service';
 import { TagError, TagErrorCode } from './tags.errors';
-import { requireAuth } from '@/lib/auth';
+import { getAuthUser, requireAuth } from '@/lib/auth';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -17,16 +17,14 @@ const createTagSchema = z.object({
 
 // GET /api/v1/tags
 router.get('/', requireAuth, async (req: Request, res: Response) => {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const result = await listTags(req.user!.id);
+  const result = await listTags(getAuthUser(req).id);
   res.json(result);
 });
 
 // POST /api/v1/tags
 router.post('/', requireAuth, async (req: Request, res: Response) => {
   const input = createTagSchema.parse(req.body);
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const tag = await createTag(req.user!.id, input);
+  const tag = await createTag(getAuthUser(req).id, input);
   res.status(201).json(tag);
 });
 
@@ -36,8 +34,7 @@ router.delete(
   requireAuth,
   async (req: Request, res: Response) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const deleted = await deleteTag(id, req.user!.id);
+    const deleted = await deleteTag(id, getAuthUser(req).id);
     if (!deleted) throw new TagError(TagErrorCode.NOT_FOUND);
     res.status(204).send();
   }

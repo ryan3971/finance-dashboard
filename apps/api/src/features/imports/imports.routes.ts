@@ -2,7 +2,7 @@ import { type Request, type Response, Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { processImport } from '@/features/imports/pipeline/import.service';
-import { requireAuth } from '@/lib/auth';
+import { getAuthUser, requireAuth } from '@/lib/auth';
 
 const router = Router();
 
@@ -45,8 +45,7 @@ router.post(
     const { accountId } = body.data;
 
     const result = await processImport(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      req.user!.id,
+      getAuthUser(req).id,
       accountId,
       req.file.originalname,
       req.file.buffer

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { getCategoryTree } from './categories.service';
-import { requireAuth } from '@/lib/auth';
+import { getAuthUser, requireAuth } from '@/lib/auth';
 import { Router } from 'express';
 
 const router = Router();
@@ -12,8 +12,7 @@ router.get(
   '/',
   requireAuth,
   async (req: Request, res: Response) => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const tree = await getCategoryTree(req.user!.id);
+    const tree = await getCategoryTree(getAuthUser(req).id);
     res.json(tree);
   }
 );

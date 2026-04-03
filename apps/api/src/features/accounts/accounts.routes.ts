@@ -19,7 +19,8 @@ import {
   listAccounts,
 } from './accounts.services';
 import { AccountError, AccountErrorCode } from './accounts.errors';
-import { requireAuth } from '@/lib/auth';
+import { getAuthUser, requireAuth } from '@/lib/auth';
+
 import { z } from 'zod';
 
 const router = Router();
@@ -44,8 +45,7 @@ router.get(
   '/',
   requireAuth,
   async (req: Request, res: Response) => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const result = await listAccounts(req.user!.id);
+    const result = await listAccounts(getAuthUser(req).id);
     res.json(result);
   }
 );
@@ -56,8 +56,7 @@ router.post(
   requireAuth,
   async (req: Request, res: Response) => {
     const input = createAccountSchema.parse(req.body);
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const account = await createAccount(req.user!.id, input);
+    const account = await createAccount(getAuthUser(req).id, input);
     res.status(201).json(account);
   }
 );
@@ -67,8 +66,7 @@ router.get(
   '/:id',
   requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const account = await getAccountById(req.params.id, req.user!.id);
+    const account = await getAccountById(req.params.id, getAuthUser(req).id);
 
     if (!account) {
       throw new AccountError(AccountErrorCode.NOT_FOUND);
