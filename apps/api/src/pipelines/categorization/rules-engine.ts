@@ -3,14 +3,35 @@ import type { CategorizationResult } from './pipeline.types';
 import { categorizationRules } from '@/db/schema';
 import { db } from '@/db';
 
+// TODO(hardening): The 'ADD' value in needWant is a sentinel that changes rule
+// behaviour entirely (flag-for-review instead of assign category). This couples
+// two unrelated concerns in one column. A dedicated boolean `flagForReview`
+// column on `categorization_rules` would make the intent explicit and prevent
+// accidental misuse of the needWant field.
+
+// TODO(hardening): Keyword matching uses a plain substring check (.includes()),
+// so short keywords can produce false positives (e.g. "pay" matching
+// "repayment", "visa" matching "supervisor"). Consider storing a `matchType`
+// column ('substring' | 'word' | 'regex') and dispatching accordingly, or at
+// minimum enforcing word-boundary matching for short keywords.
+
 export type Rule = typeof categorizationRules.$inferSelect;
+export type LoadedRule = Omit<Rule, 'createdAt'>;
+
+type NeedWant = 'Need' | 'Want' | 'NA';
+const VALID_NEED_WANT = new Set<string>(['Need', 'Want', 'NA']);
+
+function parseNeedWant(value: string | null): NeedWant | null {
+  if (value === null || !VALID_NEED_WANT.has(value)) return null;
+  return value as NeedWant;
+}
 
 /**
  * Fetch all rules applicable to a user (user-specific + global system rules),
  * ordered by priority descending. Call this once before processing a batch of
  * transactions and pass the result to `applyRules` to avoid an N+1 query.
  */
-export async function loadRules(userId: string | null): Promise<Rule[]> {
+export async function loadRules(userId: string | null): Promise<LoadedRule[]> {
   const conditions = userId
     ? or(
         eq(categorizationRules.userId, userId),
@@ -19,7 +40,16 @@ export async function loadRules(userId: string | null): Promise<Rule[]> {
     : isNull(categorizationRules.userId);
 
   return db
-    .select()
+    .select({
+      id: categorizationRules.id,
+      userId: categorizationRules.userId,
+      keyword: categorizationRules.keyword,
+      sourceName: categorizationRules.sourceName,
+      categoryId: categorizationRules.categoryId,
+      subcategoryId: categorizationRules.subcategoryId,
+      needWant: categorizationRules.needWant,
+      priority: categorizationRules.priority,
+    })
     .from(categorizationRules)
     .where(conditions)
     .orderBy(desc(categorizationRules.priority));
@@ -31,7 +61,7 @@ export async function loadRules(userId: string | null): Promise<Rule[]> {
  */
 export function applyRules(
   description: string,
-  rules: Rule[]
+  rules: LoadedRule[]
 ): CategorizationResult | null {
   const normalisedDesc = description.toLowerCase();
 
@@ -54,7 +84,7 @@ export function applyRules(
     return {
       categoryId: rule.categoryId,
       subcategoryId: rule.subcategoryId,
-      needWant: rule.needWant as 'Need' | 'Want' | 'NA' | null,
+      needWant: parseNeedWant(rule.needWant),
       categorySource: 'rule',
       categoryConfidence: 1.0,
       sourceName: rule.sourceName,
