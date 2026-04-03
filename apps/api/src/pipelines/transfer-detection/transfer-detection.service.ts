@@ -3,6 +3,10 @@ import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
 import { transactions } from '@/db/schema';
+import {
+  TransferError,
+  TransferErrorCode,
+} from './transfer-detection.errors';
 
 const WINDOW_DAYS = () => config.transferWindowDays;
 
@@ -144,56 +148,49 @@ export async function detectTransfers(
 }
 
 /**
- * Confirm a transfer pair — marks both transactions as transfers
- * and links them via transfer_pair_id.
+ * Confirm a transfer — marks the transaction (and its pair, if known) as a
+ * transfer and links them via transfer_pair_id.
  */
 export async function confirmTransfer(
   transactionId: string,
-  pairedTransactionId: string,
+  pairedTransactionId: string | undefined,
   userId: string
 ): Promise<void> {
-  // Verify both transactions belong to this user
-  const [txnA, txnB] = await Promise.all([
-    getOwnedTransaction(transactionId, userId),
-    getOwnedTransaction(pairedTransactionId, userId),
-  ]);
+  if (pairedTransactionId) {
+    const [txnA, txnB] = await Promise.all([
+      getOwnedTransaction(transactionId, userId),
+      getOwnedTransaction(pairedTransactionId, userId),
+    ]);
 
-  if (!txnA || !txnB) throw new Error('One or both transactions not found');
+    if (!txnA || !txnB)
+      throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
 
-  await db
-    .update(transactions)
-    .set({
-      isTransfer: true,
-      transferPairId: pairedTransactionId,
-      flaggedForReview: false,
-    })
-    .where(eq(transactions.id, transactionId));
+    await db
+      .update(transactions)
+      .set({
+        isTransfer: true,
+        transferPairId: pairedTransactionId,
+        flaggedForReview: false,
+      })
+      .where(eq(transactions.id, transactionId));
 
-  await db
-    .update(transactions)
-    .set({
-      isTransfer: true,
-      transferPairId: transactionId,
-      flaggedForReview: false,
-    })
-    .where(eq(transactions.id, pairedTransactionId));
-}
+    await db
+      .update(transactions)
+      .set({
+        isTransfer: true,
+        transferPairId: transactionId,
+        flaggedForReview: false,
+      })
+      .where(eq(transactions.id, pairedTransactionId));
+  } else {
+    const txn = await getOwnedTransaction(transactionId, userId);
+    if (!txn) throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
 
-/**
- * Confirm a single transaction as a transfer (no paired transaction known).
- * Used when only a description match was found and no pair can be identified.
- */
-export async function confirmSingleTransfer(
-  transactionId: string,
-  userId: string
-): Promise<void> {
-  const txn = await getOwnedTransaction(transactionId, userId);
-  if (!txn) throw new Error('Transaction not found');
-
-  await db
-    .update(transactions)
-    .set({ isTransfer: true, flaggedForReview: false })
-    .where(eq(transactions.id, transactionId));
+    await db
+      .update(transactions)
+      .set({ isTransfer: true, flaggedForReview: false })
+      .where(eq(transactions.id, transactionId));
+  }
 }
 
 /**
@@ -204,7 +201,7 @@ export async function dismissTransferFlag(
   userId: string
 ): Promise<void> {
   const txn = await getOwnedTransaction(transactionId, userId);
-  if (!txn) throw new Error('Transaction not found');
+  if (!txn) throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
 
   await db
     .update(transactions)
