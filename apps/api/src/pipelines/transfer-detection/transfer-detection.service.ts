@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
@@ -7,8 +7,6 @@ import {
   TransferError,
   TransferErrorCode,
 } from './transfer-detection.errors';
-
-const WINDOW_DAYS = () => config.transferWindowDays;
 
 // Transfer keywords — descriptions containing these are candidate transfers
 // Matches the ADD sentinel rules already seeded in categorization_rules
@@ -53,7 +51,7 @@ export async function detectTransfers(
 ): Promise<TransferCandidate[]> {
   if (importedTransactionIds.length === 0) return [];
 
-  // Fetch the newly imported transactions
+  // Fetch the newly imported transactions, scoped to this user
   const newTxns = await db
     .select({
       id: transactions.id,
@@ -64,44 +62,72 @@ export async function detectTransfers(
       isTransfer: transactions.isTransfer,
     })
     .from(transactions)
-    .where(inArray(transactions.id, importedTransactionIds));
+    .where(
+      and(
+        inArray(transactions.id, importedTransactionIds),
+        ownedByUser(userId)
+      )
+    );
+
+  // Only consider transactions not already confirmed as transfers
+  const activeTxns = newTxns.filter((t) => !t.isTransfer);
+  if (activeTxns.length === 0) return [];
+
+  // Batch all amount-pair lookups into one query, then match in memory per txn.
+  // This avoids an N+1 pattern (one DB round-trip per transaction).
+  const windowDays = config.transferWindowDays;
+  const dates = activeTxns.map((t) => t.date);
+  const batchWindowStart = offsetDate(
+    dates.reduce((a, b) => (a < b ? a : b)),
+    -windowDays
+  );
+  const batchWindowEnd = offsetDate(
+    dates.reduce((a, b) => (a > b ? a : b)),
+    windowDays
+  );
+  const uniqueInverseAmounts = [
+    ...new Set(activeTxns.map((t) => negateAmount(t.amount))),
+  ];
+
+  const pairCandidates = await db
+    .select({
+      id: transactions.id,
+      amount: transactions.amount,
+      date: transactions.date,
+      accountId: transactions.accountId,
+    })
+    .from(transactions)
+    .where(
+      and(
+        inArray(transactions.amount, uniqueInverseAmounts),
+        gte(transactions.date, batchWindowStart),
+        lte(transactions.date, batchWindowEnd),
+        eq(transactions.isTransfer, false),
+        ownedByUser(userId)
+      )
+    );
 
   const candidates: TransferCandidate[] = [];
 
-  for (const txn of newTxns) {
-    // Skip transactions already confirmed as transfers
-    if (txn.isTransfer) continue;
-
+  for (const txn of activeTxns) {
     const descLower = txn.description.toLowerCase();
     const hasTransferKeyword = TRANSFER_KEYWORDS.some((kw) =>
       descLower.includes(kw)
     );
 
-    // Look for an amount pair in a different account within the time window
-    const windowStart = offsetDate(txn.date, -WINDOW_DAYS());
-    const windowEnd = offsetDate(txn.date, WINDOW_DAYS());
-    const inverseAmount = (parseFloat(txn.amount) * -1).toFixed(2);
+    const inverseAmount = negateAmount(txn.amount);
+    const windowStart = offsetDate(txn.date, -windowDays);
+    const windowEnd = offsetDate(txn.date, windowDays);
 
-    const amountMatch = await db
-      .select({ id: transactions.id })
-      .from(transactions)
-      .where(
-        and(
-          ne(transactions.accountId, txn.accountId),
-          eq(transactions.amount, inverseAmount),
-          gte(transactions.date, windowStart),
-          lte(transactions.date, windowEnd),
-          eq(transactions.isTransfer, false),
-          // Scope to this user's accounts via a subquery join
-          sql`${transactions.accountId} IN (
-            SELECT id FROM accounts WHERE user_id = ${userId}
-          )`
-        )
-      )
-      .limit(1);
-
-    const hasAmountMatch = amountMatch.length > 0;
-    const matchedId = amountMatch[0]?.id ?? null;
+    const amountMatch = pairCandidates.find(
+      (m) =>
+        m.accountId !== txn.accountId &&
+        m.amount === inverseAmount &&
+        m.date >= windowStart &&
+        m.date <= windowEnd
+    );
+    const hasAmountMatch = amountMatch !== undefined;
+    const matchedId = amountMatch?.id ?? null;
 
     if (hasTransferKeyword && hasAmountMatch) {
       candidates.push({
@@ -162,29 +188,36 @@ export async function confirmTransfer(
       getOwnedTransaction(pairedTransactionId, userId),
     ]);
 
-    if (!txnA || !txnB)
-      throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
+    if (!txnA) throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
+    if (!txnB)
+      throw new TransferError(TransferErrorCode.PAIRED_TRANSACTION_NOT_FOUND);
+    if (txnA.isTransfer || txnB.isTransfer)
+      throw new TransferError(TransferErrorCode.ALREADY_CONFIRMED);
 
-    await db
-      .update(transactions)
-      .set({
-        isTransfer: true,
-        transferPairId: pairedTransactionId,
-        flaggedForReview: false,
-      })
-      .where(eq(transactions.id, transactionId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(transactions)
+        .set({
+          isTransfer: true,
+          transferPairId: pairedTransactionId,
+          flaggedForReview: false,
+        })
+        .where(eq(transactions.id, transactionId));
 
-    await db
-      .update(transactions)
-      .set({
-        isTransfer: true,
-        transferPairId: transactionId,
-        flaggedForReview: false,
-      })
-      .where(eq(transactions.id, pairedTransactionId));
+      await tx
+        .update(transactions)
+        .set({
+          isTransfer: true,
+          transferPairId: transactionId,
+          flaggedForReview: false,
+        })
+        .where(eq(transactions.id, pairedTransactionId));
+    });
   } else {
     const txn = await getOwnedTransaction(transactionId, userId);
     if (!txn) throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
+    if (txn.isTransfer)
+      throw new TransferError(TransferErrorCode.ALREADY_CONFIRMED);
 
     await db
       .update(transactions)
@@ -211,18 +244,25 @@ export async function dismissTransferFlag(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/** Returns a Drizzle SQL condition scoping transactions to accounts owned by userId. */
+function ownedByUser(userId: string) {
+  return sql`${transactions.accountId} IN (SELECT id FROM accounts WHERE user_id = ${userId})`;
+}
+
 async function getOwnedTransaction(transactionId: string, userId: string) {
   const [txn] = await db
-    .select({ id: transactions.id })
+    .select({ id: transactions.id, isTransfer: transactions.isTransfer })
     .from(transactions)
     .where(
-      and(
-        eq(transactions.id, transactionId),
-        sql`${transactions.accountId} IN (SELECT id FROM accounts WHERE user_id = ${userId})`
-      )
+      and(eq(transactions.id, transactionId), ownedByUser(userId))
     )
     .limit(1);
   return txn ?? null;
+}
+
+/** Negates a numeric string amount without floating-point conversion. */
+export function negateAmount(amount: string): string {
+  return amount.startsWith('-') ? amount.slice(1) : `-${amount}`;
 }
 
 function offsetDate(dateStr: string, days: number): string {

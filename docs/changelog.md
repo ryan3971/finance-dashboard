@@ -277,3 +277,32 @@ Replaced all four req.user!.id + eslint-disable pairs with getAuthUser(req).id
 Hoisted inline param schemas to named constants (transactionParamsSchema, tagParamsSchema) alongside the body schemas
 Collapsed addTagToTransaction branching from two sentinel checks to a single if (!found) — TAG_NOT_FOUND now flows through the global error handler automatically
 Changed POST /:id/tags response from 204 to 201 with { transactionId, tagId } body, consistent with POST / returning 201 with the created resource
+---
+All three changes applied. Here's the summary:
+
+#1 — No fix needed. ZodError is already caught in error-handler.ts:23 and returns 400.
+
+#2 — Fixed. Removed the if/else branch from the route handler. confirmTransfer now accepts pairedTransactionId: string | undefined and handles both cases internally. confirmSingleTransfer is gone.
+
+#3 — No fix needed. getOwnedTransaction at transfer-detection.service.ts:217 enforces ownership via WHERE accountId IN (SELECT id FROM accounts WHERE user_id = ?) on every write path.
+
+#4 — Fixed (was a real bug). Created transfer-detection.errors.ts with TransferError / TransferErrorCode.TRANSACTION_NOT_FOUND → 404. All three throw new Error(...) calls in the service now throw TransferError instead, which the global error handler routes correctly via DomainError.
+
+#5 — Fixed. Import order in transfers.routes.ts now follows the framework → lib → internal convention.
+---
+What was changed
+transfer-detection.errors.ts
+
+Added PAIRED_TRANSACTION_NOT_FOUND (404) and ALREADY_CONFIRMED (409) error codes
+transfer-detection.service.ts
+
+Issue	Change
+#1	Wrapped the two db.update() calls in confirmTransfer in db.transaction() — they're now atomic
+#2	Replaced the per-loop db.select() with a single batch query before the loop; in-memory .find() per txn replaces the awaited DB hit
+#3	No change — throwing TransferError is correct for void mutation functions; the null-return convention applies to data-returning reads
+#4	Removed parseFloat money arithmetic; replaced with negateAmount() helper that flips the sign on the string directly
+#5	Added ownedByUser(userId) to the initial newTxns fetch — the query is now scoped to the user
+#6	Extracted the repeated raw SQL user-scoping fragment into ownedByUser(userId) — used in three places, defined once
+#7	config.transferWindowDays is now read once into windowDays before the loop; the WINDOW_DAYS() wrapper function was removed
+#8	txnA and txnB are now checked separately — txnA missing → TRANSACTION_NOT_FOUND, txnB missing → PAIRED_TRANSACTION_NOT_FOUND
+#9	getOwnedTransaction now selects isTransfer; confirmTransfer throws ALREADY_CONFIRMED (409) if either side is already confirmed

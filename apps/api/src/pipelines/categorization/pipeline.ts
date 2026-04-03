@@ -66,8 +66,8 @@ async function runAiProvider(
 export async function categorize(
   description: string,
   userId: string,
-  amount: 0,
-  currency: 'CAD',
+  amount: number,
+  currency: string,
   rules?: Rule[]
 ): Promise<CategorizationResult> {
   // Step 1: Rules engine

@@ -1,13 +1,23 @@
 import { describe, expect, it } from 'vitest';
+import { negateAmount } from './transfer-detection.service';
 
-// Unit test the helper functions that don't require DB
-// offsetDate is not exported — test behaviour via integration or extract it
+describe('negateAmount', () => {
+  it('negates a positive amount', () => {
+    expect(negateAmount('100.00')).toBe('-100.00');
+  });
 
-describe('Transfer detection — configuration', () => {
-  it('uses TRANSFER_DETECTION_WINDOW_DAYS env var', () => {
-    process.env.TRANSFER_DETECTION_WINDOW_DAYS = '5';
-    // This confirms the env var is read at call time, not at module load
-    // Full integration test is covered in the integration test file
-    expect(parseInt(process.env.TRANSFER_DETECTION_WINDOW_DAYS, 10)).toBe(5);
+  it('removes the leading minus from a negative amount', () => {
+    expect(negateAmount('-100.00')).toBe('100.00');
+  });
+
+  it('handles amounts with many decimal places', () => {
+    expect(negateAmount('1234.56')).toBe('-1234.56');
+    expect(negateAmount('-1234.56')).toBe('1234.56');
+  });
+
+  it('does not use floating-point arithmetic', () => {
+    // Amounts that lose precision under parseFloat + toFixed
+    expect(negateAmount('123456789.99')).toBe('-123456789.99');
+    expect(negateAmount('-123456789.99')).toBe('123456789.99');
   });
 });

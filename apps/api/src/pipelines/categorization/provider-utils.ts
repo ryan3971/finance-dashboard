@@ -59,7 +59,7 @@ export function buildCategoryList(
         ? `${p.name} (${children.join(', ')})`
         : p.name;
     })
-    .join('');
+    .join('\n');
 }
 
 /**

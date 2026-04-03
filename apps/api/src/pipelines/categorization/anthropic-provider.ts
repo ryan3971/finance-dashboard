@@ -10,6 +10,8 @@ import type { CategorizationResult } from './pipeline.types';
 import { config } from '@/lib/config';
 import { logger } from '@/middleware/logger';
 
+const MODEL = 'claude-haiku-4-5-20251001';
+
 let client: Anthropic | null = null;
 
 function getClient(): Anthropic {
@@ -38,8 +40,9 @@ export async function categorizeWithAnthropic(
     );
 
     const response = await getClient().messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODEL,
       max_tokens: 200,
+      temperature: 0,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -49,6 +52,7 @@ export async function categorizeWithAnthropic(
 
     // Strip any markdown fences the model might add despite instructions
     const clean = raw.replace(/```json\n?|\n?```/g, '').trim();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const parsed: ParsedAIResponse = JSON.parse(clean);
 
     if (parsed.confidence < threshold) {

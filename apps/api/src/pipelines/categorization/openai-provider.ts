@@ -48,7 +48,9 @@ export async function categorizeWithOpenAI(
     const raw = response.choices[0]?.message?.content;
     if (!raw) return null;
 
-    const parsed: ParsedAIResponse = JSON.parse(raw);
+    const clean = raw.replace(/```json\n?|\n?```/g, '').trim();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const parsed: ParsedAIResponse = JSON.parse(clean);
 
     if (parsed.confidence < threshold) {
       logger.debug(
