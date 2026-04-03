@@ -5,6 +5,7 @@ import type {
 } from 'express';
 import { DomainError } from '@/lib/domain-error';
 import { logger } from './logger';
+import multer from 'multer';
 import { ZodError } from 'zod';
 
 export interface AppError extends Error {
@@ -26,6 +27,21 @@ export function errorHandler(
         error: 'Validation error',
         details: err.errors,
       });
+    return;
+  }
+
+  // Handle multer errors — file size limit and fileFilter rejections are client
+  // errors (400), not server faults.
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'File exceeds the 10 MB limit'
+        : `Upload error: ${err.message}`;
+    res.status(400).json({ error: message });
+    return;
+  }
+  if (err instanceof Error && err.message.startsWith('Unsupported file type')) {
+    res.status(400).json({ error: err.message });
     return;
   }
 
