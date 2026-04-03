@@ -115,3 +115,13 @@ superRefine — AI key cross-validation runs in the same parse pass
 z.coerce.number() — PORT, AI_CONFIDENCE_THRESHOLD, and TRANSFER_DETECTION_WINDOW_DAYS now throw with a clear message on non-numeric input instead of silently producing NaN
 optionalEnv/requireEnv helpers removed — Zod replaces them entirely
 config object shape is unchanged — no other files need updating
+---
+Expiry constant — Added REFRESH_TOKEN_EXPIRY = '7d' and used it in signRefreshToken instead of the hardcoded string literal. Both expiry values now derive from the same named constants.
+
+jti in type — Added jti?: string to JwtPayload in shared/src/types/auth.ts. Optional because access tokens don't carry it. Also tightened the signAccessToken/signRefreshToken payload parameter type to Omit<..., 'jti'> so callers can't accidentally pass one in.
+
+Dead code removed — generateRefreshTokenValue and its exclusive use of randomBytes import is gone. (randomBytes is still used by signRefreshToken.)
+
+Safe verify casts — Replaced as JwtPayload with an assertObjectPayload assertion guard that throws if jwt.verify somehow returns a string, replacing a silent type lie with an explicit runtime check.
+
+Import order — Also tidied imports to node built-ins → third-party → local, per convention.
