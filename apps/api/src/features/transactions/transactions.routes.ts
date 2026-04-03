@@ -1,45 +1,47 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { listTransactions } from './transactions.service';
 import { requireAuth } from '@/lib/auth';
 import { Router } from 'express';
+import { z } from 'zod';
 
 const router = Router();
+
+// ─── Schemas ─────────────────────────────────────────────────────────────────
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD');
+
+const listQuerySchema = z.object({
+  account_id: z.string().uuid().optional(),
+  start_date: isoDate.optional(),
+  end_date: isoDate.optional(),
+  category_id: z.string().uuid().optional(),
+  flagged: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
 
 // GET /api/v1/transactions
 router.get(
   '/',
   requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const {
-        account_id,
-        start_date,
-        end_date,
-        category_id,
-        flagged,
-        page = '1',
-        limit = '50',
-      } = req.query as Record<string, string>;
+  async (req: Request, res: Response) => {
+    const { account_id, start_date, end_date, category_id, flagged, page, limit } =
+      listQuerySchema.parse(req.query);
 
-      const pageNum = Math.max(1, parseInt(page, 10));
-      const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10)));
+    const result = await listTransactions(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      req.user!.id,
+      {
+        accountId: account_id,
+        startDate: start_date,
+        endDate: end_date,
+        categoryId: category_id,
+        flagged: flagged ?? false,
+      },
+      { page, limit }
+    );
 
-      const result = await listTransactions(
-        req.user!.id,
-        {
-          accountId: account_id,
-          startDate: start_date,
-          endDate: end_date,
-          categoryId: category_id,
-          flagged: flagged === 'true',
-        },
-        { page: pageNum, limit: limitNum }
-      );
-
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
+    res.json(result);
   }
 );
 

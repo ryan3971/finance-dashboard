@@ -6,6 +6,7 @@ import {
   type PaginatedResponse,
   registerAndLogin,
 } from '../../testing/test-helpers';
+import assert from 'node:assert/strict';
 import { createApp } from '@/app';
 import request from 'supertest';
 
@@ -200,12 +201,12 @@ describe('GET /api/v1/transactions — date and category filters', () => {
 
     expect(catRes.status).toBe(200);
     const uncategorized = (
-      catRes.body as Array<{ id: string; name: string }>
+      catRes.body as { id: string; name: string }[]
     ).find((c) => c.name === 'Uncategorized');
-    expect(uncategorized).toBeDefined();
+    assert(uncategorized);
 
     const res = await request(app)
-      .get(`/api/v1/transactions?category_id=${uncategorized!.id}`)
+      .get(`/api/v1/transactions?category_id=${uncategorized.id}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);

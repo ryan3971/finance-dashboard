@@ -1,11 +1,11 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import {
   addTagToTransaction,
   createManualTransaction,
   patchTransaction,
   removeTagFromTransaction,
 } from './transactions.service';
-import { requireAuth } from '@/lib/auth';
+import { getAuthUser, requireAuth } from '@/lib/auth';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -34,92 +34,66 @@ const createTransactionSchema = z.object({
   isIncome: z.boolean().optional(),
 });
 
+const transactionParamsSchema = z.object({ id: z.string().uuid() });
+
+const tagParamsSchema = z.object({
+  id: z.string().uuid(),
+  tagId: z.string().uuid(),
+});
+
 // ─── PATCH /api/v1/transactions/:id ──────────────────────────────────────────
 
-router.patch(
-  '/:id',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const input = patchTransactionSchema.parse(req.body);
-      const updated = await patchTransaction(req.params.id, req.user!.id, input);
-      if (!updated) {
-        res.status(404).json({ error: 'Transaction not found' });
-        return;
-      }
-      res.json(updated);
-    } catch (err) {
-      next(err);
-    }
+router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
+  const input = patchTransactionSchema.parse(req.body);
+  const { id } = transactionParamsSchema.parse(req.params);
+  const updated = await patchTransaction(id, getAuthUser(req).id, input);
+  if (!updated) {
+    res.status(404).json({ error: 'Transaction not found' });
+    return;
   }
-);
+  res.json(updated);
+});
 
 // ─── POST /api/v1/transactions (manual entry) ────────────────────────────────
 
-router.post(
-  '/',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const input = createTransactionSchema.parse(req.body);
-      const created = await createManualTransaction(req.user!.id, input);
-      if (!created) {
-        res.status(404).json({ error: 'Account not found' });
-        return;
-      }
-      res.status(201).json(created);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
+router.post('/', requireAuth, async (req: Request, res: Response) => {
+  const input = createTransactionSchema.parse(req.body);
+  const created = await createManualTransaction(getAuthUser(req).id, input);
+  res.status(201).json(created);
+});
 
 // ─── POST /api/v1/transactions/:id/tags ──────────────────────────────────────
 
-router.post(
-  '/:id/tags',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { tagId } = z.object({ tagId: z.string().uuid() }).parse(req.body);
-      const result = await addTagToTransaction(req.params.id, req.user!.id, tagId);
+router.post('/:id/tags', requireAuth, async (req: Request, res: Response) => {
+  const { tagId } = z.object({ tagId: z.string().uuid() }).parse(req.body);
+  const { id } = transactionParamsSchema.parse(req.params);
 
-      if (result === 'transaction_not_found') {
-        res.status(404).json({ error: 'Transaction not found' });
-        return;
-      }
-      if (result === 'tag_not_found') {
-        res.status(404).json({ error: 'Tag not found' });
-        return;
-      }
-
-      res.status(204).send();
-    } catch (err) {
-      next(err);
-    }
+  const found = await addTagToTransaction(id, getAuthUser(req).id, tagId);
+  if (!found) {
+    res.status(404).json({ error: 'Transaction not found' });
+    return;
   }
-);
+
+  res.status(201).json({ transactionId: id, tagId });
+});
 
 // ─── DELETE /api/v1/transactions/:id/tags/:tagId ─────────────────────────────
 
 router.delete(
   '/:id/tags/:tagId',
   requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const found = await removeTagFromTransaction(
-        req.params.id,
-        req.user!.id,
-        req.params.tagId
-      );
-      if (!found) {
-        res.status(404).json({ error: 'Transaction not found' });
-        return;
-      }
-      res.status(204).send();
-    } catch (err) {
-      next(err);
+  async (req: Request, res: Response) => {
+    const { id, tagId } = tagParamsSchema.parse(req.params);
+    const found = await removeTagFromTransaction(
+      id,
+      getAuthUser(req).id,
+      tagId
+    );
+    if (!found) {
+      res.status(404).json({ error: 'Transaction not found' });
+      return;
     }
+    res.status(204).send();
   }
 );
 

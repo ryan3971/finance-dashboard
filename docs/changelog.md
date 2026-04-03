@@ -242,3 +242,38 @@ listTags — scoped to TAG_COLUMNS (id, name, color, createdAt), no more select 
 createTag — pre-checks for duplicate name, throws TagError(NAME_TAKEN) if found; .returning() now uses TAG_COLUMNS too
 deleteTag — collapsed to a single atomic DELETE ... WHERE (id AND userId) RETURNING; returns { id } | null instead of boolean
 tags.routes.ts — delete handler now throws TagError(NOT_FOUND) on null, letting the global error handler format the 404 consistently instead of the inline res.status(404).json(...).
+---
+transactions.routes.ts
+
+Replaced the raw as Record<string, string> cast + manual parseInt/Math clamping with a listQuerySchema Zod object
+page/limit use z.coerce.number() — invalid strings now produce a 400 instead of passing NaN to the DB
+start_date/end_date validated as ISO YYYY-MM-DD format
+flagged uses z.enum(['true', 'false']).transform(v => v === 'true') — any value other than the two strings is now rejected with a 400
+transactions.errors.ts (new)
+
+TransactionError / TransactionErrorCode following the auth.errors.ts pattern
+ACCOUNT_NOT_FOUND → 422
+transactions.service.ts
+
+createManualTransaction: replaced return null with throw new TransactionError(TransactionErrorCode.ACCOUNT_NOT_FOUND) — the global error handler emits 422 automatically
+transactions-mutation.routes.ts
+
+POST / — removed the now-dead if (!created) null check; the route is a clean parse → call → 201
+DELETE /:id/tags/:tagId — collapsed the two redundant parse(req.params) calls into one
+---
+transactions.errors.ts
+
+Added TRANSACTION_NOT_FOUND (404) and TAG_NOT_FOUND (404) error codes
+transactions.service.ts
+
+Removed AddTagResult sentinel type
+addTagToTransaction now returns null when transaction not found (consistent with patchTransaction) and throws TransactionError(TAG_NOT_FOUND) when the tag doesn't exist — both handled by the existing global error handler
+auth.ts
+
+Added getAuthUser(req) — single assertion point for the req.user type gap, with a doc comment explaining the constraint
+transactions-mutation.routes.ts
+
+Replaced all four req.user!.id + eslint-disable pairs with getAuthUser(req).id
+Hoisted inline param schemas to named constants (transactionParamsSchema, tagParamsSchema) alongside the body schemas
+Collapsed addTagToTransaction branching from two sentinel checks to a single if (!found) — TAG_NOT_FOUND now flows through the global error handler automatically
+Changed POST /:id/tags response from 204 to 201 with { transactionId, tagId } body, consistent with POST / returning 201 with the created resource

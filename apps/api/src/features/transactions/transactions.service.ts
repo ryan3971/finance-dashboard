@@ -8,6 +8,7 @@ import {
 } from '@/db/schema';
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
+import { TransactionError, TransactionErrorCode } from './transactions.errors';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -222,7 +223,7 @@ export async function createManualTransaction(
     .where(and(eq(accounts.id, input.accountId), eq(accounts.userId, userId)))
     .limit(1);
 
-  if (!account) return null;
+  if (!account) throw new TransactionError(TransactionErrorCode.ACCOUNT_NOT_FOUND);
 
   const normDesc = input.description.toLowerCase().trim().replace(/\s+/g, '-');
   const compositeKey = `${input.accountId}-${input.date}-${normDesc}-${input.amount}`;
@@ -257,15 +258,14 @@ export async function createManualTransaction(
 
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
-export type AddTagResult = 'ok' | 'transaction_not_found' | 'tag_not_found';
-
+/** Returns null if the transaction was not found / not owned. Throws TAG_NOT_FOUND if the tag doesn't exist. */
 export async function addTagToTransaction(
   transactionId: string,
   userId: string,
   tagId: string
-): Promise<AddTagResult> {
+): Promise<true | null> {
   const txn = await getOwnedTransaction(transactionId, userId);
-  if (!txn) return 'transaction_not_found';
+  if (!txn) return null;
 
   const [tag] = await db
     .select({ id: tags.id })
@@ -273,14 +273,14 @@ export async function addTagToTransaction(
     .where(and(eq(tags.id, tagId), eq(tags.userId, userId)))
     .limit(1);
 
-  if (!tag) return 'tag_not_found';
+  if (!tag) throw new TransactionError(TransactionErrorCode.TAG_NOT_FOUND);
 
   await db
     .insert(transactionTags)
     .values({ transactionId, tagId })
     .onConflictDoNothing();
 
-  return 'ok';
+  return true;
 }
 
 export async function removeTagFromTransaction(
