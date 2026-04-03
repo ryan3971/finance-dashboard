@@ -79,8 +79,8 @@ describe('GET /api/v1/categories', () => {
     const tree = res.body as CategoryTreeItem[];
     const parentNode = tree.find((c) => c.name === 'Parent');
     expect(parentNode).toBeDefined();
-    expect(parentNode!.subcategories).toHaveLength(1);
-    expect(parentNode!.subcategories[0].name).toBe('Child');
+    expect(parentNode?.subcategories).toHaveLength(1);
+    expect(parentNode?.subcategories[0].name).toBe('Child');
   });
 
   it("does not include another user's categories", async () => {
