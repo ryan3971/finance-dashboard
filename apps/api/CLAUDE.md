@@ -49,7 +49,7 @@ Pluggable provider (Anthropic or OpenAI) configured via `AI_PROVIDER` env var. D
 - Service functions return data or `null` — the route layer translates `null` to 404. Services do not throw for not-found cases.
 - Express v5 is in use. Async route handlers do **not** need try/catch — Express v5 automatically forwards rejected promises to error-handling middleware.
 - Zod validation happens at the route layer before calling services.
-- `req.user` is typed as optional by Express but is always present after `requireAuth` — the `!` assertion and associated eslint-disable comments are a known gap in the type augmentation. The comment is used to suppress the error while highlighting it to developers.
+- `req.user` is typed as optional by Express but is always present after `requireAuth`. Use `getAuthUser(req)` (from `@/lib/auth`) instead of `req.user!` — it throws a descriptive error if called outside a guarded route, catching misuse at runtime rather than silently returning `undefined`.
 
 ## Error handling
 
