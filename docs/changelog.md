@@ -139,3 +139,42 @@ cleanDatabase() — the single source of truth for FK-ordered teardown
 RegisterResult interface — full register response including user.id
 registerUser() — like registerAndLogin but returns the full result
 All 8 route test files — each beforeEach is now beforeEach(() => cleanDatabase()) (or await cleanDatabase() inside questrade's compound setup). The schema table imports, db, and isNotNull are gone from every file that had them only for cleanup — cibc, td, and questrade retain only the tables their test bodies actually query.
+---
+/pipeline/util
+amount.toFixed(2) in buildCompositeKey — deterministic float representation
+RegExp(/.../) → /.../.exec() — removed redundant wrapper
+Month guard in parseDate — throws on unknown abbreviation instead of silently producing "undefined"
+NaN guard in parseAmount — throws on non-numeric input instead of silently returning NaN
+---
+Changes Summary
+Deleted
+questrade-fixture.xlsx — xlsx fixture no longer needed
+questrade-fixture.ts — programmatic xlsx generator removed
+xlsx npm package removed from apps/api
+New files
+questrade.csv — 20-row CSV fixture replacing the xlsx
+debit-credit.adapter.ts — abstract base class extracting shared validate() and parse() logic from CIBC and TD
+Fixtures (all replaced with anonymized Jan–Feb 2026 data)
+amex.csv — 16 rows; date format changed from DD-Mon-YY to DD Mon YYYY; real merchants anonymized
+cibc.csv — 15 rows; card number changed; merchants anonymized; includes quoted descriptions with commas
+td.csv — 15 rows; all values quoted; descriptions anonymized
+Pipeline
+utils.ts — parseDate gains a new DD Mon YYYY branch (e.g. 15 Feb 2026); months map moved before both Amex branches to be shared
+parser.ts — parseXlsx and xlsx import removed; CSV-only
+import.service.ts — fileType parameter removed; always calls parseCsv
+registry.ts — comment updated (Questrade no longer xlsx)
+Adapters
+questrade.adapter.ts — fileType changed to 'csv'; action-required validation removed; empty rawAction now falls back to activityType column ('Dividends' → 'dividend', 'Deposits' → 'deposit')
+cibc.adapter.ts — now extends DebitCreditAdapter; detect bug fixed (was matching all 5-column rows; now requires **** in col[4])
+td.adapter.ts — now extends DebitCreditAdapter
+Routes
+imports.routes.ts — xlsx MIME types and .xlsx extension removed from multer filter; fileType detection removed; processImport call updated
+Tests
+amex.adapter.test.ts — updated for 16 rows, new dates/amounts
+cibc.adapter.test.ts — updated for 15 rows; adds detect bug regression test; verifies quoted-comma descriptions
+td.adapter.test.ts — updated for 15 rows; new description assertions (EMPLOYMENT INS DEP, CREDIT CARD PYMT)
+questrade.adapter.test.ts — fully rewritten to load CSV fixture; tests all action mappings including empty-action fallback and all three account types
+imports.routes.test.ts — counts updated 3→16
+cibc-import.routes.test.ts — counts updated 4→15
+td-import.routes.test.ts — counts updated 5→15; assertions updated for new descriptions
+questrade-import.routes.test.ts — fully rewritten; uses CSV file upload; counts updated 3→20; adds empty-action fallback test

@@ -1,10 +1,12 @@
-import type { NextFunction, Request, Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import multer from 'multer';
+import { z } from 'zod';
 import { processImport } from '@/features/imports/pipeline/import.service';
 import { requireAuth } from '@/lib/auth';
-import { Router } from 'express';
 
 const router = Router();
+
+// ─── Internal helpers ─────────────────────────────────────────────────────────
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -12,15 +14,9 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     const allowed = [
       'text/csv',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/plain',
+      'text/plain', // browsers sometimes report CSV files as text/plain
     ];
-    if (
-      allowed.includes(file.mimetype) ||
-      file.originalname.endsWith('.csv') ||
-      file.originalname.endsWith('.xlsx')
-    ) {
+    if (allowed.includes(file.mimetype) || file.originalname.endsWith('.csv')) {
       cb(null, true);
     } else {
       cb(new Error(`Unsupported file type: ${file.mimetype}`));
@@ -28,40 +24,35 @@ const upload = multer({
   },
 });
 
+// ─── Routes ───────────────────────────────────────────────────────────────
+
 // POST /api/v1/imports/upload
 router.post(
   '/upload',
   requireAuth,
   upload.single('file'),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.file) {
-        res.status(400).json({ error: 'No file provided' });
-        return;
-      }
-
-      const { accountId } = req.body as {
-        accountId?: string;
-      };
-      if (!accountId) {
-        res.status(400).json({ error: 'accountId is required' });
-        return;
-      }
-
-      const fileType = req.file.originalname.endsWith('.xlsx') ? 'xlsx' : 'csv';
-
-      const result = await processImport(
-        req.user!.id,
-        accountId,
-        req.file.originalname,
-        req.file.buffer,
-        fileType
-      );
-
-      res.status(201).json(result);
-    } catch (err) {
-      next(err);
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file provided' });
+      return;
     }
+
+    const body = z.object({ accountId: z.string().uuid() }).safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: 'accountId must be a valid UUID' });
+      return;
+    }
+    const { accountId } = body.data;
+
+    const result = await processImport(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      req.user!.id,
+      accountId,
+      req.file.originalname,
+      req.file.buffer
+    );
+
+    res.status(201).json(result);
   }
 );
 

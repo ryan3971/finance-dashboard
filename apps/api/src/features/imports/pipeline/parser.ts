@@ -1,5 +1,3 @@
-import * as XLSX from 'xlsx';
-
 /**
  * Parse a CSV string into a 2D array of strings.
  * Handles quoted fields and comma delimiters.
@@ -29,16 +27,4 @@ export function parseCsv(content: string): string[][] {
 
     return result;
   });
-}
-
-/**
- * Parse an XLSX buffer into a 2D array of strings.
- * Reads the first sheet only.
- */
-export function parseXlsx(buffer: Buffer): string[][] {
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-  return rows.map(row => (row as unknown[]).map(cell => String(cell ?? '')));
 }

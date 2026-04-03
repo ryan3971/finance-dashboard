@@ -47,11 +47,11 @@ describe('TD import end-to-end', () => {
 
     const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
-    expect(body.importedCount).toBe(5);
+    expect(body.importedCount).toBe(15);
     expect(body.duplicateCount).toBe(0);
   });
 
-  it('correctly identifies income (PRODIGY) as positive', async () => {
+  it('correctly identifies employment insurance deposit as positive', async () => {
     const token = await registerAndLogin(app, 'td-test@example.com');
     const accountId = await createAccount(app, token, TD_ACCOUNT);
 
@@ -65,12 +65,14 @@ describe('TD import end-to-end', () => {
       .from(transactions)
       .where(eq(transactions.accountId, accountId));
 
-    const prodigy = rows.find((r) => r.rawDescription.includes('PRODIGY'));
-    expect(prodigy).toBeDefined();
-    expect(parseFloat(prodigy!.amount)).toBeCloseTo(2549.81);
+    const income = rows.find((r) =>
+      r.rawDescription.includes('EMPLOYMENT INS DEP')
+    );
+    expect(income).toBeDefined();
+    expect(parseFloat(income!.amount)).toBeCloseTo(2616);
   });
 
-  it('correctly identifies fees as negative', async () => {
+  it('correctly identifies bill payments as negative', async () => {
     const token = await registerAndLogin(app, 'td-test@example.com');
     const accountId = await createAccount(app, token, TD_ACCOUNT);
 
@@ -84,8 +86,10 @@ describe('TD import end-to-end', () => {
       .from(transactions)
       .where(eq(transactions.accountId, accountId));
 
-    const fee = rows.find((r) => r.rawDescription.includes('ACCOUNT FEE'));
-    expect(fee).toBeDefined();
-    expect(parseFloat(fee!.amount)).toBeCloseTo(-11.95);
+    const payment = rows.find((r) =>
+      r.rawDescription.includes('CREDIT CARD PYMT')
+    );
+    expect(payment).toBeDefined();
+    expect(parseFloat(payment!.amount)).toBeLessThan(0);
   });
 });

@@ -8,14 +8,14 @@ const adapter = new CibcAdapter();
 const FIXTURE = path.join(__dirname, './../__fixtures__', 'cibc.csv');
 
 describe('CibcAdapter', () => {
-  it('detect() returns true for CIBC data row', () => {
+  it('detect() returns true for CIBC data row with masked card', () => {
     expect(
       adapter.detect([
-        '2026-02-24',
-        'STARBUCKS WHISTLER',
-        '10.29',
+        '2026-02-17',
+        'WAREHOUSE GROCERY CO',
+        '198.45',
         '',
-        '5268****2066',
+        '4321****5678',
       ])
     ).toBe(true);
   });
@@ -26,17 +26,26 @@ describe('CibcAdapter', () => {
     ).toBe(false);
   });
 
+  it('detect() returns false when col[4] has no masked card (TD format)', () => {
+    expect(
+      adapter.detect(['2026-02-02', 'SOME MERCHANT', '28.8', '', '14878.00'])
+    ).toBe(false);
+  });
+
   it('parses fixture file correctly', () => {
     const content = fs.readFileSync(FIXTURE, 'utf-8');
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'test-account-id');
 
-    expect(results).toHaveLength(4);
+    expect(results).toHaveLength(15);
 
-    expect(Number(results[0].amount)).toBe(-10.29);
-    expect(Number(results[1].amount)).toBe(-46.99);
-    expect(Number(results[2].amount)).toBe(-198.45);
+    // Debit: positive debit col → negative amount
+    expect(Number(results[0].amount)).toBe(-198.45);
 
+    // Quoted description with comma parsed correctly
+    expect(results[0].rawDescription).toBe('WAREHOUSE GROCERY CO W552 VANCOUVER, BC');
+
+    // Payment: credit col → positive amount
     const payment = results.find((r) => Number(r.amount) > 0);
     expect(payment).toBeDefined();
     expect(Number(payment!.amount)).toBe(503.87);
@@ -46,7 +55,7 @@ describe('CibcAdapter', () => {
     const content = fs.readFileSync(FIXTURE, 'utf-8');
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'test-account-id');
-    expect(results[0].metadata?.cardNumber).toContain('5268');
+    expect(results[0].metadata?.cardNumber).toContain('4321');
   });
 
   it('compositeKey includes accountId prefix', () => {

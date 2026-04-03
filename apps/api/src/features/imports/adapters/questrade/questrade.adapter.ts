@@ -35,7 +35,7 @@ const ACTION_MAP: Record<string, RawInvestmentTransaction['action']> = {
 
 export class QuestradeAdapter implements CsvAdapter {
   readonly institution = 'questrade';
-  readonly fileType = 'xlsx' as const;
+  readonly fileType = 'csv' as const;
   readonly hasHeaderRow = true;
 
   detect(firstRow: string[]): boolean {
@@ -51,7 +51,6 @@ export class QuestradeAdapter implements CsvAdapter {
   validate(row: string[]): ValidationResult {
     const errors: string[] = [];
     if (!row[0]?.trim()) errors.push('Missing transaction date');
-    if (!row[2]?.trim()) errors.push('Missing action');
     if (!row[11]?.trim()) errors.push('Missing account number');
     if (!row[13]?.trim()) errors.push('Missing account type');
     return { valid: errors.length === 0, errors };
@@ -72,7 +71,14 @@ export class QuestradeAdapter implements CsvAdapter {
         ? parseDate(String(row[1]))
         : undefined;
       const rawAction = String(row[2]).trim();
-      const action = ACTION_MAP[rawAction.toLowerCase()] ?? 'transfer';
+      const activityType = String(row[12] ?? '').trim();
+      const action: RawInvestmentTransaction['action'] = rawAction
+        ? (ACTION_MAP[rawAction.toLowerCase()] ?? 'transfer')
+        : activityType.toLowerCase().includes('dividend')
+          ? 'dividend'
+          : activityType.toLowerCase().includes('deposit')
+            ? 'deposit'
+            : 'transfer';
       const symbol = String(row[3] ?? '').trim() || undefined;
       const rawDescription = String(row[4] ?? '').trim();
       const quantity = parseAmount(String(row[5])) || undefined;
@@ -82,7 +88,6 @@ export class QuestradeAdapter implements CsvAdapter {
       const netAmount = parseAmount(String(row[9]));
       const currency = String(row[10] ?? 'CAD').trim();
       const accountNumber = String(row[11]).trim();
-      const activityType = String(row[12] ?? '').trim();
       const rawAccountType = String(row[13] ?? '')
         .trim()
         .toLowerCase();

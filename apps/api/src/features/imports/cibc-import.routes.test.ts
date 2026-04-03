@@ -47,7 +47,7 @@ describe('CIBC import end-to-end', () => {
 
     const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
-    expect(body.importedCount).toBe(4);
+    expect(body.importedCount).toBe(15);
     expect(body.duplicateCount).toBe(0);
     expect(body.errorCount).toBe(0);
   });
@@ -89,6 +89,6 @@ describe('CIBC import end-to-end', () => {
 
     const body = res.body as ImportSummaryResponse;
     expect(body.importedCount).toBe(0);
-    expect(body.duplicateCount).toBe(4);
+    expect(body.duplicateCount).toBe(15);
   });
 });

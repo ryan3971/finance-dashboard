@@ -39,7 +39,7 @@ describe('POST /api/v1/imports/upload', () => {
 
     const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
-    expect(body.importedCount).toBe(3);
+    expect(body.importedCount).toBe(16);
     expect(body.duplicateCount).toBe(0);
     expect(body.errorCount).toBe(0);
   });
@@ -63,7 +63,7 @@ describe('POST /api/v1/imports/upload', () => {
     const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
     expect(body.importedCount).toBe(0);
-    expect(body.duplicateCount).toBe(3);
+    expect(body.duplicateCount).toBe(16);
   });
 
   it('returns 400 when no file is provided', async () => {

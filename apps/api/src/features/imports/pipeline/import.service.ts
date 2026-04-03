@@ -6,12 +6,13 @@ import {
 } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { detectAdapter, getAdapterByInstitution } from './registry';
-import { parseCsv, parseXlsx } from './parser';
+import { parseCsv } from './parser';
 import type { RawInvestmentTransaction, RawTransaction } from '@finance/shared';
 import { buildCompositeKey } from './utils';
 import { categorize } from '../../../pipelines/categorization/pipeline';
 import { db } from '@/db';
 import { detectTransfers } from '../../../pipelines/transfer-detection/transfer-detection.service';
+import { ImportError, ImportErrorCode } from '@/features/imports/imports.errors';
 
 export interface ImportResult {
   importId: string;
@@ -28,29 +29,24 @@ export async function processImport(
   userId: string,
   accountId: string,
   filename: string,
-  fileBuffer: Buffer,
-  fileType: 'csv' | 'xlsx'
+  fileBuffer: Buffer
 ): Promise<ImportResult> {
   const [account] = await db
-    .select()
+    .select({ institution: accounts.institution })
     .from(accounts)
     .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)))
     .limit(1);
 
-  if (!account) throw new Error('Account not found');
+  if (!account) throw new ImportError(ImportErrorCode.ACCOUNT_NOT_FOUND);
 
-  const rows =
-    fileType === 'xlsx'
-      ? parseXlsx(fileBuffer)
-      : parseCsv(fileBuffer.toString('utf-8'));
+  const rows = parseCsv(fileBuffer.toString('utf-8'));
 
   let adapter = getAdapterByInstitution(account.institution);
   if (!adapter) {
     const firstRow = rows[0] ?? [];
     adapter = detectAdapter(firstRow);
   }
-  if (!adapter)
-    throw new Error(`No adapter found for institution: ${account.institution}`);
+  if (!adapter) throw new ImportError(ImportErrorCode.NO_ADAPTER);
 
   const s3Key = `imports/${userId}/${accountId}/${Date.now()}-${filename}`;
   const [importRecord] = await db
@@ -106,10 +102,10 @@ export async function processImport(
         if (insertedId) importedTransactionIds.push(insertedId);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (message.includes('duplicate') || message.includes('unique')) {
+      if ((err as { code?: string }).code === '23505') {
         result.duplicateCount++;
       } else {
+        const message = err instanceof Error ? err.message : String(err);
         result.errorCount++;
         result.errors.push(message);
       }

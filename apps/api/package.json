@@ -33,7 +33,6 @@
     "pino": "^8.19.0",
     "pino-http": "^9.0.0",
     "uuid": "^9.0.0",
-    "xlsx": "^0.18.5",
     "zod": "^3.22.0"
   },
   "devDependencies": {

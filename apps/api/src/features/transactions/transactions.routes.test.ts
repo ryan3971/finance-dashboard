@@ -43,8 +43,8 @@ describe('GET /api/v1/transactions', () => {
 
     const body = res.body as PaginatedResponse<Record<string, unknown>>;
     expect(res.status).toBe(200);
-    expect(body.data).toHaveLength(3);
-    expect(body.pagination.total).toBe(3);
+    expect(body.data).toHaveLength(16);
+    expect(body.pagination.total).toBe(16);
     expect(body.pagination.page).toBe(1);
   });
 
@@ -58,11 +58,13 @@ describe('GET /api/v1/transactions', () => {
     });
     await uploadAmex(token, accountId);
 
+    // Filter to 2026-02-15: only charges (ANNUAL MEMBERSHIP FEE, CLOUD SUBSCRIPTION SVC)
     const res = await request(app)
-      .get('/api/v1/transactions')
+      .get('/api/v1/transactions?start_date=2026-02-15&end_date=2026-02-15')
       .set('Authorization', `Bearer ${token}`);
 
     const body = res.body as PaginatedResponse<{ amount: string }>;
+    expect(body.data.length).toBeGreaterThan(0);
     for (const tx of body.data) {
       expect(Number(tx.amount)).toBeLessThan(0);
     }
@@ -135,12 +137,12 @@ describe('GET /api/v1/transactions', () => {
 
     const body = res.body as PaginatedResponse<Record<string, unknown>>;
     expect(body.data).toHaveLength(2);
-    expect(body.pagination.totalPages).toBe(2);
+    expect(body.pagination.totalPages).toBe(8);
   });
 });
 
 describe('GET /api/v1/transactions — date and category filters', () => {
-  // Amex fixture dates: 2025-06-13, 2025-06-14, 2025-06-15
+  // Amex fixture has rows spanning 2026-01-31 to 2026-02-15
 
   it('filters by start_date and end_date', async () => {
     const token = await registerAndLogin(app);
@@ -153,13 +155,13 @@ describe('GET /api/v1/transactions — date and category filters', () => {
     await uploadAmex(token, accountId);
 
     const res = await request(app)
-      .get('/api/v1/transactions?start_date=2025-06-14&end_date=2025-06-14')
+      .get('/api/v1/transactions?start_date=2026-02-12&end_date=2026-02-12')
       .set('Authorization', `Bearer ${token}`);
 
     const body = res.body as PaginatedResponse<{ date: string }>;
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].date).toBe('2025-06-14');
+    expect(body.data[0].date).toBe('2026-02-12');
   });
 
   it('returns empty array for date range with no transactions', async () => {

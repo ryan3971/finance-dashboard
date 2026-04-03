@@ -6,7 +6,7 @@ import { TdAdapter } from '../adapters/td/td.adapter';
 
 // Ordered — more specific detectors first
 const ADAPTERS: CsvAdapter[] = [
-  new QuestradeAdapter(), // xlsx — detect() is unambiguous
+  new QuestradeAdapter(), // CSV with unique header — detect() checks header content
   new AmexAdapter(), // has header row — detect() checks header content
   new CibcAdapter(), // no header, has masked card number in col[4]
   new TdAdapter(), // no header, 5 columns, no masked card

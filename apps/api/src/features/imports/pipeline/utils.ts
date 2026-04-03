@@ -18,18 +18,34 @@ export function buildCompositeKey(
   const normDesc = normaliseDescription(description)
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-');
-  return `${accountId}-${date}-${normDesc}-${amount}`;
+  return `${accountId}-${date}-${normDesc}-${amount.toFixed(2)}`;
 }
 
 /**
  * Parse a date string to ISO 8601 YYYY-MM-DD.
  * Handles:
  *   - YYYY-MM-DD (passthrough)
- *   - DD-Mon-YY  (Amex: "15-Jun-25")
  *   - YYYY-MM-DD 12:00:00 AM (Questrade)
+ *   - DD-Mon-YY  (Amex legacy: "15-Jun-25")
+ *   - DD Mon YYYY (Amex: "15 Feb 2026")
  */
 export function parseDate(raw: string): string {
   const trimmed = raw.trim();
+
+  const months: Record<string, string> = {
+    Jan: '01',
+    Feb: '02',
+    Mar: '03',
+    Apr: '04',
+    May: '05',
+    Jun: '06',
+    Jul: '07',
+    Aug: '08',
+    Sep: '09',
+    Oct: '10',
+    Nov: '11',
+    Dec: '12',
+  };
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return trimmed;
@@ -39,15 +55,23 @@ export function parseDate(raw: string): string {
     return trimmed.slice(0, 10);
   }
 
-  const amexMatch = trimmed.match(/^(\d{2})-([A-Za-z]{3})-(\d{2})$/);
-  if (amexMatch) {
-    const months: Record<string, string> = {
-      Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
-      Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
-    };
-    const [, day, mon, yr] = amexMatch;
+  // DD Mon YYYY  (Amex: "15 Feb 2026")
+  const amexSpaceMatch = /^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/.exec(trimmed);
+  if (amexSpaceMatch) {
+    const [, day, mon, year] = amexSpaceMatch;
+    const month = months[mon];
+    if (!month) throw new Error(`Unrecognised month abbreviation: "${mon}"`);
+    return `${year}-${month}-${day.padStart(2, '0')}`;
+  }
+
+  // DD-Mon-YY  (Amex legacy: "15-Jun-25")
+  const amexDashMatch = /^(\d{2})-([A-Za-z]{3})-(\d{2})$/.exec(trimmed);
+  if (amexDashMatch) {
+    const [, day, mon, yr] = amexDashMatch;
+    const month = months[mon];
+    if (!month) throw new Error(`Unrecognised month abbreviation: "${mon}"`);
     const year = parseInt(yr, 10) >= 50 ? `19${yr}` : `20${yr}`;
-    return `${year}-${months[mon]}-${day.padStart(2, '0')}`;
+    return `${year}-${month}-${day.padStart(2, '0')}`;
   }
 
   throw new Error(`Unrecognised date format: "${raw}"`);
@@ -59,5 +83,7 @@ export function parseDate(raw: string): string {
  */
 export function parseAmount(raw: string | undefined): number {
   if (!raw || raw.trim() === '') return 0;
-  return parseFloat(raw.replace(/,/g, '').trim());
+  const result = parseFloat(raw.replace(/,/g, '').trim());
+  if (isNaN(result)) throw new Error(`Unrecognised amount value: "${raw}"`);
+  return result;
 }
