@@ -12,5 +12,6 @@ if (!testUrl) {
 
 execSync('tsx src/db/seeds/index.ts', {
   stdio: 'inherit',
+  cwd: path.resolve(__dirname, '../..'),
   env: { ...process.env, DATABASE_URL: testUrl },
 });
