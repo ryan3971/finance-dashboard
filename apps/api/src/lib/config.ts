@@ -10,10 +10,14 @@
  *
  * IMPORTANT: This module must be imported before any other module that needs
  * configuration. In server.ts it must be the first import.
+ *
+ * NOTE: Tests override DATABASE_URL by mutating process.env before this
+ * module loads (via testing/setup.ts). Import order matters.
  */
 
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { z } from 'zod';
 
 // Load .env in development and test. In production (ECS), env vars are
 // injected directly by the task definition — dotenv is a no-op there.
@@ -21,72 +25,94 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 }
 
-function requireEnv(name: string, fallback?: string): string {
-  const value = process.env[name] ?? fallback;
-  if (value === undefined) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
+const envSchema = z
+  .object({
+    // App
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().positive().default(3001),
+    LOG_LEVEL: z.string().default('info'),
+
+    // Database
+    DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+
+    // Auth
+    JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+    JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
+
+    // CORS
+    CORS_ORIGIN: z.string().default('http://localhost:5173'),
+
+    // AI
+    ENABLE_AI_CATEGORIZATION: z.enum(['true', 'false']).default('false'),
+    AI_PROVIDER: z.enum(['anthropic', 'openai']).default('anthropic'),
+    AI_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
+    ANTHROPIC_API_KEY: z.string().default(''),
+    OPENAI_API_KEY: z.string().default(''),
+
+    // Transfer detection
+    TRANSFER_DETECTION_WINDOW_DAYS: z.coerce.number().int().positive().default(3),
+
+    // AWS (Phase 4 — optional until deployment)
+    AWS_REGION: z.string().default('ca-central-1'),
+    S3_BUCKET_NAME: z.string().default(''),
+  })
+  .superRefine((env, ctx) => {
+    if (env.ENABLE_AI_CATEGORIZATION === 'true') {
+      if (env.AI_PROVIDER === 'anthropic' && !env.ANTHROPIC_API_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['ANTHROPIC_API_KEY'],
+          message: 'ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic',
+        });
+      }
+      if (env.AI_PROVIDER === 'openai' && !env.OPENAI_API_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['OPENAI_API_KEY'],
+          message: 'OPENAI_API_KEY is required when AI_PROVIDER=openai',
+        });
+      }
+    }
+  });
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  const formatted = parsed.error.issues
+    .map((issue) => `  ${issue.path.join('.')}: ${issue.message}`)
+    .join('\n');
+  throw new Error(`Invalid environment configuration:\n${formatted}`);
 }
 
-function optionalEnv(name: string, fallback: string): string {
-  return process.env[name] ?? fallback;
-}
+const env = parsed.data;
 
 export const config = {
   // App
-  nodeEnv: optionalEnv('NODE_ENV', 'development'),
-  port: parseInt(optionalEnv('PORT', '3001'), 10),
-  logLevel: optionalEnv('LOG_LEVEL', 'info'),
+  nodeEnv: env.NODE_ENV,
+  port: env.PORT,
+  logLevel: env.LOG_LEVEL,
 
   // Database
-  databaseUrl: requireEnv('DATABASE_URL'),
+  databaseUrl: env.DATABASE_URL,
 
   // Auth
-  jwtSecret: requireEnv('JWT_SECRET'),
-  jwtRefreshSecret: requireEnv('JWT_REFRESH_SECRET'),
+  jwtSecret: env.JWT_SECRET,
+  jwtRefreshSecret: env.JWT_REFRESH_SECRET,
 
   // CORS
-  corsOrigin: optionalEnv('CORS_ORIGIN', 'http://localhost:5173'),
+  corsOrigin: env.CORS_ORIGIN,
 
   // AI
-  aiEnabled: optionalEnv('ENABLE_AI_CATEGORIZATION', 'false') === 'true',
-  aiProvider: optionalEnv('AI_PROVIDER', 'anthropic') as 'anthropic' | 'openai',
-  aiConfidenceThreshold: parseFloat(
-    optionalEnv('AI_CONFIDENCE_THRESHOLD', '0.70')
-  ),
-  anthropicApiKey: optionalEnv('ANTHROPIC_API_KEY', ''),
-  openaiApiKey: optionalEnv('OPENAI_API_KEY', ''),
+  aiEnabled: env.ENABLE_AI_CATEGORIZATION === 'true',
+  aiProvider: env.AI_PROVIDER,
+  aiConfidenceThreshold: env.AI_CONFIDENCE_THRESHOLD,
+  anthropicApiKey: env.ANTHROPIC_API_KEY,
+  openaiApiKey: env.OPENAI_API_KEY,
 
   // Transfer detection
-  transferWindowDays: parseInt(
-    optionalEnv('TRANSFER_DETECTION_WINDOW_DAYS', '3'),
-    10
-  ),
+  transferWindowDays: env.TRANSFER_DETECTION_WINDOW_DAYS,
 
   // AWS (Phase 4 — optional until deployment)
-  awsRegion: optionalEnv('AWS_REGION', 'ca-central-1'),
-  s3BucketName: optionalEnv('S3_BUCKET_NAME', ''),
+  awsRegion: env.AWS_REGION,
+  s3BucketName: env.S3_BUCKET_NAME,
 } as const;
-
-// Validate AI keys at startup if AI is enabled
-// if (config.aiEnabled) {
-//     if (config.aiProvider === 'anthropic' && !config.anthropicApiKey) {
-//       throw new Error('ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic');
-//     }
-//     if (config.aiProvider === 'openai' && !config.openaiApiKey) {
-//       throw new Error('OPENAI_API_KEY is required when AI_PROVIDER=openai');
-//     }
-// }
-
-/**TODO See below
- * Unsafe parseFloat/parseInt Without Validation
- * If someone sets AI_CONFIDENCE_THRESHOLD=abc, [parseFloat]
- * silently returns NaN, which will cause all AI results to pass or
- * fail the threshold check unexpectedly. Add guards:
- *
- * as const Prevents Runtime Mutation but Not Type Widening on aiProvider
- * The as 'anthropic' | 'openai' assertion is correct, but it's worth adding a
- * runtime guard since the value comes from user input:
- *
- */

@@ -106,3 +106,12 @@ apps/web cannot import from apps/api
 apps/api cannot import from apps/web
 packages/shared cannot import from either app (it's a leaf)
 3. api/layer-ordering — applied only to *.services.ts files, prevents them from importing *.routes.ts files, enforcing the one-way flow: routes → services → db.
+---
+Done. Key changes:
+
+envSchema — single Zod schema declares all vars with types, coercion, and defaults
+safeParse + formatted error — reports all invalid/missing vars at once instead of failing on the first one; useful when debugging a new ECS deployment
+superRefine — AI key cross-validation runs in the same parse pass
+z.coerce.number() — PORT, AI_CONFIDENCE_THRESHOLD, and TRANSFER_DETECTION_WINDOW_DAYS now throw with a clear message on non-numeric input instead of silently producing NaN
+optionalEnv/requireEnv helpers removed — Zod replaces them entirely
+config object shape is unchanged — no other files need updating
