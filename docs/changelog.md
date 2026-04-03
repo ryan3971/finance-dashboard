@@ -96,3 +96,13 @@ All createError calls replaced with new AuthError(AuthErrorCode.*).
 loginUser and refreshAccessToken selects scoped to only the columns actually used.
 refreshAccessToken token rotation wrapped in db.transaction(), with the delete and the new insert inside the same transaction. issueTokenPair accepts an optional tx parameter (defaults to db) so it can participate in the caller's transaction without being rewritten.
 ---
+Three additions were made:
+
+1. widgets added to web/feature-boundaries — widgets are reusable UI that sit below features in the dependency hierarchy; they were missing from the shared-layer restriction.
+
+2. monorepo/cross-app-isolation — enforces the dependency arrow apps/web → @finance/shared ← apps/api:
+
+apps/web cannot import from apps/api
+apps/api cannot import from apps/web
+packages/shared cannot import from either app (it's a leaf)
+3. api/layer-ordering — applied only to *.services.ts files, prevents them from importing *.routes.ts files, enforcing the one-way flow: routes → services → db.

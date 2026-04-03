@@ -144,6 +144,7 @@ export default defineConfig(
                 './apps/web/src/components',
                 './apps/web/src/hooks',
                 './apps/web/src/lib',
+                './apps/web/src/widgets',
                 './packages/shared/src/*',
                 './apps/web/src/utils',
               ],
@@ -324,4 +325,60 @@ export default defineConfig(
   //     ],
   //   },
   // }
+
+  // ── Monorepo: cross-app isolation ─────────────────────────────────────────
+  // Enforces the dependency arrow:  apps/web → @finance/shared ← apps/api
+  // Neither app may import the other; shared must not import from apps.
+  {
+    name: 'monorepo/cross-app-isolation',
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.{ts,tsx}'],
+    plugins: { import: importPlugin },
+    rules: {
+      'import/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './apps/web',
+              from: './apps/api',
+              message:
+                'apps/web must not import from apps/api. Use @finance/shared for shared types.',
+            },
+            {
+              target: './apps/api',
+              from: './apps/web',
+              message: 'apps/api must not import from apps/web.',
+            },
+            {
+              target: './packages/shared',
+              from: './apps',
+              message:
+                'packages/shared must not import from apps. It is a leaf dependency consumed by apps.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // ── API: intra-feature layer ordering  (routes → services → db) ───────────
+  // Service files sit below route handlers; they must not reach upward into routes.
+  {
+    name: 'api/layer-ordering',
+    files: ['apps/api/src/features/**/*.services.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['*.routes', '*.routes.ts'],
+              message:
+                'Service files must not import from route files. Data flows routes → services → db.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
