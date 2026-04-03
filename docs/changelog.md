@@ -178,3 +178,30 @@ imports.routes.test.ts — counts updated 3→16
 cibc-import.routes.test.ts — counts updated 4→15
 td-import.routes.test.ts — counts updated 5→15; assertions updated for new descriptions
 questrade-import.routes.test.ts — fully rewritten; uses CSV file upload; counts updated 3→20; adds empty-action fallback test
+---
+
+imports.errors.ts
+
+Added EMPTY_FILE error code with 422 status and message 'The uploaded file contains no rows'
+rules-engine.ts
+
+Extracted loadRules(userId) — the DB fetch, exported for batch callers
+Extracted applyRules(description, rules) — pure matching function, no DB access
+runRulesEngine kept as a convenience wrapper (fetch + apply) for any single-transaction callers
+pipeline.ts
+
+categorize() gains an optional rules?: Rule[] parameter
+When rules is provided, calls applyRules directly (no DB round-trip); when absent, fetches via loadRules — backwards-compatible for any future callers that don't pass rules
+Re-exports loadRules and Rule so import.service has a single import path
+import.service.ts
+
+Issue 1: Raw DB error messages replaced with a sanitized generic string; full error logged server-side
+Issue 2: loadRules(userId) called once before the loop; passed through to processTransactionRow → categorize
+Issue 3: Row loop + detectTransfers + final status update wrapped in try/catch; the catch sets import status to 'error' before re-throwing
+Issue 4: Both transactions and investmentTransactions inserts now use .onConflictDoNothing().returning() — duplicate detected by checking if inserted is undefined
+Issue 5: Comment added explaining the result.rowCount overwrite
+Issue 7: TODO comment added on the S3 key
+Issue 8: Empty file guard added immediately after parseCsv, before adapter detection
+transfer-detection.service.ts
+
+Issue 6: Both sql.raw(ARRAY[...]) patterns replaced with inArray() from drizzle-orm

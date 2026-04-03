@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, ne, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm';
 import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
@@ -60,11 +60,7 @@ export async function detectTransfers(
       isTransfer: transactions.isTransfer,
     })
     .from(transactions)
-    .where(
-      sql`${transactions.id} = ANY(${sql.raw(
-        `ARRAY['${importedTransactionIds.join("','")}']::uuid[]`
-      )})`
-    );
+    .where(inArray(transactions.id, importedTransactionIds));
 
   const candidates: TransferCandidate[] = [];
 
@@ -133,11 +129,7 @@ export async function detectTransfers(
     await db
       .update(transactions)
       .set({ flaggedForReview: true })
-      .where(
-        sql`${transactions.id} = ANY(${sql.raw(
-          `ARRAY['${idsToFlag.join("','")}']::uuid[]`
-        )})`
-      );
+      .where(inArray(transactions.id, idsToFlag));
 
     logger.info(
       {

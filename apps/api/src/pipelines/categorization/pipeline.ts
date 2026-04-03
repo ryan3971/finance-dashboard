@@ -5,7 +5,11 @@ import { categorizeWithAnthropic } from './anthropic-provider';
 import { categorizeWithOpenAI } from './openai-provider';
 import { config } from '@/lib/config';
 import { db } from '@/db';
-import { runRulesEngine } from './rules-engine';
+import { applyRules, loadRules, type Rule } from './rules-engine';
+
+// Re-export for callers that batch-load rules before a loop (e.g. import pipeline)
+export { loadRules } from './rules-engine';
+export type { Rule } from './rules-engine';
 
 let uncategorizedId: string | null = null;
 
@@ -55,15 +59,21 @@ async function runAiProvider(
  *   1. Rules engine  — deterministic, free, handles known merchants
  *   2. AI provider   — handles novel merchants (Anthropic or OpenAI, feature-flagged)
  *   3. Fallback      — Uncategorized + flagged for review
+ *
+ * Pass `rules` when categorizing in a batch to avoid a per-call DB fetch.
+ * Omit it (or pass undefined) for one-off categorization.
  */
 export async function categorize(
   description: string,
   userId: string,
-  amount: number = 0,
-  currency: string = 'CAD'
+  amount: 0,
+  currency: 'CAD',
+  rules?: Rule[]
 ): Promise<CategorizationResult> {
   // Step 1: Rules engine
-  const ruleResult = await runRulesEngine(description, userId);
+  const ruleResult = rules
+    ? applyRules(description, rules)
+    : await loadRules(userId).then((r) => applyRules(description, r));
   if (ruleResult) return ruleResult;
 
   // Step 2: AI provider (feature-flagged, provider configurable)
