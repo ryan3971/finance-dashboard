@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import * as path from 'path';
 import { transactions } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -14,10 +15,7 @@ import request from 'supertest';
 
 const app = createApp();
 
-const FIXTURE = path.join(
-  __dirname,
-  './adapters/__fixtures__/td.csv'
-);
+const FIXTURE = path.join(__dirname, './adapters/__fixtures__/td.csv');
 
 const TD_ACCOUNT = {
   name: 'TD Chequing',
@@ -68,8 +66,8 @@ describe('TD import end-to-end', () => {
     const income = rows.find((r) =>
       r.rawDescription.includes('EMPLOYMENT INS DEP')
     );
-    expect(income).toBeDefined();
-    expect(parseFloat(income!.amount)).toBeCloseTo(2616);
+    assert(income !== undefined);
+    expect(parseFloat(income.amount)).toBeCloseTo(2616);
   });
 
   it('correctly identifies bill payments as negative', async () => {
@@ -89,7 +87,7 @@ describe('TD import end-to-end', () => {
     const payment = rows.find((r) =>
       r.rawDescription.includes('CREDIT CARD PYMT')
     );
-    expect(payment).toBeDefined();
-    expect(parseFloat(payment!.amount)).toBeLessThan(0);
+    assert(payment !== undefined);
+    expect(parseFloat(payment.amount)).toBeLessThan(0);
   });
 });

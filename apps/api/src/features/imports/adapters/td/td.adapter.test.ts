@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import assert from 'node:assert/strict';
 import { describe, expect, it } from 'vitest';
 import { parseCsv } from '../../pipeline/parser';
 import { TdAdapter } from './td.adapter';
@@ -31,15 +32,15 @@ describe('TdAdapter', () => {
     const income = results.find((r) =>
       r.rawDescription.includes('EMPLOYMENT INS DEP')
     );
-    expect(income).toBeDefined();
-    expect(Number(income!.amount)).toBe(2616);
+    assert(income !== undefined);
+    expect(Number(income.amount)).toBe(2616);
 
     // Expense: debit col populated → negative amount
     const expense = results.find((r) =>
       r.rawDescription.includes('CREDIT CARD PYMT')
     );
-    expect(expense).toBeDefined();
-    expect(Number(expense!.amount)).toBeLessThan(0);
+    assert(expense !== undefined);
+    expect(Number(expense.amount)).toBeLessThan(0);
   });
 
   it('collapses extra spaces in descriptions', () => {
@@ -47,6 +48,7 @@ describe('TdAdapter', () => {
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'test-account-id');
     const income = results.find((r) => r.description.includes('employment ins dep'));
-    expect(income!.description).not.toContain('  ');
+    assert(income !== undefined);
+    expect(income.description).not.toContain('  ');
   });
 });

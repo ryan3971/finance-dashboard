@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
 import { parseCsv } from '../../pipeline/parser';
 import { QuestradeAdapter } from './questrade.adapter';
 
@@ -49,20 +50,22 @@ describe('QuestradeAdapter', () => {
     const results = adapter.parse(rows, 'test-account-id');
 
     const div = results.find((r) => r.rawAction === 'DIV');
-    expect(div).toBeDefined();
-    expect(div!.action).toBe('dividend');
+    assert(div !== undefined);
+    expect(div.action).toBe('dividend');
 
     const con = results.find((r) => r.rawAction === 'CON');
-    expect(con).toBeDefined();
-    expect(con!.action).toBe('deposit');
+    assert(con !== undefined);
+    expect(con.action).toBe('deposit');
 
     const tf6 = results.find((r) => r.rawAction === 'TF6');
     expect(tf6).toBeDefined();
-    expect(tf6!.action).toBe('transfer');
+    assert(tf6 !== undefined);
+    expect(tf6.action).toBe('transfer');
 
     const rei = results.find((r) => r.rawAction === 'REI');
     expect(rei).toBeDefined();
-    expect(rei!.action).toBe('dividend');
+    assert(rei !== undefined);
+    expect(rei.action).toBe('dividend');
   });
 
   it('maps empty action to dividend via Activity Type fallback', () => {
@@ -92,7 +95,8 @@ describe('QuestradeAdapter', () => {
     const results = adapter.parse(rows, 'test-account-id');
 
     const rei = results.find((r) => r.rawAction === 'REI');
-    expect(Number(rei!.netAmount)).toBeLessThan(0);
+    assert(rei !== undefined);
+    expect(Number(rei.netAmount)).toBeLessThan(0);
   });
 
   it('compositeKey includes accountId prefix after import service rewrite', () => {

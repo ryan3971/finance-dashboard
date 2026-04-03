@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import assert from 'node:assert/strict';
 import { describe, expect, it } from 'vitest';
 import { CibcAdapter } from './cibc.adapter';
 import { parseCsv } from '../../pipeline/parser';
@@ -47,8 +48,8 @@ describe('CibcAdapter', () => {
 
     // Payment: credit col → positive amount
     const payment = results.find((r) => Number(r.amount) > 0);
-    expect(payment).toBeDefined();
-    expect(Number(payment!.amount)).toBe(503.87);
+    assert(payment !== undefined);
+    expect(Number(payment.amount)).toBe(503.87);
   });
 
   it('stores card number in metadata', () => {
