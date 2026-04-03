@@ -30,7 +30,7 @@ export class AmexAdapter implements CsvAdapter {
     if (!row[0]?.trim()) errors.push('Missing date');
     if (!row[2]?.trim()) errors.push('Missing description');
     if (!row[3]?.trim()) errors.push('Missing amount');
-    if (row[3] && isNaN(parseFloat(row[3])))
+    if (row[3]?.trim() && isNaN(parseFloat(row[3].replace(/,/g, '').trim())))
       errors.push(`Invalid amount: "${row[3]}"`);
     return { valid: errors.length === 0, errors };
   }
