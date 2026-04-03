@@ -1,32 +1,15 @@
 import {
   type AccountResponse,
+  cleanDatabase,
   registerAndLogin,
 } from '../../testing/test-helpers';
-import {
-  accounts,
-  categorizationRules,
-  imports,
-  investmentTransactions,
-  refreshTokens,
-  transactions,
-  users,
-} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '@/app';
-import { db } from '@/db';
 import request from 'supertest';
 
 const app = createApp();
 
-beforeEach(async () => {
-  await db.delete(transactions);
-  await db.delete(investmentTransactions);
-  await db.delete(imports);
-  await db.delete(accounts);
-  await db.delete(refreshTokens);
-  await db.delete(categorizationRules);
-  await db.delete(users);
-});
+beforeEach(() => cleanDatabase());
 
 describe('GET /api/v1/accounts', () => {
   it('returns empty array for new user', async () => {

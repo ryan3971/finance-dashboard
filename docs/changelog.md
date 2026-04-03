@@ -125,3 +125,17 @@ Dead code removed — generateRefreshTokenValue and its exclusive use of randomB
 Safe verify casts — Replaced as JwtPayload with an assertObjectPayload assertion guard that throws if jwt.verify somehow returns a string, replacing a silent type lie with an explicit runtime check.
 
 Import order — Also tidied imports to node built-ins → third-party → local, per convention.
+---
+Scoped select() — only fetches the 6 columns actually used
+Single O(n) pass — builds the subcategoryMap and topLevel array in one loop instead of three filter passes
+Two-level assumption — still intentionally two levels (matches product design), but now any deeper nodes are simply not present in the map rather than being silently dropped by a filter chain
+---
+New test file categories.routes.test.ts: 5 tests covering 401 auth, system categories returned, user-specific categories included, subcategory nesting, and user isolation.
+All 7 other test files: added categories to schema imports and await db.delete(categories).where(isNotNull(categories.userId)) before db.delete(users) — necessary because categories.userId has an FK to users.id with no cascade, so user-specific categories must be cleaned up first. The existing FK cleanup order in memory was missing this step.
+---
+test-helpers.ts — added three exports:
+
+cleanDatabase() — the single source of truth for FK-ordered teardown
+RegisterResult interface — full register response including user.id
+registerUser() — like registerAndLogin but returns the full result
+All 8 route test files — each beforeEach is now beforeEach(() => cleanDatabase()) (or await cleanDatabase() inside questrade's compound setup). The schema table imports, db, and isNotNull are gone from every file that had them only for cleanup — cibc, td, and questrade retain only the tables their test bodies actually query.

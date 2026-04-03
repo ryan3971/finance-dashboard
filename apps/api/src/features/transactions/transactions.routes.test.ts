@@ -1,21 +1,12 @@
 import * as path from 'path';
-import {
-  accounts,
-  categorizationRules,
-  imports,
-  investmentTransactions,
-  refreshTokens,
-  transactions,
-  users,
-} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  cleanDatabase,
   createAccount,
   type PaginatedResponse,
   registerAndLogin,
 } from '../../testing/test-helpers';
 import { createApp } from '@/app';
-import { db } from '@/db';
 import request from 'supertest';
 
 const app = createApp();
@@ -33,15 +24,7 @@ async function uploadAmex(token: string, accountId: string) {
     .attach('file', AMEX_FIXTURE, 'amex.csv');
 }
 
-beforeEach(async () => {
-  await db.delete(transactions);
-  await db.delete(investmentTransactions);
-  await db.delete(imports);
-  await db.delete(accounts);
-  await db.delete(refreshTokens);
-  await db.delete(categorizationRules);
-  await db.delete(users);
-});
+beforeEach(() => cleanDatabase());
 
 describe('GET /api/v1/transactions', () => {
   it('returns paginated transactions after import', async () => {

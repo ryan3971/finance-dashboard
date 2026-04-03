@@ -1,22 +1,13 @@
 import * as path from 'path';
-import {
-  accounts,
-  categorizationRules,
-  imports,
-  investmentTransactions,
-  refreshTokens,
-  transactions,
-  users,
-} from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  cleanDatabase,
   createAccount,
   type ImportSummaryResponse,
   type PaginatedResponse,
   registerAndLogin,
 } from '../../testing/test-helpers';
 import { createApp } from '@/app';
-import { db } from '@/db';
 import request from 'supertest';
 
 const app = createApp();
@@ -33,15 +24,7 @@ const AMEX_ACCOUNT = {
   isCredit: true,
 } as const;
 
-beforeEach(async () => {
-  await db.delete(transactions);
-  await db.delete(investmentTransactions);
-  await db.delete(imports);
-  await db.delete(accounts);
-  await db.delete(refreshTokens);
-  await db.delete(categorizationRules);
-  await db.delete(users);
-});
+beforeEach(() => cleanDatabase());
 
 describe('POST /api/v1/imports/upload', () => {
   it('parses Amex CSV and returns import summary', async () => {

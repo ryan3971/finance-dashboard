@@ -1,15 +1,8 @@
 import * as path from 'path';
-import {
-  accounts,
-  categorizationRules,
-  imports,
-  investmentTransactions,
-  refreshTokens,
-  transactions,
-  users,
-} from '@/db/schema';
+import { transactions } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  cleanDatabase,
   createAccount,
   type ImportSummaryResponse,
   registerAndLogin,
@@ -43,15 +36,7 @@ async function uploadCibc(token: string, accountId: string) {
     });
 }
 
-beforeEach(async () => {
-  await db.delete(transactions);
-  await db.delete(investmentTransactions);
-  await db.delete(imports);
-  await db.delete(accounts);
-  await db.delete(refreshTokens);
-  await db.delete(categorizationRules);
-  await db.delete(users);
-});
+beforeEach(() => cleanDatabase());
 
 describe('CIBC import end-to-end', () => {
   it('imports all rows correctly', async () => {

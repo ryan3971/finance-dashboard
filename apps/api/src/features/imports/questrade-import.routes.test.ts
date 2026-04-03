@@ -1,14 +1,7 @@
-import {
-  accounts,
-  categorizationRules,
-  imports,
-  investmentTransactions,
-  refreshTokens,
-  transactions,
-  users,
-} from '@/db/schema';
+import { investmentTransactions, transactions } from '@/db/schema';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  cleanDatabase,
   createAccount,
   type ImportSummaryResponse,
   registerAndLogin,
@@ -26,13 +19,7 @@ let tfsaAccountId: string;
 //let rrspAccountId: string;
 
 beforeEach(async () => {
-  await db.delete(transactions);
-  await db.delete(investmentTransactions);
-  await db.delete(imports);
-  await db.delete(accounts);
-  await db.delete(refreshTokens);
-  await db.delete(categorizationRules);
-  await db.delete(users);
+  await cleanDatabase();
 
   accessToken = await registerAndLogin(app, 'questrade-test@example.com');
   tfsaAccountId = await createAccount(app, accessToken, {
