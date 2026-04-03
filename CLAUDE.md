@@ -39,6 +39,10 @@ Pnpm monorepo with three workspaces:
 
 `@finance/shared` exports Zod schemas and inferred TypeScript types used by both the API (validation) and the web app (typed API responses). Import as `@finance/shared`.
 
+## Tooling
+
+If the TypeScript language server reports unexpected errors (e.g. "Unsafe call of a type that could not be resolved") after editing a file — particularly after adding a new export or changing an import — restart the TS server before investigating further. These are stale diagnostics that clear on restart and are not real errors.
+
 ## Environment
 
 Copy `.env.example` to `apps/api/.env`. Key variables:

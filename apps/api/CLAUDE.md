@@ -46,7 +46,7 @@ Pluggable provider (Anthropic or OpenAI) configured via `AI_PROVIDER` env var. D
 
 ## Code conventions
 
-- Service functions return data or `null` — the route layer translates `null` to 404. Services do not throw for not-found cases.
+- Service functions return data or `null` — the route layer translates `null` to 404. Services do not throw for not-found cases. Exception: mutation functions that verify ownership before writing (e.g. confirm, dismiss) should throw a domain error when the record is not found — returning `null` from a `void` function is meaningless and the route layer has nothing to check.
 - Express v5 is in use. Async route handlers do **not** need try/catch — Express v5 automatically forwards rejected promises to error-handling middleware.
 - Zod validation happens at the route layer before calling services.
 - `req.user` is typed as optional by Express but is always present after `requireAuth`. Use `getAuthUser(req)` (from `@/lib/auth`) instead of `req.user!` — it throws a descriptive error if called outside a guarded route, catching misuse at runtime rather than silently returning `undefined`.
@@ -62,3 +62,7 @@ Route-level integration tests against a real database — no mocking. Hardcode a
 ## Data access
 
 Always scope `select()` to the columns actually needed. Use `db.transaction()` when multiple writes must succeed or fail together. Functions that may be called inside a transaction accept an optional `tx: typeof db | DbTransaction` parameter (see `src/db/index.ts`) defaulting to `db`.
+
+Avoid N+1 query patterns — never issue a `db.select()` inside a loop over rows. Instead, batch with `inArray` before the loop and do in-memory matching per row.
+
+Drizzle returns `numeric` columns as strings. Never use `parseFloat` or other floating-point conversions on money amounts — use string manipulation or a decimal library to preserve precision.
