@@ -28,9 +28,21 @@ export abstract class DebitCreditAdapter implements CsvAdapter {
 
   validate(row: string[]): ValidationResult {
     const errors: string[] = [];
-    if (!row[0]?.trim()) errors.push('Missing date');
+    if (!row[0]?.trim()) {
+      errors.push('Missing date');
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(row[0].trim())) {
+      errors.push('Invalid date format');
+    }
     if (!row[1]?.trim()) errors.push('Missing description');
-    if (parseAmount(row[2]) === 0 && parseAmount(row[3]) === 0)
+    let debit: number, credit: number;
+    try {
+      debit = parseAmount(row[2]);
+      credit = parseAmount(row[3]);
+    } catch {
+      errors.push('Invalid debit/credit amount');
+      return { valid: false, errors };
+    }
+    if (debit === 0 && credit === 0)
       errors.push('Both debit and credit are empty/zero');
     return { valid: errors.length === 0, errors };
   }
@@ -64,7 +76,7 @@ export abstract class DebitCreditAdapter implements CsvAdapter {
         compositeKey: buildCompositeKey(
           accountId,
           date,
-          rawDescription,
+          description,
           amount
         ),
         metadata: this.buildMetadata(row),

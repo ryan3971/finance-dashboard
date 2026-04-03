@@ -5,7 +5,7 @@ export class CibcAdapter extends DebitCreditAdapter {
 
   detect(firstRow: string[]): boolean {
     return (
-      firstRow.length >= 5 &&
+      firstRow.length === 5 &&
       /^\d{4}-\d{2}-\d{2}$/.test(firstRow[0]?.trim()) &&
       !!firstRow[4]?.includes('****')
     );
