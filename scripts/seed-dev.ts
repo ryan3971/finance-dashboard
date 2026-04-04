@@ -21,13 +21,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'apps/api/.env') });
 
 import bcrypt from 'bcryptjs';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../apps/api/src/db/index';
 import { users, accounts } from '../apps/api/src/db/schema';
-import { processImport } from '../apps/api/src/services/imports/import.service';
+import { processImport } from '../apps/api/src/features/imports/pipeline/import.service';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ const DEV_USER = {
 
 const FIXTURES_DIR = path.resolve(
   __dirname,
-  '../apps/api/src/services/imports/adapters/__fixtures__'
+  '../apps/api/src/features/imports/adapters/__fixtures__'
 );
 
 const DEV_ACCOUNTS = [
@@ -47,28 +47,28 @@ const DEV_ACCOUNTS = [
     type: 'credit',
     institution: 'amex',
     isCredit: true,
-    fixture: { file: 'amex.csv', type: 'csv' as const },
+    fixture: { file: 'amex.csv' },
   },
   {
     name: 'CIBC Mastercard',
     type: 'credit',
     institution: 'cibc',
     isCredit: true,
-    fixture: { file: 'cibc.csv', type: 'csv' as const },
+    fixture: { file: 'cibc.csv' },
   },
   {
     name: 'TD Chequing',
     type: 'chequing',
     institution: 'td',
     isCredit: false,
-    fixture: { file: 'td.csv', type: 'csv' as const },
+    fixture: { file: 'td.csv' },
   },
   {
     name: 'Questrade TFSA',
     type: 'tfsa',
     institution: 'questrade',
     isCredit: false,
-    fixture: { file: 'questrade-fixture.xlsx', type: 'xlsx' as const },
+    fixture: { file: 'questrade.csv' },
   },
 ];
 
@@ -167,8 +167,7 @@ async function importFixtures(
         userId,
         accountId,
         def.fixture.file,
-        buffer,
-        def.fixture.type
+        buffer
       );
 
       if (result.importedCount > 0) {
