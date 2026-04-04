@@ -1,4 +1,5 @@
 import { config } from './lib/config';
+import './instrument';
 import { createApp } from './app';
 import { logger } from './middleware/logger';
 

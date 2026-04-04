@@ -52,6 +52,9 @@ const envSchema = z
     // Transfer detection
     TRANSFER_DETECTION_WINDOW_DAYS: z.coerce.number().int().positive().default(3),
 
+    // Sentry
+    SENTRY_DSN: z.string().optional(),
+
     // AWS (Phase 4 — optional until deployment)
     AWS_REGION: z.string().default('ca-central-1'),
     S3_BUCKET_NAME: z.string().default(''),
@@ -111,6 +114,9 @@ export const config = {
 
   // Transfer detection
   transferWindowDays: env.TRANSFER_DETECTION_WINDOW_DAYS,
+
+  // Sentry
+  sentryDsn: env.SENTRY_DSN,
 
   // AWS (Phase 4 — optional until deployment)
   awsRegion: env.AWS_REGION,

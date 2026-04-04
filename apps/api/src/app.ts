@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import accountsRouter from './features/accounts/accounts.routes';
 import authRouter from './features/auth/auth.routes';
 import categoriesRouter from './features/categories/categories.routes';
@@ -41,6 +42,9 @@ export function createApp() {
   app.use('/api/v1/categories', categoriesRouter);
   app.use('/api/v1/transfers', transfersRouter);
   app.use('/api/v1/tags', tagsRouter);
+
+  // The error handler must be registered before any other error middleware and after all controllers
+  Sentry.setupExpressErrorHandler(app);
 
   // 404 handler — must come after all routes
   app.use((_req, res) => {
