@@ -28,13 +28,11 @@ export default defineConfig(
       },
     },
     rules: {
-      // sort-imports handles member sort only; declaration sort is intentionally
-      // disabled here to avoid conflicts if import/order is added in the future.
       'sort-imports': [
         'error',
         {
           ignoreCase: true,
-          ignoreDeclarationSort: true, // defer declaration ordering to import/order if added
+          ignoreDeclarationSort: false,
           ignoreMemberSort: false,
           memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
         },

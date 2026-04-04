@@ -1,6 +1,6 @@
+import { and, eq, isNull } from 'drizzle-orm';
+import { categories, categorizationRules } from '../apps/api/src/db/schema';
 import { db } from '../apps/api/src/db/index';
-import { categorizationRules, categories } from '../apps/api/src/db/schema';
-import { eq, isNull, and } from 'drizzle-orm';
 
 // ─── Rule definitions ─────────────────────────────────────────────────────────
 // Format: { keyword, sourceName, category, subcategory, needWant, priority }

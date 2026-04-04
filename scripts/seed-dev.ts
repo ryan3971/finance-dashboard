@@ -17,16 +17,16 @@
  *   - Or POST /api/v1/auth/login in Bruno to get a token
  */
 
-import * as path from 'path';
-import * as fs from 'fs';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), 'apps/api/.env') });
 
+import { accounts, users } from '../apps/api/src/db/schema';
+import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { eq, and } from 'drizzle-orm';
 import { db } from '../apps/api/src/db/index';
-import { users, accounts } from '../apps/api/src/db/schema';
 import { processImport } from '../apps/api/src/features/imports/pipeline/import.service';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
