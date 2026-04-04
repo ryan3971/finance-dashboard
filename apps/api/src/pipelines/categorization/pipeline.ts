@@ -1,15 +1,15 @@
 import { and, eq, isNull } from 'drizzle-orm';
+import { applyRules, type LoadedRule, loadRules } from './rules-engine';
 import { categories } from '@/db/schema';
 import type { CategorizationResult } from './pipeline.types';
 import { categorizeWithAnthropic } from './anthropic-provider';
 import { categorizeWithOpenAI } from './openai-provider';
 import { config } from '@/lib/config';
 import { db } from '@/db';
-import { applyRules, loadRules, type Rule } from './rules-engine';
 
 // Re-export for callers that batch-load rules before a loop (e.g. import pipeline)
 export { loadRules } from './rules-engine';
-export type { Rule } from './rules-engine';
+export type { Rule, LoadedRule } from './rules-engine';
 
 let uncategorizedId: string | null = null;
 
@@ -68,7 +68,7 @@ export async function categorize(
   userId: string,
   amount: number,
   currency: string,
-  rules?: Rule[]
+  rules?: LoadedRule[]
 ): Promise<CategorizationResult> {
   // Step 1: Rules engine
   const ruleResult = rules

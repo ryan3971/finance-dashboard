@@ -5,15 +5,15 @@ import {
   transactions,
 } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { logger } from '@/middleware/logger';
+import { categorize, type LoadedRule, loadRules } from '../../../pipelines/categorization/pipeline';
 import { detectAdapter, getAdapterByInstitution } from './registry';
-import { parseCsv } from './parser';
+import { ImportError, ImportErrorCode } from '@/features/imports/imports.errors';
 import type { RawInvestmentTransaction, RawTransaction } from '@finance/shared';
 import { buildCompositeKey } from './utils';
-import { categorize, loadRules, type Rule } from '../../../pipelines/categorization/pipeline';
 import { db } from '@/db';
 import { detectTransfers } from '../../../pipelines/transfer-detection/transfer-detection.service';
-import { ImportError, ImportErrorCode } from '@/features/imports/imports.errors';
+import { logger } from '@/middleware/logger';
+import { parseCsv } from './parser';
 
 export interface ImportResult {
   importId: string;
@@ -167,7 +167,7 @@ async function processTransactionRow(
   accountId: string,
   importId: string,
   userId: string,
-  rules: Rule[],
+  rules: LoadedRule[],
   result: ImportResult
 ): Promise<string | null> {
   const categorization = await categorize(
