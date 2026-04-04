@@ -7,6 +7,7 @@ import {
   imports,
   investmentTransactions,
   refreshTokens,
+  tags,
   transactions,
   users,
 } from '@/db/schema';
@@ -54,6 +55,7 @@ export async function cleanDatabase(): Promise<void> {
   await db.delete(refreshTokens);
   await db.delete(categorizationRules);
   await db.delete(categories).where(isNotNull(categories.userId));
+  await db.delete(tags);
   await db.delete(users);
 }
 

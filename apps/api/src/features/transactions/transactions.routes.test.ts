@@ -61,7 +61,7 @@ describe('GET /api/v1/transactions', () => {
 
     // Filter to 2026-02-15: only charges (ANNUAL MEMBERSHIP FEE, CLOUD SUBSCRIPTION SVC)
     const res = await request(app)
-      .get('/api/v1/transactions?start_date=2026-02-15&end_date=2026-02-15')
+      .get('/api/v1/transactions?startDate=2026-02-15&endDate=2026-02-15')
       .set('Authorization', `Bearer ${token}`);
 
     const body = res.body as PaginatedResponse<{ amount: string }>;
@@ -88,7 +88,7 @@ describe('GET /api/v1/transactions', () => {
     await uploadAmex(token, acc1);
 
     const res = await request(app)
-      .get(`/api/v1/transactions?account_id=${acc2}`)
+      .get(`/api/v1/transactions?accountId=${acc2}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(
@@ -156,7 +156,7 @@ describe('GET /api/v1/transactions — date and category filters', () => {
     await uploadAmex(token, accountId);
 
     const res = await request(app)
-      .get('/api/v1/transactions?start_date=2026-02-12&end_date=2026-02-12')
+      .get('/api/v1/transactions?startDate=2026-02-12&endDate=2026-02-12')
       .set('Authorization', `Bearer ${token}`);
 
     const body = res.body as PaginatedResponse<{ date: string }>;
@@ -176,7 +176,7 @@ describe('GET /api/v1/transactions — date and category filters', () => {
     await uploadAmex(token, accountId);
 
     const res = await request(app)
-      .get('/api/v1/transactions?start_date=2020-01-01&end_date=2020-01-31')
+      .get('/api/v1/transactions?startDate=2020-01-01&endDate=2020-01-31')
       .set('Authorization', `Bearer ${token}`);
 
     const body = res.body as PaginatedResponse<Record<string, unknown>>;
