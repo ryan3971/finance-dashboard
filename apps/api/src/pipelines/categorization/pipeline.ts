@@ -4,6 +4,7 @@ import { categories } from '@/db/schema';
 import type { CategorizationResult } from './pipeline.types';
 import { categorizeWithAnthropic } from './anthropic-provider';
 import { categorizeWithOpenAI } from './openai-provider';
+import { CATEGORY_SOURCE, CONFIDENCE } from '@/lib/constants';
 import { config } from '@/lib/config';
 import { db } from '@/db';
 
@@ -88,8 +89,8 @@ export async function categorize(
     categoryId: fallbackId,
     subcategoryId: null,
     needWant: null,
-    categorySource: 'default',
-    categoryConfidence: 0,
+    categorySource: CATEGORY_SOURCE.DEFAULT,
+    categoryConfidence: CONFIDENCE.DEFAULT,
     sourceName: null,
     flaggedForReview: true,
   };

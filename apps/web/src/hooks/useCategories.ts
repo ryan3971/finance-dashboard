@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import { categoryKeys } from '@/lib/queryKeys';
 import { useQuery } from '@tanstack/react-query';
 
 export interface Subcategory {
@@ -20,7 +21,7 @@ export interface Category {
 
 export function useCategories() {
   return useQuery<Category[]>({
-    queryKey: ['categories'],
+    queryKey: categoryKeys.all(),
     queryFn: async () => {
       const { data } = await api.get<Category[]>('/categories');
       return data;

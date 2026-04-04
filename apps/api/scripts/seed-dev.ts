@@ -21,13 +21,13 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), 'apps/api/.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-import { accounts, users } from '../apps/api/src/db/schema';
+import { accounts, users } from '../src/db/schema';
 import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { db } from '../apps/api/src/db/index';
-import { processImport } from '../apps/api/src/features/imports/pipeline/import.service';
+import { db } from '../src/db/index';
+import { processImport } from '../src/features/imports/pipeline/import.service';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ const DEV_USER = {
 
 const FIXTURES_DIR = path.resolve(
   __dirname,
-  '../apps/api/src/features/imports/adapters/__fixtures__'
+  '../src/features/imports/adapters/__fixtures__'
 );
 
 const DEV_ACCOUNTS = [

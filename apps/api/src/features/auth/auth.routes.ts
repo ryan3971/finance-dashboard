@@ -1,4 +1,5 @@
 import { loginSchema, registerSchema } from '@finance/shared';
+import { REFRESH_TOKEN_MS } from '@/lib/constants';
 import {
   loginUser,
   logoutUser,
@@ -30,7 +31,7 @@ function getRefreshCookieOptions() {
     httpOnly: true,
     secure: config.nodeEnv === 'production',
     sameSite: 'strict' as const,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    maxAge: REFRESH_TOKEN_MS,
     path: REFRESH_COOKIE_PATH,
   };
 }

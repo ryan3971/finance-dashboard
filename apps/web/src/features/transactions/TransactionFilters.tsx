@@ -1,3 +1,4 @@
+import { Select } from '@/components/ui/Select';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useCategories } from '@/hooks/useCategories';
 
@@ -24,11 +25,9 @@ export function TransactionFilters({ filters, onChange }: Props) {
 
   return (
     <div className="flex flex-wrap gap-2 items-center">
-      {/* Account */}
-      <select
+      <Select
         value={filters.accountId}
         onChange={(e) => update({ accountId: e.target.value })}
-        className="px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
         <option value="">All accounts</option>
         {accounts?.map((a) => (
@@ -36,28 +35,25 @@ export function TransactionFilters({ filters, onChange }: Props) {
             {a.name}
           </option>
         ))}
-      </select>
+      </Select>
 
-      {/* Date range */}
       <input
         type="date"
         value={filters.startDate}
         onChange={(e) => update({ startDate: e.target.value })}
-        className="px-2 py-1.5 border border-gray-300 rounded text-sm"
+        className="select-base"
       />
-      <span className="text-gray-400 text-sm">to</span>
+      <span className="text-content-muted text-sm">to</span>
       <input
         type="date"
         value={filters.endDate}
         onChange={(e) => update({ endDate: e.target.value })}
-        className="px-2 py-1.5 border border-gray-300 rounded text-sm"
+        className="select-base"
       />
 
-      {/* Category */}
-      <select
+      <Select
         value={filters.categoryId}
         onChange={(e) => update({ categoryId: e.target.value })}
-        className="px-2 py-1.5 border border-gray-300 rounded text-sm"
       >
         <option value="">All categories</option>
         {categories?.map((cat) => (
@@ -71,10 +67,9 @@ export function TransactionFilters({ filters, onChange }: Props) {
             ))}
           </optgroup>
         ))}
-      </select>
+      </Select>
 
-      {/* Flagged toggle */}
-      <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+      <label className="flex items-center gap-1.5 text-sm text-content-secondary cursor-pointer">
         <input
           type="checkbox"
           checked={filters.flaggedOnly}

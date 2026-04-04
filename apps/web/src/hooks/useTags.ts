@@ -1,11 +1,11 @@
+import { tagKeys, transactionKeys } from '@/lib/queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
 import api from '@/lib/api';
 import type { Tag } from './useTransactions';
 
 export function useTags() {
   return useQuery<Tag[]>({
-    queryKey: ['tags'],
+    queryKey: tagKeys.all(),
     queryFn: async () => {
       const { data } = await api.get<Tag[]>('/tags');
       return data;
@@ -20,7 +20,7 @@ export function useCreateTag() {
       const { data } = await api.post<Tag>('/tags', input);
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tags'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: tagKeys.all() }),
   });
 }
 
@@ -31,8 +31,8 @@ export function useDeleteTag() {
       await api.delete(`/tags/${tagId}`);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['tags'] });
-      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
     },
   });
 }
@@ -50,7 +50,7 @@ export function useAttachTag() {
       await api.post(`/transactions/${transactionId}/tags`, { tagId });
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
   });
 }
 
@@ -67,6 +67,6 @@ export function useDetachTag() {
       await api.delete(`/transactions/${transactionId}/tags/${tagId}`);
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
   });
 }

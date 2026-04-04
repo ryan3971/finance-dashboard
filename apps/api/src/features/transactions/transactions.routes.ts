@@ -1,4 +1,5 @@
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { ISO_DATE_REGEX } from '@/lib/constants';
 import type { Request, Response } from 'express';
 import { listTransactions } from './transactions.service';
 import { Router } from 'express';
@@ -8,7 +9,7 @@ const router = Router();
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD');
+const isoDate = z.string().regex(ISO_DATE_REGEX, 'Must be YYYY-MM-DD');
 
 const listQuerySchema = z.object({
   accountId: z.string().uuid().optional(),

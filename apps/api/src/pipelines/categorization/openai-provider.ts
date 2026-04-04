@@ -6,6 +6,7 @@ import {
   resolveCategories,
 } from './provider-utils';
 import type { CategorizationResult } from './pipeline.types';
+import { AI_MAX_TOKENS, AI_TEMPERATURE, CATEGORY_SOURCE } from '@/lib/constants';
 import { config } from '@/lib/config';
 import { logger } from '@/middleware/logger';
 import OpenAI from 'openai';
@@ -41,8 +42,8 @@ export async function categorizeWithOpenAI(
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      temperature: 0,
-      max_tokens: 200,
+      temperature: AI_TEMPERATURE,
+      max_tokens: AI_MAX_TOKENS,
     });
 
     const raw = response.choices[0]?.message?.content;
@@ -82,7 +83,7 @@ export async function categorizeWithOpenAI(
     return {
       ...resolved,
       needWant: parsed.need_want,
-      categorySource: 'ai',
+      categorySource: CATEGORY_SOURCE.AI,
       categoryConfidence: parsed.confidence,
       sourceName: null,
       flaggedForReview: false,

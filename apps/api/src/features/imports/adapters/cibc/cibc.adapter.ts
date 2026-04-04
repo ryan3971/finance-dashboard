@@ -1,4 +1,5 @@
 import { DebitCreditAdapter } from '../debit-credit.adapter';
+import { ISO_DATE_REGEX } from '@/lib/constants';
 
 export class CibcAdapter extends DebitCreditAdapter {
   readonly institution = 'cibc';
@@ -6,7 +7,7 @@ export class CibcAdapter extends DebitCreditAdapter {
   detect(firstRow: string[]): boolean {
     return (
       firstRow.length === 5 &&
-      /^\d{4}-\d{2}-\d{2}$/.test(firstRow[0]?.trim()) &&
+      ISO_DATE_REGEX.test(firstRow[0]?.trim()) &&
       !!firstRow[4]?.includes('****')
     );
   }

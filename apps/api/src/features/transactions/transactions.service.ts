@@ -8,6 +8,8 @@ import {
 } from '@/db/schema';
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
+import { AUTO_RULE_PRIORITY, CATEGORY_SOURCE, CONFIDENCE, KEYWORD_SLICE_LENGTH, TRANSACTION_SOURCE } from '@/lib/constants';
+import type { NeedWant, PatchTransactionInput } from '@finance/shared';
 import { db } from '@/db';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -25,14 +27,6 @@ export interface PaginationParams {
   limit: number;
 }
 
-export interface PatchTransactionInput {
-  categoryId?: string | null;
-  subcategoryId?: string | null;
-  needWant?: 'Need' | 'Want' | 'NA' | null;
-  note?: string | null;
-  createRule?: boolean;
-}
-
 export interface CreateTransactionInput {
   accountId: string;
   date: string;
@@ -41,7 +35,7 @@ export interface CreateTransactionInput {
   currency: string;
   categoryId?: string | null;
   subcategoryId?: string | null;
-  needWant?: 'Need' | 'Want' | 'NA' | null;
+  needWant?: NeedWant | null;
   note?: string | null;
   isIncome?: boolean;
 }
@@ -165,8 +159,8 @@ export async function patchTransaction(
 
   if (input.categoryId !== undefined) {
     updateData.categoryId = input.categoryId;
-    updateData.categorySource = 'manual';
-    updateData.categoryConfidence = '1.000';
+    updateData.categorySource = CATEGORY_SOURCE.MANUAL;
+    updateData.categoryConfidence = CONFIDENCE.MANUAL;
     updateData.flaggedForReview = false;
   }
   if (input.subcategoryId !== undefined) updateData.subcategoryId = input.subcategoryId;
@@ -176,7 +170,7 @@ export async function patchTransaction(
   await db.update(transactions).set(updateData).where(eq(transactions.id, id));
 
   if (input.createRule && input.categoryId) {
-    const keyword = txn.description.slice(0, 40).toLowerCase().trim();
+    const keyword = txn.description.slice(0, KEYWORD_SLICE_LENGTH).toLowerCase().trim();
 
     const existing = await db
       .select({ id: categorizationRules.id })
@@ -196,7 +190,7 @@ export async function patchTransaction(
         categoryId: input.categoryId,
         subcategoryId: input.subcategoryId ?? null,
         needWant: input.needWant ?? null,
-        priority: 5,
+        priority: AUTO_RULE_PRIORITY,
       });
     }
   }
@@ -242,14 +236,14 @@ export async function createManualTransaction(
       categoryId: input.categoryId ?? null,
       subcategoryId: input.subcategoryId ?? null,
       needWant: input.needWant ?? null,
-      categorySource: input.categoryId ? 'manual' : 'default',
-      categoryConfidence: input.categoryId ? '1.000' : null,
+      categorySource: input.categoryId ? CATEGORY_SOURCE.MANUAL : CATEGORY_SOURCE.DEFAULT,
+      categoryConfidence: input.categoryId ? CONFIDENCE.MANUAL : null,
       isTransfer: false,
       isIncome,
       flaggedForReview: !input.categoryId,
       compositeKey,
       note: input.note ?? null,
-      source: 'manual',
+      source: TRANSACTION_SOURCE.MANUAL,
     })
     .returning();
 

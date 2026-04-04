@@ -5,8 +5,8 @@ import {
   useLocation,
   useNavigationType,
 } from 'react-router-dom';
-import { useEffect } from 'react';
 import { config } from '@/lib/config';
+import { useEffect } from 'react';
 
 Sentry.init({
   dsn: config.sentryDsn,

@@ -7,6 +7,7 @@ import {
 } from './provider-utils';
 import Anthropic from '@anthropic-ai/sdk';
 import type { CategorizationResult } from './pipeline.types';
+import { AI_MAX_TOKENS, AI_TEMPERATURE, CATEGORY_SOURCE } from '@/lib/constants';
 import { config } from '@/lib/config';
 import { logger } from '@/middleware/logger';
 
@@ -41,8 +42,8 @@ export async function categorizeWithAnthropic(
 
     const response = await getClient().messages.create({
       model: MODEL,
-      max_tokens: 200,
-      temperature: 0,
+      max_tokens: AI_MAX_TOKENS,
+      temperature: AI_TEMPERATURE,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -85,7 +86,7 @@ export async function categorizeWithAnthropic(
     return {
       ...resolved,
       needWant: parsed.need_want,
-      categorySource: 'ai',
+      categorySource: CATEGORY_SOURCE.AI,
       categoryConfidence: parsed.confidence,
       sourceName: null,
       flaggedForReview: false,

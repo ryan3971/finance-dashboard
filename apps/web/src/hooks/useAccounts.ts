@@ -1,3 +1,4 @@
+import { accountKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 
@@ -13,7 +14,7 @@ export interface Account {
 
 export function useAccounts() {
   return useQuery<Account[]>({
-    queryKey: ['accounts'],
+    queryKey: accountKeys.all(),
     queryFn: async () => {
       const { data } = await api.get<Account[]>('/accounts');
       return data;

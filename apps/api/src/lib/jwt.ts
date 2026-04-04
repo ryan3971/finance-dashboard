@@ -5,10 +5,10 @@ import jwt from 'jsonwebtoken';
 import type { JwtPayload } from '@finance/shared';
 
 import { config } from './config';
+import { REFRESH_TOKEN_MS } from './constants';
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
-const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 function assertObjectPayload(payload: unknown): asserts payload is JwtPayload {
   if (typeof payload !== 'object' || payload === null) {
@@ -38,5 +38,5 @@ export function verifyRefreshToken(token: string): JwtPayload {
 }
 
 export function getRefreshTokenExpiry(): Date {
-  return new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
+  return new Date(Date.now() + REFRESH_TOKEN_MS);
 }

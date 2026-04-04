@@ -8,23 +8,13 @@ import { and, eq } from 'drizzle-orm';
 import { categorize, type LoadedRule, loadRules } from '../../../pipelines/categorization/pipeline';
 import { detectAdapter, getAdapterByInstitution } from './registry';
 import { ImportError, ImportErrorCode } from '@/features/imports/imports.errors';
-import type { RawInvestmentTransaction, RawTransaction } from '@finance/shared';
+import type { ImportResult, RawInvestmentTransaction, RawTransaction } from '@finance/shared';
 import { buildCompositeKey } from './utils';
 import { db } from '@/db';
 import { detectTransfers } from '../../../pipelines/transfer-detection/transfer-detection.service';
+import { IMPORT_STATUS, TRANSACTION_SOURCE } from '@/lib/constants';
 import { logger } from '@/middleware/logger';
 import { parseCsv } from './parser';
-
-export interface ImportResult {
-  importId: string;
-  rowCount: number;
-  importedCount: number;
-  duplicateCount: number;
-  flaggedCount: number;
-  errorCount: number;
-  errors: string[];
-  transferCandidateCount: number;
-}
 
 export async function processImport(
   userId: string,
@@ -64,7 +54,7 @@ export async function processImport(
       accountId,
       filename,
       s3Key,
-      status: 'processing',
+      status: IMPORT_STATUS.PROCESSING,
       rowCount: rows.length,
     })
     .returning({ id: imports.id });
@@ -86,7 +76,7 @@ export async function processImport(
   } catch (err) {
     await db
       .update(imports)
-      .set({ status: 'error', errorDetail: { message: String(err) } })
+      .set({ status: IMPORT_STATUS.ERROR, errorDetail: { message: String(err) } })
       .where(eq(imports.id, importRecord.id));
     throw err;
   }
@@ -136,7 +126,7 @@ export async function processImport(
     await db
       .update(imports)
       .set({
-        status: 'complete',
+        status: IMPORT_STATUS.COMPLETE,
         rowCount: result.rowCount,
         importedCount: result.importedCount,
         duplicateCount: result.duplicateCount,
@@ -148,7 +138,7 @@ export async function processImport(
   } catch (err) {
     await db
       .update(imports)
-      .set({ status: 'error', errorDetail: { message: String(err) } })
+      .set({ status: IMPORT_STATUS.ERROR, errorDetail: { message: String(err) } })
       .where(eq(imports.id, importRecord.id));
     throw err;
   }
@@ -203,7 +193,7 @@ async function processTransactionRow(
           : null,
       flaggedForReview: categorization.flaggedForReview,
       compositeKey: raw.compositeKey,
-      source: 'csv',
+      source: TRANSACTION_SOURCE.CSV,
       isIncome: raw.amount > 0,
     })
     .onConflictDoNothing()

@@ -1,4 +1,6 @@
 import api from '@/lib/api';
+import type { NeedWant } from '@finance/shared';
+import { transactionKeys } from '@/lib/queryKeys';
 import { useQuery } from '@tanstack/react-query';
 
 export interface Tag {
@@ -14,7 +16,7 @@ export interface Transaction {
   sourceName: string | null;
   amount: string;
   currency: string;
-  needWant: string | null;
+  needWant: NeedWant | null;
   isTransfer: boolean;
   isIncome: boolean;
   flaggedForReview: boolean;
@@ -56,10 +58,7 @@ export function useTransactions({
   page?: number;
 } = {}) {
   return useQuery<TransactionsResponse>({
-    queryKey: [
-      'transactions',
-      { accountId, startDate, endDate, categoryId, flagged, page },
-    ],
+    queryKey: transactionKeys.list({ accountId, startDate, endDate, categoryId, flagged, page }),
     queryFn: async () => {
       const { data } = await api.get<TransactionsResponse>('/transactions', {
         params: { accountId, startDate, endDate, categoryId, flagged, page },

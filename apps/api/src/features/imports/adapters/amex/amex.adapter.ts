@@ -4,6 +4,7 @@ import {
   parseAmount,
   parseDate,
 } from '../../pipeline/utils';
+import { DEFAULT_CURRENCY } from '@finance/shared';
 import type {
   CsvAdapter,
   RawTransaction,
@@ -56,7 +57,7 @@ export class AmexAdapter implements CsvAdapter {
         description,
         rawDescription,
         amount,
-        currency: 'CAD',
+        currency: DEFAULT_CURRENCY,
         compositeKey: buildCompositeKey(
           accountId,
           date,

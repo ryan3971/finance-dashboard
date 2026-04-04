@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /* Form controls */
+  .input-base {
+    @apply w-full px-3 py-2 border border-border-strong rounded-md text-sm
+           focus:outline-none focus:ring-2 focus:ring-content-primary focus:border-transparent;
+  }
+  .select-base {
+    @apply px-2 py-1.5 border border-border-strong rounded text-sm bg-white;
+  }
+
+  /* Labels */
+  .label-sm {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .label-xs {
+    @apply block text-xs font-medium text-gray-600 mb-1;
+  }
+
+  /* Table cells */
+  .th-cell {
+    @apply px-4 py-2.5 text-left text-xs font-medium text-content-secondary uppercase tracking-wider;
+  }
+  .td-cell {
+    @apply px-4 py-3 text-sm text-content-secondary;
+  }
+}

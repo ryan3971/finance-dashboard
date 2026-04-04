@@ -1,3 +1,4 @@
+import { CATEGORY_SOURCE, CONFIDENCE } from '@/lib/constants';
 import { desc, eq, isNull, or } from 'drizzle-orm';
 import type { CategorizationResult } from './pipeline.types';
 import { categorizationRules } from '@/db/schema';
@@ -18,13 +19,6 @@ import { db } from '@/db';
 export type Rule = typeof categorizationRules.$inferSelect;
 export type LoadedRule = Omit<Rule, 'createdAt'>;
 
-type NeedWant = 'Need' | 'Want' | 'NA';
-const VALID_NEED_WANT = new Set<string>(['Need', 'Want', 'NA']);
-
-function parseNeedWant(value: string | null): NeedWant | null {
-  if (value === null || !VALID_NEED_WANT.has(value)) return null;
-  return value as NeedWant;
-}
 
 /**
  * Fetch all rules applicable to a user (user-specific + global system rules),
@@ -74,8 +68,8 @@ export function applyRules(
         categoryId: null,
         subcategoryId: null,
         needWant: null,
-        categorySource: 'rule',
-        categoryConfidence: 1.0,
+        categorySource: CATEGORY_SOURCE.RULE,
+        categoryConfidence: CONFIDENCE.RULE,
         sourceName: rule.sourceName,
         flaggedForReview: true,
       };
@@ -84,9 +78,9 @@ export function applyRules(
     return {
       categoryId: rule.categoryId,
       subcategoryId: rule.subcategoryId,
-      needWant: parseNeedWant(rule.needWant),
-      categorySource: 'rule',
-      categoryConfidence: 1.0,
+      needWant: rule.needWant,
+      categorySource: CATEGORY_SOURCE.RULE,
+      categoryConfidence: CONFIDENCE.RULE,
       sourceName: rule.sourceName,
       flaggedForReview: false,
     };

@@ -16,7 +16,7 @@ features/auth/
 Other top-level directories:
 - `db/` — Drizzle schema, migrations, seeds
 - `middleware/` — Error handler, logger, auth (`requireAuth`)
-- `lib/` — Config loader, JWT helpers
+- `lib/` — Config loader, JWT helpers, shared API constants (`constants.ts`)
 - `pipelines/` — Cross-feature logic (transfer detection)
 - `testing/` — Vitest setup and shared test helpers
 
@@ -43,6 +43,10 @@ PostgreSQL 15 via Docker (`docker-compose.yml`). Drizzle ORM with generated migr
 ## AI categorization
 
 Pluggable provider (Anthropic or OpenAI) configured via `AI_PROVIDER` env var. Disabled by default (`ENABLE_AI_CATEGORIZATION=false`) to avoid API costs in development.
+
+## Constants
+
+API-only literals that appear in 2+ files belong in `src/lib/constants.ts` — import with `@/lib/constants`. This includes import pipeline statuses (`IMPORT_STATUS`), categorization sources (`CATEGORY_SOURCE`), transaction sources (`TRANSACTION_SOURCE`), the ISO date regex (`ISO_DATE_REGEX`), AI provider parameters (`AI_MAX_TOKENS`, `AI_TEMPERATURE`), and other magic values. Values needed by the web app too belong in `packages/shared/src/constants.ts` instead.
 
 ## Code conventions
 

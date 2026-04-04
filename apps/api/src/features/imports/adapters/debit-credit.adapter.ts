@@ -4,6 +4,8 @@ import {
   parseAmount,
   parseDate,
 } from '../pipeline/utils';
+import { DEFAULT_CURRENCY } from '@finance/shared';
+import { ISO_DATE_REGEX } from '@/lib/constants';
 import type {
   CsvAdapter,
   RawTransaction,
@@ -30,7 +32,7 @@ export abstract class DebitCreditAdapter implements CsvAdapter {
     const errors: string[] = [];
     if (!row[0]?.trim()) {
       errors.push('Missing date');
-    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(row[0].trim())) {
+    } else if (!ISO_DATE_REGEX.test(row[0].trim())) {
       errors.push('Invalid date format');
     }
     if (!row[1]?.trim()) errors.push('Missing description');
@@ -72,7 +74,7 @@ export abstract class DebitCreditAdapter implements CsvAdapter {
         description,
         rawDescription,
         amount,
-        currency: 'CAD',
+        currency: DEFAULT_CURRENCY,
         compositeKey: buildCompositeKey(
           accountId,
           date,

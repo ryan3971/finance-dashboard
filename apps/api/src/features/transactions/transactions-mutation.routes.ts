@@ -7,6 +7,8 @@ import {
 } from './transactions.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { Router } from 'express';
+import { DEFAULT_CURRENCY, FIELD_LIMITS, needWantSchema } from '@finance/shared';
+import { ISO_DATE_REGEX } from '@/lib/constants';
 import { z } from 'zod';
 
 const router = Router();
@@ -16,21 +18,21 @@ const router = Router();
 const patchTransactionSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   subcategoryId: z.string().uuid().nullable().optional(),
-  needWant: z.enum(['Need', 'Want', 'NA']).nullable().optional(),
-  note: z.string().max(500).nullable().optional(),
+  needWant: needWantSchema.nullable().optional(),
+  note: z.string().max(FIELD_LIMITS.NOTE_MAX).nullable().optional(),
   createRule: z.boolean().optional().default(false),
 });
 
 const createTransactionSchema = z.object({
   accountId: z.string().uuid(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
-  description: z.string().min(1).max(500),
+  date: z.string().regex(ISO_DATE_REGEX, 'Date must be YYYY-MM-DD'),
+  description: z.string().min(1).max(FIELD_LIMITS.NOTE_MAX),
   amount: z.number(),
-  currency: z.string().length(3).default('CAD'),
+  currency: z.string().length(3).default(DEFAULT_CURRENCY),
   categoryId: z.string().uuid().nullable().optional(),
   subcategoryId: z.string().uuid().nullable().optional(),
-  needWant: z.enum(['Need', 'Want', 'NA']).nullable().optional(),
-  note: z.string().max(500).nullable().optional(),
+  needWant: needWantSchema.nullable().optional(),
+  note: z.string().max(FIELD_LIMITS.NOTE_MAX).nullable().optional(),
   isIncome: z.boolean().optional(),
 });
 

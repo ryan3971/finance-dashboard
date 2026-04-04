@@ -15,8 +15,8 @@
     "test": "pnpm -r test",
     "db:migrate": "pnpm --filter api db:migrate",
     "db:studio": "pnpm --filter api db:studio",
-    "seed:rules": "tsx --env-file=.env scripts/seed-rules.ts",
-    "seed:dev": "tsx --env-file=.env scripts/seed-dev.ts",
+    "seed:rules": "pnpm --filter api seed:rules",
+    "seed:dev": "pnpm --filter api seed:dev",
     "prepare": "husky"
   },
   "lint-staged": {

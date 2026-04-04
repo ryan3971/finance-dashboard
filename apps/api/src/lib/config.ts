@@ -22,7 +22,7 @@ import { z } from 'zod';
 // Load .env in development and test. In production (ECS), env vars are
 // injected directly by the task definition — dotenv is a no-op there.
 if (process.env.NODE_ENV !== 'production') {
-  dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+  dotenv.config({ path: path.resolve(process.cwd(), '@/../.env') });
 }
 
 const envSchema = z
@@ -51,9 +51,6 @@ const envSchema = z
 
     // Transfer detection
     TRANSFER_DETECTION_WINDOW_DAYS: z.coerce.number().int().positive().default(3),
-
-    // Sentry
-    SENTRY_DSN: z.string().optional(),
 
     // AWS (Phase 4 — optional until deployment)
     AWS_REGION: z.string().default('ca-central-1'),
@@ -114,9 +111,6 @@ export const config = {
 
   // Transfer detection
   transferWindowDays: env.TRANSFER_DETECTION_WINDOW_DAYS,
-
-  // Sentry
-  sentryDsn: env.SENTRY_DSN,
 
   // AWS (Phase 4 — optional until deployment)
   awsRegion: env.AWS_REGION,

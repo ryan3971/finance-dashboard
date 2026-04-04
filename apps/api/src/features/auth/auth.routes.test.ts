@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
 import { type AuthResponse, cleanDatabase } from '@/testing/test-helpers';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '@/app';
 import request from 'supertest';
 

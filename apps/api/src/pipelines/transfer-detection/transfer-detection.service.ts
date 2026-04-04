@@ -3,27 +3,11 @@ import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
 import { transactions } from '@/db/schema';
+import { TRANSFER_KEYWORDS } from '@finance/shared';
 import {
   TransferError,
   TransferErrorCode,
 } from './transfer-detection.errors';
-
-// Transfer keywords — descriptions containing these are candidate transfers
-// Matches the ADD sentinel rules already seeded in categorization_rules
-const TRANSFER_KEYWORDS = [
-  'e-tfr',
-  'e-transfer',
-  'tfr-to',
-  'tfr-fr',
-  'trf-to',
-  'trf-fr',
-  'transfer',
-  'interac',
-  'payment thank you',
-  'paiement merci',
-  'payment received',
-  'bill pymt',
-];
 
 export interface TransferCandidate {
   transactionId: string;

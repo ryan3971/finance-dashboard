@@ -37,11 +37,17 @@ Pnpm monorepo with three workspaces:
 - **`apps/web`** — React 18 SPA (Vite, React Router, TanStack Query) — see `apps/web/CLAUDE.md`
 - **`packages/shared`** — Zod schemas and TypeScript types consumed by both apps
 
-`@finance/shared` exports Zod schemas and inferred TypeScript types used by both the API (validation) and the web app (typed API responses). Import as `@finance/shared`.
+`@finance/shared` exports Zod schemas, TypeScript types, and shared constants (`packages/shared/src/constants.ts`) used by both the API and the web app. Import as `@finance/shared`. If a literal value must be consistent across both apps, it belongs in `constants.ts` — do not duplicate it.
+
+## TypeScript
+
+Avoid type assertions (`as SomeType`). Fix the type gap at its source instead — narrow the type on the interface, use a type guard, or parse with a Zod schema. Only use an assertion as a last resort, and always add a comment explaining why it is unavoidable.
 
 ## Tooling
 
 If the TypeScript language server reports unexpected errors (e.g. "Unsafe call of a type that could not be resolved") after editing a file — particularly after adding a new export or changing an import — restart the TS server before investigating further. These are stale diagnostics that clear on restart and are not real errors.
+
+ESLint import-sort errors (e.g. "Expected 'multiple' syntax before 'single' syntax") can be ignored — do not reorder imports to satisfy them.
 
 ## Environment
 

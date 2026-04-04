@@ -1,9 +1,7 @@
 import { createContext, useContext } from 'react';
+import { type User } from '@finance/shared';
 
-export interface User {
-  id: string;
-  email: string;
-}
+export type { User };
 
 export interface AuthContextValue {
   user: User | null;

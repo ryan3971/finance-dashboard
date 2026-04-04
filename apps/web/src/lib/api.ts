@@ -1,15 +1,17 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { config } from '@/lib/config';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001/api/v1',
+  baseURL: config.apiBaseUrl,
   withCredentials: true,
 });
 
 // Attach access token to every outgoing request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -28,21 +30,21 @@ api.interceptors.response.use(
         // interceptor attaching a stale/invalid token to the refresh call.
         // withCredentials is required so the httpOnly refresh_token cookie is sent.
         const { data } = await axios.post<{ accessToken: string }>(
-          'http://localhost:3001/api/v1/auth/refresh',
+          `${config.apiBaseUrl}/auth/refresh`,
           {},
           { withCredentials: true }
         );
 
         const newToken = data.accessToken;
-        localStorage.setItem('accessToken', newToken);
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newToken);
 
         // Retry the original request with the new token
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return await api(originalRequest);
       } catch {
         // Refresh failed — clear local state and redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
+        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
         window.location.href = '/login';
       }
     }

@@ -3,6 +3,7 @@ import {
   parseAmount,
   parseDate,
 } from '../../pipeline/utils';
+import { DEFAULT_CURRENCY } from '@finance/shared';
 import type {
   CsvAdapter,
   RawInvestmentTransaction,
@@ -86,7 +87,7 @@ export class QuestradeAdapter implements CsvAdapter {
       const grossAmount = parseAmount(String(row[7]));
       const commission = parseAmount(String(row[8]));
       const netAmount = parseAmount(String(row[9]));
-      const currency = String(row[10] ?? 'CAD').trim();
+      const currency = String(row[10] ?? DEFAULT_CURRENCY).trim();
       const accountNumber = String(row[11]).trim();
       const rawAccountType = String(row[13] ?? '')
         .trim()

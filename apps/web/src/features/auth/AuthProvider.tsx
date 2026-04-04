@@ -1,25 +1,29 @@
 import { AuthContext, type User } from '@/features/auth/useAuth';
 import { type ReactNode, useCallback, useState } from 'react';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { userSchema } from '@finance/shared';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(() =>
-    localStorage.getItem('accessToken')
+    localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
   );
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? (JSON.parse(stored) as User) : null;
+    const stored = localStorage.getItem(STORAGE_KEYS.USER);
+    if (!stored) return null;
+    const result = userSchema.safeParse(JSON.parse(stored));
+    return result.success ? result.data : null;
   });
 
   const login = useCallback((token: string, userData: User) => {
-    localStorage.setItem('accessToken', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
     setAccessToken(token);
     setUser(userData);
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
     setAccessToken(null);
     setUser(null);
   }, []);

@@ -2,13 +2,14 @@ import type { Request, Response } from 'express';
 import { createTag, deleteTag, listTags } from './tags.service';
 import { TagError, TagErrorCode } from './tags.errors';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { FIELD_LIMITS } from '@finance/shared';
 import { Router } from 'express';
 import { z } from 'zod';
 
 const router = Router();
 
 const createTagSchema = z.object({
-  name: z.string().min(1).max(50),
+  name: z.string().min(1).max(FIELD_LIMITS.TAG_NAME_MAX),
   color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a hex code e.g. #FF5733')

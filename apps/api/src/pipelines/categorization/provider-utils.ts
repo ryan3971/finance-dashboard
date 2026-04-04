@@ -1,3 +1,4 @@
+import type { NeedWant } from '@finance/shared';
 import { eq, isNull, or } from 'drizzle-orm';
 import { categories } from '@/db/schema';
 import { db } from '@/db';
@@ -5,7 +6,7 @@ import { db } from '@/db';
 export interface ParsedAIResponse {
   category: string;
   subcategory: string | null;
-  need_want: 'Need' | 'Want' | 'NA';
+  need_want: NeedWant;
   confidence: number;
   reasoning: string;
 }

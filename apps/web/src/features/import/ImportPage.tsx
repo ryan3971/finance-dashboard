@@ -1,19 +1,14 @@
 import { useRef, useState } from 'react';
 import api from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import { FormField } from '@/components/ui/FormField';
+import { getApiErrorMessage } from '@/lib/errors';
+import type { ImportResult } from '@finance/shared';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { Select } from '@/components/ui/Select';
+import { transactionKeys } from '@/lib/queryKeys';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useQueryClient } from '@tanstack/react-query';
-
-interface ImportResult {
-  importId: string;
-  rowCount: number;
-  importedCount: number;
-  duplicateCount: number;
-  flaggedCount: number;
-  transferCandidateCount: number;
-  errorCount: number;
-  errors: string[];
-}
 
 export function ImportPage() {
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
@@ -47,13 +42,9 @@ export function ImportPage() {
         }
       );
       setResult(data);
-      // Invalidate transactions so the list refreshes
-      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error ?? 'Import failed. Please try again.';
-      setError(message);
+      setError(getApiErrorMessage(err, 'Import failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -77,30 +68,28 @@ export function ImportPage() {
   return (
     <PageLayout>
       <div className="max-w-lg">
-        <h1 className="text-xl font-semibold text-gray-900 mb-6">
+        <h1 className="text-xl font-semibold text-content-primary mb-6">
           Import transactions
         </h1>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-surface rounded-lg border border-border-base p-6">
           <form
             onSubmit={(e) => {
               void handleSubmit(e);
             }}
             className="space-y-4"
           >
-            {/* Account selector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account
-              </label>
+            <FormField label="Account">
               {accountsLoading ? (
-                <p className="text-sm text-gray-400">Loading accounts...</p>
+                <p className="text-sm text-content-muted">
+                  Loading accounts...
+                </p>
               ) : (
-                <select
+                <Select
                   required
                   value={accountId}
                   onChange={(e) => setAccountId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-full"
                 >
                   <option value="">Select an account</option>
                   {accounts?.map((acc) => (
@@ -108,44 +97,39 @@ export function ImportPage() {
                       {acc.name} ({acc.institution.toUpperCase()})
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
-            </div>
+            </FormField>
 
-            {/* File input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                File (.csv or .xlsx)
-              </label>
+            <FormField label="File (.csv)">
               <input
                 ref={fileInputRef}
                 type="file"
                 required
-                accept=".csv,.xlsx"
+                accept=".csv"
                 onChange={handleFileChange}
-                className="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                className="w-full text-sm text-content-secondary file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-surface-muted file:text-gray-700 hover:file:bg-gray-200"
               />
               {file && (
-                <p className="mt-1 text-xs text-gray-400">{file.name}</p>
+                <p className="mt-1 text-xs text-content-muted">{file.name}</p>
               )}
-            </div>
+            </FormField>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
 
-            <button
+            <Button
               type="submit"
               disabled={loading || !file || !accountId}
-              className="w-full py-2 px-4 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-2"
             >
               {loading ? 'Importing...' : 'Import'}
-            </button>
+            </Button>
           </form>
         </div>
 
-        {/* Result summary */}
         {result && (
-          <div className="mt-4 bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-sm font-medium text-gray-900 mb-3">
+          <div className="mt-4 bg-surface rounded-lg border border-border-base p-6">
+            <h2 className="text-sm font-medium text-content-primary mb-3">
               Import complete
             </h2>
             <dl className="space-y-1.5">
@@ -177,7 +161,7 @@ export function ImportPage() {
               />
             </dl>
             {result.errors.length > 0 && (
-              <div className="mt-3 text-xs text-red-600 space-y-0.5">
+              <div className="mt-3 text-xs text-danger space-y-0.5">
                 {result.errors.map((e, i) => (
                   <p key={i}>{e}</p>
                 ))}
@@ -185,7 +169,7 @@ export function ImportPage() {
             )}
             <button
               onClick={reset}
-              className="mt-4 text-sm text-gray-500 hover:text-gray-900"
+              className="mt-4 text-sm text-content-secondary hover:text-content-primary"
             >
               Import another file
             </button>
@@ -206,16 +190,16 @@ function ResultRow({
   highlight?: 'green' | 'yellow' | 'red' | 'blue';
 }) {
   const colors = {
-    green: 'text-green-700 font-medium',
-    yellow: 'text-yellow-700 font-medium',
-    red: 'text-red-700 font-medium',
-    blue: 'text-blue-700 font-medium',
+    green: 'text-positive font-medium',
+    yellow: 'text-warning font-medium',
+    red: 'text-danger font-medium',
+    blue: 'text-info font-medium',
   };
 
   return (
     <div className="flex justify-between text-sm">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className={highlight ? colors[highlight] : 'text-gray-900'}>
+      <dt className="text-content-secondary">{label}</dt>
+      <dd className={highlight ? colors[highlight] : 'text-content-primary'}>
         {value}
       </dd>
     </div>

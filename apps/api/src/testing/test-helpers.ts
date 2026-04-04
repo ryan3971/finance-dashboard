@@ -1,5 +1,3 @@
-import type { Application } from 'express';
-import request from 'supertest';
 import {
   accounts,
   categories,
@@ -11,13 +9,13 @@ import {
   transactions,
   users,
 } from '@/db/schema';
-import { isNotNull } from 'drizzle-orm';
+import type { Application } from 'express';
+import type { AuthResponse } from '@finance/shared';
 import { db } from '@/db';
+import { isNotNull } from 'drizzle-orm';
+import request from 'supertest';
 
-export interface AuthResponse {
-  accessToken: string;
-  user: { email: string };
-}
+export type { AuthResponse };
 
 export interface AccountResponse {
   id: string;
@@ -66,6 +64,9 @@ export async function registerUser(
   const res = await request(app)
     .post('/api/v1/auth/register')
     .send({ email, password: 'password123' });
+  // supertest types res.body as `any`; the cast satisfies no-unsafe-return
+  // without hiding a real type gap — the shape is validated by the route's
+  // Zod schema before it ever reaches this helper.
   return res.body as RegisterResult;
 }
 
@@ -76,6 +77,8 @@ export async function registerAndLogin(
   const res = await request(app)
     .post('/api/v1/auth/register')
     .send({ email, password: 'password123' });
+  // Same boundary cast as registerUser: supertest's `any` body requires a cast
+  // to satisfy no-unsafe-member-access. The shape is guaranteed by the route.
   return (res.body as AuthResponse).accessToken;
 }
 
@@ -93,5 +96,6 @@ export async function createAccount(
     .post('/api/v1/accounts')
     .set('Authorization', `Bearer ${token}`)
     .send(options);
+  // Same boundary cast: supertest body is `any`; cast required by no-unsafe-member-access.
   return (res.body as AccountResponse).id;
 }

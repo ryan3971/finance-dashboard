@@ -10,6 +10,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import { DEFAULT_CURRENCY, NEED_WANT_OPTIONS } from '@finance/shared';
 import { relations } from 'drizzle-orm';
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ export const accounts = pgTable('accounts', {
   name: text('name').notNull(),
   type: text('type').notNull(),
   institution: text('institution').notNull(),
-  currency: text('currency').notNull().default('CAD'),
+  currency: text('currency').notNull().default(DEFAULT_CURRENCY),
   isActive: boolean('is_active').notNull().default(true),
   isCredit: boolean('is_credit').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -69,7 +70,7 @@ export const categorizationRules = pgTable('categorization_rules', {
   sourceName: text('source_name'),
   categoryId: uuid('category_id').references(() => categories.id),
   subcategoryId: uuid('subcategory_id').references(() => categories.id),
-  needWant: text('need_want'),
+  needWant: text('need_want', { enum: [...NEED_WANT_OPTIONS, 'ADD'] }),
   priority: integer('priority').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -121,7 +122,7 @@ export const transactions = pgTable('transactions', {
   rawDescription: text('raw_description').notNull(),
   sourceName: text('source_name'),
   amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
-  currency: text('currency').notNull().default('CAD'),
+  currency: text('currency').notNull().default(DEFAULT_CURRENCY),
   categoryId: uuid('category_id').references(() => categories.id),
   subcategoryId: uuid('subcategory_id').references(() => categories.id),
   needWant: text('need_want'),
@@ -171,7 +172,7 @@ export const investmentTransactions = pgTable('investment_transactions', {
   grossAmount: numeric('gross_amount', { precision: 14, scale: 2 }),
   commission: numeric('commission', { precision: 10, scale: 2 }),
   amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
-  currency: text('currency').notNull().default('CAD'),
+  currency: text('currency').notNull().default(DEFAULT_CURRENCY),
   riskLevel: text('risk_level'),
   activityType: text('activity_type'),
   compositeKey: text('composite_key').unique().notNull(),
@@ -186,7 +187,7 @@ export const investmentSnapshots = pgTable('investment_snapshots', {
     .notNull(),
   snapshotDate: date('snapshot_date').notNull(),
   balance: numeric('balance', { precision: 14, scale: 2 }).notNull(),
-  currency: text('currency').notNull().default('CAD'),
+  currency: text('currency').notNull().default(DEFAULT_CURRENCY),
   source: text('source').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

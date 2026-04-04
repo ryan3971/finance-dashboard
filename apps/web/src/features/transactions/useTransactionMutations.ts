@@ -1,13 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-
-interface PatchTransactionInput {
-  categoryId?: string | null;
-  subcategoryId?: string | null;
-  needWant?: 'Need' | 'Want' | 'NA' | null;
-  note?: string | null;
-  createRule?: boolean;
-}
+import type { PatchTransactionInput } from '@finance/shared';
+import { transactionKeys } from '@/lib/queryKeys';
 
 export function usePatchTransaction() {
   const queryClient = useQueryClient();
@@ -22,7 +16,7 @@ export function usePatchTransaction() {
       await api.patch<unknown>(`/transactions/${id}`, input);
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
   });
 }
 
@@ -42,7 +36,7 @@ export function useConfirmTransfer() {
       });
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
   });
 }
 
@@ -53,6 +47,6 @@ export function useDismissTransfer() {
       await api.post('/transfers/dismiss', { transactionId });
     },
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
   });
 }

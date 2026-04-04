@@ -1,9 +1,18 @@
 import {
+  FIELD_LIMITS,
+  NEED_WANT_OPTIONS,
+  type NeedWant,
+  TRANSFER_KEYWORDS,
+} from '@finance/shared';
+import {
   useConfirmTransfer,
   useDismissTransfer,
   usePatchTransaction,
 } from '@/features/transactions/useTransactionMutations';
+import { Button } from '@/components/ui/Button';
 import { CategorySelect } from '@/components/ui/CategorySelect';
+import { FormField } from '@/components/ui/FormField';
+import { Input } from '@/components/ui/Input';
 import type { Transaction } from '@/hooks/useTransactions';
 import { useState } from 'react';
 
@@ -21,20 +30,16 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
   const [subcategoryId, setSubcategoryId] = useState(
     transaction.subcategoryId ?? ''
   );
-  const [needWant, setNeedWant] = useState<'Need' | 'Want' | 'NA' | ''>(
-    (transaction.needWant as 'Need' | 'Want' | 'NA') ?? ''
+  const [needWant, setNeedWant] = useState<NeedWant | ''>(
+    transaction.needWant ?? ''
   );
   const [note, setNote] = useState(transaction.note ?? '');
   const [createRule, setCreateRule] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Detect transfer candidates by description keywords
   const isTransferCandidate =
     transaction.flaggedForReview &&
-    (transaction.description.includes('tfr') ||
-      transaction.description.includes('transfer') ||
-      transaction.description.includes('e-tfr') ||
-      transaction.description.includes('payment'));
+    TRANSFER_KEYWORDS.some((k) => transaction.description.includes(k));
 
   async function handleSave() {
     setSaving(true);
@@ -44,7 +49,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
         input: {
           categoryId: categoryId || null,
           subcategoryId: subcategoryId || null,
-          needWant: (needWant as 'Need' | 'Want' | 'NA') || null,
+          needWant: (needWant) || null,
           note: note || null,
           createRule,
         },
@@ -58,9 +63,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
   async function handleConfirmTransfer() {
     setSaving(true);
     try {
-      await confirmTransfer.mutateAsync({
-        transactionId: transaction.id,
-      });
+      await confirmTransfer.mutateAsync({ transactionId: transaction.id });
       onClose();
     } finally {
       setSaving(false);
@@ -78,74 +81,68 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
   }
 
   return (
-    <div className="bg-blue-50 border-t border-blue-100 px-4 py-4 space-y-4">
+    <div className="bg-info-bg border-t border-info-border px-4 py-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-900">
+        <h3 className="text-sm font-medium text-content-primary">
           Review: {transaction.sourceName ?? transaction.description}
         </h3>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 text-sm"
+          className="text-content-muted hover:text-content-secondary text-sm"
         >
           ✕
         </button>
       </div>
 
-      {/* Transfer actions — shown when transfer keyword detected */}
       {isTransferCandidate && (
-        <div className="flex gap-2 items-center p-3 bg-amber-50 border border-amber-200 rounded">
-          <span className="text-xs text-amber-700 flex-1">
+        <div className="flex gap-2 items-center p-3 bg-warning-bg border border-warning-border rounded">
+          <span className="text-xs text-warning flex-1">
             This looks like an internal transfer. Confirm to exclude it from
             income/expense totals.
           </span>
-          <button
+          <Button
+            variant="warning"
+            size="sm"
             onClick={() => {
               void handleConfirmTransfer();
             }}
             disabled={saving}
-            className="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 disabled:opacity-50"
           >
             Confirm transfer
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => {
               void handleDismissTransfer();
             }}
             disabled={saving}
-            className="px-3 py-1 bg-white border border-gray-300 text-xs rounded hover:bg-gray-50 disabled:opacity-50"
           >
             Not a transfer
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Category */}
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          Category
-        </label>
+      <FormField label="Category" labelSize="xs">
         <CategorySelect
           categoryId={categoryId}
           subcategoryId={subcategoryId}
           onCategoryChange={setCategoryId}
           onSubcategoryChange={setSubcategoryId}
         />
-      </div>
+      </FormField>
 
-      {/* Need/Want */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          Need / Want
-        </label>
+        <label className="label-xs">Need / Want</label>
         <div className="flex gap-2">
-          {(['Need', 'Want', 'NA'] as const).map((opt) => (
+          {NEED_WANT_OPTIONS.map((opt) => (
             <button
               key={opt}
               onClick={() => setNeedWant(opt)}
               className={`px-3 py-1 text-xs rounded border transition-colors ${
                 needWant === opt
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-content-primary text-white border-content-primary'
+                  : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
               }`}
             >
               {opt}
@@ -154,23 +151,18 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
         </div>
       </div>
 
-      {/* Note */}
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          Note
-        </label>
-        <input
+      <FormField label="Note" labelSize="xs">
+        <Input
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Add a note..."
-          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-          maxLength={500}
+          maxLength={FIELD_LIMITS.NOTE_MAX}
+          className="px-2 py-1.5 rounded"
         />
-      </div>
+      </FormField>
 
-      {/* Create rule */}
-      <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+      <label className="flex items-center gap-2 text-xs text-content-secondary cursor-pointer">
         <input
           type="checkbox"
           checked={createRule}
@@ -181,23 +173,19 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
         imports
       </label>
 
-      {/* Actions */}
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={() => {
             void handleSave();
           }}
           disabled={saving || !categoryId}
-          className="px-4 py-1.5 bg-gray-900 text-white text-sm rounded hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          size="md"
         >
           {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button
-          onClick={onClose}
-          className="px-4 py-1.5 border border-gray-300 text-sm rounded hover:bg-gray-50"
-        >
+        </Button>
+        <Button variant="secondary" size="md" onClick={onClose}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

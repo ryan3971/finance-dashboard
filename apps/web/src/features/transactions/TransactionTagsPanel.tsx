@@ -4,6 +4,7 @@ import {
   useDetachTag,
   useTags,
 } from '@/hooks/useTags';
+import { FIELD_LIMITS } from '@finance/shared';
 import type { Tag } from '@/hooks/useTransactions';
 import { useState } from 'react';
 
@@ -119,7 +120,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
             onChange={(e) => setNewTagName(e.target.value)}
             placeholder="Tag name"
             className="text-xs border border-gray-300 rounded px-1.5 py-0.5 w-24"
-            maxLength={50}
+            maxLength={FIELD_LIMITS.TAG_NAME_MAX}
           />
           <div className="flex gap-0.5">
             {PRESET_COLORS.map((c) => (

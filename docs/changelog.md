@@ -306,3 +306,79 @@ Issue	Change
 #7	config.transferWindowDays is now read once into windowDays before the loop; the WINDOW_DAYS() wrapper function was removed
 #8	txnA and txnB are now checked separately — txnA missing → TRANSACTION_NOT_FOUND, txnB missing → PAIRED_TRANSACTION_NOT_FOUND
 #9	getOwnedTransaction now selects isTransfer; confirmTransfer throws ALREADY_CONFIRMED (409) if either side is already confirmed
+---
+Phase 1 — Theme + CSS layer
+
+tailwind.config.js — semantic color tokens: surface, border, content, warning, danger, positive, info, accent
+index.css — @layer components with 6 utility classes: .input-base, .select-base, .label-sm, .label-xs, .th-cell, .td-cell
+Phase 2 — UI component library
+
+Button.tsx — variant (primary/secondary/ghost/warning) + size (sm/md)
+Input.tsx — wrapper applying .input-base
+Select.tsx — wrapper applying .select-base
+FormField.tsx — label + optional error wrapper
+Badge.tsx — 5 semantic variants
+EmptyState.tsx — loading/error/empty patterns
+Pagination.tsx — extracted from TransactionsPage
+Phase 3 — Page refactoring
+
+AuthForm.tsx — created; LoginPage and RegisterPage slimmed to 4-line wrappers
+TransactionsTable.tsx — extracted table JSX; TransactionsPage shrunk from 242 → ~60 lines
+TransactionReviewPanel, TransactionFilters, ImportPage updated to use new components
+Phase 4 — Logic utilities
+
+errors.ts — getApiErrorMessage() replaces 3 unsafe casts
+queryKeys.ts — centralized query key factories; used in all 4 hooks + mutation files
+config.ts / api.ts — API base URL moved to env config
+---
+New file: packages/shared/src/types/transactions.ts — canonical home for ImportResult and PatchTransactionInput
+
+Updated:
+
+packages/shared/src/types/index.ts — exports the new file
+apps/api/src/features/imports/pipeline/import.service.ts — removed local ImportResult, imports from shared
+apps/api/src/features/transactions/transactions.service.ts — removed local PatchTransactionInput, imports from shared
+apps/web/src/features/import/ImportPage.tsx — removed local ImportResult, imports from shared
+apps/web/src/features/transactions/useTransactionMutations.ts — removed local PatchTransactionInput, imports from shared
+apps/web/src/features/auth/AuthForm.tsx — removed local AuthResponse, imports from shared; also removed the now-unused User import
+apps/api/src/testing/test-helpers.ts — removed local AuthResponse, imports from shared
+---
+packages/shared/src/types/transactions.ts
+
+Added NEED_WANT_OPTIONS = ['Need', 'Want', 'NA'] as const
+Added type NeedWant = (typeof NEED_WANT_OPTIONS)[number]
+PatchTransactionInput.needWant now uses NeedWant
+packages/shared/src/schemas/transactions.ts (new file)
+
+needWantSchema = z.enum(NEED_WANT_OPTIONS) — derived from the constant, so the two stay in sync automatically
+API files updated — transactions-mutation.routes.ts, transactions.service.ts, pipeline.types.ts, provider-utils.ts, rules-engine.ts — all now import NeedWant / NEED_WANT_OPTIONS / needWantSchema from @finance/shared instead of inlining the values.
+
+Web — TransactionReviewPanel.tsx now imports NeedWant and NEED_WANT_OPTIONS from @finance/shared.
+---
+packages/shared/src/constants.ts (new — used by both API and web)
+
+TRANSFER_KEYWORDS — replaces the local array in transfer-detection.service.ts and the inline .includes() chain in TransactionReviewPanel.tsx
+DEFAULT_CURRENCY — replaces 'CAD' in schema.ts (4 columns), 3 adapters, transactions-mutation.routes.ts, and TransactionsTable.tsx
+FIELD_LIMITS — replaces 500/50/8 in API Zod schemas, the shared registerSchema, and web maxLength/minLength attributes
+apps/api/src/lib/constants.ts (new)
+
+IMPORT_STATUS — replaces 'processing'/'complete'/'error' in import.service.ts
+CATEGORY_SOURCE — replaces 'rule'/'ai'/'manual'/'default' across 5 categorization files
+TRANSACTION_SOURCE — replaces 'csv'/'manual' in import.service.ts and transactions.service.ts
+ISO_DATE_REGEX — replaces the repeated regex in 2 route files and 3 adapter files
+AI_MAX_TOKENS / AI_TEMPERATURE — replaces duplicate values in both AI providers
+REFRESH_TOKEN_MS — deduplicates the 7 * 24 * 60 * 60 * 1000 calculation in jwt.ts and auth.routes.ts
+CONFIDENCE / AUTO_RULE_PRIORITY / KEYWORD_SLICE_LENGTH — named magic numbers in transactions.service.ts
+apps/web/src/lib/storageKeys.ts (new)
+
+STORAGE_KEYS — replaces 'accessToken'/'user' across api.ts and AuthProvider.tsx
+Targeted fixes
+
+api.ts:32 — hard-coded refresh URL replaced with `${config.apiBaseUrl}/auth/refresh`
+useTags.ts — ['tags'] replaced with tagKeys.all()
+test-helpers.ts — AuthResponse is now exported so tests can import it from there
+---
+Created apps/api/scripts/seed-dev.ts and apps/api/scripts/seed-rules.ts — imports updated from ../apps/api/src/... to ../src/..., dotenv.config path updated to .env (relative to apps/api/)
+Updated apps/api/package.json — added seed:dev and seed:rules scripts
+Updated package.json — root scripts now delegate via pnpm --filter api
+Deleted scripts/seed-dev.ts, scripts/seed-rules.ts, and root tsconfig.json
