@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 const router = Router();
+router.use(requireAuth);
 
 const createTagSchema = z.object({
   name: z.string().min(1).max(FIELD_LIMITS.TAG_NAME_MAX),
@@ -17,13 +18,13 @@ const createTagSchema = z.object({
 });
 
 // GET /api/v1/tags
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   const result = await listTags(getAuthUser(req).id);
   res.json(result);
 });
 
 // POST /api/v1/tags
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   const input = createTagSchema.parse(req.body);
   const tag = await createTag(getAuthUser(req).id, input);
   res.status(201).json(tag);
@@ -32,7 +33,6 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 // DELETE /api/v1/tags/:id
 router.delete(
   '/:id',
-  requireAuth,
   async (req: Request, res: Response) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
     const deleted = await deleteTag(id, getAuthUser(req).id);

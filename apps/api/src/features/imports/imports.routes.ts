@@ -5,6 +5,7 @@ import { processImport } from '@/features/imports/pipeline/import.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 
 const router = Router();
+router.use(requireAuth);
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -29,7 +30,6 @@ const upload = multer({
 // POST /api/v1/imports/upload
 router.post(
   '/upload',
-  requireAuth,
   upload.single('file'),
   async (req: Request, res: Response) => {
     if (!req.file) {

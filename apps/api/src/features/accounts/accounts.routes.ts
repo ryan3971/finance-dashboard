@@ -11,6 +11,7 @@ import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 
 const router = Router();
+router.use(requireAuth);
 
 const createAccountSchema = z.object({
   name: z.string().min(1).max(100),
@@ -22,7 +23,6 @@ const createAccountSchema = z.object({
 // GET /api/v1/accounts
 router.get(
   '/',
-  requireAuth,
   async (req: Request, res: Response) => {
     const includeInactive = req.query.includeInactive === 'true';
     const result = await listAccounts(getAuthUser(req).id, { includeInactive });
@@ -33,7 +33,6 @@ router.get(
 // POST /api/v1/accounts
 router.post(
   '/',
-  requireAuth,
   async (req: Request, res: Response) => {
     const input = createAccountSchema.parse(req.body);
     const account = await createAccount(getAuthUser(req).id, input);
@@ -44,7 +43,6 @@ router.post(
 // GET /api/v1/accounts/:id
 router.get(
   '/:id',
-  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     const account = await getAccountById(req.params.id, getAuthUser(req).id);
 

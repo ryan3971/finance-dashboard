@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 const router = Router();
+router.use(requireAuth);
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,6 @@ const listQuerySchema = z.object({
 // GET /api/v1/transactions
 router.get(
   '/',
-  requireAuth,
   async (req: Request, res: Response) => {
     const { accountId, startDate, endDate, categoryId, flagged, page, limit } =
       listQuerySchema.parse(req.query);

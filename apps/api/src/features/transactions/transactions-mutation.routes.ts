@@ -12,6 +12,7 @@ import { ISO_DATE_REGEX } from '@/lib/constants';
 import { z } from 'zod';
 
 const router = Router();
+router.use(requireAuth);
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ const tagParamsSchema = z.object({
 
 // ─── PATCH /api/v1/transactions/:id ──────────────────────────────────────────
 
-router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
+router.patch('/:id', async (req: Request, res: Response) => {
   const input = patchTransactionSchema.parse(req.body);
   const { id } = transactionParamsSchema.parse(req.params);
   const updated = await patchTransaction(id, getAuthUser(req).id, input);
@@ -58,7 +59,7 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
 
 // ─── POST /api/v1/transactions (manual entry) ────────────────────────────────
 
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   const input = createTransactionSchema.parse(req.body);
   const created = await createManualTransaction(getAuthUser(req).id, input);
   res.status(201).json(created);
@@ -66,7 +67,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 
 // ─── POST /api/v1/transactions/:id/tags ──────────────────────────────────────
 
-router.post('/:id/tags', requireAuth, async (req: Request, res: Response) => {
+router.post('/:id/tags', async (req: Request, res: Response) => {
   const { tagId } = z.object({ tagId: z.string().uuid() }).parse(req.body);
   const { id } = transactionParamsSchema.parse(req.params);
 
@@ -83,7 +84,6 @@ router.post('/:id/tags', requireAuth, async (req: Request, res: Response) => {
 
 router.delete(
   '/:id/tags/:tagId',
-  requireAuth,
   async (req: Request, res: Response) => {
     const { id, tagId } = tagParamsSchema.parse(req.params);
     const found = await removeTagFromTransaction(

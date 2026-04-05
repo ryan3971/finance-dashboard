@@ -11,6 +11,7 @@ import { AccountError, AccountErrorCode } from './accounts.errors';
 import { z } from 'zod';
 
 const router = Router();
+router.use(requireAuth);
 
 const paramsSchema = z.object({ id: z.string().uuid() });
 
@@ -29,7 +30,6 @@ const patchAccountSchema = z
 // PATCH /api/v1/accounts/:id
 router.patch(
   '/:id',
-  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     const { id } = paramsSchema.parse(req.params);
     const input = patchAccountSchema.parse(req.body);
@@ -42,7 +42,6 @@ router.patch(
 // POST /api/v1/accounts/:id/deactivate
 router.post(
   '/:id/deactivate',
-  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     const { id } = paramsSchema.parse(req.params);
     const updated = await deactivateAccount(id, getAuthUser(req).id);
@@ -54,7 +53,6 @@ router.post(
 // POST /api/v1/accounts/:id/reactivate
 router.post(
   '/:id/reactivate',
-  requireAuth,
   async (req: Request<{ id: string }>, res: Response) => {
     const { id } = paramsSchema.parse(req.params);
     const updated = await reactivateAccount(id, getAuthUser(req).id);

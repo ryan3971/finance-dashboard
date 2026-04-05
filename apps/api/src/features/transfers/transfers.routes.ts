@@ -8,9 +8,10 @@ import {
 } from '@/pipelines/transfer-detection/transfer-detection.service';
 
 const router = Router();
+router.use(requireAuth);
 
 // POST /api/v1/transfers/confirm
-router.post('/confirm', requireAuth, async (req: Request, res: Response) => {
+router.post('/confirm', async (req: Request, res: Response) => {
   const input = z
     .object({
       transactionId: z.string().uuid(),
@@ -29,7 +30,7 @@ router.post('/confirm', requireAuth, async (req: Request, res: Response) => {
 });
 
 // POST /api/v1/transfers/dismiss
-router.post('/dismiss', requireAuth, async (req: Request, res: Response) => {
+router.post('/dismiss', async (req: Request, res: Response) => {
   const { transactionId } = z
     .object({
       transactionId: z.string().uuid(),
