@@ -14,7 +14,7 @@ export default defineConfig(
   // ── Base: all files ────────────────────────────────────────────────────────
   // JS-only recommended rules applied globally (no type-checking required)
   eslint.configs.recommended,
-  pluginRouter.configs.recommended,
+  ...pluginRouter.configs['flat/recommended'],
   tseslint.configs.strict,
   tseslint.configs.stylistic,
 
@@ -387,6 +387,7 @@ export default defineConfig(
    * you should allow redirect and notFound as throwable objects. */
   {
     name: 'web/only-throw-errors',
+    files: ['apps/web/src/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/only-throw-error': [
         'error',

@@ -1,4 +1,4 @@
-import { ACCOUNT_TYPES, INSTITUTIONS } from '@finance/shared';
+import { ACCOUNT_TYPES, FIELD_LIMITS, INSTITUTIONS } from '@finance/shared';
 import {
   deactivateAccount,
   reactivateAccount,
@@ -17,7 +17,7 @@ const paramsSchema = z.object({ id: z.string().uuid() });
 
 const patchAccountSchema = z
   .object({
-    name: z.string().min(1).max(100).optional(),
+    name: z.string().min(1).max(FIELD_LIMITS.ACCOUNT_NAME_MAX).optional(),
     institution: z.enum(INSTITUTIONS).optional(),
     type: z.enum(ACCOUNT_TYPES).optional(),
     currency: z.string().length(3).optional(),

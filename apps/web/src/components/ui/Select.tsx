@@ -1,13 +1,14 @@
 import React from 'react';
 
-export function Select({
-  className = '',
-  children,
-  ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+export const Select = React.forwardRef<
+  HTMLSelectElement,
+  React.SelectHTMLAttributes<HTMLSelectElement>
+>(({ className = '', children, ...props }, ref) => {
   return (
-    <select className={`select-base ${className}`} {...props}>
+    <select ref={ref} className={`select-base ${className}`} {...props}>
       {children}
     </select>
   );
-}
+});
+
+Select.displayName = 'Select';

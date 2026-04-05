@@ -1,23 +1,18 @@
 import {
   ACCOUNT_TYPES,
-  type AccountType,
   DEFAULT_CURRENCY,
-  type Institution,
   INSTITUTIONS,
+  accountFormSchema,
+  type AccountFormInput,
 } from '@finance/shared';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useState } from 'react';
 
-export interface AccountFormState {
-  name: string;
-  type: AccountType;
-  institution: Institution;
-  currency: string;
-  isCredit: boolean;
-}
+export type AccountFormState = AccountFormInput;
 
 interface AccountFormProps {
   initialValues: Partial<AccountFormState>;
@@ -38,39 +33,32 @@ export function AccountForm({
   submitLabel,
   showType = true,
 }: AccountFormProps) {
-  const [name, setName] = useState(initialValues.name ?? '');
-  const [type, setType] = useState<AccountType>(
-    initialValues.type ?? ACCOUNT_TYPES[0]
-  );
-  const [institution, setInstitution] = useState<Institution>(
-    initialValues.institution ?? INSTITUTIONS[0]
-  );
-  const [currency, setCurrency] = useState(
-    initialValues.currency ?? DEFAULT_CURRENCY
-  );
-  const [isCredit, setIsCredit] = useState(initialValues.isCredit ?? false);
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    onSubmit({ name, type, institution, currency, isCredit });
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<AccountFormState>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: {
+      name: initialValues.name ?? '',
+      type: initialValues.type ?? ACCOUNT_TYPES[0],
+      institution: initialValues.institution ?? INSTITUTIONS[0],
+      currency: initialValues.currency ?? DEFAULT_CURRENCY,
+      isCredit: initialValues.isCredit ?? false,
+    },
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
-        <FormField label="Name" labelSize="xs">
+        <FormField label="Name" labelSize="xs" error={errors.name?.message}>
           <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
             placeholder="e.g. Chequing"
+            {...register('name')}
           />
         </FormField>
-        <FormField label="Institution" labelSize="xs">
-          <Select
-            value={institution}
-            onChange={(e) => setInstitution(e.target.value as Institution)}
-          >
+        <FormField label="Institution" labelSize="xs" error={errors.institution?.message}>
+          <Select {...register('institution')}>
             {INSTITUTIONS.map((inst) => (
               <option key={inst} value={inst}>
                 {inst.toUpperCase()}
@@ -79,11 +67,8 @@ export function AccountForm({
           </Select>
         </FormField>
         {showType && (
-          <FormField label="Type" labelSize="xs">
-            <Select
-              value={type}
-              onChange={(e) => setType(e.target.value as AccountType)}
-            >
+          <FormField label="Type" labelSize="xs" error={errors.type?.message}>
+            <Select {...register('type')}>
               {ACCOUNT_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -92,13 +77,13 @@ export function AccountForm({
             </Select>
           </FormField>
         )}
-        <FormField label="Currency" labelSize="xs">
+        <FormField label="Currency" labelSize="xs" error={errors.currency?.message}>
           <Input
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
             maxLength={3}
-            required
             placeholder="CAD"
+            {...register('currency', {
+              setValueAs: (v: string) => v.toUpperCase(),
+            })}
           />
         </FormField>
       </div>
@@ -106,9 +91,8 @@ export function AccountForm({
         <label className="flex items-center gap-2 text-xs text-content-secondary cursor-pointer">
           <input
             type="checkbox"
-            checked={isCredit}
-            onChange={(e) => setIsCredit(e.target.checked)}
             className="rounded"
+            {...register('isCredit')}
           />
           Credit account
         </label>

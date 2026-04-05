@@ -4,7 +4,9 @@ import {
   useDetachTag,
   useTags,
 } from '@/hooks/useTags';
-import { FIELD_LIMITS } from '@finance/shared';
+import { FIELD_LIMITS, tagFormSchema, type TagFormInput } from '@finance/shared';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { Tag } from '@/hooks/useTransactions';
 import { useState } from 'react';
 
@@ -31,8 +33,11 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
   const detachTag = useDetachTag();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState(PRESET_COLORS[0]);
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<TagFormInput>({
+    resolver: zodResolver(tagFormSchema),
+  });
 
   const attachedIds = new Set(attachedTags.map((t) => t.id));
   const availableTags = allTags?.filter((t) => !attachedIds.has(t.id)) ?? [];
@@ -45,18 +50,16 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
     await detachTag.mutateAsync({ transactionId, tagId });
   }
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newTagName.trim()) return;
+  async function onCreateSubmit(values: TagFormInput) {
     const tag = await createTag.mutateAsync({
-      name: newTagName.trim(),
+      name: values.name.trim(),
       color: newTagColor,
     });
     await attachTag.mutateAsync({
       transactionId,
       tagId: tag.id,
     });
-    setNewTagName('');
+    reset();
     setShowCreate(false);
   }
 
@@ -108,20 +111,20 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
       {/* Create new tag */}
       {showCreate ? (
         <form
-          onSubmit={(e) => {
-            void handleCreate(e);
-          }}
+          onSubmit={(e) => { void handleSubmit(onCreateSubmit)(e); }}
           className="flex items-center gap-1"
         >
           <input
             autoFocus
             type="text"
-            value={newTagName}
-            onChange={(e) => setNewTagName(e.target.value)}
             placeholder="Tag name"
-            className="text-xs border border-gray-300 rounded px-1.5 py-0.5 w-24"
             maxLength={FIELD_LIMITS.TAG_NAME_MAX}
+            className="text-xs border border-gray-300 rounded px-1.5 py-0.5 w-24"
+            {...register('name')}
           />
+          {errors.name && (
+            <span className="text-xs text-danger">{errors.name.message}</span>
+          )}
           <div className="flex gap-0.5">
             {PRESET_COLORS.map((c) => (
               <button
@@ -143,7 +146,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => setShowCreate(false)}
+            onClick={() => { reset(); setShowCreate(false); }}
             className="text-xs text-gray-400 hover:text-gray-600"
           >
             ✕

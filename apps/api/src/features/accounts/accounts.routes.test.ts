@@ -29,7 +29,7 @@ describe('GET /api/v1/accounts', () => {
     await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ name: 'A Account', type: 'chequing', institution: 'td' });
+      .send({ name: 'A Account', type: 'chequing', institution: 'td', currency: 'CAD', isCredit: false });
 
     const res = await request(app)
       .get('/api/v1/accounts')
@@ -55,6 +55,8 @@ describe('POST /api/v1/accounts', () => {
         name: 'My CIBC Card',
         type: 'credit',
         institution: 'cibc',
+        currency: 'CAD',
+        isCredit: true,
       });
 
     const body = res.body as AccountResponse;
@@ -110,6 +112,8 @@ describe('GET /api/v1/accounts/:id', () => {
         name: 'TD Chequing',
         type: 'chequing',
         institution: 'td',
+        currency: 'CAD',
+        isCredit: false,
       });
 
     expect(createRes.status).toBe(201);
@@ -139,7 +143,7 @@ describe('GET /api/v1/accounts/:id', () => {
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ name: 'A Account', type: 'chequing', institution: 'td' });
+      .send({ name: 'A Account', type: 'chequing', institution: 'td', currency: 'CAD', isCredit: false });
 
     expect(createRes.status).toBe(201);
     const { id } = createRes.body as AccountResponse;

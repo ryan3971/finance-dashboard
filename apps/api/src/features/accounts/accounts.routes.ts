@@ -1,4 +1,4 @@
-import { ACCOUNT_TYPES, DEFAULT_CURRENCY, INSTITUTIONS } from '@finance/shared';
+import { accountFormSchema } from '@finance/shared';
 import { AccountError, AccountErrorCode } from './accounts.errors';
 import {
   createAccount,
@@ -8,17 +8,8 @@ import {
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { type Request, type Response, Router } from 'express';
 
-import { z } from 'zod';
-
 const router = Router();
 router.use(requireAuth);
-
-const createAccountSchema = z.object({
-  name: z.string().min(1).max(100),
-  type: z.enum(ACCOUNT_TYPES),
-  institution: z.enum(INSTITUTIONS),
-  currency: z.string().length(3).default(DEFAULT_CURRENCY),
-});
 
 // GET /api/v1/accounts
 router.get(
@@ -34,7 +25,7 @@ router.get(
 router.post(
   '/',
   async (req: Request, res: Response) => {
-    const input = createAccountSchema.parse(req.body);
+    const input = accountFormSchema.parse(req.body);
     const account = await createAccount(getAuthUser(req).id, input);
     res.status(201).json(account);
   }

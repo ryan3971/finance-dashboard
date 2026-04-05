@@ -40,3 +40,25 @@ instrument.ts — reactRouterV6BrowserTracingIntegration replaced with browserTr
 NavBar.tsx — useLocation removed; active link state via activeProps/activeOptions on TanStack Router Link
 AuthForm.tsx — imports and navigate() call updated
 TransactionsPage.tsx — useState for filters/page replaced with useSearch({ from: '/' }); filter changes navigate to update URL search params
+---
+Installed: react-hook-form + @hookform/resolvers in apps/web
+
+Input and Select — wrapped with React.forwardRef so RHF's register ref reaches the DOM element
+
+packages/shared/src/schemas/accounts.ts — new schema (accountFormSchema / AccountFormInput) exported from the shared index, giving the same source-of-truth treatment as loginSchema/registerSchema
+
+AuthForm — replaced two useState fields with useForm({ resolver: zodResolver(...) }), resolver switches on mode. Inline errors now come from formState.errors via FormField's error prop. Server errors stay in a separate useState. Removed required/minLength HTML attributes.
+
+AccountForm — replaced five useState fields with useForm. The currency field uses setValueAs to preserve the .toUpperCase() transform. AccountFormState export kept unchanged so AccountEditPanel needs no edits.
+
+TransactionTagsPanel — the tag creation <form> now uses useForm with a local tagSchema. Color remains a plain useState (button-driven, not a real input). On cancel, reset() clears the field.
+---
+All five issues are fixed. Here's a summary of what changed:
+
+Issue	Fix
+AccountFormState duplicate type	Replaced interface AccountFormState with export type AccountFormState = AccountFormInput
+maxLength removed from tag input	Restored maxLength={FIELD_LIMITS.TAG_NAME_MAX} alongside {...register('name')}
+API not using shared schema	accounts.routes.ts now uses accountFormSchema from shared; local createAccountSchema removed
+Magic 100 in accountFormSchema	Added ACCOUNT_NAME_MAX: 100 to FIELD_LIMITS; both accountFormSchema and patchAccountSchema reference it
+tagSchema local vs shared	Moved to packages/shared/src/schemas/tags.ts (tagFormSchema / TagFormInput), exported from shared index
+The test payloads for account creation were also updated to send currency and isCredit explicitly, since accountFormSchema requires both (no more .default(DEFAULT_CURRENCY)).

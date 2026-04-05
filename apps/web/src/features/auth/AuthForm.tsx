@@ -1,6 +1,8 @@
-import { type AuthResponse, FIELD_LIMITS } from '@finance/shared';
-import { type FormEvent, useState } from 'react';
+import { loginSchema, registerSchema, type AuthResponse } from '@finance/shared';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
@@ -62,12 +64,12 @@ interface AuthFormProps {
   mode: 'login' | 'register';
 }
 
+type FormValues = { email: string; password: string };
+
 export function AuthForm({ mode }: AuthFormProps) {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const {
@@ -81,19 +83,19 @@ export function AuthForm({ mode }: AuthFormProps) {
     footer,
   } = modeConfig[mode];
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError('');
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(mode === 'login' ? loginSchema : registerSchema),
+  });
+
+  async function onSubmit(values: FormValues) {
+    setServerError('');
     setLoading(true);
     try {
-      const { data } = await api.post<AuthResponse>(endpoint, {
-        email,
-        password,
-      });
+      const { data } = await api.post<AuthResponse>(endpoint, values);
       login(data.accessToken, data.user);
       void navigate({ to: '/', replace: true });
     } catch (err: unknown) {
-      setError(getApiErrorMessage(err, fallbackError));
+      setServerError(getApiErrorMessage(err, fallbackError));
     } finally {
       setLoading(false);
     }
@@ -113,34 +115,29 @@ export function AuthForm({ mode }: AuthFormProps) {
 
           <form
             onSubmit={(e) => {
-              void handleSubmit(e);
+              void handleSubmit(onSubmit)(e);
             }}
             className="space-y-4"
           >
-            <FormField label="Email">
+            <FormField label="Email" error={errors.email?.message}>
               <Input
                 type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
+                {...register('email')}
               />
             </FormField>
 
-            <FormField label={passwordLabel}>
+            <FormField label={passwordLabel} error={errors.password?.message}>
               <Input
                 type="password"
-                required
-                minLength={mode === 'register' ? FIELD_LIMITS.PASSWORD_MIN : undefined}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 autoComplete={passwordAutoComplete}
+                {...register('password')}
               />
             </FormField>
 
-            {error && <p className="text-sm text-danger">{error}</p>}
+            {serverError && <p className="text-sm text-danger">{serverError}</p>}
 
             <Button type="submit" disabled={loading} className="w-full py-2">
               {loading ? loadingLabel : submitLabel}

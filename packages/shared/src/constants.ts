@@ -50,6 +50,7 @@ export const DEFAULT_CURRENCY = 'CAD';
 export const FIELD_LIMITS = {
   NOTE_MAX: 500,
   TAG_NAME_MAX: 50,
+  ACCOUNT_NAME_MAX: 100,
   PASSWORD_MIN: 8,
   PASSWORD_MAX: 100,
 } as const;
