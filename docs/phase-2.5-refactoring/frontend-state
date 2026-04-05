@@ -1,0 +1,107 @@
+Frontend State (apps/web) — April 4, 2026
+Routing (App.tsx)
+Path	Component	Guard
+/login	LoginPage	Public
+/register	RegisterPage	Public
+/	TransactionsPage	Protected
+/import	ImportPage	Protected
+*	Redirect to /	—
+NavBar links: Transactions, Import. No other pages are navigable yet.
+
+Auth (features/auth/)
+Fully implemented:
+
+AuthProvider stores accessToken + user in localStorage
+useAuth() exposes user, isAuthenticated, login(), logout()
+ProtectedRoute redirects to /login if unauthenticated
+AuthForm handles both login and register (single shared component, mode prop)
+Token refresh interceptor in lib/api.ts — on 401, retries with refresh cookie, then redirects to /login
+Transactions (features/transactions/)
+Fully implemented:
+
+TransactionsPage — orchestrates filters + pagination state, passes reviewingId for inline panel
+
+TransactionFilters — dropdowns for account, category, date range; flagged-only toggle
+
+TransactionsTable — paginated table (Date, Description, Category, Tags, Account, Amount):
+
+Flagged rows highlighted (warning background)
+Transfers shown at reduced opacity
+Inline tag management per row
+TransactionReviewPanel — expands inline for flagged transactions:
+
+Category + subcategory selection
+Need/Want toggle buttons
+Note field (capped at FIELD_LIMITS.NOTE_MAX)
+"Save as rule" checkbox → auto-creates categorization rule on save
+Transfer detection: if description matches TRANSFER_KEYWORDS, shows "Confirm transfer" / "Not a transfer" instead of normal save
+TransactionTagsPanel — per-row tag management:
+
+Color-coded tags (8 preset hex colors), removable
+Add existing tag via dropdown or create new inline
+useTransactionMutations — patchTransaction, confirmTransfer, dismissTransfer, all invalidate query cache on success
+
+Import (features/import/)
+Fully implemented:
+
+Account selector + file picker (.csv only)
+POST /imports/upload via multipart form
+Result summary: imported, duplicate, flagged, transfer candidates, error counts (color-coded)
+Error messages displayed if any rows failed
+Dashboard (features/dashboards/)
+Entirely unbuilt. Four directories exist as scaffolding only (.gitkeep files):
+
+dashboards/expenses/ — empty
+dashboards/income/ — empty
+dashboards/investments/ — empty
+dashboards/snapshot/ — empty
+There are also empty placeholder directories for src/widgets/ and components/error/.
+
+UI Components (components/ui/)
+All complete and in use:
+
+Component	Variants / Notes
+Button	primary, secondary, ghost, warning; sizes sm/md
+Badge	warning, info, accent, success, neutral; rounded sm/full
+Input / Select	Styled via .input-base / .select-base CSS classes
+FormField	Label + optional error message; size sm/xs
+CategorySelect	Two linked dropdowns (parent → subcategory), resets subcategory on parent change
+EmptyState	default / error variants with message + hint
+Pagination	Prev/next with disabled states
+NavBar	Branding, nav links, user email, sign-out
+PageLayout	NavBar + max-w-6xl container wrapper
+Hooks (hooks/)
+Hook	Endpoint	staleTime
+useAccounts()	GET /accounts	10 min
+useCategories()	GET /categories	30 min
+useTransactions(filters, page)	GET /transactions	default
+useTags()	GET /tags	default
+useCreateTag()	POST /tags	mutation
+useDeleteTag()	DELETE /tags/:id	mutation
+useAttachTag()	POST /transactions/:id/tags	mutation
+useDetachTag()	DELETE /transactions/:id/tags/:tagId	mutation
+Styling
+Tailwind CSS with a custom semantic color palette defined in config:
+
+Surfaces: surface, surface-subtle, surface-muted
+Text: content-primary, content-secondary, content-muted
+Semantic: warning (amber), danger (red), positive (green), info (blue), accent (purple)
+Custom utility classes in index.css: .input-base, .select-base, .label-sm, .label-xs, .th-cell, .td-cell
+
+No mobile-responsive layouts — designed for desktop.
+
+Tests
+Vitest + custom render wrapper (test/render.tsx with providers) exists but no test files are written. The e2e/ directory also exists but is empty.
+
+Summary
+Area	Status
+Auth (login/register/token refresh)	Complete
+Transaction list + filters + pagination	Complete
+Transaction review panel (categorize/tag/rule)	Complete
+Transfer detection UI	Complete
+CSV import + result display	Complete
+UI component library	Complete
+Dashboard / analytics pages	Not started
+Investment UI	Not started
+Frontend tests	Not started
+Mobile layout	Not started
