@@ -1,16 +1,15 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@tanstack/react-router';
 import api from '@/lib/api';
 import { useAuth } from '@/features/auth/useAuth';
 
 const NAV_LINKS = [
-  { to: '/', label: 'Transactions' },
-  { to: '/accounts', label: 'Accounts' },
-  { to: '/import', label: 'Import' },
+  { to: '/' as const, label: 'Transactions' },
+  { to: '/accounts' as const, label: 'Accounts' },
+  { to: '/import' as const, label: 'Import' },
 ];
 
 export function NavBar() {
   const { user, logout } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -20,7 +19,7 @@ export function NavBar() {
       // swallow — clear local state regardless
     }
     logout();
-    navigate('/login', { replace: true });
+    void navigate({ to: '/login', replace: true });
   }
 
   return (
@@ -34,11 +33,12 @@ export function NavBar() {
             <Link
               key={link.to}
               to={link.to}
-              className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                location.pathname === link.to
-                  ? 'bg-gray-100 text-gray-900 font-medium'
-                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+              className="px-3 py-1.5 rounded text-sm transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+              activeProps={{
+                className:
+                  'px-3 py-1.5 rounded text-sm transition-colors bg-gray-100 text-gray-900 font-medium',
+              }}
+              activeOptions={link.to === '/' ? { exact: true } : undefined}
             >
               {link.label}
             </Link>

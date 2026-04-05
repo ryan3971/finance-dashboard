@@ -26,3 +26,17 @@ constants.ts — PASSWORD_MAX: 100 added to FIELD_LIMITS
 schemas/auth.ts — both .min() and .max() use FIELD_LIMITS values and template literal messages
 src/index.ts — export * from './constants' added directly; types/index.ts no longer re-exports constants
 ---
+Deleted
+
+App.tsx — route tree replaces it
+ProtectedRoute.tsx — replaced by beforeLoad guards
+Created
+
+router.tsx — route tree, typed context, requireAuth guard, transactionsSearchSchema (zod), module augmentation for full type inference
+Modified
+
+main.tsx — BrowserRouter removed; AuthProvider moved here as outer wrapper; RouterWrapper reads useAuth() and syncs auth state into router context via router.update; ErrorBoundary moved here too
+instrument.ts — reactRouterV6BrowserTracingIntegration replaced with browserTracingIntegration()
+NavBar.tsx — useLocation removed; active link state via activeProps/activeOptions on TanStack Router Link
+AuthForm.tsx — imports and navigate() call updated
+TransactionsPage.tsx — useState for filters/page replaced with useSearch({ from: '/' }); filter changes navigate to update URL search params

@@ -9,7 +9,8 @@ Guidance specific to `apps/web`.
 - `widgets/` — Dashboard chart/stat widgets
 - `hooks/` — Custom React hooks
 - `lib/` — Axios instance (`api.ts`), config, React Query keys (`queryKeys.ts`), localStorage keys (`storageKeys.ts`)
-- `App.tsx` — Router setup and `AuthProvider`
+- `router.tsx` — Route tree, typed router context, `requireAuth` guard, search param schemas
+- `main.tsx` — Entry point; `AuthProvider`, `RouterWrapper` (syncs auth context into router), `ErrorBoundary`
 
 ## Constants
 

@@ -7,11 +7,14 @@ import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 // @ts-expect-error -- no type declarations shipped
 import checkFilePlugin from 'eslint-plugin-check-file';
 import globals from 'globals';
+import pluginRouter from '@tanstack/eslint-plugin-router';
+
 
 export default defineConfig(
   // ── Base: all files ────────────────────────────────────────────────────────
   // JS-only recommended rules applied globally (no type-checking required)
   eslint.configs.recommended,
+  pluginRouter.configs.recommended,
   tseslint.configs.strict,
   tseslint.configs.stylistic,
 
@@ -158,7 +161,7 @@ export default defineConfig(
   {
     name: 'web/filename-tsx-pascal-case',
     files: ['apps/web/src/**/*.tsx'],
-    ignores: ['apps/web/src/main.tsx'],
+    ignores: ['apps/web/src/main.tsx', 'apps/web/src/router.tsx'],
     plugins: { 'check-file': checkFilePlugin },
     rules: {
       'check-file/filename-naming-convention': [
@@ -379,4 +382,29 @@ export default defineConfig(
       ],
     },
   },
+  // ── Web: only throw Error objects (allows TanStack Router's Redirect and NotFoundError) ───────────
+  /**From Tanstack Router docs - To ensure it (typescript-eslint) does not conflict with TanStack Router, 
+   * you should allow redirect and notFound as throwable objects. */
+  {
+    name: 'web/only-throw-errors',
+    rules: {
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        {
+          allow: [
+            {
+              from: 'package',
+              package: '@tanstack/router-core',
+              name: 'Redirect',
+            },
+            {
+              from: 'package',
+              package: '@tanstack/router-core',
+              name: 'NotFoundError',
+            },
+          ],
+        },
+      ],
+    },
+  }
 );

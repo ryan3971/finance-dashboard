@@ -4,24 +4,38 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { TransactionsTable } from '@/features/transactions/TransactionsTable';
 import { useState } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useTransactions } from '@/hooks/useTransactions';
 
-const DEFAULT_FILTERS: FilterState = {
-  accountId: '',
-  startDate: '',
-  endDate: '',
-  categoryId: '',
-  flaggedOnly: false,
-};
-
 export function TransactionsPage() {
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [page, setPage] = useState(1);
+  const search = useSearch({ from: '/' });
+  const navigate = useNavigate({ from: '/' });
   const [reviewingId, setReviewingId] = useState<string | null>(null);
 
+  const filters: FilterState = {
+    accountId: search.accountId ?? '',
+    startDate: search.startDate ?? '',
+    endDate: search.endDate ?? '',
+    categoryId: search.categoryId ?? '',
+    flaggedOnly: search.flaggedOnly ?? false,
+  };
+  const page = search.page ?? 1;
+
   function handleFilterChange(newFilters: FilterState) {
-    setFilters(newFilters);
-    setPage(1);
+    void navigate({
+      search: {
+        accountId: newFilters.accountId || undefined,
+        startDate: newFilters.startDate || undefined,
+        endDate: newFilters.endDate || undefined,
+        categoryId: newFilters.categoryId || undefined,
+        flaggedOnly: newFilters.flaggedOnly || undefined,
+        page: undefined,
+      },
+    });
+  }
+
+  function handlePageChange(newPage: number) {
+    void navigate({ search: (prev) => ({ ...prev, page: newPage }) });
   }
 
   function handleReviewToggle(id: string) {
@@ -76,7 +90,7 @@ export function TransactionsPage() {
           reviewingId={reviewingId}
           onReviewToggle={handleReviewToggle}
           pagination={pagination}
-          onPageChange={setPage}
+          onPageChange={handlePageChange}
         />
       )}
     </PageLayout>

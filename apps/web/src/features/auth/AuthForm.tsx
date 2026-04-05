@@ -1,7 +1,7 @@
+import { type AuthResponse, FIELD_LIMITS } from '@finance/shared';
 import { type FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@tanstack/react-router';
 import api from '@/lib/api';
-import { FIELD_LIMITS, type AuthResponse } from '@finance/shared';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -91,7 +91,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         password,
       });
       login(data.accessToken, data.user);
-      navigate('/', { replace: true });
+      void navigate({ to: '/', replace: true });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, fallbackError));
     } finally {
