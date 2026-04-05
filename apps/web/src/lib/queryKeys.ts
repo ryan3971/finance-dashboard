@@ -5,6 +5,7 @@ export const transactionKeys = {
 
 export const accountKeys = {
   all: () => ['accounts'] as const,
+  allWithInactive: () => ['accounts', 'all'] as const,
 };
 
 export const categoryKeys = {

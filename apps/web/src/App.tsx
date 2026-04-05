@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { AccountsPage } from './features/accounts/AccountsPage';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { ImportPage } from './features/import/ImportPage';
 import { LoginPage } from './features/auth/LoginPage';
@@ -21,6 +22,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <TransactionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounts"
+            element={
+              <ProtectedRoute>
+                <AccountsPage />
               </ProtectedRoute>
             }
           />

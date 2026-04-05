@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/useAuth';
 
 const NAV_LINKS = [
   { to: '/', label: 'Transactions' },
+  { to: '/accounts', label: 'Accounts' },
   { to: '/import', label: 'Import' },
 ];
 

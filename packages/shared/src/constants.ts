@@ -1,3 +1,35 @@
+export const ACCOUNT_TYPES = [
+  'chequing',
+  'savings',
+  'credit',
+  'tfsa',
+  'fhsa',
+  'rrsp',
+  'non-registered',
+] as const;
+
+export type AccountType = (typeof ACCOUNT_TYPES)[number];
+
+export const ACCOUNT_TYPE_ORDER: Record<AccountType, number> = {
+  chequing: 0,
+  savings: 1,
+  credit: 2,
+  tfsa: 3,
+  fhsa: 4,
+  rrsp: 5,
+  'non-registered': 6,
+};
+
+export const INSTITUTIONS = [
+  'amex',
+  'cibc',
+  'td',
+  'questrade',
+  'manual',
+] as const;
+
+export type Institution = (typeof INSTITUTIONS)[number];
+
 export const TRANSFER_KEYWORDS = [
   'e-tfr',
   'e-transfer',
@@ -19,4 +51,5 @@ export const FIELD_LIMITS = {
   NOTE_MAX: 500,
   TAG_NAME_MAX: 50,
   PASSWORD_MIN: 8,
+  PASSWORD_MAX: 100,
 } as const;

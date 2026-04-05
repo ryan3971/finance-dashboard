@@ -1,25 +1,12 @@
-/**
- * Accounts Routes
- *
- * Defines the Express router for the /api/v1/accounts endpoint. All routes
- * require authentication via the requireAuth middleware.
- *
- * Routes:
- *   GET    /          - List all accounts for the authenticated user
- *   POST   /          - Create a new account (validated via createAccountSchema)
- *   GET    /:id       - Retrieve a single account by ID
- *
- * Supported account types: chequing, savings, credit, tfsa, fhsa, rrsp, non-registered
- * Supported institutions:  amex, cibc, td, questrade, manual
- */
-import { type Request, type Response, Router } from 'express';
+import { ACCOUNT_TYPES, DEFAULT_CURRENCY, INSTITUTIONS } from '@finance/shared';
+import { AccountError, AccountErrorCode } from './accounts.errors';
 import {
   createAccount,
   getAccountById,
   listAccounts,
 } from './accounts.services';
-import { AccountError, AccountErrorCode } from './accounts.errors';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { type Request, type Response, Router } from 'express';
 
 import { z } from 'zod';
 
@@ -27,17 +14,9 @@ const router = Router();
 
 const createAccountSchema = z.object({
   name: z.string().min(1).max(100),
-  type: z.enum([
-    'chequing',
-    'savings',
-    'credit',
-    'tfsa',
-    'fhsa',
-    'rrsp',
-    'non-registered',
-  ]),
-  institution: z.enum(['amex', 'cibc', 'td', 'questrade', 'manual']),
-  currency: z.string().length(3).default('CAD'),
+  type: z.enum(ACCOUNT_TYPES),
+  institution: z.enum(INSTITUTIONS),
+  currency: z.string().length(3).default(DEFAULT_CURRENCY),
 });
 
 // GET /api/v1/accounts
@@ -45,7 +24,8 @@ router.get(
   '/',
   requireAuth,
   async (req: Request, res: Response) => {
-    const result = await listAccounts(getAuthUser(req).id);
+    const includeInactive = req.query.includeInactive === 'true';
+    const result = await listAccounts(getAuthUser(req).id, { includeInactive });
     res.json(result);
   }
 );

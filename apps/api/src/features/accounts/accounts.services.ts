@@ -1,19 +1,21 @@
-/**
- * Account services — DB queries and business logic for the accounts feature.
- *
- * All functions scope queries to the authenticated user's ID to prevent
- * cross-user data access. Functions return data or null; the route layer is
- * responsible for translating null into 404 responses.
- */
+import type { AccountType, Institution } from '@finance/shared';
 import { and, eq } from 'drizzle-orm';
 import { accounts } from '@/db/schema';
 import { db } from '@/db';
 
 interface CreateAccountInput {
   name: string;
-  type: 'chequing' | 'savings' | 'credit' | 'tfsa' | 'fhsa' | 'rrsp' | 'non-registered';
-  institution: 'amex' | 'cibc' | 'td' | 'questrade' | 'manual';
+  type: AccountType;
+  institution: Institution;
   currency: string;
+}
+
+interface UpdateAccountInput {
+  name?: string;
+  institution?: Institution;
+  type?: AccountType;
+  currency?: string;
+  isCredit?: boolean;
 }
 
 const accountColumns = {
@@ -27,11 +29,14 @@ const accountColumns = {
   createdAt: accounts.createdAt,
 };
 
-export async function listAccounts(userId: string) {
-  return db
-    .select(accountColumns)
-    .from(accounts)
-    .where(and(eq(accounts.userId, userId), eq(accounts.isActive, true)));
+export async function listAccounts(
+  userId: string,
+  options?: { includeInactive?: boolean }
+) {
+  const where = options?.includeInactive
+    ? eq(accounts.userId, userId)
+    : and(eq(accounts.userId, userId), eq(accounts.isActive, true));
+  return db.select(accountColumns).from(accounts).where(where);
 }
 
 export async function createAccount(userId: string, input: CreateAccountInput) {
@@ -50,3 +55,35 @@ export async function getAccountById(id: string, userId: string) {
     .limit(1);
   return account ?? null;
 }
+
+export async function updateAccount(
+  id: string,
+  userId: string,
+  input: UpdateAccountInput
+) {
+  const patch = { ...input };
+  if (input.type !== undefined && input.isCredit === undefined) {
+    patch.isCredit = input.type === 'credit';
+  }
+  const [updated] = await db
+    .update(accounts)
+    .set(patch)
+    .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+    .returning(accountColumns);
+  return updated ?? null;
+}
+
+async function setAccountActive(id: string, userId: string, isActive: boolean) {
+  const [updated] = await db
+    .update(accounts)
+    .set({ isActive })
+    .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+    .returning(accountColumns);
+  return updated ?? null;
+}
+
+export const deactivateAccount = (id: string, userId: string) =>
+  setAccountActive(id, userId, false);
+
+export const reactivateAccount = (id: string, userId: string) =>
+  setAccountActive(id, userId, true);

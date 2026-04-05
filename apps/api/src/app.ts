@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import accountsMutationRouter from './features/accounts/accounts-mutation.routes';
 import accountsRouter from './features/accounts/accounts.routes';
 import authRouter from './features/auth/auth.routes';
 import categoriesRouter from './features/categories/categories.routes';
@@ -32,7 +33,7 @@ export function createApp() {
   // ─── Routes ───────────────────────────────────────────────────────────────
   app.use('/api/v1', healthRouter);
   app.use('/api/v1/auth', authRouter);
-  app.use('/api/v1/accounts', accountsRouter);
+  app.use('/api/v1/accounts', accountsRouter, accountsMutationRouter);
   app.use('/api/v1/imports', importsRouter);
   app.use(
     '/api/v1/transactions',

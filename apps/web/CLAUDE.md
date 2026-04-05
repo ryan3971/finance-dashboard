@@ -21,6 +21,10 @@ Guidance specific to `apps/web`.
 
 Auth state (access token) lives in React Context (`AuthProvider`), not localStorage. The refresh token cookie is sent automatically by the browser.
 
+## React conventions
+
+When mapping over a list that renders multiple sibling elements per item, use `<Fragment key={...}>` (named import from `react`) instead of `<>`. The shorthand `<>` does not accept a `key` prop.
+
 ## Dev proxy
 
 Vite proxies `/api` to `localhost:3001` in dev.
