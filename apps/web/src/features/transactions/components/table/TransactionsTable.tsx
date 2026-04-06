@@ -24,6 +24,7 @@ interface TransactionsTableProps {
   transactions: Transaction[];
   reviewingId: string | null;
   onReviewToggle: (id: string) => void;
+  onDuplicate: (tx: Transaction) => void;
   pagination?: PaginationInfo;
   onPageChange: (page: number) => void;
 }
@@ -32,13 +33,14 @@ export function TransactionsTable({
   transactions,
   reviewingId,
   onReviewToggle,
+  onDuplicate,
   pagination,
   onPageChange,
 }: TransactionsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const columns = useTransactionColumns({ reviewingId, onReviewToggle });
+  const columns = useTransactionColumns({ reviewingId, onReviewToggle, onDuplicate });
 
   const table = useReactTable({
     data: transactions,

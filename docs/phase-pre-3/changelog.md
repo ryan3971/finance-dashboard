@@ -130,3 +130,25 @@ components/panels/ManualTransactionPanel.tsx — new: fixed right-side panel wit
 TransactionsPage.tsx — added panel state, "Add Transaction" button, handleDuplicate, renders ManualTransactionPanel
 TransactionsTable.tsx — threads onDuplicate through to columns hook
 useTransactionColumns.tsx — onDuplicate prop enabled, Duplicate menu item now functional
+---
+New files
+
+useTagSelection.ts — owns selectedTagIds state and toggleTag/resetTags, extracted from the panel
+useSubmitManualTransaction.ts — owns the two-step create + attach flow; calls api.post directly for tag attachment so a single invalidateQueries fires after Promise.all instead of one per tag; tracks isAttachingTags so isSubmitting covers the full submission window
+packages/shared/src/schemas/transactions.ts
+
+Added .superRefine cross-field check: subcategoryId present without categoryId is now a validation error, surfaced on the subcategoryId field
+ManualTransactionPanel.tsx
+
+InitialValues exported so consumers can use it as a named type
+Replaced nested Controller/Controller for category+subcategory with two useController calls at the top of the component — the CategorySelect now receives values and handlers directly
+Hardcoded '#6B7280' → DEFAULT_TAG_COLOR constant
+allTags && allTags.length > 0 → allTags?.length ? ... : null
+reset() and resetTags() now only run when submit returns true — tags are preserved so the user can retry if tag attachment fails
+today moved from module scope into defaultValues so it's computed fresh on each mount
+useState, useAttachTag, useCreateTransaction removed; useController added
+TransactionsPage.tsx
+
+panelInitialValues state now typed as InitialValues directly
+handleReviewToggle and handleDuplicate wrapped in useCallback — prevents useMemo in useTransactionColumns from busting on every parent render
+parseFloat(tx.amount) → Number(tx.amount) — avoids the silent empty-input NaN from parseFloat(''); note: description limit using NOTE_MAX is intentional, matching the API schema

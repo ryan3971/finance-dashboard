@@ -1,9 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { PatchTransactionInput } from '@finance/shared';
+import type { CreateTransactionInput, PatchTransactionInput } from '@finance/shared';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
 import { transactionKeys } from '@/lib/queryKeys';
+
+export function useCreateTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateTransactionInput) => {
+      const { data } = await api.post<{ id: string }>('/transactions', input);
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      toast.success(TOAST.TRANSACTION_CREATED);
+    },
+    onError: () => toast.error(TOAST.TRANSACTION_CREATE_FAILED),
+  });
+}
 
 export function usePatchTransaction() {
   const queryClient = useQueryClient();

@@ -39,11 +39,13 @@ function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
 interface UseTransactionColumnsOptions {
   reviewingId: string | null;
   onReviewToggle: (id: string) => void;
+  onDuplicate: (tx: Transaction) => void;
 }
 
 export function useTransactionColumns({
   reviewingId,
   onReviewToggle,
+  onDuplicate,
 }: UseTransactionColumnsOptions): ColumnDef<Transaction>[] {
   return useMemo<ColumnDef<Transaction>[]>(
     () => [
@@ -188,11 +190,8 @@ export function useTransactionColumns({
                     <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuItem disabled>
+                <DropdownMenuItem onClick={() => onDuplicate(tx)}>
                   Duplicate
-                  <span className="ml-auto text-xs text-content-muted">
-                    Soon
-                  </span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -201,6 +200,6 @@ export function useTransactionColumns({
         enableSorting: false,
       },
     ],
-    [reviewingId, onReviewToggle]
+    [reviewingId, onReviewToggle, onDuplicate]
   );
 }

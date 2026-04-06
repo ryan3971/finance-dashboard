@@ -1,5 +1,7 @@
 export const TOAST = {
   // Transactions
+  TRANSACTION_CREATED: 'Transaction created',
+  TRANSACTION_CREATE_FAILED: 'Failed to create transaction',
   TRANSACTION_UPDATED: 'Transaction updated',
   TRANSACTION_UPDATE_FAILED: 'Failed to update transaction',
   TRANSFER_CONFIRMED: 'Transfer confirmed',
@@ -16,6 +18,7 @@ export const TOAST = {
   ACCOUNT_REACTIVATED: 'Account reactivated',
   ACCOUNT_REACTIVATE_FAILED: 'Failed to reactivate account',
   // Tags
+  TRANSACTION_TAG_ATTACH_FAILED: 'Transaction saved, but some tags could not be attached.',
   TAG_CREATED: 'Tag created',
   TAG_CREATE_FAILED: 'Failed to create tag',
   TAG_DELETED: 'Tag deleted',

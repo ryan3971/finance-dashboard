@@ -4,11 +4,15 @@ import {
 } from '@/features/transactions/components/filters/TransactionFilters';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ManualTransactionPanel } from '@/features/transactions/components/panels/ManualTransactionPanel';
+import type { ManualTransactionInitialValues } from '@/features/transactions/components/panels/ManualTransactionPanel';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
+import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 import { TransactionsTable } from '@/features/transactions/components/table/TransactionsTable';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 
 function TransactionsSkeleton() {
@@ -37,6 +41,9 @@ export function TransactionsPage() {
   const search = useSearch({ from: '/' });
   const navigate = useNavigate({ from: '/' });
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelInitialValues, setPanelInitialValues] =
+    useState<ManualTransactionInitialValues>();
 
   const filters: FilterState = {
     accountId: search.accountId ?? '',
@@ -64,8 +71,27 @@ export function TransactionsPage() {
     void navigate({ search: (prev) => ({ ...prev, page: newPage }) });
   }
 
-  function handleReviewToggle(id: string) {
+  const handleReviewToggle = useCallback((id: string) => {
     setReviewingId((prev) => (prev === id ? null : id));
+  }, []);
+
+  const handleDuplicate = useCallback((tx: Transaction) => {
+    setPanelInitialValues({
+      accountId: tx.accountId,
+      description: tx.sourceName ?? tx.description,
+      amount: Number(tx.amount),
+      categoryId: tx.categoryId ?? undefined,
+      subcategoryId: tx.subcategoryId ?? undefined,
+      needWant: tx.needWant ?? undefined,
+      note: tx.note ?? undefined,
+      tagIds: tx.tags.map((t) => t.id),
+    });
+    setPanelOpen(true);
+  }, []);
+
+  function handleClosePanel() {
+    setPanelOpen(false);
+    setPanelInitialValues(undefined);
   }
 
   const { data, isLoading, isError } = useTransactions({
@@ -94,11 +120,20 @@ export function TransactionsPage() {
             </p>
           )}
         </div>
-        {flaggedCount > 0 && (
-          <Badge variant="warning" rounded="full" className="px-3 py-1 text-sm">
-            {flaggedCount} need{flaggedCount === 1 ? 's' : ''} review
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {flaggedCount > 0 && (
+            <Badge
+              variant="warning"
+              rounded="full"
+              className="px-3 py-1 text-sm"
+            >
+              {flaggedCount} need{flaggedCount === 1 ? 's' : ''} review
+            </Badge>
+          )}
+          <Button size="sm" onClick={() => setPanelOpen(true)}>
+            Add Transaction
+          </Button>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -119,8 +154,15 @@ export function TransactionsPage() {
           transactions={transactions}
           reviewingId={reviewingId}
           onReviewToggle={handleReviewToggle}
+          onDuplicate={handleDuplicate}
           pagination={pagination}
           onPageChange={handlePageChange}
+        />
+      )}
+      {panelOpen && (
+        <ManualTransactionPanel
+          initialValues={panelInitialValues}
+          onClose={handleClosePanel}
         />
       )}
     </PageLayout>
