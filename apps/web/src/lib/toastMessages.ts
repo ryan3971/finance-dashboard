@@ -17,6 +17,18 @@ export const TOAST = {
   ACCOUNT_DEACTIVATE_FAILED: 'Failed to deactivate account',
   ACCOUNT_REACTIVATED: 'Account reactivated',
   ACCOUNT_REACTIVATE_FAILED: 'Failed to reactivate account',
+  // Categories
+  SUBCATEGORY_CREATED: 'Subcategory created',
+  SUBCATEGORY_CREATE_FAILED: 'Failed to create subcategory',
+  SUBCATEGORY_UPDATED: 'Subcategory renamed',
+  SUBCATEGORY_UPDATE_FAILED: 'Failed to rename subcategory',
+  SUBCATEGORY_DELETED: 'Subcategory deleted',
+  SUBCATEGORY_DELETE_FAILED: 'Failed to delete subcategory',
+  // Rules
+  RULE_UPDATED: 'Rule updated',
+  RULE_UPDATE_FAILED: 'Failed to update rule',
+  RULE_DELETED: 'Rule deleted',
+  RULE_DELETE_FAILED: 'Failed to delete rule',
   // Tags
   TRANSACTION_TAG_ATTACH_FAILED: 'Transaction saved, but some tags could not be attached.',
   TAG_CREATED: 'Tag created',

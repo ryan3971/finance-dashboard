@@ -206,3 +206,23 @@ tags.service.ts:24-27: Added comment explaining it's a deliberate fast-path opti
 Issue 4 (Low) — Generic Error for unexpected insert failure
 
 tags.service.ts:38-40: Added comment explaining this is intentionally not a DomainError — the error handler's generic 500 path logs it and hides the message from clients, which is the right behaviour for a truly unexpected condition
+---
+1 — NaN priority (RulesTab): Rather than a silent early return, parsedPriority is computed once and added to the Save button's disabled condition (isNaN(parsedPriority)). The button is visually disabled, giving the user clear feedback — no silent failure.
+
+2 — Stale name after rename (CategoriesTab): useEffect is the right tool here. The local name state intentionally diverges from the prop during editing (the user is typing), so you can't derive it — you need controlled local state. The effect re-syncs only when not editing, which is exactly when an external query invalidation could update sub.name from under the component.
+
+3 — CSV download in Safari (RulesTab): Added document.body.appendChild(a) / removeChild(a) around the click.
+
+4 — type="button" (CategoriesTab): Added to the "✎" rename button, "×" delete button, and "+ Add subcategory" button in CategoryCard.
+
+5 — Redundant staleTime: 0 (useRules): Removed.
+
+6 — Verbose prop type (CategoriesTab): Category['subcategories'][number] → Subcategory (now imported alongside Category).
+
+7 — needWant visible and editable (RulesTab + shared schema):
+
+Added needWant: needWantSchema.nullable().optional() to patchRuleSchema in the shared package
+Added a needWant state field to RuleRow, reset properly in handleCancel
+Edit row renders a <select> with NEED_WANT_OPTIONS (Need / Want / NA) plus a "—" empty option for null
+Display row shows the current value or "—"
+New Need/Want header column added to the table

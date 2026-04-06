@@ -15,3 +15,11 @@ export const categoryKeys = {
 export const tagKeys = {
   all: () => ['tags'] as const,
 };
+
+export const ruleKeys = {
+  all: () => ['rules'] as const,
+};
+
+export const userConfigKeys = {
+  all: () => ['user-config'] as const,
+};
