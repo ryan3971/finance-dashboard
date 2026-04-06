@@ -1,16 +1,16 @@
 import {
   ACCOUNT_TYPES,
+  type AccountFormInput,
+  accountFormSchema,
   DEFAULT_CURRENCY,
   INSTITUTIONS,
-  accountFormSchema,
-  type AccountFormInput,
 } from '@finance/shared';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
-import { FormField } from '@/components/ui/FormField';
+import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export type AccountFormState = AccountFormInput;
 
@@ -49,15 +49,21 @@ export function AccountForm({
   });
 
   return (
-    <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-3">
+    <form
+      onSubmit={(e) => {
+        void handleSubmit(onSubmit)(e);
+      }}
+      className="space-y-3"
+    >
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Name" labelSize="xs" error={errors.name?.message}>
-          <Input
-            placeholder="e.g. Chequing"
-            {...register('name')}
-          />
+          <Input placeholder="e.g. Chequing" {...register('name')} />
         </FormField>
-        <FormField label="Institution" labelSize="xs" error={errors.institution?.message}>
+        <FormField
+          label="Institution"
+          labelSize="xs"
+          error={errors.institution?.message}
+        >
           <Select {...register('institution')}>
             {INSTITUTIONS.map((inst) => (
               <option key={inst} value={inst}>
@@ -77,7 +83,11 @@ export function AccountForm({
             </Select>
           </FormField>
         )}
-        <FormField label="Currency" labelSize="xs" error={errors.currency?.message}>
+        <FormField
+          label="Currency"
+          labelSize="xs"
+          error={errors.currency?.message}
+        >
           <Input
             maxLength={3}
             placeholder="CAD"

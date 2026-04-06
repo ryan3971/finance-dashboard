@@ -32,14 +32,16 @@ export interface Transaction {
   tags: Tag[];
 }
 
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 interface TransactionsResponse {
   data: Transaction[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: PaginationInfo;
 }
 
 export function useTransactions({

@@ -1,11 +1,37 @@
-import { type FilterState, TransactionFilters } from '@/features/transactions/TransactionFilters';
-import { Badge } from '@/components/ui/Badge';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { TransactionsTable } from '@/features/transactions/TransactionsTable';
-import { useState } from 'react';
+import {
+  type FilterState,
+  TransactionFilters,
+} from '@/features/transactions/components/filters/TransactionFilters';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { useTransactions } from '@/hooks/useTransactions';
+import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/common/EmptyState';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { TransactionsTable } from '@/features/transactions/components/table/TransactionsTable';
+import { useState } from 'react';
+import { useTransactions } from '@/features/transactions/hooks/useTransactions';
+
+function TransactionsSkeleton() {
+  return (
+    <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
+      <div className="flex justify-end px-3 py-2 border-b border-border-subtle">
+        <Skeleton className="h-6 w-20" />
+      </div>
+      <div className="divide-y divide-border-subtle">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3">
+            <Skeleton className="h-4 w-20 shrink-0" />
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="ml-auto h-4 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function TransactionsPage() {
   const search = useSearch({ from: '/' });
@@ -59,9 +85,13 @@ export function TransactionsPage() {
     <PageLayout>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-semibold text-content-primary">Transactions</h1>
+          <h1 className="text-xl font-semibold text-content-primary">
+            Transactions
+          </h1>
           {pagination && (
-            <p className="text-sm text-content-muted mt-0.5">{pagination.total} total</p>
+            <p className="text-sm text-content-muted mt-0.5">
+              {pagination.total} total
+            </p>
           )}
         </div>
         {flaggedCount > 0 && (
@@ -76,7 +106,7 @@ export function TransactionsPage() {
       </div>
 
       {isLoading ? (
-        <EmptyState message="Loading..." />
+        <TransactionsSkeleton />
       ) : isError ? (
         <EmptyState message="Failed to load transactions." variant="error" />
       ) : transactions.length === 0 ? (

@@ -8,12 +8,12 @@ import {
   useConfirmTransfer,
   useDismissTransfer,
   usePatchTransaction,
-} from '@/features/transactions/useTransactionMutations';
+} from '@/features/transactions/hooks/useTransactionMutations';
 import { Button } from '@/components/ui/Button';
-import { CategorySelect } from '@/components/ui/CategorySelect';
-import { FormField } from '@/components/ui/FormField';
+import { CategorySelect } from '@/components/common/CategorySelect';
+import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
-import type { Transaction } from '@/hooks/useTransactions';
+import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 import { useState } from 'react';
 
 interface Props {
@@ -49,7 +49,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
         input: {
           categoryId: categoryId || null,
           subcategoryId: subcategoryId || null,
-          needWant: (needWant) || null,
+          needWant: needWant || null,
           note: note || null,
           createRule,
         },

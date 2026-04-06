@@ -1,18 +1,26 @@
+import { useCallback, useMemo, useState } from 'react';
 import {
   useDeactivateAccount,
   useReactivateAccount,
-} from '@/hooks/useAccountMutations';
-import { Fragment, useMemo, useState } from 'react';
+} from '@/features/accounts/hooks/useAccountMutations';
+import type { Account } from '@/features/accounts/hooks/useAccounts';
 import { ACCOUNT_TYPE_ORDER } from '@finance/shared';
-import { AccountEditPanel } from './AccountEditPanel';
-import { Badge } from '@/components/ui/Badge';
+import { AccountEditPanel } from './components/AccountEditPanel';
+import { AccountRow } from './components/AccountRow';
 import { Button } from '@/components/ui/Button';
+import { DeactivateAccountDialog } from './components/DeactivateAccountDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { useAllAccounts } from '@/hooks/useAccounts';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { useAllAccounts } from '@/features/accounts/hooks/useAccounts';
+
+// Matches the number of Account fields displayed as table columns
+const ACCOUNT_SKELETON_ROW_COUNT = 5;
 
 export function AccountsPage() {
   const { data: accounts, isLoading, isError } = useAllAccounts();
-  const [expandedId, setExpandedId] = useState<string | 'new' | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmDeactivateAccount, setConfirmDeactivateAccount] =
+    useState<Account | null>(null);
   const deactivate = useDeactivateAccount();
   const reactivate = useReactivateAccount();
 
@@ -25,17 +33,9 @@ export function AccountsPage() {
     });
   }, [accounts]);
 
-  function toggleExpand(id: string) {
+  const toggleExpand = useCallback((id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
-  }
-
-  if (isLoading) {
-    return (
-      <PageLayout>
-        <p className="text-sm text-content-muted">Loading accounts...</p>
-      </PageLayout>
-    );
-  }
+  }, []);
 
   if (isError) {
     return (
@@ -93,74 +93,68 @@ export function AccountsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {sorted.map((account) => (
-              <Fragment key={account.id}>
-                <tr
-                  className={account.isActive ? '' : 'opacity-50'}
-                >
-                  <td className="px-4 py-2 text-content-primary">
-                    {account.name}
+            {isLoading ? (
+              Array.from({ length: ACCOUNT_SKELETON_ROW_COUNT }).map((_, i) => (
+                <tr key={i}>
+                  <td className="px-4 py-2.5">
+                    <Skeleton className="h-4 w-32" />
                   </td>
-                  <td className="px-4 py-2 text-content-secondary">
-                    {account.type}
+                  <td className="px-4 py-2.5">
+                    <Skeleton className="h-4 w-20" />
                   </td>
-                  <td className="px-4 py-2 text-content-secondary">
-                    {account.institution.toUpperCase()}
+                  <td className="px-4 py-2.5">
+                    <Skeleton className="h-4 w-16" />
                   </td>
-                  <td className="px-4 py-2 text-content-secondary">
-                    {account.currency}
+                  <td className="px-4 py-2.5">
+                    <Skeleton className="h-4 w-12" />
                   </td>
-                  <td className="px-4 py-2">
-                    <Badge variant={account.isActive ? 'success' : 'neutral'}>
-                      {account.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
+                  <td className="px-4 py-2.5">
+                    <Skeleton className="h-5 w-14 rounded-full" />
                   </td>
-                  <td className="px-4 py-2 text-right">
-                    <div className="flex gap-1 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleExpand(account.id)}
-                      >
-                        Edit
-                      </Button>
-                      {account.isActive ? (
-                        <Button
-                          variant="warning"
-                          size="sm"
-                          disabled={deactivate.isPending}
-                          onClick={() => deactivate.mutate(account.id)}
-                        >
-                          Deactivate
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          disabled={reactivate.isPending}
-                          onClick={() => reactivate.mutate(account.id)}
-                        >
-                          Reactivate
-                        </Button>
-                      )}
-                    </div>
+                  <td className="px-4 py-2.5 text-right">
+                    <Skeleton className="inline-block h-6 w-20" />
                   </td>
                 </tr>
-                {expandedId === account.id && (
-                  <tr key={`${account.id}-panel`}>
-                    <td colSpan={6} className="p-0">
-                      <AccountEditPanel
-                        account={account}
-                        onClose={() => setExpandedId(null)}
-                      />
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
+              ))
+            ) : sorted.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-6 text-center text-sm text-content-muted"
+                >
+                  No accounts yet. Click &ldquo;Add Account&rdquo; to get
+                  started.
+                </td>
+              </tr>
+            ) : (
+              sorted.map((account) => (
+                <AccountRow
+                  key={account.id}
+                  account={account}
+                  isExpanded={expandedId === account.id}
+                  onToggleExpand={toggleExpand}
+                  onDeactivate={setConfirmDeactivateAccount}
+                  onReactivate={(id) => reactivate.mutate(id)}
+                  reactivateIsPending={reactivate.isPending}
+                />
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      <DeactivateAccountDialog
+        account={confirmDeactivateAccount}
+        isPending={deactivate.isPending}
+        onConfirm={() => {
+          if (confirmDeactivateAccount) {
+            deactivate.mutate(confirmDeactivateAccount.id, {
+              onSuccess: () => setConfirmDeactivateAccount(null),
+            });
+          }
+        }}
+        onCancel={() => setConfirmDeactivateAccount(null)}
+      />
     </PageLayout>
   );
 }

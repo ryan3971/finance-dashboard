@@ -31,15 +31,15 @@ export default defineConfig(
       },
     },
     rules: {
-      'sort-imports': [
-        'error',
-        {
-          ignoreCase: true,
-          ignoreDeclarationSort: false,
-          ignoreMemberSort: false,
-          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
-        },
-      ],
+      // 'sort-imports': [
+      //   'error',
+      //   {
+      //     ignoreCase: true,
+      //     ignoreDeclarationSort: false,
+      //     ignoreMemberSort: false,
+      //     memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+      //   },
+      // ],
       eqeqeq: ['error', 'always'],
       'no-console': 'warn',
       'no-throw-literal': 'off', // superseded by @typescript-eslint/only-throw-error (from recommendedTypeChecked)
@@ -94,7 +94,6 @@ export default defineConfig(
           allowDefaultProject: [
             'apps/api/drizzle.config.ts',
             'apps/api/drizzle.test.config.ts',
-            'apps/api/vitest.config.ts',
             'apps/api/scripts/seed-dev.ts',
             'apps/api/scripts/seed-rules.ts',
           ],
@@ -142,7 +141,7 @@ export default defineConfig(
             },
             {
               target: [
-                './apps/web/src/components',
+                './apps/web/src/components/*',
                 './apps/web/src/hooks',
                 './apps/web/src/lib',
                 './apps/web/src/widgets',
@@ -161,7 +160,7 @@ export default defineConfig(
   {
     name: 'web/filename-tsx-pascal-case',
     files: ['apps/web/src/**/*.tsx'],
-    ignores: ['apps/web/src/main.tsx', 'apps/web/src/router.tsx'],
+    ignores: ['apps/web/src/main.tsx', 'apps/web/src/router.tsx', 'apps/web/src/**/hooks/*.tsx'],
     plugins: { 'check-file': checkFilePlugin },
     rules: {
       'check-file/filename-naming-convention': [

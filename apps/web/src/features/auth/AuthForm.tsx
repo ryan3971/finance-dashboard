@@ -1,11 +1,15 @@
-import { loginSchema, registerSchema, type AuthResponse } from '@finance/shared';
+import {
+  loginSchema,
+  registerSchema,
+  type AuthResponse,
+} from '@finance/shared';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/Button';
-import { FormField } from '@/components/ui/FormField';
+import { FormField } from '@/components/common/FormField';
 import { getApiErrorMessage } from '@/lib/errors';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/features/auth/useAuth';
@@ -64,7 +68,7 @@ interface AuthFormProps {
   mode: 'login' | 'register';
 }
 
-type FormValues = { email: string; password: string };
+interface FormValues { email: string; password: string }
 
 export function AuthForm({ mode }: AuthFormProps) {
   const { login } = useAuth();
@@ -83,7 +87,11 @@ export function AuthForm({ mode }: AuthFormProps) {
     footer,
   } = modeConfig[mode];
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(mode === 'login' ? loginSchema : registerSchema),
   });
 
@@ -137,7 +145,9 @@ export function AuthForm({ mode }: AuthFormProps) {
               />
             </FormField>
 
-            {serverError && <p className="text-sm text-danger">{serverError}</p>}
+            {serverError && (
+              <p className="text-sm text-danger">{serverError}</p>
+            )}
 
             <Button type="submit" disabled={loading} className="w-full py-2">
               {loading ? loadingLabel : submitLabel}

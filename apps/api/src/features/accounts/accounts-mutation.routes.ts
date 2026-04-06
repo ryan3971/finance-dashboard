@@ -1,4 +1,5 @@
 import { ACCOUNT_TYPES, FIELD_LIMITS, INSTITUTIONS } from '@finance/shared';
+import { AccountError, AccountErrorCode } from './accounts.errors';
 import {
   deactivateAccount,
   reactivateAccount,
@@ -6,7 +7,6 @@ import {
 } from './accounts.services';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { type Request, type Response, Router } from 'express';
-import { AccountError, AccountErrorCode } from './accounts.errors';
 
 import { z } from 'zod';
 

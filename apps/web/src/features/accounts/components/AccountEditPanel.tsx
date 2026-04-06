@@ -1,6 +1,9 @@
 import { AccountForm, type AccountFormState } from './AccountForm';
-import { useCreateAccount, useUpdateAccount } from '@/hooks/useAccountMutations';
-import type { Account } from '@/hooks/useAccounts';
+import {
+  useCreateAccount,
+  useUpdateAccount,
+} from '@/features/accounts/hooks/useAccountMutations';
+import type { Account } from '@/features/accounts/hooks/useAccounts';
 
 interface Props {
   account: Account | null;

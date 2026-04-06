@@ -2,6 +2,8 @@ import { tagKeys, transactionKeys } from '@/lib/queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Tag } from './useTransactions';
+import { toast } from 'sonner';
+import { TOAST } from '@/lib/toastMessages';
 
 export function useTags() {
   return useQuery<Tag[]>({
@@ -20,7 +22,11 @@ export function useCreateTag() {
       const { data } = await api.post<Tag>('/tags', input);
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: tagKeys.all() }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      toast.success(TOAST.TAG_CREATED);
+    },
+    onError: () => toast.error(TOAST.TAG_CREATE_FAILED),
   });
 }
 
@@ -33,7 +39,9 @@ export function useDeleteTag() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      toast.success(TOAST.TAG_DELETED);
     },
+    onError: () => toast.error(TOAST.TAG_DELETE_FAILED),
   });
 }
 

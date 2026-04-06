@@ -23,19 +23,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
 }
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  className = '',
-  children,
-  ...props
-}: ButtonProps) {
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = 'primary', size = 'md', className = '', children, ...props },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       className={`font-medium transition-colors disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {children}
     </button>
   );
-}
+});

@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 0 0% 100%;           /* surface.DEFAULT  #FFFFFF */
+    --foreground: 221 39% 11%;          /* content.primary  #111827 */
+    --card: 0 0% 100%;
+    --card-foreground: 221 39% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 221 39% 11%;
+    --primary: 221 39% 11%;             /* content.primary  #111827 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 98%;           /* surface.subtle   #F9FAFB */
+    --secondary-foreground: 221 39% 11%;
+    --muted: 220 14% 96%;               /* surface.muted    #F3F4F6 */
+    --muted-foreground: 220 9% 46%;     /* content.secondary #6B7280 */
+    --accent: 220 14% 96%;
+    --accent-foreground: 221 39% 11%;
+    --destructive: 0 72% 51%;           /* danger.DEFAULT   #DC2626 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;              /* border.base      #E5E7EB */
+    --input: 220 9% 82%;                /* border.strong    #D1D5DB */
+    --ring: 221 39% 11%;
+    --radius: 0.5rem;
+  }
+}
+
 @layer components {
   /* Form controls */
   .input-base {

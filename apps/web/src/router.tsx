@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { z } from 'zod';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
+import { ConfigPage } from '@/features/config/ConfigPage';
 import { ImportPage } from '@/features/import/ImportPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPage } from '@/features/auth/RegisterPage';
@@ -14,7 +15,7 @@ import { TransactionsPage } from '@/features/transactions/TransactionsPage';
 import type { AuthContextValue } from '@/features/auth/useAuth';
 
 interface RouterContext {
-  auth: AuthContextValue;
+  auth: AuthContextValue | undefined;
 }
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
@@ -43,7 +44,7 @@ const transactionsSearchSchema = z.object({
 });
 
 function requireAuth({ context }: { context: RouterContext }) {
-  if (!context.auth.isAuthenticated) {
+  if (!context.auth?.isAuthenticated) {
     throw redirect({ to: '/login', replace: true });
   }
 }
@@ -70,17 +71,25 @@ const importRoute = createRoute({
   component: ImportPage,
 });
 
+const configRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/config',
+  beforeLoad: requireAuth,
+  component: ConfigPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
   indexRoute,
   accountsRoute,
   importRoute,
+  configRoute,
 ]);
 
 export const router = createRouter({
   routeTree,
-  context: { auth: undefined! },
+  context: { auth: undefined },
 });
 
 declare module '@tanstack/react-router' {

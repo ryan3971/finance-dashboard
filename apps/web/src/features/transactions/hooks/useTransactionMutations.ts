@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { PatchTransactionInput } from '@finance/shared';
+import { toast } from 'sonner';
+import { TOAST } from '@/lib/toastMessages';
 import { transactionKeys } from '@/lib/queryKeys';
 
 export function usePatchTransaction() {
@@ -15,8 +17,11 @@ export function usePatchTransaction() {
     }) => {
       await api.patch<unknown>(`/transactions/${id}`, input);
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      toast.success(TOAST.TRANSACTION_UPDATED);
+    },
+    onError: () => toast.error(TOAST.TRANSACTION_UPDATE_FAILED),
   });
 }
 
@@ -35,8 +40,11 @@ export function useConfirmTransfer() {
         pairedTransactionId,
       });
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      toast.success(TOAST.TRANSFER_CONFIRMED);
+    },
+    onError: () => toast.error(TOAST.TRANSFER_CONFIRM_FAILED),
   });
 }
 
@@ -46,7 +54,10 @@ export function useDismissTransfer() {
     mutationFn: async (transactionId: string) => {
       await api.post('/transfers/dismiss', { transactionId });
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: transactionKeys.all() }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      toast.success(TOAST.TRANSFER_DISMISSED);
+    },
+    onError: () => toast.error(TOAST.TRANSFER_DISMISS_FAILED),
   });
 }

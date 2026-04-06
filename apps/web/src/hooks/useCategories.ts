@@ -1,23 +1,9 @@
 import api from '@/lib/api';
+import type { Category } from '@finance/shared';
 import { categoryKeys } from '@/lib/queryKeys';
 import { useQuery } from '@tanstack/react-query';
 
-export interface Subcategory {
-  id: string;
-  name: string;
-  isIncome: boolean;
-  icon: string | null;
-  userId: string | null;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  isIncome: boolean;
-  icon: string | null;
-  userId: string | null;
-  subcategories: Subcategory[];
-}
+export type { Category, Subcategory } from '@finance/shared';
 
 export function useCategories() {
   return useQuery<Category[]>({

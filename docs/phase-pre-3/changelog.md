@@ -62,3 +62,54 @@ API not using shared schema	accounts.routes.ts now uses accountFormSchema from s
 Magic 100 in accountFormSchema	Added ACCOUNT_NAME_MAX: 100 to FIELD_LIMITS; both accountFormSchema and patchAccountSchema reference it
 tagSchema local vs shared	Moved to packages/shared/src/schemas/tags.ts (tagFormSchema / TagFormInput), exported from shared index
 The test payloads for account creation were also updated to send currency and isCredit explicitly, since accountFormSchema requires both (no more .default(DEFAULT_CURRENCY)).
+---
+Phase 1 — Foundation
+
+Installed class-variance-authority, clsx, tailwind-merge, lucide-react, sonner, all Radix primitives, and @tanstack/react-table
+Created lib/utils.ts (cn()) and components.json
+Updated tailwind.config.js with shadcn CSS-variable color keys alongside existing tokens
+Added CSS variable definitions to index.css mapped from the existing hex values — one token system, not two
+Phase 2 — shadcn components
+New files in components/ui/: dialog.tsx, tabs.tsx, dropdown-menu.tsx, sonner.tsx, tooltip.tsx, skeleton.tsx. All custom components (Button, Badge, Input, etc.) kept as-is.
+
+Phase 3 — TanStack Table
+TransactionsTable.tsx fully rewritten with typed ColumnDef[], sort state on Date/Description/Amount, column visibility toggle via DropdownMenu, and a ⋯ row actions menu (Review for flagged rows, stubbed Duplicate). Existing Tailwind classes and review panel expansion preserved.
+
+Phase 4 — Toast system
+toastMessages.ts centralises all strings. All mutations in useTransactionMutations.ts, useAccountMutations.ts, and useTags.ts now fire success/error toasts. <Toaster /> added to main.tsx.
+
+Phase 5 — Dialog
+AccountsPage.tsx — Deactivate button now opens a confirmation Dialog with the account name, Cancel, and Deactivate actions.
+
+Phase 6 — Config page
+ConfigPage.tsx with Tabs (Categories shows live data from useCategories(), Rules and Preferences are stubs). Route and nav link wired in router.tsx and NavBar.tsx.
+
+Phase 7 — Skeletons
+Transactions page shows a skeleton table grid on load; accounts page shows skeleton rows matching the table structure.
+
+Phase 8 — ErrorBoundary
+ErrorBoundary.tsx is a class component with styled error UI, wrapping RouterWrapper inside Sentry's boundary.
+---
+Here's a summary of everything that was done:
+
+New files created:
+
+AmountCell.tsx — Presentational component that parses amount once, applies color logic and formatting from the same num. formatAmount now takes a number instead of a string, consolidating all parse calls.
+useTransactionColumns.tsx — All column definitions, wrapped in useMemo([reviewingId, onReviewToggle]). Also exports ACTIONS_COLUMN_ID (the magic string) and isTransactionReviewable (the shared predicate).
+ColumnVisibilityToggle.tsx — Self-contained column visibility toolbar. Uses ACTIONS_COLUMN_ID from the hook rather than a raw string.
+Modified files:
+
+useTransactions.ts — PaginationInfo extracted and exported; TransactionsTable now imports it directly instead of declaring a duplicate subset.
+TransactionsTable.tsx — Down to ~100 lines. isTransactionReviewable called once per row (fixes the dual-computation bug). visibleColumnCount wrapped in useMemo. UNKNOWN_PAGE_COUNT = -1 named constant. Redundant description cell wrapper <div> removed.
+Deferred to docs/todo/transactions-table.md:
+
++$0.00 formatting for zero amounts (needs a display decision)
+Stale reviewingId when changing pages (parent concern, needs a design call)
+NaN guard on parseFloat(amount) (depends on whether you want a runtime guard or a branded type)
+---
+main.tsx — Added TooltipProvider wrapping the app so Radix tooltips work globally.
+TransactionTagsPanel.tsx — Each tag badge now truncates its name text at max-w-[10ch] with ellipsis, and wraps in a Tooltip that shows the full name on hover. The × button gets shrink-0 so it's never squeezed out.
+useTransactionColumns.tsx — Tags column tdClassName gains max-w-xs as a safety cap, so even many badges wrapping across lines won't push the column beyond a reasonable width.
+---
+RouterWrapper moved to RouterWrapper.tsx and imported in main.tsx
+Non-null assertion replaced with an explicit null check that throws a descriptive error

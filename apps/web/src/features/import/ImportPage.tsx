@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/Button';
-import { FormField } from '@/components/ui/FormField';
+import { FormField } from '@/components/common/FormField';
 import { getApiErrorMessage } from '@/lib/errors';
 import type { ImportResult } from '@finance/shared';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Select } from '@/components/ui/Select';
 import { transactionKeys } from '@/lib/queryKeys';
-import { useAccounts } from '@/hooks/useAccounts';
+import { useAccounts } from '@/features/accounts/hooks/useAccounts';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function ImportPage() {

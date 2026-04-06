@@ -1,14 +1,23 @@
 import {
+  FIELD_LIMITS,
+  type TagFormInput,
+  tagFormSchema,
+} from '@finance/shared';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/Tooltip';
+import {
   useAttachTag,
   useCreateTag,
   useDetachTag,
   useTags,
-} from '@/hooks/useTags';
-import { FIELD_LIMITS, tagFormSchema, type TagFormInput } from '@finance/shared';
+} from '@/features/transactions/hooks/useTags';
+import type { Tag } from '@/features/transactions/hooks/useTransactions';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Tag } from '@/hooks/useTransactions';
 import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface Props {
   transactionId: string;
@@ -35,7 +44,12 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
   const [showCreate, setShowCreate] = useState(false);
   const [newTagColor, setNewTagColor] = useState(PRESET_COLORS[0]);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<TagFormInput>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TagFormInput>({
     resolver: zodResolver(tagFormSchema),
   });
 
@@ -67,24 +81,28 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
     <div className="flex flex-wrap gap-1 items-center">
       {/* Attached tags */}
       {attachedTags.map((tag) => (
-        <span
-          key={tag.id}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
-          style={{
-            backgroundColor: tag.color ?? '#6B7280',
-          }}
-        >
-          {tag.name}
-          <button
-            onClick={() => {
-              void handleDetach(tag.id);
-            }}
-            className="hover:opacity-75 leading-none"
-            title="Remove tag"
-          >
-            ×
-          </button>
-        </span>
+        <Tooltip key={tag.id}>
+          <TooltipTrigger asChild>
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white max-w-[10ch]"
+              style={{
+                backgroundColor: tag.color ?? '#6B7280',
+              }}
+            >
+              <span className="truncate">{tag.name}</span>
+              <button
+                onClick={() => {
+                  void handleDetach(tag.id);
+                }}
+                className="hover:opacity-75 leading-none shrink-0"
+                title="Remove tag"
+              >
+                ×
+              </button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{tag.name}</TooltipContent>
+        </Tooltip>
       ))}
 
       {/* Add existing tag */}
@@ -111,7 +129,9 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
       {/* Create new tag */}
       {showCreate ? (
         <form
-          onSubmit={(e) => { void handleSubmit(onCreateSubmit)(e); }}
+          onSubmit={(e) => {
+            void handleSubmit(onCreateSubmit)(e);
+          }}
           className="flex items-center gap-1"
         >
           <input
@@ -146,7 +166,10 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => { reset(); setShowCreate(false); }}
+            onClick={() => {
+              reset();
+              setShowCreate(false);
+            }}
             className="text-xs text-gray-400 hover:text-gray-600"
           >
             ✕

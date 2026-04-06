@@ -4,13 +4,32 @@ Guidance specific to `apps/web`.
 
 ## Structure (`src/`)
 
-- `features/` — Domain modules (auth, transactions, import, dashboard)
-- `components/` — Reusable UI components
-- `widgets/` — Dashboard chart/stat widgets
-- `hooks/` — Custom React hooks
+- `features/` — Domain modules. Each feature is self-contained: no imports across feature boundaries.
+- `components/ui/` — Generic, reusable UI primitives (shadcn components and others). No app-specific or domain logic.
+- `components/common/` — Reusable app-aware components shared across features (e.g. `EmptyState`, `FormField`, `Pagination`, `CategorySelect`).
+- `components/layout/` — Layout and navigation (e.g. `PageLayout`, `NavBar`).
+- `components/error/` — Error boundaries.
+- `hooks/` — Custom React hooks shared across multiple features (e.g. `useCategories`). Feature-specific hooks live inside the feature under `hooks/`.
 - `lib/` — Axios instance (`api.ts`), config, React Query keys (`queryKeys.ts`), localStorage keys (`storageKeys.ts`)
 - `router.tsx` — Route tree, typed router context, `requireAuth` guard, search param schemas
 - `main.tsx` — Entry point; `AuthProvider`, `RouterWrapper` (syncs auth context into router), `ErrorBoundary`
+
+### Feature folder structure
+
+Each feature can include any of the following — only add a folder when it's needed:
+
+```
+features/<name>/
+  assets/       # static files scoped to this feature
+  components/   # components scoped to this feature; may be grouped further by use or role within the feature
+  hooks/        # data and logic hooks scoped to this feature
+  stores/       # state stores scoped to this feature
+  types/        # TypeScript types used within this feature
+  utils/        # utility functions scoped to this feature
+  <Name>Page.tsx
+```
+
+`hooks/` is always kept separate from `components/` — hooks are data/logic, not view layer.
 
 ## Constants
 
