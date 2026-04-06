@@ -1,21 +1,12 @@
-import type { Request, Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { createTag, deleteTag, listTags } from './tags.service';
 import { TagError, TagErrorCode } from './tags.errors';
 import { getAuthUser, requireAuth } from '@/lib/auth';
-import { FIELD_LIMITS } from '@finance/shared';
-import { Router } from 'express';
-import { z } from 'zod';
+import { createTagSchema } from '@finance/shared';
+import { idParamsSchema } from '@/lib/common-schemas';
 
 const router = Router();
 router.use(requireAuth);
-
-const createTagSchema = z.object({
-  name: z.string().min(1).max(FIELD_LIMITS.TAG_NAME_MAX),
-  color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a hex code e.g. #FF5733')
-    .optional(),
-});
 
 // GET /api/v1/tags
 router.get('/', async (req: Request, res: Response) => {
@@ -31,14 +22,11 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/v1/tags/:id
-router.delete(
-  '/:id',
-  async (req: Request, res: Response) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params);
-    const deleted = await deleteTag(id, getAuthUser(req).id);
-    if (!deleted) throw new TagError(TagErrorCode.NOT_FOUND);
-    res.status(204).send();
-  }
-);
+router.delete('/:id', async (req: Request, res: Response) => {
+  const { id } = idParamsSchema.parse(req.params);
+  const deleted = await deleteTag(id, getAuthUser(req).id);
+  if (!deleted) throw new TagError(TagErrorCode.NOT_FOUND);
+  res.status(204).send();
+});
 
 export default router;

@@ -8,6 +8,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { DEFAULT_CURRENCY, NEED_WANT_OPTIONS } from '@finance/shared';
@@ -77,15 +78,21 @@ export const categorizationRules = pgTable('categorization_rules', {
 
 // ─── Tags ────────────────────────────────────────────────────────────────────
 
-export const tags = pgTable('tags', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .references(() => users.id)
-    .notNull(),
-  name: text('name').notNull(),
-  color: text('color'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const tags = pgTable(
+  'tags',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    name: text('name').notNull(),
+    color: text('color'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    uniqUserName: unique().on(t.userId, t.name),
+  })
+);
 
 // ─── Imports ─────────────────────────────────────────────────────────────────
 

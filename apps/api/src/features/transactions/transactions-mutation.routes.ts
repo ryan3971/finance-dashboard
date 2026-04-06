@@ -6,6 +6,7 @@ import {
   removeTagFromTransaction,
 } from './transactions.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { idParamsSchema } from '@/lib/common-schemas';
 import { Router } from 'express';
 import { DEFAULT_CURRENCY, FIELD_LIMITS, ISO_DATE_REGEX, needWantSchema } from '@finance/shared';
 import { z } from 'zod';
@@ -36,7 +37,7 @@ const createTransactionSchema = z.object({
   isIncome: z.boolean().optional(),
 });
 
-const transactionParamsSchema = z.object({ id: z.string().uuid() });
+const transactionParamsSchema = idParamsSchema;
 
 const tagParamsSchema = z.object({
   id: z.string().uuid(),

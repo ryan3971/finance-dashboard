@@ -3,6 +3,7 @@ import accountsMutationRouter from './features/accounts/accounts-mutation.routes
 import accountsRouter from './features/accounts/accounts.routes';
 import authRouter from './features/auth/auth.routes';
 import categoriesRouter from './features/categories/categories.routes';
+import categorizationRulesRouter from './features/categorization-rules/categorization-rules.routes';
 import { config } from './lib/config';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -15,6 +16,7 @@ import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
 import transactionsRouter from './features/transactions/transactions.routes';
 import transfersRouter from '@/features/transfers/transfers.routes';
+import userConfigRouter from './features/user-config/user-config.routes';
 
 export function createApp() {
   const app = express();
@@ -41,8 +43,10 @@ export function createApp() {
     transactionsMutationRouter
   );
   app.use('/api/v1/categories', categoriesRouter);
+  app.use('/api/v1/categorization-rules', categorizationRulesRouter);
   app.use('/api/v1/transfers', transfersRouter);
   app.use('/api/v1/tags', tagsRouter);
+  app.use('/api/v1/user-config', userConfigRouter);
 
   // The error handler must be registered before any other error middleware and after all controllers
   Sentry.setupExpressErrorHandler(app);

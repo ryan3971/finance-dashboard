@@ -1,12 +1,9 @@
 import { and, eq } from 'drizzle-orm';
+import { DatabaseError } from 'pg';
 import { db } from '@/db';
 import { tags } from '@/db/schema';
 import { TagError, TagErrorCode } from './tags.errors';
-
-export interface CreateTagInput {
-  name: string;
-  color?: string;
-}
+import type { CreateTagInput } from '@finance/shared';
 
 const TAG_COLUMNS = {
   id: tags.id,
@@ -24,6 +21,10 @@ export async function listTags(userId: string) {
 }
 
 export async function createTag(userId: string, input: CreateTagInput) {
+  // Fast-path: avoids hitting the DB constraint in the common case and gives a
+  // clean domain error without catching a pg exception. A concurrent insert can
+  // still bypass this check; the unique constraint + catch below is the
+  // correctness guarantee.
   const [existing] = await db
     .select({ id: tags.id })
     .from(tags)
@@ -32,12 +33,24 @@ export async function createTag(userId: string, input: CreateTagInput) {
 
   if (existing) throw new TagError(TagErrorCode.NAME_TAKEN);
 
-  const [tag] = await db
-    .insert(tags)
-    .values({ ...input, userId })
-    .returning(TAG_COLUMNS);
+  try {
+    const [tag] = await db
+      .insert(tags)
+      .values({ ...input, userId })
+      .returning(TAG_COLUMNS);
 
-  return tag;
+    // Drizzle never returns an empty array for a successful insert; if it does
+    // the DB or ORM has behaved unexpectedly. Not a domain error — let the
+    // error handler log it and return 500.
+    if (!tag) throw new Error('Insert returned no rows');
+    return tag;
+  } catch (err) {
+    // Concurrent insert slipped past the pre-check and hit the unique constraint.
+    if (err instanceof DatabaseError && err.code === '23505') {
+      throw new TagError(TagErrorCode.NAME_TAKEN);
+    }
+    throw err;
+  }
 }
 
 /**

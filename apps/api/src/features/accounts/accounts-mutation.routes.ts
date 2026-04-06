@@ -1,39 +1,33 @@
-import { ACCOUNT_TYPES, FIELD_LIMITS, INSTITUTIONS } from '@finance/shared';
 import { AccountError, AccountErrorCode } from './accounts.errors';
 import {
   deactivateAccount,
   reactivateAccount,
   updateAccount,
 } from './accounts.services';
+import { accountFormSchema } from '@finance/shared';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { idParamsSchema } from '@/lib/common-schemas';
 import { type Request, type Response, Router } from 'express';
-
-import { z } from 'zod';
 
 const router = Router();
 router.use(requireAuth);
 
-const paramsSchema = z.object({ id: z.string().uuid() });
-
-const patchAccountSchema = z
-  .object({
-    name: z.string().min(1).max(FIELD_LIMITS.ACCOUNT_NAME_MAX).optional(),
-    institution: z.enum(INSTITUTIONS).optional(),
-    type: z.enum(ACCOUNT_TYPES).optional(),
-    currency: z.string().length(3).optional(),
-    isCredit: z.boolean().optional(),
-  })
+const patchAccountSchema = accountFormSchema
+  .omit({ isCredit: true })
+  .partial()
   .refine((obj) => Object.keys(obj).length > 0, {
     message: 'At least one field required',
   });
+
 
 // PATCH /api/v1/accounts/:id
 router.patch(
   '/:id',
   async (req: Request<{ id: string }>, res: Response) => {
-    const { id } = paramsSchema.parse(req.params);
+    const { id } = idParamsSchema.parse(req.params);
     const input = patchAccountSchema.parse(req.body);
     const updated = await updateAccount(id, getAuthUser(req).id, input);
+    // null covers both not-found and not-owned; collapse to 404 to avoid leaking existence
     if (!updated) throw new AccountError(AccountErrorCode.NOT_FOUND);
     res.json(updated);
   }
@@ -43,8 +37,9 @@ router.patch(
 router.post(
   '/:id/deactivate',
   async (req: Request<{ id: string }>, res: Response) => {
-    const { id } = paramsSchema.parse(req.params);
+    const { id } = idParamsSchema.parse(req.params);
     const updated = await deactivateAccount(id, getAuthUser(req).id);
+    // null covers both not-found and not-owned; collapse to 404 to avoid leaking existence
     if (!updated) throw new AccountError(AccountErrorCode.NOT_FOUND);
     res.json(updated);
   }
@@ -54,8 +49,9 @@ router.post(
 router.post(
   '/:id/reactivate',
   async (req: Request<{ id: string }>, res: Response) => {
-    const { id } = paramsSchema.parse(req.params);
+    const { id } = idParamsSchema.parse(req.params);
     const updated = await reactivateAccount(id, getAuthUser(req).id);
+    // null covers both not-found and not-owned; collapse to 404 to avoid leaking existence
     if (!updated) throw new AccountError(AccountErrorCode.NOT_FOUND);
     res.json(updated);
   }
