@@ -1,0 +1,1 @@
+TODO: Transactions from deactivated accounts should still appear in the transaction table. The account name within the row should use muted/faded styling (consistent with the deactivated account appearance on /accounts) rather than fading the entire row. Optionally add a tooltip on the account name reading "Account deactivated".

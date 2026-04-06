@@ -113,3 +113,20 @@ useTransactionColumns.tsx — Tags column tdClassName gains max-w-xs as a safety
 ---
 RouterWrapper moved to RouterWrapper.tsx and imported in main.tsx
 Non-null assertion replaced with an explicit null check that throws a descriptive error
+---
+Shared (packages/shared):
+
+constants.ts — added ISO_DATE_REGEX
+schemas/transactions.ts — added createTransactionSchema + CreateTransactionInput type
+API (apps/api):
+
+src/lib/constants.ts — removed ISO_DATE_REGEX
+5 files updated to import ISO_DATE_REGEX from @finance/shared instead of @/lib/constants
+Web (apps/web):
+
+lib/toastMessages.ts — added TRANSACTION_CREATED / TRANSACTION_CREATE_FAILED
+hooks/useTransactionMutations.ts — added useCreateTransaction()
+components/panels/ManualTransactionPanel.tsx — new: fixed right-side panel with RHF form, all fields, tag chip selector, resets after submit, stays open
+TransactionsPage.tsx — added panel state, "Add Transaction" button, handleDuplicate, renders ManualTransactionPanel
+TransactionsTable.tsx — threads onDuplicate through to columns hook
+useTransactionColumns.tsx — onDuplicate prop enabled, Duplicate menu item now functional
