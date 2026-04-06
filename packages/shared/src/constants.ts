@@ -54,3 +54,5 @@ export const FIELD_LIMITS = {
   PASSWORD_MIN: 8,
   PASSWORD_MAX: 100,
 } as const;
+
+export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;

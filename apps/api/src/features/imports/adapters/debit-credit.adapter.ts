@@ -4,8 +4,7 @@ import {
   parseAmount,
   parseDate,
 } from '../pipeline/utils';
-import { DEFAULT_CURRENCY } from '@finance/shared';
-import { ISO_DATE_REGEX } from '@/lib/constants';
+import { DEFAULT_CURRENCY, ISO_DATE_REGEX } from '@finance/shared';
 import type {
   CsvAdapter,
   RawTransaction,

@@ -20,9 +20,6 @@ export const TRANSACTION_SOURCE = {
   MANUAL: 'manual',
 } as const;
 
-// ISO date format validation regex (YYYY-MM-DD), used in routes and adapters
-export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 // AI provider shared parameters
 export const AI_MAX_TOKENS = 200;
 export const AI_TEMPERATURE = 0;

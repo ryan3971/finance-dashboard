@@ -7,8 +7,7 @@ import {
 } from './transactions.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { Router } from 'express';
-import { DEFAULT_CURRENCY, FIELD_LIMITS, needWantSchema } from '@finance/shared';
-import { ISO_DATE_REGEX } from '@/lib/constants';
+import { DEFAULT_CURRENCY, FIELD_LIMITS, ISO_DATE_REGEX, needWantSchema } from '@finance/shared';
 import { z } from 'zod';
 
 const router = Router();

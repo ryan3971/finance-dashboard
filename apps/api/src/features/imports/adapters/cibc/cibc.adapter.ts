@@ -1,5 +1,5 @@
 import { DebitCreditAdapter } from '../debit-credit.adapter';
-import { ISO_DATE_REGEX } from '@/lib/constants';
+import { ISO_DATE_REGEX } from '@finance/shared';
 
 export class CibcAdapter extends DebitCreditAdapter {
   readonly institution = 'cibc';
