@@ -152,3 +152,57 @@ TransactionsPage.tsx
 panelInitialValues state now typed as InitialValues directly
 handleReviewToggle and handleDuplicate wrapped in useCallback — prevents useMemo in useTransactionColumns from busting on every parent render
 parseFloat(tx.amount) → Number(tx.amount) — avoids the silent empty-input NaN from parseFloat(''); note: description limit using NOTE_MAX is intentional, matching the API schema
+---
+Shared package
+
+types/rules.ts, types/user-config.ts — new cross-boundary interfaces
+schemas/categories.ts, schemas/rules.ts — Zod schemas for mutations
+FIELD_LIMITS extended with SUBCATEGORY_NAME_MAX and RULE_KEYWORD_MAX
+API
+
+categories.errors.ts — NOT_FOUND, FORBIDDEN, INVALID_PARENT
+categories.service.ts — createSubcategory, renameSubcategory, deleteSubcategory (delete wraps in db.transaction())
+categories.routes.ts — POST, PATCH, DELETE added
+categorization-rules/ — full GET/PATCH/DELETE feature, joins categories for names
+user-config/ — GET/PATCH scaffold, auto-creates row on first fetch
+app.ts — two new routers registered
+Frontend
+
+config/hooks/ — useCategoryMutations, useRules, useUserConfig
+ConfigPage.tsx — thin tabs shell
+components/CategoriesTab.tsx — tree with inline add/rename/delete on user subcategories
+components/RulesTab.tsx — table with inline edit, delete, and CSV export
+---
+Created apps/api/src/lib/common-schemas.ts exporting idParamsSchema
+Updated all 4 files to import and use it:
+accounts-mutation.routes.ts — replaced paramsSchema + removed z import (no longer needed there)
+categories.routes.ts — replaced paramsSchema + removed stale z import that wasn't even working
+tags.routes.ts — replaced inline z.object(...) call
+transactions-mutation.routes.ts — replaced transactionParamsSchema local definition
+---
+Fix #1 + #3 — Transaction wrapping with optional tx
+renameSubcategory and deleteSubcategory now use an inner execute function that accepts a connection. When no tx is passed, it runs inside db.transaction(execute), making the ownership read and the write atomic. When a tx is passed by the caller, execute(tx) runs directly inside the caller's transaction boundary.
+
+Fix #2 — Helper replaces duplicated ownership check
+fetchOwnedSubcategory now accepts an optional conn parameter (defaulting to db), so both renameSubcategory and deleteSubcategory can call it inside their transaction context. For deleteSubcategory, this also moves the ownership check inside the transaction — previously it ran outside, which was the same TOCTOU class of bug.
+
+Fix #3 — tx parameter on createSubcategory
+Uses const conn = tx ?? db — no internal transaction needed here since the two queries (read parent, insert) don't have an ownership-check race. This just enables composition.
+
+Fix #4 — Guard against empty insert result
+if (!created) throw new Error('Insert returned no rows') makes the failure loud rather than silently returning undefined to the caller.
+---
+Issue 1 (High) — Unique constraint + concurrent-insert safety
+
+schema.ts:80-95: Added unique().on(t.userId, t.name) table constraint
+0001_ordinary_meltdown.sql: Generated migration (ALTER TABLE "tags" ADD CONSTRAINT "tags_user_id_name_unique" UNIQUE("user_id","name"))
+tags.service.ts: Added DatabaseError import from pg; wrapped the insert in try/catch; concurrent inserts that slip past the pre-check and hit the constraint now translate cleanly to TagError(NAME_TAKEN) instead of surfacing as a 500
+Issue 2 (Medium) — Case-sensitive name check
+
+docs/todo/tags-api.md: Created with a full write-up of the three options (lowercase-on-write, nameLower column, citext) and the trade-offs between them
+Issue 3 (Low) — Pre-check now "redundant" given the constraint
+
+tags.service.ts:24-27: Added comment explaining it's a deliberate fast-path optimisation — avoids the constraint error path in the common case; the constraint is the correctness guarantee
+Issue 4 (Low) — Generic Error for unexpected insert failure
+
+tags.service.ts:38-40: Added comment explaining this is intentionally not a DomainError — the error handler's generic 500 path logs it and hides the message from clients, which is the right behaviour for a truly unexpected condition
