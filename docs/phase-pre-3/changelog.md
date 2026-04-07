@@ -226,3 +226,23 @@ Added a needWant state field to RuleRow, reset properly in handleCancel
 Edit row renders a <select> with NEED_WANT_OPTIONS (Need / Want / NA) plus a "—" empty option for null
 Display row shows the current value or "—"
 New Need/Want header column added to the table
+---
+Backend (apps/api)
+
+categories.errors.ts — Added HAS_SUBCATEGORIES (409) error; updated FORBIDDEN message
+categories.service.ts — Full rewrite: getCategoryTree now filters by userId only; createCategory handles both top-level and subcategories; deleteCategory cascades subcategory → parent, blocks top-level with children
+categories.routes.ts — Updated to use renamed service functions and schemas
+db/seeds/categories.ts — Added seedUserCategories(userId, tx): copies template tree atomically with id remapping
+auth.service.ts — registerUser now wraps user insert + seedUserCategories + token issue in a single transaction
+pipeline.ts — Per-user uncategorizedId cache (Map<userId, id>) replacing the old global singleton
+Shared (packages/shared)
+
+schemas/categories.ts — createCategorySchema (optional parentId, optional isIncome); patchCategorySchema
+Frontend (apps/web)
+
+toastMessages.ts — Added CATEGORY_* toast keys including CATEGORY_DELETE_BLOCKED
+useCategoryMutations.ts — Added useCreateCategory, useRenameCategory, useDeleteCategory (409 → blocked toast)
+CategoriesTab.tsx — Thin container, delegates to CategorySection
+CategorySection.tsx — New: section with "+ Add category" form
+CategoryCard.tsx — New: card with inline rename/delete for top-level + add-subcategory
+SubcategoryChip.tsx — New: chip with inline rename/delete (read-only branch removed)

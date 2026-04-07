@@ -24,6 +24,13 @@ export const TOAST = {
   SUBCATEGORY_UPDATE_FAILED: 'Failed to rename subcategory',
   SUBCATEGORY_DELETED: 'Subcategory deleted',
   SUBCATEGORY_DELETE_FAILED: 'Failed to delete subcategory',
+  CATEGORY_CREATED: 'Category created',
+  CATEGORY_CREATE_FAILED: 'Failed to create category',
+  CATEGORY_UPDATED: 'Category renamed',
+  CATEGORY_UPDATE_FAILED: 'Failed to rename category',
+  CATEGORY_DELETED: 'Category deleted',
+  CATEGORY_DELETE_FAILED: 'Failed to delete category',
+  CATEGORY_DELETE_BLOCKED: 'Delete all subcategories before deleting this category',
   // Rules
   RULE_UPDATED: 'Rule updated',
   RULE_UPDATE_FAILED: 'Failed to update rule',

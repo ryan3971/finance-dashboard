@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
 import { db, type DbTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
+import { seedUserCategories } from '@/db/seeds/categories';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -28,18 +29,24 @@ export async function registerUser(input: RegisterInput) {
 
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
 
-  const [user] = await db
-    .insert(users)
-    .values({
-      email: input.email.toLowerCase(),
-      passwordHash,
-    })
-    .returning({ id: users.id, email: users.email });
+  // Create user, seed their category tree, and issue tokens atomically.
+  // A failed category seed rolls back the user insert — the user is never
+  // left with an account but no categories.
+  const { user, accessToken, refreshToken } = await db.transaction(async (tx) => {
+    const [user] = await tx
+      .insert(users)
+      .values({
+        email: input.email.toLowerCase(),
+        passwordHash,
+      })
+      .returning({ id: users.id, email: users.email });
 
-  const { accessToken, refreshToken } = await issueTokenPair(
-    user.id,
-    user.email
-  );
+    await seedUserCategories(user.id, tx);
+
+    const tokens = await issueTokenPair(user.id, user.email, tx);
+
+    return { user, ...tokens };
+  });
 
   return {
     user: { id: user.id, email: user.email },

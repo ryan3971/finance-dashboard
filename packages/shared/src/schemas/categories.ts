@@ -1,14 +1,15 @@
 import { z } from 'zod';
 import { FIELD_LIMITS } from '../constants';
 
-export const createSubcategorySchema = z.object({
+export const createCategorySchema = z.object({
   name: z.string().min(1).max(FIELD_LIMITS.SUBCATEGORY_NAME_MAX).trim(),
-  parentId: z.string().uuid(),
+  parentId: z.string().uuid().optional(),
+  isIncome: z.boolean().optional(),
 });
 
-export const patchSubcategorySchema = z.object({
+export const patchCategorySchema = z.object({
   name: z.string().min(1).max(FIELD_LIMITS.SUBCATEGORY_NAME_MAX).trim(),
 });
 
-export type CreateSubcategoryInput = z.infer<typeof createSubcategorySchema>;
-export type PatchSubcategoryInput = z.infer<typeof patchSubcategorySchema>;
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
+export type PatchCategoryInput = z.infer<typeof patchCategorySchema>;

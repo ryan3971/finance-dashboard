@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { applyRules, type LoadedRule, loadRules } from './rules-engine';
 import { categories } from '@/db/schema';
 import type { CategorizationResult } from './pipeline.types';
@@ -12,23 +12,25 @@ import { db } from '@/db';
 export { loadRules } from './rules-engine';
 export type { Rule, LoadedRule } from './rules-engine';
 
-let uncategorizedId: string | null = null;
+// Cache per user — populated on first use for each user
+const uncategorizedIdByUser = new Map<string, string>();
 
-async function getUncategorizedId(): Promise<string> {
-  if (uncategorizedId) return uncategorizedId;
+async function getUncategorizedId(userId: string): Promise<string> {
+  const cached = uncategorizedIdByUser.get(userId);
+  if (cached) return cached;
 
   const [cat] = await db
     .select({ id: categories.id })
     .from(categories)
-    .where(and(isNull(categories.userId), eq(categories.name, 'Uncategorized')))
+    .where(and(eq(categories.userId, userId), eq(categories.name, 'Uncategorized')))
     .limit(1);
 
   if (!cat)
     throw new Error(
-      'Uncategorized system category not found. Run db:seed first.'
+      `Uncategorized category not found for user ${userId}. Ensure the user was registered with category seeding.`
     );
 
-  uncategorizedId = cat.id;
+  uncategorizedIdByUser.set(userId, cat.id);
   return cat.id;
 }
 
@@ -83,8 +85,8 @@ export async function categorize(
     if (aiResult) return aiResult;
   }
 
-  // Step 3: Fallback — Uncategorized
-  const fallbackId = await getUncategorizedId();
+  // Step 3: Fallback — user's Uncategorized category
+  const fallbackId = await getUncategorizedId(userId);
   return {
     categoryId: fallbackId,
     subcategoryId: null,
