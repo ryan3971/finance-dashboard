@@ -7,6 +7,9 @@ import {
   transactionTags,
 } from '@/db/schema';
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
+
+const subcategories = alias(categories, 'subcategories');
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import { AUTO_RULE_PRIORITY, CATEGORY_SOURCE, CONFIDENCE, KEYWORD_SLICE_LENGTH, TRANSACTION_SOURCE } from '@/lib/constants';
 import type { NeedWant, PatchTransactionInput } from '@finance/shared';
@@ -91,12 +94,16 @@ export async function listTransactions(
       accountId: transactions.accountId,
       accountName: accounts.name,
       accountInstitution: accounts.institution,
+      source: transactions.source,
       categoryId: transactions.categoryId,
       categoryName: categories.name,
+      subcategoryId: transactions.subcategoryId,
+      subcategoryName: subcategories.name,
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .leftJoin(subcategories, eq(transactions.subcategoryId, subcategories.id))
     .where(and(...conditions))
     .orderBy(desc(transactions.date))
     .limit(limit)

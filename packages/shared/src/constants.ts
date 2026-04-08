@@ -58,3 +58,8 @@ export const FIELD_LIMITS = {
 } as const;
 
 export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+export const PAGINATION = {
+  DEFAULT_LIMIT: 50,
+  EXPORT_LIMIT: 10000,
+} as const;

@@ -246,3 +246,13 @@ CategoriesTab.tsx — Thin container, delegates to CategorySection
 CategorySection.tsx — New: section with "+ Add category" form
 CategoryCard.tsx — New: card with inline rename/delete for top-level + add-subcategory
 SubcategoryChip.tsx — New: chip with inline rename/delete (read-only branch removed)
+---
+packages/shared/src/constants.ts — Added PAGINATION with DEFAULT_LIMIT: 50 and EXPORT_LIMIT: 10000.
+
+apps/api/src/features/transactions/transactions.routes.ts — Replaced magic numbers with PAGINATION.DEFAULT_LIMIT / PAGINATION.EXPORT_LIMIT.
+
+apps/api/src/features/transactions/transactions.service.ts — Added subcategory alias join and added source, subcategoryId, subcategoryName to the select.
+
+apps/web/src/features/transactions/hooks/useTransactions.ts — Added source: string to the Transaction interface.
+
+apps/web/src/features/transactions/TransactionsPage.tsx — Added EXPORT_COLUMNS (co-locating headers and value getters), triggerCsvDownload, buildExportFilename, handleExportCsv, and the "Export CSV" / "Exporting…" button.

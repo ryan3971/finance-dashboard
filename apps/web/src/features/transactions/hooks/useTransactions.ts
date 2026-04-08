@@ -25,6 +25,7 @@ export interface Transaction {
   accountId: string;
   accountName: string;
   accountInstitution: string;
+  source: string;
   categoryId: string | null;
   categoryName: string | null;
   subcategoryId: string | null;

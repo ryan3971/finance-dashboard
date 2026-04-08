@@ -1,3 +1,4 @@
+// This is imported in /db/schema.ts, so be careful in making changes here
 export const NEED_WANT_OPTIONS = ['Need', 'Want', 'NA'] as const;
 export type NeedWant = (typeof NEED_WANT_OPTIONS)[number];
 

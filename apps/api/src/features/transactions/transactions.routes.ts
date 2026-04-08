@@ -1,5 +1,5 @@
 import { getAuthUser, requireAuth } from '@/lib/auth';
-import { ISO_DATE_REGEX } from '@finance/shared';
+import { ISO_DATE_REGEX, PAGINATION } from '@finance/shared';
 import type { Request, Response } from 'express';
 import { listTransactions } from './transactions.service';
 import { Router } from 'express';
@@ -19,7 +19,7 @@ const listQuerySchema = z.object({
   categoryId: z.string().uuid().optional(),
   flagged: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(PAGINATION.EXPORT_LIMIT).default(PAGINATION.DEFAULT_LIMIT),
 });
 
 // GET /api/v1/transactions

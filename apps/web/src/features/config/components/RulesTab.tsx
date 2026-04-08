@@ -19,7 +19,7 @@ function exportRulesCsv(rules: Rule[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'rules.csv';
+  a.download = 'categorization-rules.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
