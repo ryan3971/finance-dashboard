@@ -73,7 +73,7 @@ describe('GET /api/v1/anticipated-budget', () => {
     const id = (create.body as { id: string }).id;
 
     await request(app)
-      .post(`/api/v1/anticipated-budget/${id}/months/3`)
+      .put(`/api/v1/anticipated-budget/${id}/months/3`)
       .set('Authorization', `Bearer ${token}`)
       .send({ amount: '1800.00' });
 
@@ -232,10 +232,10 @@ describe('DELETE /api/v1/anticipated-budget/:id', () => {
   });
 });
 
-describe('POST /api/v1/anticipated-budget/:id/months/:month', () => {
+describe('PUT /api/v1/anticipated-budget/:id/months/:month', () => {
   it('returns 401 without auth', async () => {
     const res = await request(app)
-      .post('/api/v1/anticipated-budget/00000000-0000-0000-0000-000000000000/months/1')
+      .put('/api/v1/anticipated-budget/00000000-0000-0000-0000-000000000000/months/1')
       .send({ amount: '100.00' });
     expect(res.status).toBe(401);
   });
@@ -249,7 +249,7 @@ describe('POST /api/v1/anticipated-budget/:id/months/:month', () => {
     const id = (create.body as { id: string }).id;
 
     const res = await request(app)
-      .post(`/api/v1/anticipated-budget/${id}/months/6`)
+      .put(`/api/v1/anticipated-budget/${id}/months/6`)
       .set('Authorization', `Bearer ${token}`)
       .send({ amount: '2000.00' });
     expect(res.status).toBe(204);
@@ -273,12 +273,12 @@ describe('POST /api/v1/anticipated-budget/:id/months/:month', () => {
     const id = (create.body as { id: string }).id;
 
     await request(app)
-      .post(`/api/v1/anticipated-budget/${id}/months/6`)
+      .put(`/api/v1/anticipated-budget/${id}/months/6`)
       .set('Authorization', `Bearer ${token}`)
       .send({ amount: '2000.00' });
 
     await request(app)
-      .post(`/api/v1/anticipated-budget/${id}/months/6`)
+      .put(`/api/v1/anticipated-budget/${id}/months/6`)
       .set('Authorization', `Bearer ${token}`)
       .send({ amount: '2500.00' });
 
@@ -303,7 +303,7 @@ describe('POST /api/v1/anticipated-budget/:id/months/:month', () => {
     const id = (create.body as { id: string }).id;
 
     const res = await request(app)
-      .post(`/api/v1/anticipated-budget/${id}/months/1`)
+      .put(`/api/v1/anticipated-budget/${id}/months/1`)
       .set('Authorization', `Bearer ${tokenB}`)
       .send({ amount: '999.00' });
     expect(res.status).toBe(404);
@@ -327,7 +327,7 @@ describe('DELETE /api/v1/anticipated-budget/:id/months/:month', () => {
     const id = (create.body as { id: string }).id;
 
     await request(app)
-      .post(`/api/v1/anticipated-budget/${id}/months/3`)
+      .put(`/api/v1/anticipated-budget/${id}/months/3`)
       .set('Authorization', `Bearer ${token}`)
       .send({ amount: '1800.00' });
 

@@ -19,3 +19,22 @@ components/AnticipatedBudgetEntryCard.tsx — collapsible card with year total
 components/AddEntryDialog.tsx — RHF + Zod form, income/expense toggle, need/want segmented control
 AnticipatedBudgetPage.tsx — year selector, income/expense sections, empty state, summary cards
 Route at /anticipated-budget, "Budget" nav link added
+
+---
+
+anticipated-budget-item.routes.ts (renamed from anticipated-budget-mutation.routes.ts)
+
+Replaced monthParamSchema with monthRouteParamsSchema = idParamsSchema.extend({ month: ... }) — single parse of req.params in both month handlers
+POST /:id/months/:month → PUT /:id/months/:month
+deleteMonthOverride result is now checked: returns 404 { error: 'Month override not found' } if the row didn't exist
+app.ts
+
+Import path: anticipated-budget-mutation.routes → anticipated-budget-item.routes
+Variable: anticipatedBudgetMutationRouter → anticipatedBudgetItemRouter
+useAnticipatedBudgetMutations.ts
+
+api.post(...) → api.put(...) for the upsert month override mutation
+anticipated-budget.routes.test.ts
+
+Describe block title updated to PUT /api/v1/anticipated-budget/:id/months/:month
+All 7 .post(...) calls on the months sub-route updated to .put(...)
