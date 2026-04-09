@@ -11,7 +11,7 @@ import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
 import { db, type DbTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
-import { seedUserCategories } from '@/db/seeds/categories';
+import { seedUserCategories } from '@/db/seed-categories';
 
 const BCRYPT_ROUNDS = 12;
 

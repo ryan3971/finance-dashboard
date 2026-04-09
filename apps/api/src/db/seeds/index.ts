@@ -7,7 +7,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 import { isNotNull } from 'drizzle-orm';
 import { db } from '../index';
 import { categories, users } from '../schema';
-import { seedSystemCategories, seedUserCategories } from './categories';
+import { seedSystemCategories, seedUserCategories } from '../seed-categories';
 
 async function main() {
   await seedSystemCategories();

@@ -24,54 +24,20 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-import { accounts, users } from '../src/db/schema';
+import { accounts, users } from './schema';
 import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { db } from '../src/db/index';
-import { processImport } from '../src/features/imports/import.service';
+import { db } from './index';
+import { processImport } from '../features/imports/import.service';
+import { DEV_ACCOUNTS } from './seeds/accounts';
+import { DEV_USER } from './seeds/users';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-
-const DEV_USER = {
-  email: 'dev@example.com',
-  password: 'password123',
-};
 
 const FIXTURES_DIR = path.resolve(
   __dirname,
   '../src/features/imports/adapters/__fixtures__'
 );
-
-const DEV_ACCOUNTS = [
-  {
-    name: 'Amex',
-    type: 'credit',
-    institution: 'amex',
-    isCredit: true,
-    fixture: { file: 'amex.csv' },
-  },
-  {
-    name: 'CIBC Mastercard',
-    type: 'credit',
-    institution: 'cibc',
-    isCredit: true,
-    fixture: { file: 'cibc.csv' },
-  },
-  {
-    name: 'TD Chequing',
-    type: 'chequing',
-    institution: 'td',
-    isCredit: false,
-    fixture: { file: 'td.csv' },
-  },
-  {
-    name: 'Questrade TFSA',
-    type: 'tfsa',
-    institution: 'questrade',
-    isCredit: false,
-    fixture: { file: 'questrade.csv' },
-  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

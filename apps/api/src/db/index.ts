@@ -5,11 +5,16 @@ import { Pool } from 'pg';
 
 // db is initialized lazily so DATABASE_URL is read after dotenv.config() runs,
 // not at module import time (static imports are hoisted before dotenv loads).
+//
+// We read process.env.DATABASE_URL directly (not config.databaseUrl) because
+// vitest's setup file swaps DATABASE_URL to DATABASE_URL_TEST at runtime, after
+// config.ts has already frozen its snapshot of process.env. Reading the env var
+// here ensures tests always connect to finance_test, not finance_dev.
 let _db: NodePgDatabase<typeof schema> | undefined;
 
 export function getDb(): NodePgDatabase<typeof schema> {
   if (!_db) {
-    const pool = new Pool({ connectionString: config.databaseUrl });
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL ?? config.databaseUrl });
     _db = drizzle(pool, { schema });
   }
   return _db;
