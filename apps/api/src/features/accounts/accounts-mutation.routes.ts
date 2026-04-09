@@ -19,19 +19,15 @@ const patchAccountSchema = accountFormSchema
     message: 'At least one field required',
   });
 
-
 // PATCH /api/v1/accounts/:id
-router.patch(
-  '/:id',
-  async (req: Request<{ id: string }>, res: Response) => {
-    const { id } = idParamsSchema.parse(req.params);
-    const input = patchAccountSchema.parse(req.body);
-    const updated = await updateAccount(id, getAuthUser(req).id, input);
-    // null covers both not-found and not-owned; collapse to 404 to avoid leaking existence
-    if (!updated) throw new AccountError(AccountErrorCode.NOT_FOUND);
-    res.json(updated);
-  }
-);
+router.patch('/:id', async (req: Request<{ id: string }>, res: Response) => {
+  const { id } = idParamsSchema.parse(req.params);
+  const input = patchAccountSchema.parse(req.body);
+  const updated = await updateAccount(id, getAuthUser(req).id, input);
+  // null covers both not-found and not-owned; collapse to 404 to avoid leaking existence
+  if (!updated) throw new AccountError(AccountErrorCode.NOT_FOUND);
+  res.json(updated);
+});
 
 // POST /api/v1/accounts/:id/deactivate
 router.post(

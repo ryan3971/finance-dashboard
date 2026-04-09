@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { and, eq, isNull } from 'drizzle-orm';
 import { categories } from '../schema';
 import { db } from '../index';
@@ -8,13 +9,7 @@ const SYSTEM_CATEGORIES = [
     name: 'Food',
     isIncome: false,
     icon: '🍔',
-    subcategories: [
-      'Groceries',
-      'Eating Out',
-      'Coffee',
-      'Alcohol',
-      'Delivery',
-    ],
+    subcategories: ['Groceries', 'Eating Out', 'Coffee', 'Alcohol', 'Delivery'],
   },
   {
     name: 'Transport',
@@ -33,12 +28,7 @@ const SYSTEM_CATEGORIES = [
     name: 'Shopping',
     isIncome: false,
     icon: '🛍️',
-    subcategories: [
-      'Clothing',
-      'Online Retail',
-      'Electronics',
-      'Other',
-    ],
+    subcategories: ['Clothing', 'Online Retail', 'Electronics', 'Other'],
   },
   {
     name: 'Health',
@@ -57,25 +47,13 @@ const SYSTEM_CATEGORIES = [
     name: 'Entertainment',
     isIncome: false,
     icon: '🎮',
-    subcategories: [
-      'Gaming',
-      'Streaming',
-      'Events',
-      'Sports',
-      'Books',
-    ],
+    subcategories: ['Gaming', 'Streaming', 'Events', 'Sports', 'Books'],
   },
   {
     name: 'Housing',
     isIncome: false,
     icon: '🏠',
-    subcategories: [
-      'Rent',
-      'Utilities',
-      'Internet',
-      'Furniture',
-      'Repairs',
-    ],
+    subcategories: ['Rent', 'Utilities', 'Internet', 'Furniture', 'Repairs'],
   },
   {
     name: 'Personal',
@@ -87,12 +65,7 @@ const SYSTEM_CATEGORIES = [
     name: 'Travel',
     isIncome: false,
     icon: '✈️',
-    subcategories: [
-      'Accommodation',
-      'Flight',
-      'Activities',
-      'Food',
-    ],
+    subcategories: ['Accommodation', 'Flight', 'Activities', 'Food'],
   },
   {
     name: 'Subscriptions',
@@ -110,12 +83,7 @@ const SYSTEM_CATEGORIES = [
     name: 'Finance',
     isIncome: false,
     icon: '💳',
-    subcategories: [
-      'Bank Fees',
-      'Credit Card Payment',
-      'Insurance',
-      'Debt',
-    ],
+    subcategories: ['Bank Fees', 'Credit Card Payment', 'Insurance', 'Debt'],
   },
   {
     name: 'Gifts',

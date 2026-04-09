@@ -8,7 +8,12 @@ import {
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';
 import { Router } from 'express';
-import { DEFAULT_CURRENCY, FIELD_LIMITS, ISO_DATE_REGEX, needWantSchema } from '@finance/shared';
+import {
+  DEFAULT_CURRENCY,
+  FIELD_LIMITS,
+  ISO_DATE_REGEX,
+  needWantSchema,
+} from '@finance/shared';
 import { z } from 'zod';
 
 const router = Router();
@@ -82,21 +87,14 @@ router.post('/:id/tags', async (req: Request, res: Response) => {
 
 // ─── DELETE /api/v1/transactions/:id/tags/:tagId ─────────────────────────────
 
-router.delete(
-  '/:id/tags/:tagId',
-  async (req: Request, res: Response) => {
-    const { id, tagId } = tagParamsSchema.parse(req.params);
-    const found = await removeTagFromTransaction(
-      id,
-      getAuthUser(req).id,
-      tagId
-    );
-    if (!found) {
-      res.status(404).json({ error: 'Transaction not found' });
-      return;
-    }
-    res.status(204).send();
+router.delete('/:id/tags/:tagId', async (req: Request, res: Response) => {
+  const { id, tagId } = tagParamsSchema.parse(req.params);
+  const found = await removeTagFromTransaction(id, getAuthUser(req).id, tagId);
+  if (!found) {
+    res.status(404).json({ error: 'Transaction not found' });
+    return;
   }
-);
+  res.status(204).send();
+});
 
 export default router;

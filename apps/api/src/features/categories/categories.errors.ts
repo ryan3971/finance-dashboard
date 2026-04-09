@@ -7,7 +7,8 @@ export const CategoryErrorCode = {
   HAS_SUBCATEGORIES: 'CATEGORY_HAS_SUBCATEGORIES',
 } as const;
 
-export type CategoryErrorCode = (typeof CategoryErrorCode)[keyof typeof CategoryErrorCode];
+export type CategoryErrorCode =
+  (typeof CategoryErrorCode)[keyof typeof CategoryErrorCode];
 
 const HTTP_STATUS: Record<CategoryErrorCode, number> = {
   [CategoryErrorCode.NOT_FOUND]: 404,
@@ -19,8 +20,10 @@ const HTTP_STATUS: Record<CategoryErrorCode, number> = {
 const MESSAGES: Record<CategoryErrorCode, string> = {
   [CategoryErrorCode.NOT_FOUND]: 'Category not found',
   [CategoryErrorCode.FORBIDDEN]: 'You do not own this category',
-  [CategoryErrorCode.INVALID_PARENT]: 'Parent must be a top-level category owned by you',
-  [CategoryErrorCode.HAS_SUBCATEGORIES]: 'Delete all subcategories before deleting this category',
+  [CategoryErrorCode.INVALID_PARENT]:
+    'Parent must be a top-level category owned by you',
+  [CategoryErrorCode.HAS_SUBCATEGORIES]:
+    'Delete all subcategories before deleting this category',
 };
 
 export class CategoryError extends DomainError {

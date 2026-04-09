@@ -22,7 +22,9 @@ async function getUncategorizedId(userId: string): Promise<string> {
   const [cat] = await db
     .select({ id: categories.id })
     .from(categories)
-    .where(and(eq(categories.userId, userId), eq(categories.name, 'Uncategorized')))
+    .where(
+      and(eq(categories.userId, userId), eq(categories.name, 'Uncategorized'))
+    )
     .limit(1);
 
   if (!cat)

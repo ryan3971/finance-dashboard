@@ -11,6 +11,9 @@ import pluginRouter from '@tanstack/eslint-plugin-router';
 
 
 export default defineConfig(
+  // ── Global ignores ─────────────────────────────────────────────────────────
+  { ignores: ['**/*.d.ts'] },
+
   // ── Base: all files ────────────────────────────────────────────────────────
   // JS-only recommended rules applied globally (no type-checking required)
   eslint.configs.recommended,

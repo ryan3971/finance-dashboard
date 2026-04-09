@@ -11,7 +11,13 @@ import { alias } from 'drizzle-orm/pg-core';
 
 const subcategories = alias(categories, 'subcategories');
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
-import { AUTO_RULE_PRIORITY, CATEGORY_SOURCE, CONFIDENCE, KEYWORD_SLICE_LENGTH, TRANSACTION_SOURCE } from '@/lib/constants';
+import {
+  AUTO_RULE_PRIORITY,
+  CATEGORY_SOURCE,
+  CONFIDENCE,
+  KEYWORD_SLICE_LENGTH,
+  TRANSACTION_SOURCE,
+} from '@/lib/constants';
 import type { NeedWant, PatchTransactionInput } from '@finance/shared';
 import { db } from '@/db';
 
@@ -71,10 +77,13 @@ export async function listTransactions(
 
   const conditions = [eq(accounts.userId, userId)];
 
-  if (filters.accountId) conditions.push(eq(transactions.accountId, filters.accountId));
-  if (filters.startDate) conditions.push(gte(transactions.date, filters.startDate));
+  if (filters.accountId)
+    conditions.push(eq(transactions.accountId, filters.accountId));
+  if (filters.startDate)
+    conditions.push(gte(transactions.date, filters.startDate));
   if (filters.endDate) conditions.push(lte(transactions.date, filters.endDate));
-  if (filters.categoryId) conditions.push(eq(transactions.categoryId, filters.categoryId));
+  if (filters.categoryId)
+    conditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.flagged) conditions.push(eq(transactions.flaggedForReview, true));
 
   const rows = await db
@@ -128,7 +137,11 @@ export async function listTransactions(
     Record<string, { id: string; name: string; color: string | null }[]>
   >((acc, t) => {
     if (!acc[t.transactionId]) acc[t.transactionId] = [];
-    acc[t.transactionId].push({ id: t.tagId, name: t.tagName, color: t.tagColor });
+    acc[t.transactionId].push({
+      id: t.tagId,
+      name: t.tagName,
+      color: t.tagColor,
+    });
     return acc;
   }, {});
 
@@ -170,14 +183,18 @@ export async function patchTransaction(
     updateData.categoryConfidence = CONFIDENCE.MANUAL;
     updateData.flaggedForReview = false;
   }
-  if (input.subcategoryId !== undefined) updateData.subcategoryId = input.subcategoryId;
+  if (input.subcategoryId !== undefined)
+    updateData.subcategoryId = input.subcategoryId;
   if (input.needWant !== undefined) updateData.needWant = input.needWant;
   if (input.note !== undefined) updateData.note = input.note;
 
   await db.update(transactions).set(updateData).where(eq(transactions.id, id));
 
   if (input.createRule && input.categoryId) {
-    const keyword = txn.description.slice(0, KEYWORD_SLICE_LENGTH).toLowerCase().trim();
+    const keyword = txn.description
+      .slice(0, KEYWORD_SLICE_LENGTH)
+      .toLowerCase()
+      .trim();
 
     const existing = await db
       .select({ id: categorizationRules.id })
@@ -224,7 +241,8 @@ export async function createManualTransaction(
     .where(and(eq(accounts.id, input.accountId), eq(accounts.userId, userId)))
     .limit(1);
 
-  if (!account) throw new TransactionError(TransactionErrorCode.ACCOUNT_NOT_FOUND);
+  if (!account)
+    throw new TransactionError(TransactionErrorCode.ACCOUNT_NOT_FOUND);
 
   const normDesc = input.description.toLowerCase().trim().replace(/\s+/g, '-');
   const compositeKey = `${input.accountId}-${input.date}-${normDesc}-${input.amount}`;
@@ -243,7 +261,9 @@ export async function createManualTransaction(
       categoryId: input.categoryId ?? null,
       subcategoryId: input.subcategoryId ?? null,
       needWant: input.needWant ?? null,
-      categorySource: input.categoryId ? CATEGORY_SOURCE.MANUAL : CATEGORY_SOURCE.DEFAULT,
+      categorySource: input.categoryId
+        ? CATEGORY_SOURCE.MANUAL
+        : CATEGORY_SOURCE.DEFAULT,
       categoryConfidence: input.categoryId ? CONFIDENCE.MANUAL : null,
       isTransfer: false,
       isIncome,

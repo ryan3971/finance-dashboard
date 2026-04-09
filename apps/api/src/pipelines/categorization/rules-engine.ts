@@ -19,7 +19,6 @@ import { db } from '@/db';
 export type Rule = typeof categorizationRules.$inferSelect;
 export type LoadedRule = Omit<Rule, 'createdAt'>;
 
-
 /**
  * Fetch all rules applicable to a user (user-specific + global system rules),
  * ordered by priority descending. Call this once before processing a batch of

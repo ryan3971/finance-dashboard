@@ -12,12 +12,17 @@ const streams: pino.StreamEntry[] = [
         : process.stdout,
   },
   {
-    stream: pretty({ colorize: false, destination: fs.createWriteStream('logs/app.log', { flags: 'a' }) }),
+    stream: pretty({
+      colorize: false,
+      destination: fs.createWriteStream('logs/app.log', { flags: 'a' }),
+    }),
   },
 ];
 
-export const logger = pino({ level: config.logLevel }, pino.multistream(streams));
-
+export const logger = pino(
+  { level: config.logLevel },
+  pino.multistream(streams)
+);
 
 export const httpLogger = pinoHttp({
   logger,

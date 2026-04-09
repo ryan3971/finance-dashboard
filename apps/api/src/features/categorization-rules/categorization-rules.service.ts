@@ -86,7 +86,9 @@ export async function deleteRule(
 ) {
   const execute = async (conn: typeof db | DbTransaction) => {
     await fetchOwnedRule(id, userId, conn);
-    await conn.delete(categorizationRules).where(eq(categorizationRules.id, id));
+    await conn
+      .delete(categorizationRules)
+      .where(eq(categorizationRules.id, id));
   };
 
   return tx ? execute(tx) : db.transaction(execute);

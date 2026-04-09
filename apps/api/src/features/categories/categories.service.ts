@@ -10,12 +10,17 @@ async function fetchOwnedCategory(
   conn: typeof db | DbTransaction = db
 ) {
   const [row] = await conn
-    .select({ id: categories.id, userId: categories.userId, parentId: categories.parentId })
+    .select({
+      id: categories.id,
+      userId: categories.userId,
+      parentId: categories.parentId,
+    })
     .from(categories)
     .where(eq(categories.id, id))
     .limit(1);
   if (!row) throw new CategoryError(CategoryErrorCode.NOT_FOUND);
-  if (row.userId !== userId) throw new CategoryError(CategoryErrorCode.FORBIDDEN);
+  if (row.userId !== userId)
+    throw new CategoryError(CategoryErrorCode.FORBIDDEN);
   return row;
 }
 
@@ -72,7 +77,12 @@ export async function createCategory(
   if (input.parentId) {
     // Creating a subcategory — parent must be a user-owned top-level category
     const [parent] = await conn
-      .select({ id: categories.id, isIncome: categories.isIncome, parentId: categories.parentId, userId: categories.userId })
+      .select({
+        id: categories.id,
+        isIncome: categories.isIncome,
+        parentId: categories.parentId,
+        userId: categories.userId,
+      })
       .from(categories)
       .where(eq(categories.id, input.parentId))
       .limit(1);
@@ -83,7 +93,12 @@ export async function createCategory(
 
     const [created] = await conn
       .insert(categories)
-      .values({ name: input.name, parentId: input.parentId, userId, isIncome: parent.isIncome })
+      .values({
+        name: input.name,
+        parentId: input.parentId,
+        userId,
+        isIncome: parent.isIncome,
+      })
       .returning({
         id: categories.id,
         name: categories.name,
@@ -103,7 +118,12 @@ export async function createCategory(
 
   const [created] = await conn
     .insert(categories)
-    .values({ name: input.name, parentId: null, userId, isIncome: input.isIncome })
+    .values({
+      name: input.name,
+      parentId: null,
+      userId,
+      isIncome: input.isIncome,
+    })
     .returning({
       id: categories.id,
       name: categories.name,

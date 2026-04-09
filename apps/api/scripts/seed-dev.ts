@@ -28,7 +28,7 @@ import { accounts, users } from '../src/db/schema';
 import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '../src/db/index';
-import { processImport } from '../src/features/imports/pipeline/import.service';
+import { processImport } from '../src/features/imports/import.service';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 

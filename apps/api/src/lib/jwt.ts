@@ -16,8 +16,12 @@ function assertObjectPayload(payload: unknown): asserts payload is JwtPayload {
   }
 }
 
-export function signAccessToken(payload: Omit<JwtPayload, 'iat' | 'exp' | 'jti'>): string {
-  return jwt.sign(payload, config.jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
+export function signAccessToken(
+  payload: Omit<JwtPayload, 'iat' | 'exp' | 'jti'>
+): string {
+  return jwt.sign(payload, config.jwtSecret, {
+    expiresIn: ACCESS_TOKEN_EXPIRY,
+  });
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
@@ -26,9 +30,15 @@ export function verifyAccessToken(token: string): JwtPayload {
   return payload;
 }
 
-export function signRefreshToken(payload: Omit<JwtPayload, 'iat' | 'exp' | 'jti'>): string {
+export function signRefreshToken(
+  payload: Omit<JwtPayload, 'iat' | 'exp' | 'jti'>
+): string {
   // jti (JWT ID) ensures uniqueness even when two tokens are issued in the same second
-  return jwt.sign({ ...payload, jti: randomBytes(16).toString('hex') }, config.jwtRefreshSecret, { expiresIn: REFRESH_TOKEN_EXPIRY });
+  return jwt.sign(
+    { ...payload, jti: randomBytes(16).toString('hex') },
+    config.jwtRefreshSecret,
+    { expiresIn: REFRESH_TOKEN_EXPIRY }
+  );
 }
 
 export function verifyRefreshToken(token: string): JwtPayload {

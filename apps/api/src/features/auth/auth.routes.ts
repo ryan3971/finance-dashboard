@@ -76,20 +76,17 @@ router.post('/refresh', async (req: Request, res: Response) => {
 });
 
 // POST /api/v1/auth/logout
-router.post(
-  '/logout',
-  async (req: Request, res: Response) => {
-    const incomingToken = readRefreshToken(req);
+router.post('/logout', async (req: Request, res: Response) => {
+  const incomingToken = readRefreshToken(req);
 
-    if (incomingToken) {
-      await logoutUser(incomingToken);
-    }
-
-    res.clearCookie(REFRESH_COOKIE_NAME, {
-      path: REFRESH_COOKIE_PATH,
-    });
-    res.status(204).send();
+  if (incomingToken) {
+    await logoutUser(incomingToken);
   }
-);
+
+  res.clearCookie(REFRESH_COOKIE_NAME, {
+    path: REFRESH_COOKIE_PATH,
+  });
+  res.status(204).send();
+});
 
 export default router;

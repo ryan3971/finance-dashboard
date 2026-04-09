@@ -5,16 +5,94 @@ import {
   transactions,
 } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { categorize, type LoadedRule, loadRules } from '../../../pipelines/categorization/pipeline';
-import { detectAdapter, getAdapterByInstitution } from './registry';
-import { ImportError, ImportErrorCode } from '@/features/imports/imports.errors';
-import type { ImportResult, RawInvestmentTransaction, RawTransaction } from '@finance/shared';
-import { buildCompositeKey } from './utils';
+import {
+  categorize,
+  type LoadedRule,
+  loadRules,
+} from '@/pipelines/categorization/pipeline';
+import { detectAdapter, getAdapterByInstitution } from './pipeline/registry';
+import {
+  ImportError,
+  ImportErrorCode,
+} from '@/features/imports/imports.errors';
+import type {
+  ImportResult,
+  RawInvestmentTransaction,
+  RawTransaction,
+} from '@finance/shared';
+import { buildCompositeKey } from './pipeline/utils';
 import { db } from '@/db';
-import { detectTransfers } from '../../../pipelines/transfer-detection/transfer-detection.service';
+import { detectTransfers } from '@/pipelines/transfer-detection/transfer-detection.service';
 import { IMPORT_STATUS, TRANSACTION_SOURCE } from '@/lib/constants';
 import { logger } from '@/middleware/logger';
-import { parseCsv } from './parser';
+import { parseCsv } from './pipeline/parser';
+
+// --- Helpers ---
+
+function resolveAdapter(institution: string, rows: string[][]) {
+  return getAdapterByInstitution(institution) ?? detectAdapter(rows[0] ?? []);
+}
+
+async function parseRows(
+  adapter: NonNullable<ReturnType<typeof resolveAdapter>>,
+  rows: string[][],
+  accountId: string,
+  importId: string
+): Promise<(RawTransaction | RawInvestmentTransaction)[]> {
+  try {
+    return adapter.parse(rows, accountId);
+  } catch (err) {
+    await markImportError(importId, err);
+    throw err;
+  }
+}
+
+async function processAllRows(
+  parsed: (RawTransaction | RawInvestmentTransaction)[],
+  accountId: string,
+  importId: string,
+  userId: string,
+  rules: LoadedRule[],
+  result: ImportResult
+): Promise<string[]> {
+  const importedTransactionIds: string[] = [];
+
+  for (const raw of parsed) {
+    try {
+      if (isInvestmentTransaction(raw)) {
+        await processInvestmentRow(raw, accountId, importId, result);
+      } else {
+        const insertedId = await processTransactionRow(
+          raw,
+          accountId,
+          importId,
+          userId,
+          rules,
+          result
+        );
+        if (insertedId) importedTransactionIds.push(insertedId);
+      }
+    } catch (err: unknown) {
+      logger.error({ err }, 'Unexpected error processing import row');
+      result.errorCount++;
+      result.errors.push('Failed to process row — see server logs for details');
+    }
+  }
+
+  return importedTransactionIds;
+}
+
+async function markImportError(importId: string, err: unknown): Promise<void> {
+  await db
+    .update(imports)
+    .set({
+      status: IMPORT_STATUS.ERROR,
+      errorDetail: { message: String(err) },
+    })
+    .where(eq(imports.id, importId));
+}
+
+// --- Main ---
 
 export async function processImport(
   userId: string,
@@ -31,16 +109,9 @@ export async function processImport(
   if (!account) throw new ImportError(ImportErrorCode.ACCOUNT_NOT_FOUND);
 
   const rows = parseCsv(fileBuffer.toString('utf-8'));
-
-  // Issue 8: guard against empty files before adapter detection, which would
-  // otherwise surface a misleading NO_ADAPTER error.
   if (rows.length === 0) throw new ImportError(ImportErrorCode.EMPTY_FILE);
 
-  let adapter = getAdapterByInstitution(account.institution);
-  if (!adapter) {
-    const firstRow = rows[0] ?? [];
-    adapter = detectAdapter(firstRow);
-  }
+  const adapter = resolveAdapter(account.institution, rows);
   if (!adapter) throw new ImportError(ImportErrorCode.NO_ADAPTER);
 
   // TODO: upload the raw file buffer to S3 at this key before processing.
@@ -70,58 +141,27 @@ export async function processImport(
     transferCandidateCount: 0,
   };
 
-  let parsed: (RawTransaction | RawInvestmentTransaction)[];
-  try {
-    parsed = adapter.parse(rows, accountId);
-  } catch (err) {
-    await db
-      .update(imports)
-      .set({ status: IMPORT_STATUS.ERROR, errorDetail: { message: String(err) } })
-      .where(eq(imports.id, importRecord.id));
-    throw err;
-  }
-
   // The adapter may filter or transform rows (e.g. skip headers, unsupported
   // action types), so parsed.length may differ from the raw rows.length written
   // to the DB above. The final DB update below will correct the stored value.
+  const parsed = await parseRows(adapter, rows, accountId, importRecord.id);
   result.rowCount = parsed.length;
 
-  // Issue 2: load categorization rules once for the entire batch rather than
-  // fetching them inside processTransactionRow on every iteration.
   const rules = await loadRules(userId);
 
-  const importedTransactionIds: string[] = [];
-
-  // Issue 3: wrap the row loop and post-processing in try/finally so the import
-  // record is always resolved to 'complete' or 'error', never left as 'processing'.
   try {
-    for (const raw of parsed) {
-      try {
-        if (isInvestmentTransaction(raw)) {
-          await processInvestmentRow(raw, accountId, importRecord.id, result);
-        } else {
-          const insertedId = await processTransactionRow(
-            raw,
-            accountId,
-            importRecord.id,
-            userId,
-            rules,
-            result
-          );
-          if (insertedId) importedTransactionIds.push(insertedId);
-        }
-      } catch (err: unknown) {
-        logger.error({ err }, 'Unexpected error processing import row');
-        result.errorCount++;
-        result.errors.push('Failed to process row — see server logs for details');
-      }
-    }
-
-    const transferCandidates = await detectTransfers(
-      importedTransactionIds,
-      userId
+    const importedTransactionIds = await processAllRows(
+      parsed,
+      accountId,
+      importRecord.id,
+      userId,
+      rules,
+      result
     );
-    result.transferCandidateCount = transferCandidates.length;
+
+    result.transferCandidateCount = (
+      await detectTransfers(importedTransactionIds, userId)
+    ).length;
 
     await db
       .update(imports)
@@ -136,10 +176,7 @@ export async function processImport(
       })
       .where(eq(imports.id, importRecord.id));
   } catch (err) {
-    await db
-      .update(imports)
-      .set({ status: IMPORT_STATUS.ERROR, errorDetail: { message: String(err) } })
-      .where(eq(imports.id, importRecord.id));
+    await markImportError(importRecord.id, err);
     throw err;
   }
 
@@ -232,8 +269,14 @@ async function processInvestmentRow(
       rawAction: raw.rawAction,
       symbol: raw.symbol ?? null,
       description: raw.rawDescription,
-      quantity: raw.quantity !== null && raw.quantity !== undefined ? String(raw.quantity) : null,
-      price: raw.price !== null && raw.price !== undefined ? String(raw.price) : null,
+      quantity:
+        raw.quantity !== null && raw.quantity !== undefined
+          ? String(raw.quantity)
+          : null,
+      price:
+        raw.price !== null && raw.price !== undefined
+          ? String(raw.price)
+          : null,
       grossAmount: String(raw.grossAmount),
       commission: String(raw.commission),
       amount: String(raw.netAmount),

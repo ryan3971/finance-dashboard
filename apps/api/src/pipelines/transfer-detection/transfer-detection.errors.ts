@@ -17,8 +17,10 @@ const HTTP_STATUS: Record<TransferErrorCode, number> = {
 
 const MESSAGES: Record<TransferErrorCode, string> = {
   [TransferErrorCode.TRANSACTION_NOT_FOUND]: 'Transaction not found',
-  [TransferErrorCode.PAIRED_TRANSACTION_NOT_FOUND]: 'Paired transaction not found',
-  [TransferErrorCode.ALREADY_CONFIRMED]: 'Transaction is already confirmed as a transfer',
+  [TransferErrorCode.PAIRED_TRANSACTION_NOT_FOUND]:
+    'Paired transaction not found',
+  [TransferErrorCode.ALREADY_CONFIRMED]:
+    'Transaction is already confirmed as a transfer',
 };
 
 export class TransferError extends DomainError {

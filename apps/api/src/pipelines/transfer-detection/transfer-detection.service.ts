@@ -4,10 +4,7 @@ import { db } from '@/db';
 import { logger } from '@/middleware/logger';
 import { transactions } from '@/db/schema';
 import { TRANSFER_KEYWORDS } from '@finance/shared';
-import {
-  TransferError,
-  TransferErrorCode,
-} from './transfer-detection.errors';
+import { TransferError, TransferErrorCode } from './transfer-detection.errors';
 
 export interface TransferCandidate {
   transactionId: string;
@@ -47,10 +44,7 @@ export async function detectTransfers(
     })
     .from(transactions)
     .where(
-      and(
-        inArray(transactions.id, importedTransactionIds),
-        ownedByUser(userId)
-      )
+      and(inArray(transactions.id, importedTransactionIds), ownedByUser(userId))
     );
 
   // Only consider transactions not already confirmed as transfers
@@ -62,11 +56,11 @@ export async function detectTransfers(
   const windowDays = config.transferWindowDays;
   const dates = activeTxns.map((t) => t.date);
   const batchWindowStart = offsetDate(
-    dates.reduce((a, b) => (a < b ? a : b)),
+    dates.reduce((a, b) => (a < b ? a : b), dates[0]),
     -windowDays
   );
   const batchWindowEnd = offsetDate(
-    dates.reduce((a, b) => (a > b ? a : b)),
+    dates.reduce((a, b) => (a > b ? a : b), dates[0]),
     windowDays
   );
   const uniqueInverseAmounts = [
@@ -237,9 +231,7 @@ async function getOwnedTransaction(transactionId: string, userId: string) {
   const [txn] = await db
     .select({ id: transactions.id, isTransfer: transactions.isTransfer })
     .from(transactions)
-    .where(
-      and(eq(transactions.id, transactionId), ownedByUser(userId))
-    )
+    .where(and(eq(transactions.id, transactionId), ownedByUser(userId)))
     .limit(1);
   return txn ?? null;
 }

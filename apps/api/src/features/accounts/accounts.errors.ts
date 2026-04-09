@@ -4,7 +4,8 @@ export const AccountErrorCode = {
   NOT_FOUND: 'ACCOUNT_NOT_FOUND',
 } as const;
 
-export type AccountErrorCode = (typeof AccountErrorCode)[keyof typeof AccountErrorCode];
+export type AccountErrorCode =
+  (typeof AccountErrorCode)[keyof typeof AccountErrorCode];
 
 const HTTP_STATUS: Record<AccountErrorCode, number> = {
   [AccountErrorCode.NOT_FOUND]: 404,

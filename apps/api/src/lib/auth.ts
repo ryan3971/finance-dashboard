@@ -16,7 +16,8 @@ declare global {
 
 /** Returns the authenticated user. Must only be called in handlers guarded by requireAuth. */
 export function getAuthUser(req: Request): { id: string; email: string } {
-  if (!req.user) throw new Error('getAuthUser called on unauthenticated request');
+  if (!req.user)
+    throw new Error('getAuthUser called on unauthenticated request');
   return req.user;
 }
 

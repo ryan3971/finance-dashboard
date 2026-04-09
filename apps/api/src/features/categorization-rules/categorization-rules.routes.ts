@@ -1,5 +1,9 @@
 import { type Request, type Response, Router } from 'express';
-import { deleteRule, listRules, updateRule } from './categorization-rules.service';
+import {
+  deleteRule,
+  listRules,
+  updateRule,
+} from './categorization-rules.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';
 import { patchRuleSchema } from '@finance/shared';

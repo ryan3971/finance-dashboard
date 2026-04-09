@@ -7,7 +7,11 @@ import {
 } from './provider-utils';
 import Anthropic from '@anthropic-ai/sdk';
 import type { CategorizationResult } from './pipeline.types';
-import { AI_MAX_TOKENS, AI_TEMPERATURE, CATEGORY_SOURCE } from '@/lib/constants';
+import {
+  AI_MAX_TOKENS,
+  AI_TEMPERATURE,
+  CATEGORY_SOURCE,
+} from '@/lib/constants';
 import { config } from '@/lib/config';
 import { logger } from '@/middleware/logger';
 
@@ -16,9 +20,7 @@ const MODEL = 'claude-haiku-4-5-20251001';
 let client: Anthropic | null = null;
 
 function getClient(): Anthropic {
-  if (!client) {
-    client = new Anthropic({ apiKey: config.anthropicApiKey });
-  }
+  client ??= new Anthropic({ apiKey: config.anthropicApiKey });
   return client;
 }
 

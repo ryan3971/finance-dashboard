@@ -20,8 +20,12 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').unique().notNull(),
   passwordHash: text('password_hash').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const refreshTokens = pgTable('refresh_tokens', {
@@ -31,7 +35,9 @@ export const refreshTokens = pgTable('refresh_tokens', {
     .notNull(),
   tokenHash: text('token_hash').unique().notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─── Accounts ────────────────────────────────────────────────────────────────
@@ -47,7 +53,9 @@ export const accounts = pgTable('accounts', {
   currency: text('currency').notNull().default(DEFAULT_CURRENCY),
   isActive: boolean('is_active').notNull().default(true),
   isCredit: boolean('is_credit').notNull().default(false),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─── Categories ──────────────────────────────────────────────────────────────
@@ -59,7 +67,9 @@ export const categories = pgTable('categories', {
   parentId: uuid('parent_id'),
   isIncome: boolean('is_income').notNull().default(false),
   icon: text('icon'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─── Categorization Rules ────────────────────────────────────────────────────
@@ -73,7 +83,9 @@ export const categorizationRules = pgTable('categorization_rules', {
   subcategoryId: uuid('subcategory_id').references(() => categories.id),
   needWant: text('need_want', { enum: [...NEED_WANT_OPTIONS, 'ADD'] }),
   priority: integer('priority').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─── Tags ────────────────────────────────────────────────────────────────────
@@ -87,7 +99,9 @@ export const tags = pgTable(
       .notNull(),
     name: text('name').notNull(),
     color: text('color'),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (t) => ({
     uniqUserName: unique().on(t.userId, t.name),
@@ -113,7 +127,9 @@ export const imports = pgTable('imports', {
   flaggedCount: integer('flagged_count'),
   errorCount: integer('error_count'),
   errorDetail: jsonb('error_detail'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
@@ -134,7 +150,10 @@ export const transactions = pgTable('transactions', {
   subcategoryId: uuid('subcategory_id').references(() => categories.id),
   needWant: text('need_want'),
   categorySource: text('category_source'),
-  categoryConfidence: numeric('category_confidence', { precision: 4, scale: 3 }),
+  categoryConfidence: numeric('category_confidence', {
+    precision: 4,
+    scale: 3,
+  }),
   isTransfer: boolean('is_transfer').notNull().default(false),
   transferPairId: uuid('transfer_pair_id'),
   isIncome: boolean('is_income').notNull().default(false),
@@ -142,8 +161,12 @@ export const transactions = pgTable('transactions', {
   compositeKey: text('composite_key').unique().notNull(),
   note: text('note'),
   source: text('source').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const transactionTags = pgTable(
@@ -184,7 +207,9 @@ export const investmentTransactions = pgTable('investment_transactions', {
   activityType: text('activity_type'),
   compositeKey: text('composite_key').unique().notNull(),
   note: text('note'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const investmentSnapshots = pgTable('investment_snapshots', {
@@ -196,7 +221,9 @@ export const investmentSnapshots = pgTable('investment_snapshots', {
   balance: numeric('balance', { precision: 14, scale: 2 }).notNull(),
   currency: text('currency').notNull().default(DEFAULT_CURRENCY),
   source: text('source').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const contributionRecords = pgTable('contribution_records', {
@@ -206,10 +233,16 @@ export const contributionRecords = pgTable('contribution_records', {
     .notNull(),
   taxYear: integer('tax_year').notNull(),
   annualLimit: numeric('annual_limit', { precision: 12, scale: 2 }),
-  contributions: numeric('contributions', { precision: 12, scale: 2 }).notNull().default('0'),
-  withdrawals: numeric('withdrawals', { precision: 12, scale: 2 }).notNull().default('0'),
+  contributions: numeric('contributions', { precision: 12, scale: 2 })
+    .notNull()
+    .default('0'),
+  withdrawals: numeric('withdrawals', { precision: 12, scale: 2 })
+    .notNull()
+    .default('0'),
   roomCarried: numeric('room_carried', { precision: 12, scale: 2 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -220,8 +253,13 @@ export const userConfig = pgTable('user_config', {
     .references(() => users.id)
     .unique()
     .notNull(),
-  emergencyFundTarget: numeric('emergency_fund_target', { precision: 12, scale: 2 }),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  emergencyFundTarget: numeric('emergency_fund_target', {
+    precision: 12,
+    scale: 2,
+  }),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─── Relations ───────────────────────────────────────────────────────────────
@@ -242,13 +280,25 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
   contributionRecords: many(contributionRecords),
 }));
 
-export const transactionsRelations = relations(transactions, ({ one, many }) => ({
-  account: one(accounts, { fields: [transactions.accountId], references: [accounts.id] }),
-  import: one(imports, { fields: [transactions.importId], references: [imports.id] }),
-  category: one(categories, { fields: [transactions.categoryId], references: [categories.id] }),
-  subcategory: one(categories, {
-    fields: [transactions.subcategoryId],
-    references: [categories.id],
-  }),
-  transactionTags: many(transactionTags),
-}));
+export const transactionsRelations = relations(
+  transactions,
+  ({ one, many }) => ({
+    account: one(accounts, {
+      fields: [transactions.accountId],
+      references: [accounts.id],
+    }),
+    import: one(imports, {
+      fields: [transactions.importId],
+      references: [imports.id],
+    }),
+    category: one(categories, {
+      fields: [transactions.categoryId],
+      references: [categories.id],
+    }),
+    subcategory: one(categories, {
+      fields: [transactions.subcategoryId],
+      references: [categories.id],
+    }),
+    transactionTags: many(transactionTags),
+  })
+);

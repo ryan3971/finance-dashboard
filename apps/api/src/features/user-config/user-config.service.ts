@@ -11,14 +11,14 @@ export async function getUserConfig(userId: string) {
 
   if (existing) return existing;
 
-  const [created] = await db
-    .insert(userConfig)
-    .values({ userId })
-    .returning();
+  const [created] = await db.insert(userConfig).values({ userId }).returning();
 
   return created;
 }
 
-export async function updateUserConfig(userId: string, _input: Record<string, never>) {
+export async function updateUserConfig(
+  userId: string,
+  _input: Record<string, never>
+) {
   return getUserConfig(userId);
 }

@@ -73,13 +73,16 @@ export class QuestradeAdapter implements CsvAdapter {
         : undefined;
       const rawAction = String(row[2]).trim();
       const activityType = String(row[12] ?? '').trim();
-      const action: RawInvestmentTransaction['action'] = rawAction
-        ? (ACTION_MAP[rawAction.toLowerCase()] ?? 'transfer')
-        : activityType.toLowerCase().includes('dividend')
-          ? 'dividend'
-          : activityType.toLowerCase().includes('deposit')
-            ? 'deposit'
-            : 'transfer';
+      let action: RawInvestmentTransaction['action'];
+      if (rawAction) {
+        action = ACTION_MAP[rawAction.toLowerCase()] ?? 'transfer';
+      } else if (activityType.toLowerCase().includes('dividend')) {
+        action = 'dividend';
+      } else if (activityType.toLowerCase().includes('deposit')) {
+        action = 'deposit';
+      } else {
+        action = 'transfer';
+      }
       const symbol = String(row[3] ?? '').trim() || undefined;
       const rawDescription = String(row[4] ?? '').trim();
       const quantity = parseAmount(String(row[5])) || undefined;

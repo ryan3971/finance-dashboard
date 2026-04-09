@@ -6,7 +6,11 @@ import {
   resolveCategories,
 } from './provider-utils';
 import type { CategorizationResult } from './pipeline.types';
-import { AI_MAX_TOKENS, AI_TEMPERATURE, CATEGORY_SOURCE } from '@/lib/constants';
+import {
+  AI_MAX_TOKENS,
+  AI_TEMPERATURE,
+  CATEGORY_SOURCE,
+} from '@/lib/constants';
 import { config } from '@/lib/config';
 import { logger } from '@/middleware/logger';
 import OpenAI from 'openai';
@@ -14,9 +18,7 @@ import OpenAI from 'openai';
 let client: OpenAI | null = null;
 
 function getClient(): OpenAI {
-  if (!client) {
-    client = new OpenAI({ apiKey: config.openaiApiKey });
-  }
+  client ??= new OpenAI({ apiKey: config.openaiApiKey });
   return client;
 }
 

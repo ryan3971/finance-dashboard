@@ -1,7 +1,7 @@
 import { type Request, type Response, Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { processImport } from '@/features/imports/pipeline/import.service';
+import { processImport } from '@/features/imports/import.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 
 const router = Router();

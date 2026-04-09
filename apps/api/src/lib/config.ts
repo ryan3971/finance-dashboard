@@ -28,7 +28,9 @@ if (process.env.NODE_ENV !== 'production') {
 const envSchema = z
   .object({
     // App
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
     PORT: z.coerce.number().int().positive().default(3001),
     LOG_LEVEL: z.string().default('info'),
 
@@ -50,7 +52,11 @@ const envSchema = z
     OPENAI_API_KEY: z.string().default(''),
 
     // Transfer detection
-    TRANSFER_DETECTION_WINDOW_DAYS: z.coerce.number().int().positive().default(3),
+    TRANSFER_DETECTION_WINDOW_DAYS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(3),
 
     // AWS (Phase 4 — optional until deployment)
     AWS_REGION: z.string().default('ca-central-1'),

@@ -48,9 +48,7 @@ export abstract class DebitCreditAdapter implements CsvAdapter {
     return { valid: errors.length === 0, errors };
   }
 
-  protected buildMetadata(
-    _row: string[]
-  ): Record<string, string> | undefined {
+  protected buildMetadata(_row: string[]): Record<string, string> | undefined {
     return undefined;
   }
 
@@ -74,12 +72,7 @@ export abstract class DebitCreditAdapter implements CsvAdapter {
         rawDescription,
         amount,
         currency: DEFAULT_CURRENCY,
-        compositeKey: buildCompositeKey(
-          accountId,
-          date,
-          description,
-          amount
-        ),
+        compositeKey: buildCompositeKey(accountId, date, description, amount),
         metadata: this.buildMetadata(row),
       });
     }

@@ -57,7 +57,10 @@ export async function createTag(userId: string, input: CreateTagInput) {
  * Returns null if the tag was not found (or doesn't belong to the user).
  * The transactionTags rows are removed automatically via ON DELETE CASCADE.
  */
-export async function deleteTag(id: string, userId: string): Promise<{ id: string } | null> {
+export async function deleteTag(
+  id: string,
+  userId: string
+): Promise<{ id: string } | null> {
   const [deleted] = await db
     .delete(tags)
     .where(and(eq(tags.id, id), eq(tags.userId, userId)))

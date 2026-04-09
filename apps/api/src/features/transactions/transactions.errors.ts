@@ -6,7 +6,8 @@ export const TransactionErrorCode = {
   TAG_NOT_FOUND: 'TRANSACTION_TAG_NOT_FOUND',
 } as const;
 
-export type TransactionErrorCode = (typeof TransactionErrorCode)[keyof typeof TransactionErrorCode];
+export type TransactionErrorCode =
+  (typeof TransactionErrorCode)[keyof typeof TransactionErrorCode];
 
 const HTTP_STATUS: Record<TransactionErrorCode, number> = {
   [TransactionErrorCode.ACCOUNT_NOT_FOUND]: 422,
