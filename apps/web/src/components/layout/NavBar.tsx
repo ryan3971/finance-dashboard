@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { to: '/accounts' as const, label: 'Accounts' },
   { to: '/import' as const, label: 'Import' },
   { to: '/config' as const, label: 'Config' },
+  { to: '/anticipated-budget' as const, label: 'Budget' },
 ];
 
 export function NavBar() {

@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/node';
 import accountsMutationRouter from './features/accounts/accounts-mutation.routes';
 import accountsRouter from './features/accounts/accounts.routes';
+import anticipatedBudgetMutationRouter from './features/dashboards/anticipated-budget/anticipated-budget-mutation.routes';
+import anticipatedBudgetRouter from './features/dashboards/anticipated-budget/anticipated-budget.routes';
 import authRouter from './features/auth/auth.routes';
 import categoriesRouter from './features/categories/categories.routes';
 import categorizationRulesRouter from './features/categorization-rules/categorization-rules.routes';
@@ -47,6 +49,11 @@ export function createApp() {
   app.use('/api/v1/transfers', transfersRouter);
   app.use('/api/v1/tags', tagsRouter);
   app.use('/api/v1/user-config', userConfigRouter);
+  app.use(
+    '/api/v1/anticipated-budget',
+    anticipatedBudgetRouter,
+    anticipatedBudgetMutationRouter
+  );
 
   // The error handler must be registered before any other error middleware and after all controllers
   Sentry.setupExpressErrorHandler(app);

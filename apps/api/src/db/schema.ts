@@ -262,6 +262,40 @@ export const userConfig = pgTable('user_config', {
     .notNull(),
 });
 
+// ─── Anticipated Budget ───────────────────────────────────────────────────────
+
+export const anticipatedBudget = pgTable('anticipated_budget', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .references(() => users.id)
+    .notNull(),
+  categoryId: uuid('category_id').references(() => categories.id),
+  name: text('name').notNull(),
+  needWant: text('need_want', { enum: [...NEED_WANT_OPTIONS] }),
+  isIncome: boolean('is_income').notNull().default(false),
+  monthlyAmount: numeric('monthly_amount', { precision: 12, scale: 2 }),
+  notes: text('notes'),
+  effectiveYear: integer('effective_year').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const anticipatedBudgetMonths = pgTable(
+  'anticipated_budget_months',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    anticipatedBudgetId: uuid('anticipated_budget_id')
+      .references(() => anticipatedBudget.id, { onDelete: 'cascade' })
+      .notNull(),
+    month: integer('month').notNull(),
+    amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  },
+  (t) => ({
+    uniqEntryMonth: unique().on(t.anticipatedBudgetId, t.month),
+  })
+);
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -269,7 +303,33 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   refreshTokens: many(refreshTokens),
   tags: many(tags),
   config: one(userConfig),
+  anticipatedBudgetEntries: many(anticipatedBudget),
 }));
+
+export const anticipatedBudgetRelations = relations(
+  anticipatedBudget,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [anticipatedBudget.userId],
+      references: [users.id],
+    }),
+    category: one(categories, {
+      fields: [anticipatedBudget.categoryId],
+      references: [categories.id],
+    }),
+    months: many(anticipatedBudgetMonths),
+  })
+);
+
+export const anticipatedBudgetMonthsRelations = relations(
+  anticipatedBudgetMonths,
+  ({ one }) => ({
+    entry: one(anticipatedBudget, {
+      fields: [anticipatedBudgetMonths.anticipatedBudgetId],
+      references: [anticipatedBudget.id],
+    }),
+  })
+);
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),

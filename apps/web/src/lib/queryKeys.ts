@@ -23,3 +23,8 @@ export const ruleKeys = {
 export const userConfigKeys = {
   all: () => ['user-config'] as const,
 };
+
+export const anticipatedBudgetKeys = {
+  all: () => ['anticipated-budget'] as const,
+  byYear: (year: number) => ['anticipated-budget', year] as const,
+};

@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { z } from 'zod';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
+import { AnticipatedBudgetPage } from '@/features/anticipated-budget/AnticipatedBudgetPage';
 import { ConfigPage } from '@/features/config/ConfigPage';
 import { ImportPage } from '@/features/import/ImportPage';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -78,6 +79,13 @@ const configRoute = createRoute({
   component: ConfigPage,
 });
 
+const anticipatedBudgetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/anticipated-budget',
+  beforeLoad: requireAuth,
+  component: AnticipatedBudgetPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
@@ -85,6 +93,7 @@ const routeTree = rootRoute.addChildren([
   accountsRoute,
   importRoute,
   configRoute,
+  anticipatedBudgetRoute,
 ]);
 
 export const router = createRouter({

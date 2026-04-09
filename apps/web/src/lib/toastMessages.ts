@@ -37,6 +37,17 @@ export const TOAST = {
   RULE_UPDATE_FAILED: 'Failed to update rule',
   RULE_DELETED: 'Rule deleted',
   RULE_DELETE_FAILED: 'Failed to delete rule',
+  // Anticipated Budget
+  BUDGET_ENTRY_CREATED: 'Entry created',
+  BUDGET_ENTRY_CREATE_FAILED: 'Failed to create entry',
+  BUDGET_ENTRY_UPDATED: 'Entry updated',
+  BUDGET_ENTRY_UPDATE_FAILED: 'Failed to update entry',
+  BUDGET_ENTRY_DELETED: 'Entry deleted',
+  BUDGET_ENTRY_DELETE_FAILED: 'Failed to delete entry',
+  BUDGET_MONTH_OVERRIDE_SAVED: 'Override saved',
+  BUDGET_MONTH_OVERRIDE_SAVE_FAILED: 'Failed to save override',
+  BUDGET_MONTH_OVERRIDE_REMOVED: 'Override removed',
+  BUDGET_MONTH_OVERRIDE_REMOVE_FAILED: 'Failed to remove override',
   // Tags
   TRANSACTION_TAG_ATTACH_FAILED:
     'Transaction saved, but some tags could not be attached.',

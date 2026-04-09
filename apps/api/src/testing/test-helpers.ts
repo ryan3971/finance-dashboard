@@ -1,5 +1,7 @@
 import {
   accounts,
+  anticipatedBudget,
+  anticipatedBudgetMonths,
   categories,
   categorizationRules,
   imports,
@@ -54,6 +56,8 @@ export async function cleanDatabase(): Promise<void> {
   await db.delete(categorizationRules);
   await db.delete(categories).where(isNotNull(categories.userId));
   await db.delete(tags);
+  await db.delete(anticipatedBudgetMonths);
+  await db.delete(anticipatedBudget);
   await db.delete(users);
 }
 

@@ -15,6 +15,13 @@
       "when": 1775505553737,
       "tag": "0001_ordinary_meltdown",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775761966179,
+      "tag": "0002_daily_dragon_man",
+      "breakpoints": true
     }
   ]
 }
