@@ -11,12 +11,10 @@ export interface ParsedAIResponse {
   reasoning: string;
 }
 
-export interface CategoryRow {
-  id: string;
-  name: string;
-  parentId: string | null;
-  isIncome: boolean;
-}
+type CategoryRow = Pick<
+  typeof categories.$inferSelect,
+  'id' | 'name' | 'parentId' | 'isIncome'
+>;
 
 /**
  * Fetch the full category tree visible to this user (system + personal).

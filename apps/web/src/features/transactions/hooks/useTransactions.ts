@@ -61,7 +61,14 @@ export function useTransactions({
   page?: number;
 } = {}) {
   return useQuery<TransactionsResponse>({
-    queryKey: transactionKeys.list({ accountId, startDate, endDate, categoryId, flagged, page }),
+    queryKey: transactionKeys.list({
+      accountId,
+      startDate,
+      endDate,
+      categoryId,
+      flagged,
+      page,
+    }),
     queryFn: async () => {
       const { data } = await api.get<TransactionsResponse>('/transactions', {
         params: { accountId, startDate, endDate, categoryId, flagged, page },

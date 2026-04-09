@@ -6,7 +6,13 @@ import { useCreateCategory } from '../hooks/useCategoryMutations';
 import { FIELD_LIMITS } from '@finance/shared';
 import type { Category } from '@finance/shared';
 
-function AddCategoryForm({ isIncome, onDone }: { isIncome: boolean; onDone: () => void }) {
+function AddCategoryForm({
+  isIncome,
+  onDone,
+}: {
+  readonly isIncome: boolean;
+  readonly onDone: () => void;
+}) {
   const [name, setName] = useState('');
   const create = useCreateCategory();
 
@@ -15,7 +21,12 @@ function AddCategoryForm({ isIncome, onDone }: { isIncome: boolean; onDone: () =
     if (!name.trim()) return;
     create.mutate(
       { name: name.trim(), isIncome },
-      { onSuccess: () => { setName(''); onDone(); } },
+      {
+        onSuccess: () => {
+          setName('');
+          onDone();
+        },
+      }
     );
   }
 
@@ -28,7 +39,11 @@ function AddCategoryForm({ isIncome, onDone }: { isIncome: boolean; onDone: () =
         maxLength={FIELD_LIMITS.SUBCATEGORY_NAME_MAX}
         className="h-7 text-sm flex-1"
       />
-      <Button type="submit" size="sm" disabled={!name.trim() || create.isPending}>
+      <Button
+        type="submit"
+        size="sm"
+        disabled={!name.trim() || create.isPending}
+      >
         Add
       </Button>
       <Button type="button" size="sm" variant="ghost" onClick={onDone}>
@@ -43,9 +58,9 @@ export function CategorySection({
   items,
   isIncome,
 }: {
-  label: string;
-  items: Category[];
-  isIncome: boolean;
+  readonly label: string;
+  readonly items: Category[];
+  readonly isIncome: boolean;
 }) {
   const [showAdd, setShowAdd] = useState(false);
 
@@ -60,7 +75,10 @@ export function CategorySection({
         ))}
         <div className="px-4 py-2">
           {showAdd ? (
-            <AddCategoryForm isIncome={isIncome} onDone={() => setShowAdd(false)} />
+            <AddCategoryForm
+              isIncome={isIncome}
+              onDone={() => setShowAdd(false)}
+            />
           ) : (
             <button
               type="button"

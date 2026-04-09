@@ -32,8 +32,8 @@ export interface ManualTransactionInitialValues {
 }
 
 interface Props {
-  initialValues?: ManualTransactionInitialValues;
-  onClose: () => void;
+  readonly initialValues?: ManualTransactionInitialValues;
+  readonly onClose: () => void;
 }
 
 export function ManualTransactionPanel({ initialValues, onClose }: Props) {
@@ -50,7 +50,11 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
     control,
     reset,
     formState: { errors },
-  } = useForm<z.input<typeof createTransactionSchema>, unknown, CreateTransactionInput>({
+  } = useForm<
+    z.input<typeof createTransactionSchema>,
+    unknown,
+    CreateTransactionInput
+  >({
     resolver: zodResolver(createTransactionSchema),
     defaultValues: {
       accountId: initialValues?.accountId ?? '',
@@ -64,8 +68,14 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
     },
   });
 
-  const { field: categoryField } = useController({ control, name: 'categoryId' });
-  const { field: subcategoryField } = useController({ control, name: 'subcategoryId' });
+  const { field: categoryField } = useController<
+    z.input<typeof createTransactionSchema>,
+    'categoryId'
+  >({ control, name: 'categoryId' });
+  const { field: subcategoryField } = useController<
+    z.input<typeof createTransactionSchema>,
+    'subcategoryId'
+  >({ control, name: 'subcategoryId' });
 
   async function onSubmit(values: CreateTransactionInput) {
     const success = await submit(values, selectedTagIds);
@@ -105,7 +115,11 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
         }}
         className="flex flex-col flex-1 px-4 py-4 space-y-4"
       >
-        <FormField label="Account" error={errors.accountId?.message} labelSize="xs">
+        <FormField
+          label="Account"
+          error={errors.accountId?.message}
+          labelSize="xs"
+        >
           <Select {...register('accountId')}>
             <option value="">Select account…</option>
             {accounts?.map((a) => (
@@ -151,8 +165,8 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
           />
         </FormField>
 
-        <div>
-          <label className="label-xs">Need / Want</label>
+        <fieldset className="border-0 p-0 m-0">
+          <legend className="label-xs">Need / Want</legend>
           <Controller
             control={control}
             name="needWant"
@@ -175,7 +189,7 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
               </div>
             )}
           />
-        </div>
+        </fieldset>
 
         <FormField label="Note" error={errors.note?.message} labelSize="xs">
           <Input
@@ -187,8 +201,8 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
         </FormField>
 
         {allTags?.length ? (
-          <div>
-            <label className="label-xs">Tags</label>
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="label-xs">Tags</legend>
             <div className="flex flex-wrap gap-1 mt-1">
               {allTags.map((tag) => {
                 const selected = selectedTagIds.has(tag.id);
@@ -210,7 +224,7 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
                 );
               })}
             </div>
-          </div>
+          </fieldset>
         ) : null}
 
         {serverError && <p className="text-xs text-danger">{serverError}</p>}

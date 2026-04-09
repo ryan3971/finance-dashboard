@@ -10,7 +10,13 @@ import type { NeedWant, Rule } from '@finance/shared';
 function exportRulesCsv(rules: Rule[]) {
   const header = 'keyword,category,subcategory,priority,needWant';
   const rows = rules.map((r) =>
-    [r.keyword, r.categoryName ?? '', r.subcategoryName ?? '', r.priority, r.needWant ?? '']
+    [
+      r.keyword,
+      r.categoryName ?? '',
+      r.subcategoryName ?? '',
+      r.priority,
+      r.needWant ?? '',
+    ]
       .map((v) => `"${String(v).replace(/"/g, '""')}"`)
       .join(',')
   );
@@ -26,7 +32,7 @@ function exportRulesCsv(rules: Rule[]) {
   URL.revokeObjectURL(url);
 }
 
-function RuleRow({ rule }: { rule: Rule }) {
+function RuleRow({ rule }: { readonly rule: Rule }) {
   const [editing, setEditing] = useState(false);
   const [keyword, setKeyword] = useState(rule.keyword);
   const [priority, setPriority] = useState(String(rule.priority));
@@ -34,11 +40,10 @@ function RuleRow({ rule }: { rule: Rule }) {
   const update = useUpdateRule();
   const remove = useDeleteRule();
 
-  const categoryLabel = rule.categoryName
-    ? rule.subcategoryName
-      ? `${rule.categoryName} › ${rule.subcategoryName}`
-      : rule.categoryName
-    : '—';
+  const categoryWithSub = rule.subcategoryName
+    ? `${rule.categoryName} › ${rule.subcategoryName}`
+    : rule.categoryName;
+  const categoryLabel = rule.categoryName ? categoryWithSub : '—';
 
   const parsedPriority = parseInt(priority, 10);
 
@@ -52,7 +57,7 @@ function RuleRow({ rule }: { rule: Rule }) {
           needWant: needWant || null,
         },
       },
-      { onSuccess: () => setEditing(false) },
+      { onSuccess: () => setEditing(false) }
     );
   }
 
@@ -75,7 +80,9 @@ function RuleRow({ rule }: { rule: Rule }) {
             autoFocus
           />
         </td>
-        <td className="px-3 py-2 text-sm text-content-secondary">{categoryLabel}</td>
+        <td className="px-3 py-2 text-sm text-content-secondary">
+          {categoryLabel}
+        </td>
         <td className="px-3 py-2">
           <Input
             type="number"
@@ -92,7 +99,9 @@ function RuleRow({ rule }: { rule: Rule }) {
           >
             <option value="">—</option>
             {NEED_WANT_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
             ))}
           </select>
         </td>
@@ -101,12 +110,19 @@ function RuleRow({ rule }: { rule: Rule }) {
             <Button
               size="sm"
               className="h-7 text-xs"
-              disabled={!keyword.trim() || isNaN(parsedPriority) || update.isPending}
+              disabled={
+                !keyword.trim() || isNaN(parsedPriority) || update.isPending
+              }
               onClick={handleSave}
             >
               Save
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleCancel}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={handleCancel}
+            >
               Cancel
             </Button>
           </div>
@@ -117,13 +133,26 @@ function RuleRow({ rule }: { rule: Rule }) {
 
   return (
     <tr className="border-t border-border-subtle group">
-      <td className="px-3 py-2 text-sm font-mono text-content-primary">{rule.keyword}</td>
-      <td className="px-3 py-2 text-sm text-content-secondary">{categoryLabel}</td>
-      <td className="px-3 py-2 text-sm text-content-secondary">{rule.priority}</td>
-      <td className="px-3 py-2 text-sm text-content-secondary">{rule.needWant ?? '—'}</td>
+      <td className="px-3 py-2 text-sm font-mono text-content-primary">
+        {rule.keyword}
+      </td>
+      <td className="px-3 py-2 text-sm text-content-secondary">
+        {categoryLabel}
+      </td>
+      <td className="px-3 py-2 text-sm text-content-secondary">
+        {rule.priority}
+      </td>
+      <td className="px-3 py-2 text-sm text-content-secondary">
+        {rule.needWant ?? '—'}
+      </td>
       <td className="px-3 py-2">
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditing(true)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            onClick={() => setEditing(true)}
+          >
             Edit
           </Button>
           <Button
@@ -147,21 +176,22 @@ export function RulesTab() {
   if (isLoading) {
     return (
       <div className="space-y-3 mt-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
+        {Array.from({ length: 5 }, (_, i) => `skeleton-${i}`).map((id) => (
+          <Skeleton key={id} className="h-10 w-full" />
         ))}
       </div>
     );
   }
 
-  if (isError) return <EmptyState message="Failed to load rules." variant="error" />;
+  if (isError)
+    return <EmptyState message="Failed to load rules." variant="error" />;
 
   return (
     <div className="mt-4">
       <div className="flex justify-end mb-3">
         <Button
           size="sm"
-          variant="outline"
+          variant="secondary"
           disabled={!rules || rules.length === 0}
           onClick={() => rules && exportRulesCsv(rules)}
         >

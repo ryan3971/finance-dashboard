@@ -2,11 +2,21 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SubcategoryChip } from './SubcategoryChip';
-import { useCreateSubcategory, useDeleteCategory, useRenameCategory } from '../hooks/useCategoryMutations';
+import {
+  useCreateSubcategory,
+  useDeleteCategory,
+  useRenameCategory,
+} from '../hooks/useCategoryMutations';
 import { FIELD_LIMITS } from '@finance/shared';
 import type { Category } from '@finance/shared';
 
-function AddSubcategoryForm({ parentId, onDone }: { parentId: string; onDone: () => void }) {
+function AddSubcategoryForm({
+  parentId,
+  onDone,
+}: {
+  readonly parentId: string;
+  readonly onDone: () => void;
+}) {
   const [name, setName] = useState('');
   const create = useCreateSubcategory();
 
@@ -15,7 +25,12 @@ function AddSubcategoryForm({ parentId, onDone }: { parentId: string; onDone: ()
     if (!name.trim()) return;
     create.mutate(
       { name: name.trim(), parentId },
-      { onSuccess: () => { setName(''); onDone(); } },
+      {
+        onSuccess: () => {
+          setName('');
+          onDone();
+        },
+      }
     );
   }
 
@@ -28,7 +43,11 @@ function AddSubcategoryForm({ parentId, onDone }: { parentId: string; onDone: ()
         maxLength={FIELD_LIMITS.SUBCATEGORY_NAME_MAX}
         className="h-7 text-sm flex-1"
       />
-      <Button type="submit" size="sm" disabled={!name.trim() || create.isPending}>
+      <Button
+        type="submit"
+        size="sm"
+        disabled={!name.trim() || create.isPending}
+      >
         Add
       </Button>
       <Button type="button" size="sm" variant="ghost" onClick={onDone}>
@@ -38,7 +57,7 @@ function AddSubcategoryForm({ parentId, onDone }: { parentId: string; onDone: ()
   );
 }
 
-export function CategoryCard({ cat }: { cat: Category }) {
+export function CategoryCard({ cat }: { readonly cat: Category }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(cat.name);
@@ -69,7 +88,7 @@ export function CategoryCard({ cat }: { cat: Category }) {
               onClick={() =>
                 rename.mutate(
                   { id: cat.id, name: name.trim() },
-                  { onSuccess: () => setEditing(false) },
+                  { onSuccess: () => setEditing(false) }
                 )
               }
             >
@@ -79,14 +98,19 @@ export function CategoryCard({ cat }: { cat: Category }) {
               size="sm"
               variant="ghost"
               className="h-6 text-xs px-2"
-              onClick={() => { setName(cat.name); setEditing(false); }}
+              onClick={() => {
+                setName(cat.name);
+                setEditing(false);
+              }}
             >
               Cancel
             </Button>
           </span>
         ) : (
           <>
-            <p className="text-sm font-medium text-content-primary flex-1">{cat.name}</p>
+            <p className="text-sm font-medium text-content-primary flex-1">
+              {cat.name}
+            </p>
             <button
               type="button"
               aria-label="Rename category"
@@ -116,7 +140,10 @@ export function CategoryCard({ cat }: { cat: Category }) {
       )}
       {showAdd ? (
         <div className="mt-2">
-          <AddSubcategoryForm parentId={cat.id} onDone={() => setShowAdd(false)} />
+          <AddSubcategoryForm
+            parentId={cat.id}
+            onDone={() => setShowAdd(false)}
+          />
         </div>
       ) : (
         <button

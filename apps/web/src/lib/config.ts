@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   VITE_SENTRY_DSN: z.string().optional(),
-  VITE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+  VITE_ENV: z
+    .enum(['development', 'staging', 'production'])
+    .default('development'),
   VITE_API_BASE_URL: z.string().default('http://localhost:3001/api/v1'),
 });
 

@@ -9,22 +9,22 @@ function formatAmount(amount: number): string {
 }
 
 interface AmountCellProps {
-  amount: string;
-  isTransfer: boolean;
+  readonly amount: string;
+  readonly isTransfer: boolean;
 }
 
 export function AmountCell({ amount, isTransfer }: AmountCellProps) {
   const num = parseFloat(amount);
+  let colorClass: string;
+  if (isTransfer) {
+    colorClass = 'text-content-muted';
+  } else if (num > 0) {
+    colorClass = 'text-positive';
+  } else {
+    colorClass = 'text-danger';
+  }
   return (
-    <span
-      className={`font-mono text-sm font-medium ${
-        isTransfer
-          ? 'text-content-muted'
-          : num > 0
-            ? 'text-positive'
-            : 'text-danger'
-      }`}
-    >
+    <span className={`font-mono text-sm font-medium ${colorClass}`}>
       {formatAmount(num)}
     </span>
   );

@@ -11,7 +11,7 @@ import type { Table } from '@tanstack/react-table';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 
 interface ColumnVisibilityToggleProps {
-  table: Table<Transaction>;
+  readonly table: Table<Transaction>;
 }
 
 export function ColumnVisibilityToggle({ table }: ColumnVisibilityToggleProps) {

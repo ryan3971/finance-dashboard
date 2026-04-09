@@ -1,5 +1,4 @@
 import {
-  ACTIONS_COLUMN_ID,
   isTransactionReviewable,
   useTransactionColumns,
 } from '@/features/transactions/hooks/useTransactionColumns';
@@ -14,19 +13,21 @@ import {
 import { ColumnVisibilityToggle } from '@/features/transactions/components/table/ColumnVisibilityToggle';
 import { flexRender } from '@tanstack/react-table';
 import { Pagination } from '@/components/common/Pagination';
-import type { PaginationInfo } from '@/features/transactions/hooks/useTransactions';
-import type { Transaction } from '@/features/transactions/hooks/useTransactions';
+import type {
+  PaginationInfo,
+  Transaction,
+} from '@/features/transactions/hooks/useTransactions';
 import { TransactionReviewPanel } from '@/features/transactions/components/panels/TransactionReviewPanel';
 
 const UNKNOWN_PAGE_COUNT = -1;
 
 interface TransactionsTableProps {
-  transactions: Transaction[];
-  reviewingId: string | null;
-  onReviewToggle: (id: string) => void;
-  onDuplicate: (tx: Transaction) => void;
-  pagination?: PaginationInfo;
-  onPageChange: (page: number) => void;
+  readonly transactions: Transaction[];
+  readonly reviewingId: string | null;
+  readonly onReviewToggle: (id: string) => void;
+  readonly onDuplicate: (tx: Transaction) => void;
+  readonly pagination?: PaginationInfo;
+  readonly onPageChange: (page: number) => void;
 }
 
 export function TransactionsTable({
@@ -40,7 +41,11 @@ export function TransactionsTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const columns = useTransactionColumns({ reviewingId, onReviewToggle, onDuplicate });
+  const columns = useTransactionColumns({
+    reviewingId,
+    onReviewToggle,
+    onDuplicate,
+  });
 
   const table = useReactTable({
     data: transactions,

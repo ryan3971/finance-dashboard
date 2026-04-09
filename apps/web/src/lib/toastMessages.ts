@@ -30,14 +30,16 @@ export const TOAST = {
   CATEGORY_UPDATE_FAILED: 'Failed to rename category',
   CATEGORY_DELETED: 'Category deleted',
   CATEGORY_DELETE_FAILED: 'Failed to delete category',
-  CATEGORY_DELETE_BLOCKED: 'Delete all subcategories before deleting this category',
+  CATEGORY_DELETE_BLOCKED:
+    'Delete all subcategories before deleting this category',
   // Rules
   RULE_UPDATED: 'Rule updated',
   RULE_UPDATE_FAILED: 'Failed to update rule',
   RULE_DELETED: 'Rule deleted',
   RULE_DELETE_FAILED: 'Failed to delete rule',
   // Tags
-  TRANSACTION_TAG_ATTACH_FAILED: 'Transaction saved, but some tags could not be attached.',
+  TRANSACTION_TAG_ATTACH_FAILED:
+    'Transaction saved, but some tags could not be attached.',
   TAG_CREATED: 'Tag created',
   TAG_CREATE_FAILED: 'Failed to create tag',
   TAG_DELETED: 'Tag deleted',

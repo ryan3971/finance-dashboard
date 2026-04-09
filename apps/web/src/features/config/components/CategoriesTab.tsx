@@ -9,15 +9,17 @@ export function CategoriesTab() {
   if (isLoading) {
     return (
       <div className="space-y-3 mt-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
+        {Array.from({ length: 6 }, (_, i) => `skeleton-${i}`).map((id) => (
+          <Skeleton key={id} className="h-10 w-full" />
         ))}
       </div>
     );
   }
 
-  if (isError) return <EmptyState message="Failed to load categories." variant="error" />;
-  if (!categories || categories.length === 0) return <EmptyState message="No categories found." />;
+  if (isError)
+    return <EmptyState message="Failed to load categories." variant="error" />;
+  if (!categories || categories.length === 0)
+    return <EmptyState message="No categories found." />;
 
   const income = categories.filter((c) => c.isIncome);
   const expense = categories.filter((c) => !c.isIncome);
@@ -29,7 +31,12 @@ export function CategoriesTab() {
         { label: 'Expense', items: expense, isIncome: false },
       ].map(({ label, items, isIncome }) =>
         items.length === 0 ? null : (
-          <CategorySection key={label} label={label} items={items} isIncome={isIncome} />
+          <CategorySection
+            key={label}
+            label={label}
+            items={items}
+            isIncome={isIncome}
+          />
         )
       )}
     </div>

@@ -40,7 +40,6 @@ function TransactionsSkeleton() {
   );
 }
 
-
 export function TransactionsPage() {
   const search = useSearch({ from: '/' });
   const navigate = useNavigate({ from: '/' });
@@ -102,16 +101,19 @@ export function TransactionsPage() {
   async function handleExportCsv() {
     setIsExporting(true);
     try {
-      const { data: result } = await api.get<{ data: Transaction[] }>('/transactions', {
-        params: {
-          accountId: filters.accountId || undefined,
-          startDate: filters.startDate || undefined,
-          endDate: filters.endDate || undefined,
-          categoryId: filters.categoryId || undefined,
-          flagged: filters.flaggedOnly || undefined,
-          limit: PAGINATION.EXPORT_LIMIT,
-        },
-      });
+      const { data: result } = await api.get<{ data: Transaction[] }>(
+        '/transactions',
+        {
+          params: {
+            accountId: filters.accountId || undefined,
+            startDate: filters.startDate || undefined,
+            endDate: filters.endDate || undefined,
+            categoryId: filters.categoryId || undefined,
+            flagged: filters.flaggedOnly || undefined,
+            limit: PAGINATION.EXPORT_LIMIT,
+          },
+        }
+      );
       triggerCsvDownload(result.data, filters);
     } finally {
       setIsExporting(false);
@@ -135,7 +137,9 @@ export function TransactionsPage() {
   if (isLoading) {
     content = <TransactionsSkeleton />;
   } else if (isError) {
-    content = <EmptyState message="Failed to load transactions." variant="error" />;
+    content = (
+      <EmptyState message="Failed to load transactions." variant="error" />
+    );
   } else if (transactions.length === 0) {
     content = (
       <EmptyState
@@ -179,7 +183,12 @@ export function TransactionsPage() {
               {flaggedCount} need{flaggedCount === 1 ? 's' : ''} review
             </Badge>
           )}
-          <Button size="sm" variant="secondary" disabled={isExporting} onClick={() => void handleExportCsv()}>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={isExporting}
+            onClick={() => void handleExportCsv()}
+          >
             {isExporting ? 'Exporting…' : 'Export CSV'}
           </Button>
           <Button size="sm" onClick={() => setPanelOpen(true)}>

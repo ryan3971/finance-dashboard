@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useDeleteSubcategory, useRenameSubcategory } from '../hooks/useCategoryMutations';
+import {
+  useDeleteSubcategory,
+  useRenameSubcategory,
+} from '../hooks/useCategoryMutations';
 import { FIELD_LIMITS } from '@finance/shared';
 import type { Subcategory } from '@finance/shared';
 
-export function SubcategoryChip({ sub }: { sub: Subcategory }) {
+export function SubcategoryChip({ sub }: { readonly sub: Subcategory }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(sub.name);
 
@@ -33,7 +36,7 @@ export function SubcategoryChip({ sub }: { sub: Subcategory }) {
           onClick={() =>
             rename.mutate(
               { id: sub.id, name: name.trim() },
-              { onSuccess: () => setEditing(false) },
+              { onSuccess: () => setEditing(false) }
             )
           }
         >
@@ -43,7 +46,10 @@ export function SubcategoryChip({ sub }: { sub: Subcategory }) {
           size="sm"
           variant="ghost"
           className="h-6 text-xs px-2"
-          onClick={() => { setName(sub.name); setEditing(false); }}
+          onClick={() => {
+            setName(sub.name);
+            setEditing(false);
+          }}
         >
           Cancel
         </Button>

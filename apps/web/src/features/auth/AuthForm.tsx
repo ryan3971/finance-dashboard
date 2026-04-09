@@ -65,7 +65,7 @@ const modeConfig = {
 } as const;
 
 interface AuthFormProps {
-  mode: 'login' | 'register';
+  readonly mode: 'login' | 'register';
 }
 
 interface FormValues { email: string; password: string }

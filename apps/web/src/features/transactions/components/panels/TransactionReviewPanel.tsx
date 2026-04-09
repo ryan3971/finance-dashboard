@@ -132,8 +132,8 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
         />
       </FormField>
 
-      <div>
-        <label className="label-xs">Need / Want</label>
+      <fieldset className="border-0 p-0 m-0">
+        <legend className="label-xs">Need / Want</legend>
         <div className="flex gap-2">
           {NEED_WANT_OPTIONS.map((opt) => (
             <button
@@ -149,7 +149,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
             </button>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       <FormField label="Note" labelSize="xs">
         <Input
@@ -169,8 +169,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
           onChange={(e) => setCreateRule(e.target.checked)}
           className="rounded"
         />
-        Save as rule — apply this category to similar transactions in future
-        imports
+        <span>Save as rule — apply this category to similar transactions in future imports</span>
       </label>
 
       <div className="flex gap-2">

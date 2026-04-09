@@ -1,9 +1,9 @@
 import { AuthContext, type User } from '@/features/auth/useAuth';
-import { type ReactNode, useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { userSchema } from '@finance/shared';
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { readonly children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(() =>
     localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
   );
@@ -28,16 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const contextValue = useMemo(
+    () => ({ user, accessToken, login, logout, isAuthenticated: !!accessToken }),
+    [user, accessToken, login, logout]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        accessToken,
-        login,
-        logout,
-        isAuthenticated: !!accessToken,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

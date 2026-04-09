@@ -20,8 +20,8 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 interface Props {
-  transactionId: string;
-  attachedTags: Tag[];
+  readonly transactionId: string;
+  readonly attachedTags: Tag[];
 }
 
 const PRESET_COLORS = [

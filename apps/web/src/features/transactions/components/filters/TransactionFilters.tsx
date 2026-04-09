@@ -11,8 +11,8 @@ export interface FilterState {
 }
 
 interface Props {
-  filters: FilterState;
-  onChange: (filters: FilterState) => void;
+  readonly filters: FilterState;
+  readonly onChange: (filters: FilterState) => void;
 }
 
 export function TransactionFilters({ filters, onChange }: Props) {
@@ -69,15 +69,18 @@ export function TransactionFilters({ filters, onChange }: Props) {
         ))}
       </Select>
 
-      <label className="flex items-center gap-1.5 text-sm text-content-secondary cursor-pointer">
+      <div className="flex items-center gap-1.5 text-sm text-content-secondary">
         <input
+          id="flagged-only"
           type="checkbox"
           checked={filters.flaggedOnly}
           onChange={(e) => update({ flaggedOnly: e.target.checked })}
           className="rounded"
         />
-        Needs review
-      </label>
+        <label htmlFor="flagged-only" className="cursor-pointer">
+          Needs review
+        </label>
+      </div>
     </div>
   );
 }

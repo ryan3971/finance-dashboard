@@ -1,4 +1,3 @@
-
 import {
   ChevronDown,
   ChevronsUpDown,
@@ -30,7 +29,7 @@ export function isTransactionReviewable(tx: Transaction): boolean {
 // constant, utility fn), so fast refresh won't work here — that's acceptable
 // for a hooks file where HMR on the component itself has no practical value.
 // eslint-disable-next-line react-refresh/only-export-components
-function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
+function SortIcon({ sorted }: { readonly sorted: false | 'asc' | 'desc' }) {
   if (sorted === 'asc') return <ChevronUp className="ml-1 inline h-3 w-3" />;
   if (sorted === 'desc') return <ChevronDown className="ml-1 inline h-3 w-3" />;
   return <ChevronsUpDown className="ml-1 inline h-3 w-3 opacity-40" />;

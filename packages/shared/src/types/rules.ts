@@ -1,3 +1,5 @@
+import type { NeedWant } from '../constants';
+
 export interface Rule {
   id: string;
   keyword: string;
@@ -6,7 +8,7 @@ export interface Rule {
   categoryName: string | null;
   subcategoryId: string | null;
   subcategoryName: string | null;
-  needWant: string | null;
+  needWant: NeedWant | null;
   priority: number;
   createdAt: string;
 }

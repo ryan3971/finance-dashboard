@@ -94,8 +94,6 @@ export default defineConfig(
           allowDefaultProject: [
             'apps/api/drizzle.config.ts',
             'apps/api/drizzle.test.config.ts',
-            'apps/api/scripts/seed-dev.ts',
-            'apps/api/scripts/seed-rules.ts',
           ],
         },
       },
