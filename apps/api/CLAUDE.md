@@ -40,6 +40,8 @@ PostgreSQL 15 via Docker (`docker-compose.yml`). Drizzle ORM with generated migr
 - Tests switch to `DATABASE_URL_TEST` automatically via `testing/setup.ts`
 - Tests run serially (`fileParallelism: false`) to avoid DB race conditions
 
+Drizzle generates migration filenames automatically — do not rename them. Run `pnpm db:migrate` (dev) or `pnpm --filter api db:migrate:test` (test) after generating a new migration. The ECS deploy pipeline runs migrations as a one-off task before updating the service — never deploy API changes that require a migration without including the migration in the same commit.
+
 ## AI categorization
 
 Pluggable provider (Anthropic or OpenAI) configured via `AI_PROVIDER` env var. Disabled by default (`ENABLE_AI_CATEGORIZATION=false`) to avoid API costs in development.
@@ -70,3 +72,47 @@ Always scope `select()` to the columns actually needed. Use `db.transaction()` w
 Avoid N+1 query patterns — never issue a `db.select()` inside a loop over rows. Instead, batch with `inArray` before the loop and do in-memory matching per row.
 
 Drizzle returns `numeric` columns as strings. Never use `parseFloat` or other floating-point conversions on money amounts — use string manipulation or a decimal library to preserve precision.
+
+## Dashboard features
+
+Dashboard routes live in `features/dashboards/`. Each tab is a separate sub-feature with its own route file and service:
+
+```
+features/dashboards/
+  income/
+    income.routes.ts
+    income.service.ts
+  expenses/
+    expenses.routes.ts
+    expenses.service.ts
+  snapshot/
+    snapshot.routes.ts
+    snapshot.service.ts
+  ytd/
+    ytd.routes.ts
+    ytd.service.ts
+  anticipated-budget/
+    anticipated-budget.routes.ts
+    anticipated-budget.service.ts
+```
+
+**DB queries** use Drizzle `.groupBy()` and aggregate functions (`sql<number>`). They return summary rows, never raw transaction arrays. Scope every query with `userId` from `req.user`.
+
+**Service functions** receive aggregated rows and apply business logic:
+- Apply `user_config` percentage fields (`needs_percentage`, `wants_percentage`, `investments_percentage`) to derive target splits
+- Compute spending income (income minus investment contributions)
+- Compute net income per column (total, wants, needs)
+
+**Service functions do not** query the DB themselves — they receive pre-aggregated data as parameters. This keeps DB logic and business logic testable in isolation.
+
+**Response shapes** are flat objects or arrays of flat objects — no nested pagination wrappers. Dashboard endpoints are not paginated.
+
+**`user_config` percentage fields** sum to 100 and are validated at the API boundary with Zod. Applied to income side only — not used to classify expense transactions.
+
+**Anticipated budget schema:**
+- `anticipated_budget` — one row per named entry (`id`, `userId`, `categoryId` FK, `name`, `need_want`, `is_income`, `monthly_amount` nullable, `notes` nullable, `effective_year`)
+- `anticipated_budget_months` — per-month overrides (`id`, `anticipated_budget_id` FK, `month` 1–12, `amount`)
+- If no override rows exist, `monthly_amount` applies to all 12 months
+- If only override rows exist (e.g. car insurance), the entry is irregular — months without a row contribute zero
+
+**Running balances** are computed from transaction history (`SUM(amount)` ordered by date) — there is no denormalised balance column in the accounts table. Always derive current balance from transactions. A snapshot pattern (materialised balance) is deferred.

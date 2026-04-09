@@ -14,7 +14,8 @@ pnpm test             # Run all tests
 
 pnpm db:migrate       # Run migrations against DATABASE_URL (dev)
 pnpm db:studio        # Open Drizzle Studio
-pnpm seed:dev         # Seed categories, rules, and sample data
+pnpm seed:rules       # Seed categorization rules (finance_dev only)
+pnpm seed:dev         # Seed categories and sample transactions (finance_dev only)
 ```
 
 **Scoped to the API:**
@@ -34,8 +35,27 @@ pnpm --filter api vitest run src/features/accounts/accounts.routes.test.ts
 Pnpm monorepo with three workspaces:
 
 - **`apps/api`** — Express 5 REST API (Node/TypeScript) — see `apps/api/CLAUDE.md`
-- **`apps/web`** — React 18 SPA (Vite, React Router, TanStack Query) — see `apps/web/CLAUDE.md`
+- **`apps/web`** — React 18 SPA (Vite, TanStack Router, TanStack Query) — see `apps/web/CLAUDE.md`
 - **`packages/shared`** — Zod schemas and TypeScript types consumed by both apps
+
+## Dashboard layer responsibilities
+
+These rules apply to every dashboard feature (income, expenses, snapshot, YTD, anticipated budget). Violating them produces incorrect behaviour or unmaintainable code — follow them strictly.
+
+**DB layer** — aggregation and filtering only. Returns summary numbers (monthly totals, grouped sums). Never returns raw transaction rows to the dashboard layer.
+
+**Service layer** — business logic applied to aggregated values. Applies `user_config` percentage splits (needs/wants/investments), computes derived fields (spending income, net income). Does not reformat for the client.
+
+**Client layer** — presentation derivations only. Formats numbers, derives percentages from returned totals, decides colour states. Never re-aggregates raw data.
+
+**API discipline** — query parameters (e.g. `?year=YYYY`) filter the same response shape; they do not change it. When the response shape changes, that is a different endpoint. Dashboard endpoints are separate from transaction endpoints — they return pre-shaped aggregates, never filtered transaction lists.
+
+Before writing any dashboard feature, answer these three questions:
+1. What does the DB query return?
+2. What does the service layer do with it?
+3. What shape does the API response have?
+
+Do not touch a file until all three are answered.
 
 `@finance/shared` exports Zod schemas, TypeScript types, and shared constants (`packages/shared/src/constants.ts`) used by both the API and the web app. Import as `@finance/shared`. If a literal value must be consistent across both apps, it belongs in `constants.ts` — do not duplicate it.
 
@@ -62,4 +82,7 @@ PORT=3001
 CORS_ORIGIN=http://localhost:5173
 ENABLE_AI_CATEGORIZATION=false
 AI_PROVIDER=anthropic  # or openai
+ANTHROPIC_API_KEY     # Required when ENABLE_AI_CATEGORIZATION=true and AI_PROVIDER=anthropic
+OPENAI_API_KEY        # Required when AI_PROVIDER=openai
+SENTRY_DSN            # Error tracking — leave blank in local dev
 ```
