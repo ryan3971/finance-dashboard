@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/node';
 import accountsMutationRouter from './features/accounts/accounts-mutation.routes';
 import accountsRouter from './features/accounts/accounts.routes';
-import anticipatedBudgetItemRouter from './features/dashboards/anticipated-budget/anticipated-budget-item.routes';
-import anticipatedBudgetRouter from './features/dashboards/anticipated-budget/anticipated-budget.routes';
+import anticipatedBudgetItemRouter from './features/anticipated-budget/anticipated-budget-item.routes';
+import anticipatedBudgetRouter from './features/anticipated-budget/anticipated-budget.routes';
 import authRouter from './features/auth/auth.routes';
 import categoriesRouter from './features/categories/categories.routes';
 import categorizationRulesRouter from './features/categorization-rules/categorization-rules.routes';
