@@ -57,7 +57,7 @@ describe('GET /api/v1/anticipated-budget', () => {
     expect(res.body).toHaveLength(1);
 
     const entry = res.body[0] as {
-      months: Array<{ month: number; amount: string; isOverride: boolean }>;
+      months: { month: number; amount: string; isOverride: boolean }[];
     };
     expect(entry.months).toHaveLength(12);
     expect(entry.months[0]).toEqual({ month: 1, amount: '1500.00', isOverride: false });
@@ -82,7 +82,7 @@ describe('GET /api/v1/anticipated-budget', () => {
       .set('Authorization', `Bearer ${token}`);
 
     const entry = res.body[0] as {
-      months: Array<{ month: number; amount: string; isOverride: boolean }>;
+      months: { month: number; amount: string; isOverride: boolean }[];
     };
     const march = entry.months.find((m) => m.month === 3);
     expect(march).toEqual({ month: 3, amount: '1800.00', isOverride: true });
@@ -258,7 +258,7 @@ describe('PUT /api/v1/anticipated-budget/:id/months/:month', () => {
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${token}`);
     const entry = list.body[0] as {
-      months: Array<{ month: number; amount: string; isOverride: boolean }>;
+      months: { month: number; amount: string; isOverride: boolean }[];
     };
     const june = entry.months.find((m) => m.month === 6);
     expect(june).toEqual({ month: 6, amount: '2000.00', isOverride: true });
@@ -286,7 +286,7 @@ describe('PUT /api/v1/anticipated-budget/:id/months/:month', () => {
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${token}`);
     const entry = list.body[0] as {
-      months: Array<{ month: number; amount: string; isOverride: boolean }>;
+      months: { month: number; amount: string; isOverride: boolean }[];
     };
     const june = entry.months.find((m) => m.month === 6);
     expect(june?.amount).toBe('2500.00');
@@ -339,7 +339,7 @@ describe('DELETE /api/v1/anticipated-budget/:id/months/:month', () => {
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${token}`);
     const entry = list.body[0] as {
-      months: Array<{ month: number; amount: string; isOverride: boolean }>;
+      months: { month: number; amount: string; isOverride: boolean }[];
     };
     const march = entry.months.find((m) => m.month === 3);
     expect(march).toEqual({ month: 3, amount: '1500.00', isOverride: false });
