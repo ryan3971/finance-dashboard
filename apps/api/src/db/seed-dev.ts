@@ -24,11 +24,12 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-import { accounts, users } from './schema';
+import { accounts, categories, categorizationRules, users } from './schema';
 import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from './index';
 import { processImport } from '../features/imports/import.service';
+import { seedSystemCategories, seedUserCategories, seedUserRules } from './seed-categories';
 import { DEV_ACCOUNTS } from './seeds/accounts';
 import { DEV_USER } from './seeds/users';
 
@@ -36,7 +37,7 @@ import { DEV_USER } from './seeds/users';
 
 const FIXTURES_DIR = path.resolve(
   __dirname,
-  '../src/features/imports/adapters/__fixtures__'
+  '../features/imports/adapters/__fixtures__'
 );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,14 +63,45 @@ async function ensureUser(): Promise<string> {
 
   if (existing.length > 0) {
     log(`Already exists: ${existing[0].email} (id: ${existing[0].id})`);
-    return existing[0].id;
+    const userId = existing[0].id;
+
+    // User may have been created before category seeding was added — ensure categories exist
+    const [uncategorized] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.userId, userId), eq(categories.name, 'Uncategorized')))
+      .limit(1);
+
+    if (!uncategorized) {
+      log('Categories missing — seeding now...');
+      await seedUserCategories(userId, db);
+    }
+
+    const [existingRule] = await db
+      .select({ id: categorizationRules.id })
+      .from(categorizationRules)
+      .where(eq(categorizationRules.userId, userId))
+      .limit(1);
+
+    if (!existingRule) {
+      log('Rules missing — seeding now...');
+      await seedUserRules(userId, db);
+    }
+
+    return userId;
   }
 
   const passwordHash = await bcrypt.hash(DEV_USER.password, 12);
-  const [user] = await db
-    .insert(users)
-    .values({ email: DEV_USER.email, passwordHash })
-    .returning({ id: users.id, email: users.email });
+  const user = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(users)
+      .values({ email: DEV_USER.email, passwordHash })
+      .returning({ id: users.id, email: users.email });
+
+    await seedUserCategories(created.id, tx);
+    await seedUserRules(created.id, tx);
+    return created;
+  });
 
   log(`Created: ${user.email} (id: ${user.id})`);
   log(`Password: ${DEV_USER.password}`);
@@ -161,6 +193,7 @@ async function main() {
   console.log('Finance Dashboard — dev seed');
   console.log(`Database: ${process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@')}`);
 
+  await seedSystemCategories();
   const userId = await ensureUser();
   const accountIds = await ensureAccounts(userId);
   await importFixtures(userId, accountIds);

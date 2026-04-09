@@ -6,8 +6,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 import { isNotNull } from 'drizzle-orm';
 import { db } from '../index';
-import { categories, users } from '../schema';
-import { seedSystemCategories, seedUserCategories } from '../seed-categories';
+import { categories, categorizationRules, users } from '../schema';
+import { seedSystemCategories, seedUserCategories, seedUserRules } from '../seed-categories';
 
 async function main() {
   await seedSystemCategories();
@@ -27,6 +27,19 @@ async function main() {
     for (const u of unseeded) {
       console.log(`Backfilling categories for user ${u.id}...`);
       await seedUserCategories(u.id, db);
+    }
+
+    const usersWithRules = await db
+      .selectDistinct({ userId: categorizationRules.userId })
+      .from(categorizationRules)
+      .where(isNotNull(categorizationRules.userId));
+
+    const seededRuleIds = new Set(usersWithRules.map((r) => r.userId));
+    const unseededRules = allUsers.filter((u) => !seededRuleIds.has(u.id));
+
+    for (const u of unseededRules) {
+      console.log(`Backfilling rules for user ${u.id}...`);
+      await seedUserRules(u.id, db);
     }
   }
 

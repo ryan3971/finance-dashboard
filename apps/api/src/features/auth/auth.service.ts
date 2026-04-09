@@ -11,7 +11,7 @@ import bcrypt from 'bcryptjs';
 import { createHash } from 'crypto';
 import { db, type DbTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
-import { seedUserCategories } from '@/db/seed-categories';
+import { seedUserCategories, seedUserRules } from '@/db/seed-categories';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -43,6 +43,7 @@ export async function registerUser(input: RegisterInput) {
         .returning({ id: users.id, email: users.email });
 
       await seedUserCategories(user.id, tx);
+      await seedUserRules(user.id, tx);
 
       const tokens = await issueTokenPair(user.id, user.email, tx);
 

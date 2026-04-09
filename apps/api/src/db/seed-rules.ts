@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
-import { and, eq, isNull } from 'drizzle-orm';
-import { categories, categorizationRules } from './schema';
+import { and, eq, isNull, isNotNull } from 'drizzle-orm';
+import { categories, categorizationRules, users } from './schema';
 import { db } from './index';
+import { seedSystemCategories, seedUserRules } from './seed-categories';
 import { RULES } from './seeds/rules';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -73,6 +74,7 @@ async function getCategoryId(
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+  await seedSystemCategories();
   console.log('Seeding categorization rules...');
   let inserted = 0;
   let skipped = 0;
@@ -119,6 +121,25 @@ async function main() {
   console.log(
     `Done. Inserted: ${inserted}, Skipped (already exist): ${skipped}`
   );
+
+  // Backfill any users who don't yet have their own rule copies
+  const allUsers = await db.select({ id: users.id }).from(users);
+
+  if (allUsers.length > 0) {
+    const usersWithRules = await db
+      .selectDistinct({ userId: categorizationRules.userId })
+      .from(categorizationRules)
+      .where(isNotNull(categorizationRules.userId));
+
+    const seededIds = new Set(usersWithRules.map((r) => r.userId));
+    const unseeded = allUsers.filter((u) => !seededIds.has(u.id));
+
+    for (const u of unseeded) {
+      console.log(`Backfilling rules for user ${u.id}...`);
+      await seedUserRules(u.id, db);
+    }
+  }
+
   process.exit(0);
 }
 
