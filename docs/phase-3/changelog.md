@@ -38,3 +38,9 @@ anticipated-budget.routes.test.ts
 
 Describe block title updated to PUT /api/v1/anticipated-budget/:id/months/:month
 All 7 .post(...) calls on the months sub-route updated to .put(...)
+---
+utils.ts — new file with shared MONTH_LABELS and fmt
+DeleteEntryDialog.tsx — new confirmation dialog matching the DeactivateAccountDialog pattern
+AnticipatedBudgetEntryCard.tsx — imports fmt from utils, delete button now opens DeleteEntryDialog instead of firing immediately, monthlyAmount !== null explicit check, commented-out entryId line removed
+SummaryCards.tsx — local fmt and monthNames removed, replaced with imports from utils
+MonthChips.tsx — local MONTH_LABELS removed, replaced with import from utils

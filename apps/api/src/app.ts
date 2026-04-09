@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/node';
 import accountsMutationRouter from './features/accounts/accounts-mutation.routes';
 import accountsRouter from './features/accounts/accounts.routes';
-import anticipatedBudgetMutationRouter from './features/dashboards/anticipated-budget/anticipated-budget-mutation.routes';
+import anticipatedBudgetItemRouter from './features/dashboards/anticipated-budget/anticipated-budget-item.routes';
 import anticipatedBudgetRouter from './features/dashboards/anticipated-budget/anticipated-budget.routes';
 import authRouter from './features/auth/auth.routes';
 import categoriesRouter from './features/categories/categories.routes';
@@ -52,7 +52,7 @@ export function createApp() {
   app.use(
     '/api/v1/anticipated-budget',
     anticipatedBudgetRouter,
-    anticipatedBudgetMutationRouter
+    anticipatedBudgetItemRouter
   );
 
   // The error handler must be registered before any other error middleware and after all controllers
