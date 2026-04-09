@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   useDeactivateAccount,
   useReactivateAccount,
@@ -36,6 +36,57 @@ export function AccountsPage() {
   const toggleExpand = useCallback((id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
+
+  let tableBody: ReactNode;
+  if (isLoading) {
+    tableBody = Array.from({ length: ACCOUNT_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map(
+      (id) => (
+        <tr key={id}>
+          <td className="px-4 py-2.5">
+            <Skeleton className="h-4 w-32" />
+          </td>
+          <td className="px-4 py-2.5">
+            <Skeleton className="h-4 w-20" />
+          </td>
+          <td className="px-4 py-2.5">
+            <Skeleton className="h-4 w-16" />
+          </td>
+          <td className="px-4 py-2.5">
+            <Skeleton className="h-4 w-12" />
+          </td>
+          <td className="px-4 py-2.5">
+            <Skeleton className="h-5 w-14 rounded-full" />
+          </td>
+          <td className="px-4 py-2.5 text-right">
+            <Skeleton className="inline-block h-6 w-20" />
+          </td>
+        </tr>
+      ),
+    );
+  } else if (sorted.length === 0) {
+    tableBody = (
+      <tr>
+        <td
+          colSpan={6}
+          className="px-4 py-6 text-center text-sm text-content-muted"
+        >
+          No accounts yet. Click &ldquo;Add Account&rdquo; to get started.
+        </td>
+      </tr>
+    );
+  } else {
+    tableBody = sorted.map((account) => (
+      <AccountRow
+        key={account.id}
+        account={account}
+        isExpanded={expandedId === account.id}
+        onToggleExpand={toggleExpand}
+        onDeactivate={setConfirmDeactivateAccount}
+        onReactivate={(id) => reactivate.mutate(id)}
+        reactivateIsPending={reactivate.isPending}
+      />
+    ));
+  }
 
   if (isError) {
     return (
@@ -93,52 +144,7 @@ export function AccountsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {isLoading ? (
-              Array.from({ length: ACCOUNT_SKELETON_ROW_COUNT }).map((_, i) => (
-                <tr key={i}>
-                  <td className="px-4 py-2.5">
-                    <Skeleton className="h-4 w-32" />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Skeleton className="h-4 w-20" />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Skeleton className="h-4 w-16" />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Skeleton className="h-4 w-12" />
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Skeleton className="h-5 w-14 rounded-full" />
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <Skeleton className="inline-block h-6 w-20" />
-                  </td>
-                </tr>
-              ))
-            ) : sorted.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-6 text-center text-sm text-content-muted"
-                >
-                  No accounts yet. Click &ldquo;Add Account&rdquo; to get
-                  started.
-                </td>
-              </tr>
-            ) : (
-              sorted.map((account) => (
-                <AccountRow
-                  key={account.id}
-                  account={account}
-                  isExpanded={expandedId === account.id}
-                  onToggleExpand={toggleExpand}
-                  onDeactivate={setConfirmDeactivateAccount}
-                  onReactivate={(id) => reactivate.mutate(id)}
-                  reactivateIsPending={reactivate.isPending}
-                />
-              ))
-            )}
+            {tableBody}
           </tbody>
         </table>
       </div>

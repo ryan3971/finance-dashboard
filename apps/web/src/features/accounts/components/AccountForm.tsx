@@ -15,13 +15,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 export type AccountFormState = AccountFormInput;
 
 interface AccountFormProps {
-  initialValues: Partial<AccountFormState>;
-  isPending: boolean;
-  error: string | null;
-  onSubmit: (values: AccountFormState) => void;
-  onCancel: () => void;
-  submitLabel: string;
-  showType?: boolean;
+  readonly initialValues: Partial<AccountFormState>;
+  readonly isPending: boolean;
+  readonly error: string | null;
+  readonly onSubmit: (values: AccountFormState) => void;
+  readonly onCancel: () => void;
+  readonly submitLabel: string;
+  readonly showType?: boolean;
 }
 
 export function AccountForm({
@@ -104,7 +104,7 @@ export function AccountForm({
             className="rounded"
             {...register('isCredit')}
           />
-          Credit account
+          <span>Credit account</span>
         </label>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}

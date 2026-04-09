@@ -10,10 +10,10 @@ import type { Account } from '@/features/accounts/hooks/useAccounts';
 import { Button } from '@/components/ui/Button';
 
 interface Props {
-  account: Account | null;
-  isPending: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
+  readonly account: Account | null;
+  readonly isPending: boolean;
+  readonly onConfirm: () => void;
+  readonly onCancel: () => void;
 }
 
 export function DeactivateAccountDialog({

@@ -18,6 +18,8 @@ import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import api from '@/lib/api';
 import { PAGINATION } from '@finance/shared';
 
+const TRANSACTION_SKELETON_ROW_COUNT = 8;
+
 function TransactionsSkeleton() {
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
@@ -25,7 +27,7 @@ function TransactionsSkeleton() {
         <Skeleton className="h-6 w-20" />
       </div>
       <div className="divide-y divide-border-subtle">
-        {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((id) => (
+        {Array.from({ length: TRANSACTION_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map((id) => (
           <div key={id} className="flex items-center gap-4 px-4 py-3">
             <Skeleton className="h-4 w-20 shrink-0" />
             <Skeleton className="h-4 w-48" />

@@ -170,13 +170,15 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
   );
 }
 
+const RULE_SKELETON_ROW_COUNT = 5;
+
 export function RulesTab() {
   const { data: rules, isLoading, isError } = useRules();
 
   if (isLoading) {
     return (
       <div className="space-y-3 mt-4">
-        {Array.from({ length: 5 }, (_, i) => `skeleton-${i}`).map((id) => (
+        {Array.from({ length: RULE_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map((id) => (
           <Skeleton key={id} className="h-10 w-full" />
         ))}
       </div>

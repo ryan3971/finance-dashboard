@@ -6,8 +6,8 @@ import {
 import type { Account } from '@/features/accounts/hooks/useAccounts';
 
 interface Props {
-  account: Account | null;
-  onClose: () => void;
+  readonly account: Account | null;
+  readonly onClose: () => void;
 }
 
 export function AccountEditPanel({ account, onClose }: Props) {

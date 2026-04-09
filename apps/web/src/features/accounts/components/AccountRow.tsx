@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/Button';
 import { Fragment } from 'react';
 
 interface Props {
-  account: Account;
-  isExpanded: boolean;
-  onToggleExpand: (id: string) => void;
-  onDeactivate: (account: Account) => void;
-  onReactivate: (id: string) => void;
-  reactivateIsPending: boolean;
+  readonly account: Account;
+  readonly isExpanded: boolean;
+  readonly onToggleExpand: (id: string) => void;
+  readonly onDeactivate: (account: Account) => void;
+  readonly onReactivate: (id: string) => void;
+  readonly reactivateIsPending: boolean;
 }
 
 export function AccountRow({
