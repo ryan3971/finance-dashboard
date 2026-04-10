@@ -32,4 +32,7 @@ export const anticipatedBudgetKeys = {
 export const dashboardKeys = {
   all: () => ['dashboard'] as const,
   income: (year: number) => ['dashboard', 'income', year] as const,
+  expenses: (year: number) => ['dashboard', 'expenses', year] as const,
+  expensesCategories: (year: number) =>
+    ['dashboard', 'expenses', 'categories', year] as const,
 };
