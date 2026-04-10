@@ -89,3 +89,25 @@ amount.isZero() guard — replaces the amount === 0 check cleanly in the Decimal
 income.service.ts — AllocationPercentages is now internal-only; new exported IncomePercentageConfig interface with nullable fields; buildIncomeResponse accepts it and owns the null-check
 income.routes.ts — percentages block removed; config passed directly to buildIncomeResponse
 income.service.test.ts — noPercentages constant added; four null call sites replaced
+---
+Done. Summary of changes:
+
+lib/utils.ts — fmt added here as the single source of truth
+IncomePage.tsx — local definition removed, imports from @/lib/utils
+anticipated-budget/utils/utils.ts — local fmt removed (only MONTH_LABELS remains)
+SummaryCards.tsx — imports fmt from @/lib/utils, MONTH_LABELS still from ../utils/utils
+AnticipatedBudgetEntryCard.tsx — imports fmt from @/lib/utils
+---
+@/lib/utils.ts — Added MONTH_LABELS as const export. The feature-level anticipated-budget/utils/utils.ts file was deleted.
+
+MonthChips.tsx — Updated import to @/lib/utils.
+
+SummaryCards.tsx — Updated import, added SummaryCard sub-component, replaced 6 repeated card shells with <SummaryCard label value colorClass /> calls. Also pre-computed monthLabel to avoid repeating the index expression three times.
+
+YearSelector.tsx — New component in components/common/ accepting year and onChange props. Reusable across every year-scoped dashboard page.
+
+IncomePage.tsx — Removed local MONTH_LABELS, removed formatAmount wrapper (inlined fmt(Number(...))), replaced inline year nav with <YearSelector>, and fixed allocationConfigured to use .some() — safe on an empty array and semantically correct.
+
+PreferencesTab.tsx — Replaced the locally-duplicated schema with one derived from shared: the z.coerce.number() fields stay (needed for HTML inputs), and the sum-to-100 .refine is delegated to allocationsValidator.safeParse(v).success so there's a single source of truth. Replaced three watch('field') calls with one watch([...]) destructure.
+
+tsconfig.json — Added noUncheckedIndexedAccess: true. Array index accesses now return T | undefined, which will surface any future unsafe arr[i].prop patterns at compile time.

@@ -2,7 +2,7 @@ import type { AnticipatedBudgetEntry } from '@finance/shared';
 import { Badge } from '@/components/ui/Badge';
 import { DeleteEntryDialog } from './DeleteEntryDialog';
 import { MonthChips } from './MonthChips';
-import { fmt } from '../utils/utils';
+import { fmt } from '@/lib/utils';
 import { useState } from 'react';
 import {
   useDeleteEntry,
@@ -24,7 +24,7 @@ export function AnticipatedBudgetEntryCard({ entry, year }: Props) {
   const deleteEntry = useDeleteEntry(year);
 
   const yearlyTotal = entry.months.reduce(
-    (sum, m) => sum + parseFloat(m.amount),
+    (sum, m) => sum + parseFloat(m.amount) || 0,
     0
   );
 

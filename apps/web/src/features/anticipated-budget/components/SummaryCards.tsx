@@ -1,9 +1,28 @@
 import type { AnticipatedBudgetEntry } from '@finance/shared';
-import { MONTH_LABELS, fmt } from '../utils/utils';
+import { MONTH_LABELS, fmt } from '@/lib/utils';
 
 interface Props {
   readonly entries: AnticipatedBudgetEntry[];
   readonly month: number;
+}
+
+interface SummaryCardProps {
+  readonly label: string;
+  readonly value: number;
+  readonly colorClass: string;
+}
+
+function SummaryCard({ label, value, colorClass }: SummaryCardProps) {
+  return (
+    <div className="bg-surface rounded-lg border border-border-base p-4">
+      <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
+        {label}
+      </p>
+      <p className={`text-lg font-semibold font-mono ${colorClass}`}>
+        {fmt(value)}
+      </p>
+    </div>
+  );
 }
 
 function sumMonthAmounts(
@@ -31,6 +50,8 @@ function sumYearAmounts(
 }
 
 export function SummaryCards({ entries, month }: Props) {
+  const monthLabel = MONTH_LABELS[month - 1];
+
   const monthIncome = sumMonthAmounts(entries, (e) => e.isIncome, month);
   const monthExpenses = sumMonthAmounts(entries, (e) => !e.isIncome, month);
   const monthNet = monthIncome - monthExpenses;
@@ -41,58 +62,20 @@ export function SummaryCards({ entries, month }: Props) {
 
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-      <div className="bg-surface rounded-lg border border-border-base p-4">
-        <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-          {MONTH_LABELS[month - 1]} Income
-        </p>
-        <p className="text-lg font-semibold text-positive font-mono">
-          {fmt(monthIncome)}
-        </p>
-      </div>
-      <div className="bg-surface rounded-lg border border-border-base p-4">
-        <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-          {MONTH_LABELS[month - 1]} Expenses
-        </p>
-        <p className="text-lg font-semibold text-danger font-mono">
-          {fmt(monthExpenses)}
-        </p>
-      </div>
-      <div className="bg-surface rounded-lg border border-border-base p-4">
-        <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-          {MONTH_LABELS[month - 1]} Net
-        </p>
-        <p
-          className={`text-lg font-semibold font-mono ${monthNet >= 0 ? 'text-positive' : 'text-danger'}`}
-        >
-          {fmt(monthNet)}
-        </p>
-      </div>
-      <div className="bg-surface rounded-lg border border-border-base p-4">
-        <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-          Annual Income
-        </p>
-        <p className="text-lg font-semibold text-positive font-mono">
-          {fmt(yearIncome)}
-        </p>
-      </div>
-      <div className="bg-surface rounded-lg border border-border-base p-4">
-        <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-          Annual Expenses
-        </p>
-        <p className="text-lg font-semibold text-danger font-mono">
-          {fmt(yearExpenses)}
-        </p>
-      </div>
-      <div className="bg-surface rounded-lg border border-border-base p-4">
-        <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-          Annual Net
-        </p>
-        <p
-          className={`text-lg font-semibold font-mono ${yearNet >= 0 ? 'text-positive' : 'text-danger'}`}
-        >
-          {fmt(yearNet)}
-        </p>
-      </div>
+      <SummaryCard label={`${monthLabel} Income`} value={monthIncome} colorClass="text-positive" />
+      <SummaryCard label={`${monthLabel} Expenses`} value={monthExpenses} colorClass="text-danger" />
+      <SummaryCard
+        label={`${monthLabel} Net`}
+        value={monthNet}
+        colorClass={monthNet >= 0 ? 'text-positive' : 'text-danger'}
+      />
+      <SummaryCard label="Annual Income" value={yearIncome} colorClass="text-positive" />
+      <SummaryCard label="Annual Expenses" value={yearExpenses} colorClass="text-danger" />
+      <SummaryCard
+        label="Annual Net"
+        value={yearNet}
+        colorClass={yearNet >= 0 ? 'text-positive' : 'text-danger'}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { AnticipatedBudgetMonth } from '@finance/shared';
-import { MONTH_LABELS } from '../utils/utils';
+import { MONTH_LABELS } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 
