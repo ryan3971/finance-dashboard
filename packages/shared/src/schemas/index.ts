@@ -5,3 +5,4 @@ export * from './categories';
 export * from './rules';
 export * from './tags';
 export * from './transactions';
+export * from './user-config';

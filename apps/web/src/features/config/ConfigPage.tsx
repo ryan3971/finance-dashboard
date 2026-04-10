@@ -1,6 +1,6 @@
 import { CategoriesTab } from './components/CategoriesTab';
-import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { PreferencesTab } from './components/PreferencesTab';
 import { RulesTab } from './components/RulesTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 
@@ -24,9 +24,7 @@ export function ConfigPage() {
         </TabsContent>
 
         <TabsContent value="preferences">
-          <div className="mt-4">
-            <EmptyState message="Preferences coming soon." />
-          </div>
+          <PreferencesTab />
         </TabsContent>
       </Tabs>
     </PageLayout>

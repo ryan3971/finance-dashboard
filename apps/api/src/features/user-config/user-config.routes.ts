@@ -1,6 +1,7 @@
 import { type Request, type Response, Router } from 'express';
 import { getUserConfig, updateUserConfig } from './user-config.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { updateUserConfigSchema } from '@finance/shared';
 
 const router = Router();
 router.use(requireAuth);
@@ -13,7 +14,8 @@ router.get('/', async (req: Request, res: Response) => {
 
 // PATCH /api/v1/user-config
 router.patch('/', async (req: Request, res: Response) => {
-  const config = await updateUserConfig(getAuthUser(req).id, {});
+  const input = updateUserConfigSchema.parse(req.body);
+  const config = await updateUserConfig(getAuthUser(req).id, input);
   res.json(config);
 });
 

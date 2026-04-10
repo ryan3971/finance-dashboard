@@ -28,3 +28,8 @@ export const anticipatedBudgetKeys = {
   all: () => ['anticipated-budget'] as const,
   byYear: (year: number) => ['anticipated-budget', year] as const,
 };
+
+export const dashboardKeys = {
+  all: () => ['dashboard'] as const,
+  income: (year: number) => ['dashboard', 'income', year] as const,
+};

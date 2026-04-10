@@ -9,6 +9,7 @@ import {
   refreshTokens,
   tags,
   transactions,
+  userConfig,
   users,
 } from '@/db/schema';
 import type { Application } from 'express';
@@ -58,6 +59,7 @@ export async function cleanDatabase(): Promise<void> {
   await db.delete(tags);
   await db.delete(anticipatedBudgetMonths);
   await db.delete(anticipatedBudget);
+  await db.delete(userConfig);
   await db.delete(users);
 }
 

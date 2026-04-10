@@ -8,6 +8,7 @@ import {
 import { z } from 'zod';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
 import { AnticipatedBudgetPage } from '@/features/anticipated-budget/AnticipatedBudgetPage';
+import { IncomePage } from '@/features/dashboards/income/IncomePage';
 import { ConfigPage } from '@/features/config/ConfigPage';
 import { ImportPage } from '@/features/import/ImportPage';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -86,6 +87,13 @@ const anticipatedBudgetRoute = createRoute({
   component: AnticipatedBudgetPage,
 });
 
+const incomeDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard/income',
+  beforeLoad: requireAuth,
+  component: IncomePage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
@@ -94,6 +102,7 @@ const routeTree = rootRoute.addChildren([
   importRoute,
   configRoute,
   anticipatedBudgetRoute,
+  incomeDashboardRoute,
 ]);
 
 export const router = createRouter({
