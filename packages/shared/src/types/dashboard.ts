@@ -26,6 +26,7 @@ export interface ExpenseMonth {
 export interface ExpenseDashboardResponse {
   year: number;
   months: ExpenseMonth[];
+  annualTotal: number;
 }
 
 export interface ExpenseCategoryRow {

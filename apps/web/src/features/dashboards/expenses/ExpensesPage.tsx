@@ -16,14 +16,14 @@ import { MONTH_LABELS, fmt } from '@/lib/utils';
 import { useExpenseCategories } from './useExpenseCategories';
 import { useExpensesDashboard } from './useExpensesDashboard';
 
-interface ColumnMeta {
-  thClassName: string;
-  tdClassName: string;
-}
+const CURRENT_YEAR = new Date().getFullYear();
+const TH_BASE =
+  'px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider';
+const TD_BASE = 'px-4 py-3 text-sm text-content-secondary';
 
 function pct(part: number, total: number): string | null {
   if (total === 0) return null;
-  return ((part / total) * 100).toFixed(1) + '%';
+  return `${((part / total) * 100).toFixed(1)}%`;
 }
 
 function SkeletonTable({
@@ -55,18 +55,14 @@ function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
   const hasExpenses = month.total > 0;
   return (
     <tr className="border-t border-border-subtle">
-      <td className="px-4 py-3 text-sm text-content-secondary w-16">
-        {MONTH_LABELS[month.month - 1]}
-      </td>
+      <td className={`${TD_BASE} w-16`}>{MONTH_LABELS[month.month - 1]}</td>
       <td className="px-4 py-3 text-sm font-mono font-medium text-right">
         <span className={hasExpenses ? 'text-danger' : 'text-content-muted'}>
           {fmt(month.total)}
         </span>
       </td>
       <td className="px-4 py-3 text-sm text-right">
-        <span className="font-mono font-medium text-info">
-          {fmt(month.need)}
-        </span>
+        <span className="font-mono font-medium text-info">{fmt(month.need)}</span>
         {hasExpenses && (
           <span className="block text-xs text-content-muted">
             {pct(month.need, month.total)}
@@ -74,9 +70,7 @@ function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
         )}
       </td>
       <td className="px-4 py-3 text-sm text-right">
-        <span className="font-mono font-medium text-accent">
-          {fmt(month.want)}
-        </span>
+        <span className="font-mono font-medium text-accent">{fmt(month.want)}</span>
         {hasExpenses && (
           <span className="block text-xs text-content-muted">
             {pct(month.want, month.total)}
@@ -97,25 +91,64 @@ function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
   );
 }
 
-export function ExpensesPage() {
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(currentYear);
+function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
+  const { data, isLoading, isError } = useExpensesDashboard(year);
+
+  return (
+    <>
+      <h2 className="text-lg font-semibold text-content-primary mb-4">
+        Monthly Breakdown
+      </h2>
+
+      {isLoading && <SkeletonTable columns={5} rows={12} />}
+      {isError && (
+        <EmptyState variant="error" message="Failed to load expense data." />
+      )}
+
+      {data && data.annualTotal === 0 && (
+        <EmptyState message="No expenses for this year." />
+      )}
+
+      {data && data.annualTotal > 0 && (
+        <>
+          <div className="bg-surface rounded-lg border border-border-base overflow-hidden mb-6">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-surface-subtle">
+                  <th className={`${TH_BASE} w-16`}>Month</th>
+                  <th className={`${TH_BASE} text-right`}>Total Expenses</th>
+                  <th className={`${TH_BASE} text-right`}>Need</th>
+                  <th className={`${TH_BASE} text-right`}>Want</th>
+                  <th className={`${TH_BASE} text-right`}>Other</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.months.map((month) => (
+                  <ExpenseMonthRow key={month.month} month={month} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="bg-surface rounded-lg border border-border-base p-6 mb-8">
+            <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
+              Annual Expenses
+            </p>
+            <p className="text-2xl font-semibold text-danger font-mono">
+              {fmt(data.annualTotal)}
+            </p>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
+  const { data, isLoading, isError } = useExpenseCategories(year);
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const {
-    data: expensesData,
-    isLoading: expensesLoading,
-    isError: expensesError,
-  } = useExpensesDashboard(year);
-
-  const {
-    data: categoriesData,
-    isLoading: categoriesLoading,
-    isError: categoriesError,
-  } = useExpenseCategories(year);
-
-  const annualTotal =
-    expensesData?.months.reduce((sum, m) => sum + m.total, 0) ?? 0;
+  const tableData = useMemo(() => data?.rows ?? [], [data]);
 
   const columns = useMemo<ColumnDef<ExpenseCategoryRow>[]>(
     () => [
@@ -123,31 +156,19 @@ export function ExpensesPage() {
         accessorKey: 'month',
         header: 'Month',
         cell: ({ getValue }) => MONTH_LABELS[getValue<number>() - 1],
-        meta: {
-          thClassName:
-            'px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider',
-          tdClassName: 'px-4 py-3 text-sm text-content-secondary',
-        } satisfies ColumnMeta,
+        meta: { thClassName: TH_BASE, tdClassName: TD_BASE },
       },
       {
         accessorKey: 'category',
         header: 'Category',
         cell: ({ getValue }) => getValue<string | null>() ?? '—',
-        meta: {
-          thClassName:
-            'px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider',
-          tdClassName: 'px-4 py-3 text-sm text-content-secondary',
-        } satisfies ColumnMeta,
+        meta: { thClassName: TH_BASE, tdClassName: TD_BASE },
       },
       {
         accessorKey: 'subcategory',
         header: 'Subcategory',
         cell: ({ getValue }) => getValue<string | null>() ?? '—',
-        meta: {
-          thClassName:
-            'px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider',
-          tdClassName: 'px-4 py-3 text-sm text-content-secondary',
-        } satisfies ColumnMeta,
+        meta: { thClassName: TH_BASE, tdClassName: TD_BASE },
       },
       {
         accessorKey: 'total',
@@ -158,17 +179,16 @@ export function ExpensesPage() {
           </span>
         ),
         meta: {
-          thClassName:
-            'px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right',
+          thClassName: `${TH_BASE} text-right`,
           tdClassName: 'px-4 py-3 text-sm text-right',
-        } satisfies ColumnMeta,
+        },
       },
     ],
     []
   );
 
   const table = useReactTable({
-    data: categoriesData?.rows ?? [],
+    data: tableData,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -177,79 +197,19 @@ export function ExpensesPage() {
   });
 
   return (
-    <PageLayout>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <h1 className="text-xl font-semibold text-content-primary">Expenses</h1>
-        <YearSelector year={year} onChange={setYear} />
-      </div>
-
-      {/* Section 1: Monthly breakdown */}
-      <h2 className="text-lg font-semibold text-content-primary mb-4">
-        Monthly Breakdown
-      </h2>
-
-      {expensesLoading && <SkeletonTable columns={5} rows={12} />}
-      {expensesError && (
-        <EmptyState variant="error" message="Failed to load expense data." />
-      )}
-
-      {expensesData && (
-        <>
-          <div className="bg-surface rounded-lg border border-border-base overflow-hidden mb-6">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-surface-subtle">
-                  <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider w-16">
-                    Month
-                  </th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                    Total Expenses
-                  </th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                    Need
-                  </th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                    Want
-                  </th>
-                  <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                    Other
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {expensesData.months.map((month) => (
-                  <ExpenseMonthRow key={month.month} month={month} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Annual summary */}
-          <div className="bg-surface rounded-lg border border-border-base p-6 mb-8">
-            <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-              Annual Expenses
-            </p>
-            <p className="text-2xl font-semibold text-danger font-mono">
-              {fmt(annualTotal)}
-            </p>
-          </div>
-        </>
-      )}
-
-      {/* Section 2: Category breakdown */}
+    <>
       <h2 className="text-lg font-semibold text-content-primary mb-4">
         Category Breakdown
       </h2>
 
-      {categoriesLoading && <SkeletonTable columns={4} rows={8} />}
-      {categoriesError && (
+      {isLoading && <SkeletonTable columns={4} rows={8} />}
+      {isError && (
         <EmptyState variant="error" message="Failed to load category data." />
       )}
-      {categoriesData && categoriesData.rows.length === 0 && (
+      {data && data.rows.length === 0 && (
         <EmptyState message="No expense categories for this year." />
       )}
-      {categoriesData && categoriesData.rows.length > 0 && (
+      {data && data.rows.length > 0 && (
         <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
           <table className="min-w-full divide-y divide-border-subtle">
             <thead className="bg-surface-subtle">
@@ -258,14 +218,10 @@ export function ExpensesPage() {
                   {hg.headers.map((header) => (
                     <th
                       key={header.id}
-                      className={
-                        (header.column.columnDef.meta as ColumnMeta).thClassName
-                      }
+                      className={header.column.columnDef.meta?.thClassName}
                       onClick={header.column.getToggleSortingHandler()}
                       style={{
-                        cursor: header.column.getCanSort()
-                          ? 'pointer'
-                          : 'default',
+                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
                       }}
                     >
                       {flexRender(
@@ -288,14 +244,9 @@ export function ExpensesPage() {
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className={
-                        (cell.column.columnDef.meta as ColumnMeta).tdClassName
-                      }
+                      className={cell.column.columnDef.meta?.tdClassName}
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
@@ -304,6 +255,22 @@ export function ExpensesPage() {
           </table>
         </div>
       )}
+    </>
+  );
+}
+
+export function ExpensesPage() {
+  const [year, setYear] = useState(CURRENT_YEAR);
+
+  return (
+    <PageLayout>
+      <div className="flex items-center gap-3 mb-6">
+        <h1 className="text-xl font-semibold text-content-primary">Expenses</h1>
+        <YearSelector year={year} onChange={setYear} />
+      </div>
+
+      <ExpenseMonthlyBreakdown year={year} />
+      <ExpenseCategoryBreakdown year={year} />
     </PageLayout>
   );
 }
