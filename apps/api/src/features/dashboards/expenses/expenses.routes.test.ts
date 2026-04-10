@@ -87,6 +87,7 @@ describe('GET /api/v1/dashboard/expenses', () => {
         (m) => m.need === 0 && m.want === 0 && m.other === 0 && m.total === 0
       )
     ).toBe(true);
+    expect(res.body.annualTotal).toBe(0);
   });
 
   it('returns correct need bucket for a single transaction', async () => {
@@ -224,6 +225,7 @@ describe('GET /api/v1/dashboard/expenses', () => {
     );
     expect(feb?.need).toBe(350);
     expect(feb?.total).toBe(350);
+    expect(res.body.annualTotal).toBe(350);
   });
 
   it('excludes income transactions', async () => {

@@ -10,6 +10,7 @@ describe('buildExpensesResponse', () => {
     expect(result.months.every((m) => m.want === 0)).toBe(true);
     expect(result.months.every((m) => m.other === 0)).toBe(true);
     expect(result.months.every((m) => m.total === 0)).toBe(true);
+    expect(result.annualTotal).toBe(0);
   });
 
   it('returns months in order 1–12', () => {
@@ -80,6 +81,16 @@ describe('buildExpensesResponse', () => {
     expect(june.other).toBe(50);
     expect(june.total).toBe(500);
     expect(june.total).toBe(june.need + june.want + june.other);
+    expect(result.annualTotal).toBe(500);
+  });
+
+  it('annualTotal sums across multiple months', () => {
+    const result = buildExpensesResponse(2025, [
+      { month: 1, needWant: 'Need', total: '100.00' },
+      { month: 6, needWant: 'Want', total: '200.00' },
+      { month: 12, needWant: null, total: '50.00' },
+    ]);
+    expect(result.annualTotal).toBe(350);
   });
 
   it('leaves months without rows at zero', () => {

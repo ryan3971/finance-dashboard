@@ -83,9 +83,11 @@ export function buildExpensesResponse(
     }
   }
 
+  let annualDecimal = new Decimal(0);
   const months = Array.from(buckets.entries()).map(
     ([month, { need, want, other }]) => {
       const total = need.plus(want).plus(other);
+      annualDecimal = annualDecimal.plus(total);
       return {
         month,
         need: need.toNumber(),
@@ -96,7 +98,7 @@ export function buildExpensesResponse(
     }
   );
 
-  return { year, months };
+  return { year, months, annualTotal: annualDecimal.toNumber() };
 }
 
 export async function queryExpensesByCategory(
