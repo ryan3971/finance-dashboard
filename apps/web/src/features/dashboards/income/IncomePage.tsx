@@ -8,14 +8,13 @@ import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
 import { useIncomeDashboard } from './useIncomeDashboard';
 
-function pct(part: string, total: string) {
-  const t = Number(total);
-  if (t === 0) return null;
-  return ((Number(part) / t) * 100).toFixed(1) + '%';
+function pct(part: number, total: number) {
+  if (total === 0) return null;
+  return ((part / total) * 100).toFixed(1) + '%';
 }
 
 function IncomeRow({ month }: { readonly month: IncomeMonth }) {
-  const hasIncome = Number(month.total) > 0;
+  const hasIncome = month.total > 0;
   return (
     <tr className="border-t border-border-subtle">
       <td className="px-4 py-3 text-sm text-content-secondary w-16">
@@ -23,14 +22,14 @@ function IncomeRow({ month }: { readonly month: IncomeMonth }) {
       </td>
       <td className="px-4 py-3 text-sm font-mono font-medium text-right">
         <span className={hasIncome ? 'text-positive' : 'text-content-muted'}>
-          {fmt(Number(month.total))}
+          {fmt(month.total)}
         </span>
       </td>
       {month.allocation !== null ? (
         <>
           <td className="px-4 py-3 text-sm text-right">
             <span className="font-mono font-medium text-info">
-              {fmt(Number(month.allocation.needs))}
+              {fmt(month.allocation.needs)}
             </span>
             {hasIncome && (
               <span className="block text-xs text-content-muted">
@@ -40,7 +39,7 @@ function IncomeRow({ month }: { readonly month: IncomeMonth }) {
           </td>
           <td className="px-4 py-3 text-sm text-right">
             <span className="font-mono font-medium text-accent">
-              {fmt(Number(month.allocation.wants))}
+              {fmt(month.allocation.wants)}
             </span>
             {hasIncome && (
               <span className="block text-xs text-content-muted">
@@ -50,7 +49,7 @@ function IncomeRow({ month }: { readonly month: IncomeMonth }) {
           </td>
           <td className="px-4 py-3 text-sm text-right">
             <span className="font-mono font-medium text-positive">
-              {fmt(Number(month.allocation.investments))}
+              {fmt(month.allocation.investments)}
             </span>
             {hasIncome && (
               <span className="block text-xs text-content-muted">
@@ -77,7 +76,7 @@ export function IncomePage() {
   const { data, isLoading, isError } = useIncomeDashboard(year);
 
   const annualTotal =
-    data?.months.reduce((sum, m) => sum + Number(m.total), 0) ?? 0;
+    data?.months.reduce((sum, m) => sum + m.total, 0) ?? 0;
 
   const allocationConfigured = data?.months.some((m) => m.allocation !== null);
 

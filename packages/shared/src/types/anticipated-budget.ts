@@ -2,7 +2,7 @@ import type { NeedWant } from '../constants';
 
 export interface AnticipatedBudgetMonth {
   month: number;
-  amount: string;
+  amount: number;
   isOverride: boolean;
 }
 
@@ -14,7 +14,7 @@ export interface AnticipatedBudgetEntry {
   categoryIcon: string | null;
   needWant: NeedWant | null;
   isIncome: boolean;
-  monthlyAmount: string | null;
+  monthlyAmount: number | null;
   notes: string | null;
   effectiveYear: number;
   months: AnticipatedBudgetMonth[];

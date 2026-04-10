@@ -16,6 +16,7 @@ import { TransactionsTable } from '@/features/transactions/components/table/Tran
 import { useCallback, useState } from 'react';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import api from '@/lib/api';
+import { parseAmount } from '@/lib/utils';
 import { PAGINATION } from '@finance/shared';
 
 const TRANSACTION_SKELETON_ROW_COUNT = 8;
@@ -85,7 +86,7 @@ export function TransactionsPage() {
     setPanelInitialValues({
       accountId: tx.accountId,
       description: tx.sourceName ?? tx.description,
-      amount: Number(tx.amount),
+      amount: parseAmount(tx.amount),
       categoryId: tx.categoryId ?? undefined,
       subcategoryId: tx.subcategoryId ?? undefined,
       needWant: tx.needWant ?? undefined,

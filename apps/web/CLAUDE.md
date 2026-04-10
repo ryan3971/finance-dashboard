@@ -312,6 +312,15 @@ Use `<FormField label="..." error={...} labelSize="xs|sm">` for all form fields.
 
 ## Data & Domain Conventions
 
+### Amount types
+
+Monetary amount fields differ by endpoint:
+
+- **Dashboard endpoints** (`/dashboard/income`, `/anticipated-budget`, etc.) — amounts are `number` in the response. Use them directly; no conversion needed.
+- **Transaction endpoints** — `transaction.amount` is `string` (Drizzle numeric passthrough). Use `parseAmount(s)` from `@/lib/utils` whenever a number is needed (display, sorting, form initialisation). Never use bare `Number()` or `parseFloat()` on a monetary string.
+
+`parseAmount` handles `null`/`undefined` and guards against `NaN` — always prefer it over ad-hoc coercions.
+
 ### Amount Display
 
 Always use `AmountCell` (or equivalent logic):

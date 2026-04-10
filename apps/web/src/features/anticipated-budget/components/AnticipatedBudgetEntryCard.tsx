@@ -23,10 +23,7 @@ export function AnticipatedBudgetEntryCard({ entry, year }: Props) {
   const deleteOverride = useDeleteMonthOverride(year);
   const deleteEntry = useDeleteEntry(year);
 
-  const yearlyTotal = entry.months.reduce(
-    (sum, m) => sum + parseFloat(m.amount) || 0,
-    0
-  );
+  const yearlyTotal = entry.months.reduce((sum, m) => sum + m.amount, 0);
 
   const overrideCount = entry.months.filter((m) => m.isOverride).length;
 
@@ -62,7 +59,7 @@ export function AnticipatedBudgetEntryCard({ entry, year }: Props) {
           <div className="text-right">
             <p className="text-xs text-content-muted">
               {entry.monthlyAmount !== null
-                ? `${fmt(parseFloat(entry.monthlyAmount))}/mo`
+                ? `${fmt(entry.monthlyAmount)}/mo`
                 : 'Varies'}
             </p>
             <p className="text-sm font-medium font-mono text-content-primary">

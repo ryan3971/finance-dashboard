@@ -32,7 +32,7 @@ function sumMonthAmounts(
 ): number {
   return entries.filter(filter).reduce((sum, e) => {
     const m = e.months.find((mo) => mo.month === month);
-    return sum + parseFloat(m?.amount ?? '0');
+    return sum + (m?.amount ?? 0);
   }, 0);
 }
 
@@ -42,11 +42,7 @@ function sumYearAmounts(
 ): number {
   return entries
     .filter(filter)
-    .reduce(
-      (sum, e) =>
-        sum + e.months.reduce((ms, m) => ms + parseFloat(m.amount), 0),
-      0
-    );
+    .reduce((sum, e) => sum + e.months.reduce((ms, m) => ms + m.amount, 0), 0);
 }
 
 export function SummaryCards({ entries, month }: Props) {
@@ -62,15 +58,31 @@ export function SummaryCards({ entries, month }: Props) {
 
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-      <SummaryCard label={`${monthLabel} Income`} value={monthIncome} colorClass="text-positive" />
-      <SummaryCard label={`${monthLabel} Expenses`} value={monthExpenses} colorClass="text-danger" />
+      <SummaryCard
+        label={`${monthLabel} Income`}
+        value={monthIncome}
+        colorClass="text-positive"
+      />
+      <SummaryCard
+        label={`${monthLabel} Expenses`}
+        value={monthExpenses}
+        colorClass="text-danger"
+      />
       <SummaryCard
         label={`${monthLabel} Net`}
         value={monthNet}
         colorClass={monthNet >= 0 ? 'text-positive' : 'text-danger'}
       />
-      <SummaryCard label="Annual Income" value={yearIncome} colorClass="text-positive" />
-      <SummaryCard label="Annual Expenses" value={yearExpenses} colorClass="text-danger" />
+      <SummaryCard
+        label="Annual Income"
+        value={yearIncome}
+        colorClass="text-positive"
+      />
+      <SummaryCard
+        label="Annual Expenses"
+        value={yearExpenses}
+        colorClass="text-danger"
+      />
       <SummaryCard
         label="Annual Net"
         value={yearNet}

@@ -111,3 +111,23 @@ IncomePage.tsx — Removed local MONTH_LABELS, removed formatAmount wrapper (inl
 PreferencesTab.tsx — Replaced the locally-duplicated schema with one derived from shared: the z.coerce.number() fields stay (needed for HTML inputs), and the sum-to-100 .refine is delegated to allocationsValidator.safeParse(v).success so there's a single source of truth. Replaced three watch('field') calls with one watch([...]) destructure.
 
 tsconfig.json — Added noUncheckedIndexedAccess: true. Array index accesses now return T | undefined, which will surface any future unsafe arr[i].prop patterns at compile time.
+---
+Shared types (packages/shared/src/types/)
+
+dashboard.ts — IncomeMonthAllocation.needs/wants/investments and IncomeMonth.total: string → number
+anticipated-budget.ts — AnticipatedBudgetMonth.amount: string → number; AnticipatedBudgetEntry.monthlyAmount: string | null → number | null
+API service layer
+
+income.service.ts — new Decimal() now always constructed (not just when percentages exist); .toFixed(2) replaced with .toNumber() for all response fields
+anticipated-budget.service.ts — added Decimal import; removed ZERO_AMOUNT string constant; resolveMonths converts amounts via new Decimal().toNumber(); all three response-building sites convert monthlyAmount at the boundary
+API tests — string assertions updated to numbers across all three test files
+
+Web (apps/web/src/)
+
+lib/utils.ts — added parseAmount(s) with NaN guard
+IncomePage.tsx — pct accepts number, number; all Number()/parseFloat() removed
+SummaryCards.tsx — parseFloat() removed from both reduce functions
+AnticipatedBudgetEntryCard.tsx — parseFloat() removed from yearly total and monthly display
+AmountCell.tsx — parseFloat → parseAmount
+useTransactionColumns.tsx — parseFloat → parseAmount in sort function
+TransactionsPage.tsx — Number(tx.amount) → parseAmount(tx.amount) for duplicate form init

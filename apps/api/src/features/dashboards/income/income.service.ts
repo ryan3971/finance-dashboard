@@ -62,7 +62,9 @@ export function buildIncomeResponse(
 ): IncomeDashboardResponse {
   const { needsPercentage, wantsPercentage, investmentsPercentage } = config;
   const percentages: AllocationPercentages | null =
-    needsPercentage !== null && wantsPercentage !== null && investmentsPercentage !== null
+    needsPercentage !== null &&
+    wantsPercentage !== null &&
+    investmentsPercentage !== null
       ? { needsPercentage, wantsPercentage, investmentsPercentage }
       : null;
 
@@ -70,14 +72,13 @@ export function buildIncomeResponse(
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
-    const total = rowMap.get(month) ?? '0.00';
+    const amount = new Decimal(rowMap.get(month) ?? '0.00');
 
     let allocation: IncomeMonthAllocation | null = null;
 
     if (percentages !== null) {
-      const amount = new Decimal(total);
       if (amount.isZero()) {
-        allocation = { needs: '0.00', wants: '0.00', investments: '0.00' };
+        allocation = { needs: 0, wants: 0, investments: 0 };
       } else {
         const needs = amount
           .mul(percentages.needsPercentage)
@@ -89,14 +90,14 @@ export function buildIncomeResponse(
           .toDecimalPlaces(2);
         const investments = amount.minus(needs).minus(wants);
         allocation = {
-          needs: needs.toFixed(2),
-          wants: wants.toFixed(2),
-          investments: investments.toFixed(2),
+          needs: needs.toNumber(),
+          wants: wants.toNumber(),
+          investments: investments.toNumber(),
         };
       }
     }
 
-    return { month, total, allocation };
+    return { month, total: amount.toNumber(), allocation };
   });
 
   return { year, months };

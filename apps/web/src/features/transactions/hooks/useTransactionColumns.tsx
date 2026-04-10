@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/Badge';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 import { TransactionTagsPanel } from '@/features/transactions/components/panels/TransactionTagsPanel';
+import { parseAmount } from '@/lib/utils';
 import { useMemo } from 'react';
 
 export const ACTIONS_COLUMN_ID = 'actions';
@@ -158,7 +159,7 @@ export function useTransactionColumns({
         ),
         enableSorting: true,
         sortingFn: (a, b) =>
-          parseFloat(a.original.amount) - parseFloat(b.original.amount),
+          parseAmount(a.original.amount) - parseAmount(b.original.amount),
       },
       {
         id: ACTIONS_COLUMN_ID,

@@ -4,6 +4,7 @@ import type {
   UpsertMonthOverrideInput,
 } from '@finance/shared';
 import { and, eq, inArray } from 'drizzle-orm';
+import Decimal from 'decimal.js';
 import {
   AnticipatedBudgetError,
   AnticipatedBudgetErrorCode,
@@ -16,7 +17,6 @@ import {
 import { db } from '@/db';
 
 const MONTHS_IN_YEAR = 12;
-const ZERO_AMOUNT = '0.00';
 
 const entryColumns = {
   id: anticipatedBudget.id,
@@ -45,13 +45,19 @@ function resolveMonths(
   overrides: { month: number; amount: string }[]
 ) {
   const overrideMap = new Map(overrides.map((o) => [o.month, o.amount]));
+  const defaultAmount =
+    monthlyAmount !== null ? new Decimal(monthlyAmount).toNumber() : 0;
   return Array.from({ length: MONTHS_IN_YEAR }, (_, i) => {
     const month = i + 1;
     const override = overrideMap.get(month);
     if (override !== undefined) {
-      return { month, amount: override, isOverride: true };
+      return {
+        month,
+        amount: new Decimal(override).toNumber(),
+        isOverride: true,
+      };
     }
-    return { month, amount: monthlyAmount ?? ZERO_AMOUNT, isOverride: false };
+    return { month, amount: defaultAmount, isOverride: false };
   });
 }
 
@@ -118,7 +124,10 @@ export async function listEntries(userId: string, year: number) {
     categoryIcon: row.categoryIcon,
     needWant: row.needWant,
     isIncome: row.isIncome,
-    monthlyAmount: row.monthlyAmount,
+    monthlyAmount:
+      row.monthlyAmount !== null
+        ? new Decimal(row.monthlyAmount).toNumber()
+        : null,
     notes: row.notes,
     effectiveYear: row.effectiveYear,
     months: resolveMonths(
@@ -141,6 +150,10 @@ export async function createEntry(
 
   return {
     ...row,
+    monthlyAmount:
+      row.monthlyAmount !== null
+        ? new Decimal(row.monthlyAmount).toNumber()
+        : null,
     ...category,
     months: resolveMonths(row.monthlyAmount, []),
   };
@@ -171,6 +184,10 @@ export async function updateEntry(
 
   return {
     ...row,
+    monthlyAmount:
+      row.monthlyAmount !== null
+        ? new Decimal(row.monthlyAmount).toNumber()
+        : null,
     ...category,
     months: resolveMonths(
       row.monthlyAmount,

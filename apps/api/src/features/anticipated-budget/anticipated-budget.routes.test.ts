@@ -57,11 +57,11 @@ describe('GET /api/v1/anticipated-budget', () => {
     expect(res.body).toHaveLength(1);
 
     const entry = res.body[0] as {
-      months: { month: number; amount: string; isOverride: boolean }[];
+      months: { month: number; amount: number; isOverride: boolean }[];
     };
     expect(entry.months).toHaveLength(12);
-    expect(entry.months[0]).toEqual({ month: 1, amount: '1500.00', isOverride: false });
-    expect(entry.months[11]).toEqual({ month: 12, amount: '1500.00', isOverride: false });
+    expect(entry.months[0]).toEqual({ month: 1, amount: 1500, isOverride: false });
+    expect(entry.months[11]).toEqual({ month: 12, amount: 1500, isOverride: false });
   });
 
   it('reflects month overrides in resolved months', async () => {
@@ -82,13 +82,13 @@ describe('GET /api/v1/anticipated-budget', () => {
       .set('Authorization', `Bearer ${token}`);
 
     const entry = res.body[0] as {
-      months: { month: number; amount: string; isOverride: boolean }[];
+      months: { month: number; amount: number; isOverride: boolean }[];
     };
     const march = entry.months.find((m) => m.month === 3);
-    expect(march).toEqual({ month: 3, amount: '1800.00', isOverride: true });
+    expect(march).toEqual({ month: 3, amount: 1800, isOverride: true });
 
     const jan = entry.months.find((m) => m.month === 1);
-    expect(jan).toEqual({ month: 1, amount: '1500.00', isOverride: false });
+    expect(jan).toEqual({ month: 1, amount: 1500, isOverride: false });
   });
 
   it('isolates entries between users', async () => {
@@ -129,7 +129,7 @@ describe('POST /api/v1/anticipated-budget', () => {
     expect(res.body.name).toBe('Rent');
     expect(res.body.needWant).toBe('Need');
     expect(res.body.isIncome).toBe(false);
-    expect(res.body.monthlyAmount).toBe('1500.00');
+    expect(res.body.monthlyAmount).toBe(1500);
     expect(res.body.months).toHaveLength(12);
   });
 
@@ -166,7 +166,7 @@ describe('PATCH /api/v1/anticipated-budget/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Updated Rent');
-    expect(res.body.monthlyAmount).toBe('1600.00');
+    expect(res.body.monthlyAmount).toBe(1600);
   });
 
   it('returns 404 for non-existent entry', async () => {

@@ -1,4 +1,5 @@
 import { DEFAULT_CURRENCY } from '@finance/shared';
+import { parseAmount } from '@/lib/utils';
 
 function formatAmount(amount: number): string {
   const formatted = new Intl.NumberFormat('en-CA', {
@@ -14,7 +15,7 @@ interface AmountCellProps {
 }
 
 export function AmountCell({ amount, isTransfer }: AmountCellProps) {
-  const num = parseFloat(amount);
+  const num = parseAmount(amount);
   let colorClass: string;
   if (isTransfer) {
     colorClass = 'text-content-muted';

@@ -1,12 +1,12 @@
 export interface IncomeMonthAllocation {
-  needs: string;
-  wants: string;
-  investments: string;
+  needs: number;
+  wants: number;
+  investments: number;
 }
 
 export interface IncomeMonth {
   month: number;
-  total: string;
+  total: number;
   allocation: IncomeMonthAllocation | null;
 }
 

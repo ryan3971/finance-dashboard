@@ -71,7 +71,7 @@ describe('GET /api/v1/dashboard/income', () => {
     expect(res.body.year).toBe(2025);
     expect(res.body.months).toHaveLength(12);
     expect(
-      (res.body.months as { total: string }[]).every((m) => m.total === '0.00')
+      (res.body.months as { total: number }[]).every((m) => m.total === 0)
     ).toBe(true);
     expect(
       (res.body.months as { allocation: null }[]).every(
@@ -98,15 +98,15 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    const mar = (res.body.months as { month: number; total: string }[]).find(
+    const mar = (res.body.months as { month: number; total: number }[]).find(
       (m) => m.month === 3
     );
-    expect(mar?.total).toBe('4500.00');
+    expect(mar?.total).toBe(4500);
 
     const others = (
-      res.body.months as { month: number; total: string }[]
+      res.body.months as { month: number; total: number }[]
     ).filter((m) => m.month !== 3);
-    expect(others.every((m) => m.total === '0.00')).toBe(true);
+    expect(others.every((m) => m.total === 0)).toBe(true);
   });
 
   it('returns null allocation when percentages not configured', async () => {
@@ -164,13 +164,13 @@ describe('GET /api/v1/dashboard/income', () => {
     const mar = (
       res.body.months as {
         month: number;
-        allocation: { needs: string; wants: string; investments: string };
+        allocation: { needs: number; wants: number; investments: number };
       }[]
     ).find((m) => m.month === 3);
     expect(mar?.allocation).toEqual({
-      needs: '2250.00',
-      wants: '1350.00',
-      investments: '900.00',
+      needs: 2250,
+      wants: 1350,
+      investments: 900,
     });
   });
 
@@ -196,10 +196,10 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    const feb = (res.body.months as { month: number; total: string }[]).find(
+    const feb = (res.body.months as { month: number; total: number }[]).find(
       (m) => m.month === 2
     );
-    expect(feb?.total).toBe('3500.00');
+    expect(feb?.total).toBe(3500);
   });
 
   it('excludes transactions where needWant is not null', async () => {
@@ -221,10 +221,10 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    const apr = (res.body.months as { month: number; total: string }[]).find(
+    const apr = (res.body.months as { month: number; total: number }[]).find(
       (m) => m.month === 4
     );
-    expect(apr?.total).toBe('0.00');
+    expect(apr?.total).toBe(0);
   });
 
   it('excludes non-income transactions', async () => {
@@ -246,10 +246,10 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    const may = (res.body.months as { month: number; total: string }[]).find(
+    const may = (res.body.months as { month: number; total: number }[]).find(
       (m) => m.month === 5
     );
-    expect(may?.total).toBe('0.00');
+    expect(may?.total).toBe(0);
   });
 
   it('isolates data between users', async () => {
@@ -271,7 +271,7 @@ describe('GET /api/v1/dashboard/income', () => {
 
     expect(res.status).toBe(200);
     expect(
-      (res.body.months as { total: string }[]).every((m) => m.total === '0.00')
+      (res.body.months as { total: number }[]).every((m) => m.total === 0)
     ).toBe(true);
   });
 });

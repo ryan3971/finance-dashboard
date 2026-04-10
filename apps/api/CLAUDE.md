@@ -71,7 +71,7 @@ Always scope `select()` to the columns actually needed. Use `db.transaction()` w
 
 Avoid N+1 query patterns — never issue a `db.select()` inside a loop over rows. Instead, batch with `inArray` before the loop and do in-memory matching per row.
 
-Drizzle returns `numeric` columns as strings. Never use `parseFloat` or other floating-point conversions on money amounts — use string manipulation or a decimal library to preserve precision.
+Drizzle returns `numeric` columns as strings. Never use `parseFloat` or other floating-point conversions on money amounts in service or DB logic — use `Decimal.js` for all arithmetic. At the API response boundary, convert to `number` via `new Decimal(s).toNumber()` so the client receives a JSON number. Dashboard response types in `@finance/shared` use `number` (not `string`) for monetary amount fields.
 
 ## Dashboard features
 
