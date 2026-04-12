@@ -1,7 +1,7 @@
 import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 import { getAuthUser, requireAuth } from '@/lib/auth';
-import { getUserConfig } from '@/features/user-config/user-config.service';
+import { queryDashboardUserConfig } from '@/lib/user-config-query';
 import { buildIncomeResponse, queryMonthlyIncome } from './income.service';
 
 const router = Router();
@@ -21,7 +21,7 @@ router.get('/income', async (req: Request, res: Response) => {
 
   const [rows, config] = await Promise.all([
     queryMonthlyIncome(userId, year),
-    getUserConfig(userId),
+    queryDashboardUserConfig(userId),
   ]);
 
   res.json(buildIncomeResponse(year, rows, config));

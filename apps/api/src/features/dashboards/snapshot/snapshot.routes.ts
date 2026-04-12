@@ -1,11 +1,11 @@
 import { type Request, type Response, Router } from 'express';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { queryDashboardUserConfig } from '@/lib/user-config-query';
 import {
   queryAccountBalances,
   queryCurrentMonthIncome,
   queryCurrentMonthExpenses,
   queryAnticipatedForMonth,
-  querySnapshotConfig,
 } from './snapshot.repository';
 import { buildSnapshotResponse } from './snapshot.service';
 
@@ -25,7 +25,7 @@ router.get('/snapshot', async (req: Request, res: Response) => {
       queryCurrentMonthIncome(userId, year, month),
       queryCurrentMonthExpenses(userId, year, month),
       queryAnticipatedForMonth(userId, year, month),
-      querySnapshotConfig(userId),
+      queryDashboardUserConfig(userId),
     ]);
 
   res.json(

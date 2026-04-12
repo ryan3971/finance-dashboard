@@ -4,10 +4,8 @@ import {
   anticipatedBudget,
   anticipatedBudgetMonths,
   transactions,
-  userConfig,
 } from '@/db/schema';
 import { db } from '@/db';
-import type { SnapshotConfig } from './snapshot.service';
 
 export interface AccountBalanceRow {
   id: string;
@@ -164,24 +162,4 @@ export async function queryAnticipatedForMonth(
         eq(anticipatedBudget.effectiveYear, year)
       )
     );
-}
-
-export async function querySnapshotConfig(
-  userId: string
-): Promise<SnapshotConfig> {
-  const [row] = await db
-    .insert(userConfig)
-    .values({ userId })
-    .onConflictDoUpdate({
-      target: userConfig.userId,
-      set: { userId: sql`EXCLUDED.user_id` },
-    })
-    .returning({
-      emergencyFundTarget: userConfig.emergencyFundTarget,
-      needsPercentage: userConfig.needsPercentage,
-      wantsPercentage: userConfig.wantsPercentage,
-      investmentsPercentage: userConfig.investmentsPercentage,
-    });
-
-  return row;
 }
