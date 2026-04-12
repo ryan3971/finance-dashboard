@@ -1,4 +1,4 @@
-import type { AnticipatedBudgetMonth } from '@finance/shared';
+import type { AnticipatedBudgetMonth } from '@finance/shared/types/anticipated-budget';
 import { MONTH_LABELS } from '@/lib/utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
@@ -12,10 +12,10 @@ interface MonthChipProps {
 
 function MonthChip({ monthData, onSave, onRemove, isSaving }: MonthChipProps) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(monthData.amount);
+  const [value, setValue] = useState(String(monthData.amount));
 
   function handleOpen() {
-    setValue(monthData.amount);
+    setValue(String(monthData.amount));
     setEditing(true);
   }
 
