@@ -9,10 +9,9 @@ import checkFilePlugin from 'eslint-plugin-check-file';
 import globals from 'globals';
 import pluginRouter from '@tanstack/eslint-plugin-router';
 
-
 export default defineConfig(
   // ── Global ignores ─────────────────────────────────────────────────────────
-  { ignores: ['**/*.d.ts'] },
+  { ignores: ['**/*.d.ts', '.claude/**'] },
 
   // ── Base: all files ────────────────────────────────────────────────────────
   // JS-only recommended rules applied globally (no type-checking required)
@@ -115,20 +114,42 @@ export default defineConfig(
     name: 'web/feature-boundaries',
     files: ['apps/web/src/**/*.{ts,tsx}'],
     plugins: { import: importPlugin },
+    settings: {
+      'import/resolver': {
+        typescript: {
+          project: './apps/web/tsconfig.json',
+        },
+      },
+    },
     rules: {
       'import/no-restricted-paths': [
         'error',
         {
           zones: [
             {
+              target: './apps/web/src/features/accounts',
+              from: './apps/web/src/features',
+              except: ['./accounts'],
+            },
+            {
+              target: './apps/web/src/features/anticipated-budget',
+              from: './apps/web/src/features',
+              except: ['./anticipated-budget'],
+            },
+            {
               target: './apps/web/src/features/auth',
               from: './apps/web/src/features',
               except: ['./auth'],
             },
             {
-              target: './apps/web/src/features/dashboard',
+              target: './apps/web/src/features/config',
               from: './apps/web/src/features',
-              except: ['./dashboard'],
+              except: ['./config'],
+            },
+            {
+              target: './apps/web/src/features/dashboards',
+              from: './apps/web/src/features',
+              except: ['./dashboards'],
             },
             {
               target: './apps/web/src/features/import',
@@ -145,11 +166,16 @@ export default defineConfig(
                 './apps/web/src/components/*',
                 './apps/web/src/hooks',
                 './apps/web/src/lib',
-                './apps/web/src/widgets',
                 './packages/shared/src/*',
-                './apps/web/src/utils',
               ],
               from: ['./apps/web/src/features'],
+            },
+            // Cross-app isolation (merged here to avoid flat-config rule override)
+            {
+              target: './apps/web',
+              from: './apps/api',
+              message:
+                'apps/web must not import from apps/api. Use @finance/shared for shared types.',
             },
           ],
         },
@@ -161,7 +187,11 @@ export default defineConfig(
   {
     name: 'web/filename-tsx-pascal-case',
     files: ['apps/web/src/**/*.tsx'],
-    ignores: ['apps/web/src/main.tsx', 'apps/web/src/router.tsx', 'apps/web/src/**/hooks/*.tsx'],
+    ignores: [
+      'apps/web/src/main.tsx',
+      'apps/web/src/router.tsx',
+      'apps/web/src/**/hooks/*.tsx',
+    ],
     plugins: { 'check-file': checkFilePlugin },
     rules: {
       'check-file/filename-naming-convention': [
@@ -223,6 +253,13 @@ export default defineConfig(
     name: 'api/feature-boundaries',
     files: ['apps/api/src/**/*.ts'],
     plugins: { import: importPlugin },
+    settings: {
+      'import/resolver': {
+        typescript: {
+          project: './apps/api/tsconfig.json',
+        },
+      },
+    },
     rules: {
       'import/no-restricted-paths': [
         'error',
@@ -234,6 +271,11 @@ export default defineConfig(
               except: ['./accounts'],
             },
             {
+              target: './apps/api/src/features/anticipated-budget',
+              from: './apps/api/src/features',
+              except: ['./anticipated-budget'],
+            },
+            {
               target: './apps/api/src/features/auth',
               from: './apps/api/src/features',
               except: ['./auth'],
@@ -242,6 +284,11 @@ export default defineConfig(
               target: './apps/api/src/features/categories',
               from: './apps/api/src/features',
               except: ['./categories'],
+            },
+            {
+              target: './apps/api/src/features/categorization-rules',
+              from: './apps/api/src/features',
+              except: ['./categorization-rules'],
             },
             {
               target: './apps/api/src/features/dashboards',
@@ -274,6 +321,11 @@ export default defineConfig(
               except: ['./transfers'],
             },
             {
+              target: './apps/api/src/features/user-config',
+              from: './apps/api/src/features',
+              except: ['./user-config'],
+            },
+            {
               target: [
                 './apps/api/src/db',
                 './apps/api/src/lib',
@@ -284,6 +336,12 @@ export default defineConfig(
                 './packages/shared/src/*',
               ],
               from: ['./apps/api/src/features'],
+            },
+            // Cross-app isolation (merged here to avoid flat-config rule override)
+            {
+              target: './apps/api',
+              from: './apps/web',
+              message: 'apps/api must not import from apps/web.',
             },
           ],
         },
@@ -327,29 +385,19 @@ export default defineConfig(
   //   },
   // }
 
-  // ── Monorepo: cross-app isolation ─────────────────────────────────────────
+  // ── Monorepo: shared package isolation ────────────────────────────────────
   // Enforces the dependency arrow:  apps/web → @finance/shared ← apps/api
-  // Neither app may import the other; shared must not import from apps.
+  // Cross-app zones (web↔api) live in their respective feature-boundary configs
+  // to avoid flat-config rule override (later config wins for the same rule).
   {
-    name: 'monorepo/cross-app-isolation',
-    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.{ts,tsx}'],
+    name: 'monorepo/shared-pkg-isolation',
+    files: ['packages/**/*.{ts,tsx}'],
     plugins: { import: importPlugin },
     rules: {
       'import/no-restricted-paths': [
         'error',
         {
           zones: [
-            {
-              target: './apps/web',
-              from: './apps/api',
-              message:
-                'apps/web must not import from apps/api. Use @finance/shared for shared types.',
-            },
-            {
-              target: './apps/api',
-              from: './apps/web',
-              message: 'apps/api must not import from apps/web.',
-            },
             {
               target: './packages/shared',
               from: './apps',
@@ -383,7 +431,7 @@ export default defineConfig(
     },
   },
   // ── Web: only throw Error objects (allows TanStack Router's Redirect and NotFoundError) ───────────
-  /**From Tanstack Router docs - To ensure it (typescript-eslint) does not conflict with TanStack Router, 
+  /**From Tanstack Router docs - To ensure it (typescript-eslint) does not conflict with TanStack Router,
    * you should allow redirect and notFound as throwable objects. */
   {
     name: 'web/only-throw-errors',

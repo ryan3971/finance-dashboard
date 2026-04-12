@@ -89,7 +89,9 @@ amount.isZero() guard — replaces the amount === 0 check cleanly in the Decimal
 income.service.ts — AllocationPercentages is now internal-only; new exported IncomePercentageConfig interface with nullable fields; buildIncomeResponse accepts it and owns the null-check
 income.routes.ts — percentages block removed; config passed directly to buildIncomeResponse
 income.service.test.ts — noPercentages constant added; four null call sites replaced
+
 ---
+
 Done. Summary of changes:
 
 lib/utils.ts — fmt added here as the single source of truth
@@ -97,7 +99,9 @@ IncomePage.tsx — local definition removed, imports from @/lib/utils
 anticipated-budget/utils/utils.ts — local fmt removed (only MONTH_LABELS remains)
 SummaryCards.tsx — imports fmt from @/lib/utils, MONTH_LABELS still from ../utils/utils
 AnticipatedBudgetEntryCard.tsx — imports fmt from @/lib/utils
+
 ---
+
 @/lib/utils.ts — Added MONTH_LABELS as const export. The feature-level anticipated-budget/utils/utils.ts file was deleted.
 
 MonthChips.tsx — Updated import to @/lib/utils.
@@ -110,8 +114,8 @@ IncomePage.tsx — Removed local MONTH_LABELS, removed formatAmount wrapper (inl
 
 PreferencesTab.tsx — Replaced the locally-duplicated schema with one derived from shared: the z.coerce.number() fields stay (needed for HTML inputs), and the sum-to-100 .refine is delegated to allocationsValidator.safeParse(v).success so there's a single source of truth. Replaced three watch('field') calls with one watch([...]) destructure.
 
-tsconfig.json — Added noUncheckedIndexedAccess: true. Array index accesses now return T | undefined, which will surface any future unsafe arr[i].prop patterns at compile time.
----
+## tsconfig.json — Added noUncheckedIndexedAccess: true. Array index accesses now return T | undefined, which will surface any future unsafe arr[i].prop patterns at compile time.
+
 Shared types (packages/shared/src/types/)
 
 dashboard.ts — IncomeMonthAllocation.needs/wants/investments and IncomeMonth.total: string → number
@@ -131,3 +135,33 @@ AnticipatedBudgetEntryCard.tsx — parseFloat() removed from yearly total and mo
 AmountCell.tsx — parseFloat → parseAmount
 useTransactionColumns.tsx — parseFloat → parseAmount in sort function
 TransactionsPage.tsx — Number(tx.amount) → parseAmount(tx.amount) for duplicate form init
+
+---
+
+snapshot.repository.ts (new)
+All four DB query functions and the three row interfaces moved here. monthDateRange stays private to the repository — it's only used by the queries. Changes from the original:
+
+queryCurrentMonthExpenses — added COALESCE around SUM to match queryCurrentMonthIncome; now consistent and safe if a join shape ever changes
+All interfaces exported so the service can import them as parameter types
+snapshot.service.ts (rewritten)
+No DB imports, no getUserConfig — buildSnapshotResponse is now a pure function; all data arrives as parameters
+getUserConfig cross-feature dependency removed — the route owns that call, same pattern as income.routes.ts
+SnapshotConfig interface declared here and exported so the route can satisfy it with the getUserConfig return shape
+No ! assertions — replaced hasAllocationConfig + ! with a narrowed percentages object ({ needs, wants, investments }); TypeScript narrows all three values together
+income.isZero() separated from percentages === null — when config is set but there's no income, the response now returns explicit zeros rather than collapsing to the same state as "no config"
+'chequing' magic string — replaced with const CHEQUING_ACCOUNT_TYPE = 'chequing' satisfies AccountType; the satisfies check fails at compile time if the value is ever removed from ACCOUNT_TYPES
+ef prefixes — renamed to emergencyFundBalance, emergencyFundTarget, emergencyFundPercentage
+Rounding comment added on the spendingNeeds/spendingWants block
+snapshot.routes.ts (updated)
+getUserConfig moved here from the service
+All four query functions imported from the repository
+Promise.all over all five fetches (unchanged parallelism)
+year/month derived here from new Date() and passed into buildSnapshotResponse
+---
+Everything looks correct. The root cause was that in ESLint's flat config, rules are not merged across config objects — the last matching config for a given rule wins. The monorepo/cross-app-isolation block was defined after web/feature-boundaries and api/feature-boundaries, and since all three used import/no-restricted-paths, the monorepo block silently replaced the feature boundary zones for all apps/** files.
+
+The fix:
+
+web/feature-boundaries — added the web→api cross-app zone at the end of its zones array
+api/feature-boundaries — added the api→web cross-app zone at the end of its zones array
+monorepo/cross-app-isolation — renamed to monorepo/shared-pkg-isolation, narrowed files to packages/** only (no longer touches apps/**), retains only the packages/shared → apps restriction
