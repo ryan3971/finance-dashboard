@@ -1,8 +1,5 @@
-import {
-  loginSchema,
-  registerSchema,
-  type AuthResponse,
-} from '@finance/shared';
+import { loginSchema, registerSchema } from '@finance/shared/schemas/auth';
+import type { AuthResponse } from '@finance/shared/types/auth';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

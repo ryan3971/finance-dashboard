@@ -1,4 +1,4 @@
-import type { AccountType, Institution } from '@finance/shared';
+import type { AccountType, Institution } from '@finance/shared/constants';
 import { and, eq } from 'drizzle-orm';
 import { accounts } from '@/db/schema';
 import { db } from '@/db';

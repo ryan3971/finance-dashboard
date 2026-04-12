@@ -5,8 +5,8 @@ import {
   useDeleteSubcategory,
   useRenameSubcategory,
 } from '../hooks/useCategoryMutations';
-import { FIELD_LIMITS } from '@finance/shared';
-import type { Subcategory } from '@finance/shared';
+import { FIELD_LIMITS } from '@finance/shared/constants';
+import type { Subcategory } from '@finance/shared/types/categories';
 
 export function SubcategoryChip({ sub }: { readonly sub: Subcategory }) {
   const [editing, setEditing] = useState(false);

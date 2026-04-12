@@ -4,8 +4,8 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useDeleteRule, useRules, useUpdateRule } from '../hooks/useRules';
-import { FIELD_LIMITS, NEED_WANT_OPTIONS } from '@finance/shared';
-import type { NeedWant, Rule } from '@finance/shared';
+import { FIELD_LIMITS, NEED_WANT_OPTIONS, type NeedWant } from '@finance/shared/constants';
+import type { Rule } from '@finance/shared/types/rules';
 
 function exportRulesCsv(rules: Rule[]) {
   const header = 'keyword,category,subcategory,priority,needWant';

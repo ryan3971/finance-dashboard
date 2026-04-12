@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { SnapshotColumnValues, SnapshotMonthlyIncome } from '@finance/shared';
+import type { SnapshotColumnValues, SnapshotMonthlyIncome } from '@finance/shared/types/dashboard';
 import { fmt } from '@/lib/utils';
 
 interface Props {

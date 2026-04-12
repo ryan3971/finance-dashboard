@@ -57,7 +57,13 @@ Before writing any dashboard feature, answer these three questions:
 
 Do not touch a file until all three are answered.
 
-`@finance/shared` exports Zod schemas, TypeScript types, and shared constants (`packages/shared/src/constants.ts`) used by both the API and the web app. Import as `@finance/shared`. If a literal value must be consistent across both apps, it belongs in `constants.ts` — do not duplicate it.
+`@finance/shared` exports Zod schemas, TypeScript types, and shared constants (`packages/shared/src/constants.ts`) used by both the API and the web app. Use sub-path imports — `@finance/shared/constants`, `@finance/shared/schemas/<name>`, `@finance/shared/types/<name>` — never the bare `@finance/shared` package root. If a literal value must be consistent across both apps, it belongs in `constants.ts` — do not duplicate it.
+
+## Barrel files
+
+Do not create barrel files (`index.ts` files whose sole purpose is re-exporting from other files) inside `apps/api` or `apps/web`. They force Vite's dev server to eagerly load every module they re-export, hurting cold-start and HMR times, and they provide no benefit inside an application bundle.
+
+A flat barrel at the `packages/shared` package boundary is acceptable if there is a clear reason, but prefer sub-path imports. Never add intermediate barrels inside `packages/shared` (e.g. `schemas/index.ts`, `types/index.ts`).
 
 ## TypeScript
 

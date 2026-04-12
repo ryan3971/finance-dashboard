@@ -1,7 +1,7 @@
 import { count, eq } from 'drizzle-orm';
 import { categories, transactions } from '@/db/schema';
 import { db, type DbTransaction } from '@/db';
-import type { CreateCategoryInput } from '@finance/shared';
+import type { CreateCategoryInput } from '@finance/shared/schemas/categories';
 import { CategoryError, CategoryErrorCode } from './categories.errors';
 
 async function fetchOwnedCategory(

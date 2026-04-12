@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { userConfig } from '@/db/schema';
 import { db } from '@/db';
-import type { UpdateUserConfigInput } from '@finance/shared';
+import type { UpdateUserConfigInput } from '@finance/shared/schemas/user-config';
 
 const configColumns = {
   id: userConfig.id,

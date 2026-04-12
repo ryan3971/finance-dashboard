@@ -3,7 +3,7 @@ import { Router } from 'express';
 import {
   updateAnticipatedBudgetSchema,
   upsertMonthOverrideSchema,
-} from '@finance/shared';
+} from '@finance/shared/schemas/anticipated-budget';
 import {
   AnticipatedBudgetError,
   AnticipatedBudgetErrorCode,

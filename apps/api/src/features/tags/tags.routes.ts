@@ -2,7 +2,7 @@ import { type Request, type Response, Router } from 'express';
 import { createTag, deleteTag, listTags } from './tags.service';
 import { TagError, TagErrorCode } from './tags.errors';
 import { getAuthUser, requireAuth } from '@/lib/auth';
-import { createTagSchema } from '@finance/shared';
+import { createTagSchema } from '@finance/shared/schemas/tags';
 import { idParamsSchema } from '@/lib/common-schemas';
 
 const router = Router();

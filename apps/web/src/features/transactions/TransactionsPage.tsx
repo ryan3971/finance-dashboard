@@ -17,7 +17,7 @@ import { useCallback, useState } from 'react';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import api from '@/lib/api';
 import { parseAmount } from '@/lib/utils';
-import { PAGINATION } from '@finance/shared';
+import { PAGINATION } from '@finance/shared/constants';
 
 const TRANSACTION_SKELETON_ROW_COUNT = 8;
 

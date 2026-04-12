@@ -6,12 +6,12 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/testing/setup.ts'],
     fileParallelism: false,
-    alias: {
-      '@finance/shared': path.resolve(
-        __dirname,
-        '../../packages/shared/src/index.ts'
-      ),
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      {
+        find: /^@finance\/shared(\/.*)?$/,
+        replacement: path.resolve(__dirname, '../../packages/shared/src') + '$1',
+      },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
 });

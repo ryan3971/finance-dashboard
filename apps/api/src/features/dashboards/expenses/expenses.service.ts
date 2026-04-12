@@ -6,8 +6,8 @@ import Decimal from 'decimal.js';
 import type {
   ExpenseCategoryRow,
   ExpenseDashboardResponse,
-} from '@finance/shared';
-import { NEED_WANT_OPTIONS } from '@finance/shared';
+} from '@finance/shared/types/dashboard';
+import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
 
 const categoryAlias = alias(categories, 'cat');
 const subcategoryAlias = alias(categories, 'sub');

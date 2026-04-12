@@ -17,7 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
-      "@finance/shared": ["../../packages/shared/src/index.ts"],
+      "@finance/shared/*": ["../../packages/shared/src/*"],
       "@/*": ["./src/*"]
     }
   },

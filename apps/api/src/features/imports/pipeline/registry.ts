@@ -1,6 +1,6 @@
 import { AmexAdapter } from '../adapters/amex/amex.adapter';
 import { CibcAdapter } from '../adapters/cibc/cibc.adapter';
-import type { CsvAdapter } from '@finance/shared';
+import type { CsvAdapter } from '@finance/shared/types/adapters';
 import { QuestradeAdapter } from '../adapters/questrade/questrade.adapter';
 import { TdAdapter } from '../adapters/td/td.adapter';
 

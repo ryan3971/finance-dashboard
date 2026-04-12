@@ -1,8 +1,8 @@
+import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
 import {
   type CreateAnticipatedBudgetInput,
-  NEED_WANT_OPTIONS,
   createAnticipatedBudgetSchema,
-} from '@finance/shared';
+} from '@finance/shared/schemas/anticipated-budget';
 import {
   Dialog,
   DialogContent,

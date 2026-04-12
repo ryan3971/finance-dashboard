@@ -1,4 +1,4 @@
-import type { AccountType, Institution } from '@finance/shared';
+import type { AccountType, Institution } from '@finance/shared/constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Account } from '@/hooks/useAccounts';
 import { accountKeys } from '@/lib/queryKeys';

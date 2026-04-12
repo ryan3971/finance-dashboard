@@ -1,4 +1,4 @@
-import type { ImportResult } from '@finance/shared';
+import type { ImportResult } from '@finance/shared/types/transactions';
 
 interface Props {
   readonly result: ImportResult;

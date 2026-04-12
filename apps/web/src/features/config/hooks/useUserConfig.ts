@@ -1,7 +1,7 @@
 import { userConfigKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
-import type { UserConfig } from '@finance/shared';
+import type { UserConfig } from '@finance/shared/types/user-config';
 
 export function useUserConfig() {
   return useQuery<UserConfig>({

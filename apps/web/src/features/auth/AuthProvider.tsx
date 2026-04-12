@@ -1,7 +1,7 @@
 import { AuthContext, type User } from '@/features/auth/useAuth';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
-import { userSchema } from '@finance/shared';
+import { userSchema } from '@finance/shared/schemas/auth';
 
 export function AuthProvider({ children }: { readonly children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(() =>

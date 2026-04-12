@@ -1,7 +1,7 @@
 import { type Request, type Response, Router } from 'express';
 import { getUserConfig, updateUserConfig } from './user-config.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
-import { updateUserConfigSchema } from '@finance/shared';
+import { updateUserConfigSchema } from '@finance/shared/schemas/user-config';
 
 const router = Router();
 router.use(requireAuth);

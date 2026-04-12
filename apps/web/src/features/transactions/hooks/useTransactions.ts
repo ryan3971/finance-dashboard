@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { NeedWant } from '@finance/shared';
+import type { NeedWant } from '@finance/shared/constants';
 import { transactionKeys } from '@/lib/queryKeys';
 import { useQuery } from '@tanstack/react-query';
 

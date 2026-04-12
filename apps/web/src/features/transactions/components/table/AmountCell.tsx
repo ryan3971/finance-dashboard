@@ -1,4 +1,4 @@
-import { DEFAULT_CURRENCY } from '@finance/shared';
+import { DEFAULT_CURRENCY } from '@finance/shared/constants';
 import { parseAmount } from '@/lib/utils';
 
 function formatAmount(amount: number): string {

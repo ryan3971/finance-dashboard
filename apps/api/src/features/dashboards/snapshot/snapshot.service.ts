@@ -1,10 +1,9 @@
 import Decimal from 'decimal.js';
-import { NEED_WANT_OPTIONS } from '@finance/shared';
+import { NEED_WANT_OPTIONS, type AccountType } from '@finance/shared/constants';
 import type {
-  AccountType,
   SnapshotColumnValues,
   SnapshotDashboardResponse,
-} from '@finance/shared';
+} from '@finance/shared/types/dashboard';
 import type {
   AccountBalanceRow,
   AnticipatedRow,

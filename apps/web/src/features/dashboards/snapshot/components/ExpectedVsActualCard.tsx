@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type {
   SnapshotAnticipated,
   SnapshotColumnValues,
-} from '@finance/shared';
+} from '@finance/shared/types/dashboard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { fmt } from '@/lib/utils';
 

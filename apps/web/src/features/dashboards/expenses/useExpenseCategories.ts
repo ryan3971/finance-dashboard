@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ExpenseCategoriesResponse } from '@finance/shared';
+import type { ExpenseCategoriesResponse } from '@finance/shared/types/dashboard';
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 

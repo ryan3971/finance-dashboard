@@ -4,7 +4,7 @@ import {
   reactivateAccount,
   updateAccount,
 } from './accounts.services';
-import { accountFormSchema } from '@finance/shared';
+import { accountFormSchema } from '@finance/shared/schemas/accounts';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';
 import { type Request, type Response, Router } from 'express';

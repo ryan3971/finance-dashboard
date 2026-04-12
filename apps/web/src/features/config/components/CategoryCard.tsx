@@ -7,8 +7,8 @@ import {
   useDeleteCategory,
   useRenameCategory,
 } from '../hooks/useCategoryMutations';
-import { FIELD_LIMITS } from '@finance/shared';
-import type { Category } from '@finance/shared';
+import { FIELD_LIMITS } from '@finance/shared/constants';
+import type { Category } from '@finance/shared/types/categories';
 
 function AddSubcategoryForm({
   parentId,

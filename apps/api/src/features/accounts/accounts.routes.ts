@@ -1,4 +1,4 @@
-import { accountFormSchema } from '@finance/shared';
+import { accountFormSchema } from '@finance/shared/schemas/accounts';
 import { AccountError, AccountErrorCode } from './accounts.errors';
 import {
   createAccount,

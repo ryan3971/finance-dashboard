@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CategoryCard } from './CategoryCard';
 import { useCreateCategory } from '../hooks/useCategoryMutations';
-import { FIELD_LIMITS } from '@finance/shared';
-import type { Category } from '@finance/shared';
+import { FIELD_LIMITS } from '@finance/shared/constants';
+import type { Category } from '@finance/shared/types/categories';
 
 function AddCategoryForm({
   isIncome,

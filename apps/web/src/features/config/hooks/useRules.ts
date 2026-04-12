@@ -3,7 +3,8 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PatchRuleInput, Rule } from '@finance/shared';
+import type { PatchRuleInput } from '@finance/shared/schemas/rules';
+import type { Rule } from '@finance/shared/types/rules';
 
 export function useRules() {
   return useQuery<Rule[]>({

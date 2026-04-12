@@ -5,7 +5,7 @@ import Decimal from 'decimal.js';
 import type {
   IncomeDashboardResponse,
   IncomeMonthAllocation,
-} from '@finance/shared';
+} from '@finance/shared/types/dashboard';
 
 export interface IncomeRow {
   month: number;

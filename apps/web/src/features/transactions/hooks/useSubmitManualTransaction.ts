@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { CreateTransactionInput } from '@finance/shared';
+import type { CreateTransactionInput } from '@finance/shared/schemas/transactions';
 import { useCreateTransaction } from '@/features/transactions/hooks/useTransactionMutations';
 import { transactionKeys } from '@/lib/queryKeys';
 import { TOAST } from '@/lib/toastMessages';

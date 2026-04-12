@@ -6,7 +6,7 @@ import {
 } from './categorization-rules.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';
-import { patchRuleSchema } from '@finance/shared';
+import { patchRuleSchema } from '@finance/shared/schemas/rules';
 
 const router = Router();
 router.use(requireAuth);

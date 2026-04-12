@@ -1,9 +1,9 @@
+import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
 import type {
-  AnticipatedBudgetEntry,
   CreateAnticipatedBudgetInput,
   UpdateAnticipatedBudgetInput,
   UpsertMonthOverrideInput,
-} from '@finance/shared';
+} from '@finance/shared/schemas/anticipated-budget';
 import { TOAST } from '@/lib/toastMessages';
 import { anticipatedBudgetKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';

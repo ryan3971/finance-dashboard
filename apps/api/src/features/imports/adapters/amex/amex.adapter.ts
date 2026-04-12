@@ -4,12 +4,12 @@ import {
   parseAmount,
   parseDate,
 } from '../../pipeline/utils';
-import { DEFAULT_CURRENCY } from '@finance/shared';
+import { DEFAULT_CURRENCY } from '@finance/shared/constants';
 import type {
   CsvAdapter,
   RawTransaction,
   ValidationResult,
-} from '@finance/shared';
+} from '@finance/shared/types/adapters';
 
 export class AmexAdapter implements CsvAdapter {
   readonly institution = 'amex';

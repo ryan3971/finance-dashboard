@@ -1,8 +1,5 @@
-import {
-  FIELD_LIMITS,
-  type TagFormInput,
-  tagFormSchema,
-} from '@finance/shared';
+import { FIELD_LIMITS } from '@finance/shared/constants';
+import { type TagFormInput, tagFormSchema } from '@finance/shared/schemas/tags';
 import {
   Tooltip,
   TooltipContent,

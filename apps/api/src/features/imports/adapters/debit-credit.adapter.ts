@@ -4,12 +4,12 @@ import {
   parseAmount,
   parseDate,
 } from '../pipeline/utils';
-import { DEFAULT_CURRENCY, ISO_DATE_REGEX } from '@finance/shared';
+import { DEFAULT_CURRENCY, ISO_DATE_REGEX } from '@finance/shared/constants';
 import type {
   CsvAdapter,
   RawTransaction,
   ValidationResult,
-} from '@finance/shared';
+} from '@finance/shared/types/adapters';
 
 /**
  * Shared base class for debit/credit CSV adapters (CIBC, TD).

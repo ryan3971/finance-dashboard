@@ -1,9 +1,9 @@
 import api from '@/lib/api';
-import type { Category } from '@finance/shared';
+import type { Category } from '@finance/shared/types/categories';
 import { categoryKeys } from '@/lib/queryKeys';
 import { useQuery } from '@tanstack/react-query';
 
-export type { Category, Subcategory } from '@finance/shared';
+export type { Category, Subcategory } from '@finance/shared/types/categories';
 
 export function useCategories() {
   return useQuery<Category[]>({

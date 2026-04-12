@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { type User } from '@finance/shared';
+import { type User } from '@finance/shared/schemas/auth';
 
 export type { User };
 

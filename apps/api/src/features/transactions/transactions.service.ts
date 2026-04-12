@@ -18,7 +18,8 @@ import {
   KEYWORD_SLICE_LENGTH,
   TRANSACTION_SOURCE,
 } from '@/lib/constants';
-import type { NeedWant, PatchTransactionInput } from '@finance/shared';
+import type { NeedWant } from '@finance/shared/constants';
+import type { PatchTransactionInput } from '@finance/shared/types/transactions';
 import { db } from '@/db';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

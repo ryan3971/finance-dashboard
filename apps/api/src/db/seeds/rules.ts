@@ -1,4 +1,4 @@
-import type { NeedWant } from '@finance/shared';
+import type { NeedWant } from '@finance/shared/constants';
 
 export interface SeedRule {
   keyword: string;

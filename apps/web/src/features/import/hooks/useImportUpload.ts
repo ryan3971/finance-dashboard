@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import api from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/errors';
-import type { ImportResult } from '@finance/shared';
+import type { ImportResult } from '@finance/shared/types/transactions';
 import { transactionKeys } from '@/lib/queryKeys';
 import { useQueryClient } from '@tanstack/react-query';
 

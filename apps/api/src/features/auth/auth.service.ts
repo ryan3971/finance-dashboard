@@ -4,7 +4,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
 } from '@/lib/jwt';
-import type { LoginInput, RegisterInput } from '@finance/shared';
+import type { LoginInput, RegisterInput } from '@finance/shared/schemas/auth';
 import { refreshTokens, users } from '@/db/schema';
 import { AuthError, AuthErrorCode } from '@/features/auth/auth.errors';
 import bcrypt from 'bcryptjs';

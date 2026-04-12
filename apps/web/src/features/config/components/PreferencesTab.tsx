@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateUserConfigSchema } from '@finance/shared';
+import { updateUserConfigSchema } from '@finance/shared/schemas/user-config';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';

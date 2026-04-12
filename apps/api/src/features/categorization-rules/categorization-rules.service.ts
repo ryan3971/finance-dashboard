@@ -2,7 +2,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { categorizationRules, categories } from '@/db/schema';
 import { db, type DbTransaction } from '@/db';
 import { desc, eq } from 'drizzle-orm';
-import type { PatchRuleInput } from '@finance/shared';
+import type { PatchRuleInput } from '@finance/shared/schemas/rules';
 import { RuleError, RuleErrorCode } from './categorization-rules.errors';
 
 const cat = alias(categories, 'cat');

@@ -1,4 +1,4 @@
-import type { AnticipatedBudgetEntry } from '@finance/shared';
+import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
 import { Badge } from '@/components/ui/Badge';
 import { DeleteEntryDialog } from './DeleteEntryDialog';
 import { MonthChips } from './MonthChips';

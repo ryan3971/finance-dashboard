@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { createAnticipatedBudgetSchema } from '@finance/shared';
+import { createAnticipatedBudgetSchema } from '@finance/shared/schemas/anticipated-budget';
 import { createEntry, listEntries } from './anticipated-budget.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { z } from 'zod';

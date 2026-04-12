@@ -15,11 +15,11 @@ import {
   ImportError,
   ImportErrorCode,
 } from '@/features/imports/imports.errors';
+import type { ImportResult } from '@finance/shared/types/transactions';
 import type {
-  ImportResult,
   RawInvestmentTransaction,
   RawTransaction,
-} from '@finance/shared';
+} from '@finance/shared/types/adapters';
 import { buildCompositeKey } from './pipeline/utils';
 import { db } from '@/db';
 import { detectTransfers } from '@/pipelines/transfer-detection/transfer-detection.service';

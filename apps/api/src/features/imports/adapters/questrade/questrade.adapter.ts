@@ -3,12 +3,12 @@ import {
   parseAmount,
   parseDate,
 } from '../../pipeline/utils';
-import { DEFAULT_CURRENCY } from '@finance/shared';
+import { DEFAULT_CURRENCY } from '@finance/shared/constants';
 import type {
   CsvAdapter,
   RawInvestmentTransaction,
   ValidationResult,
-} from '@finance/shared';
+} from '@finance/shared/types/adapters';
 
 const ACCOUNT_TYPE_MAP: Record<
   string,

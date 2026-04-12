@@ -1,4 +1,4 @@
-import { loginSchema, registerSchema } from '@finance/shared';
+import { loginSchema, registerSchema } from '@finance/shared/schemas/auth';
 import { REFRESH_TOKEN_MS } from '@/lib/constants';
 import {
   loginUser,

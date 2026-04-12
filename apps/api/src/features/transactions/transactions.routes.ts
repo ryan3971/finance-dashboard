@@ -1,5 +1,5 @@
 import { getAuthUser, requireAuth } from '@/lib/auth';
-import { ISO_DATE_REGEX, PAGINATION } from '@finance/shared';
+import { ISO_DATE_REGEX, PAGINATION } from '@finance/shared/constants';
 import type { Request, Response } from 'express';
 import { listTransactions } from './transactions.service';
 import { Router } from 'express';

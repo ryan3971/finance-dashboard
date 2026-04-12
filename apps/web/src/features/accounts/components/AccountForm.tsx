@@ -1,10 +1,5 @@
-import {
-  ACCOUNT_TYPES,
-  type AccountFormInput,
-  accountFormSchema,
-  DEFAULT_CURRENCY,
-  INSTITUTIONS,
-} from '@finance/shared';
+import { ACCOUNT_TYPES, DEFAULT_CURRENCY, INSTITUTIONS } from '@finance/shared/constants';
+import { type AccountFormInput, accountFormSchema } from '@finance/shared/schemas/accounts';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';

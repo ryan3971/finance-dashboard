@@ -5,7 +5,7 @@ import {
   getCategoryTree,
   renameCategory,
 } from './categories.service';
-import { createCategorySchema, patchCategorySchema } from '@finance/shared';
+import { createCategorySchema, patchCategorySchema } from '@finance/shared/schemas/categories';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';
 import { Router } from 'express';

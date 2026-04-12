@@ -8,12 +8,8 @@ import {
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';
 import { Router } from 'express';
-import {
-  DEFAULT_CURRENCY,
-  FIELD_LIMITS,
-  ISO_DATE_REGEX,
-  needWantSchema,
-} from '@finance/shared';
+import { DEFAULT_CURRENCY, FIELD_LIMITS, ISO_DATE_REGEX } from '@finance/shared/constants';
+import { needWantSchema } from '@finance/shared/schemas/transactions';
 import { z } from 'zod';
 
 const router = Router();

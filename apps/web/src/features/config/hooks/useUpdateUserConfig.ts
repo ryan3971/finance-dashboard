@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { UpdateUserConfigInput, UserConfig } from '@finance/shared';
+import type { UpdateUserConfigInput } from '@finance/shared/schemas/user-config';
+import type { UserConfig } from '@finance/shared/types/user-config';
 import { dashboardKeys, userConfigKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 

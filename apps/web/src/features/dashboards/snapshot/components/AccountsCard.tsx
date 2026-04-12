@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { SnapshotAccountRow, SnapshotEmergencyFund } from '@finance/shared';
+import type { SnapshotAccountRow, SnapshotEmergencyFund } from '@finance/shared/types/dashboard';
 import { fmt } from '@/lib/utils';
 
 interface Props {

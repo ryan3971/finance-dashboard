@@ -3,7 +3,7 @@ import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
 import { transactions } from '@/db/schema';
-import { TRANSFER_KEYWORDS } from '@finance/shared';
+import { TRANSFER_KEYWORDS } from '@finance/shared/constants';
 import { TransferError, TransferErrorCode } from './transfer-detection.errors';
 
 export interface TransferCandidate {

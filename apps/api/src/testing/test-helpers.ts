@@ -13,7 +13,7 @@ import {
   users,
 } from '@/db/schema';
 import type { Application } from 'express';
-import type { AuthResponse } from '@finance/shared';
+import type { AuthResponse } from '@finance/shared/types/auth';
 import { db } from '@/db';
 import { isNotNull } from 'drizzle-orm';
 import request from 'supertest';

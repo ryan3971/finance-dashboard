@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto';
 
 import jwt from 'jsonwebtoken';
 
-import type { JwtPayload } from '@finance/shared';
+import type { JwtPayload } from '@finance/shared/types/auth';
 
 import { config } from './config';
 import { REFRESH_TOKEN_MS } from './constants';

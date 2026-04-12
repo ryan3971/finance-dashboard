@@ -1,4 +1,4 @@
-import type { AnticipatedBudgetEntry } from '@finance/shared';
+import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
 
 interface Props {

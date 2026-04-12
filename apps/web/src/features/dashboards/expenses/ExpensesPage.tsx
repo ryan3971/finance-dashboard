@@ -7,7 +7,7 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-import type { ExpenseCategoryRow, ExpenseMonth } from '@finance/shared';
+import type { ExpenseCategoryRow, ExpenseMonth } from '@finance/shared/types/dashboard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';

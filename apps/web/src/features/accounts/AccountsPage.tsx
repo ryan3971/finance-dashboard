@@ -4,7 +4,7 @@ import {
   useReactivateAccount,
 } from '@/features/accounts/hooks/useAccountMutations';
 import type { Account } from '@/hooks/useAccounts';
-import { ACCOUNT_TYPE_ORDER } from '@finance/shared';
+import { ACCOUNT_TYPE_ORDER } from '@finance/shared/constants';
 import { AccountEditPanel } from './components/AccountEditPanel';
 import { AccountRow } from './components/AccountRow';
 import { Button } from '@/components/ui/Button';

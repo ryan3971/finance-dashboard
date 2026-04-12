@@ -3,7 +3,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Category, Subcategory } from '@finance/shared';
+import type { Category, Subcategory } from '@finance/shared/types/categories';
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();

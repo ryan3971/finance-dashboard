@@ -11,7 +11,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { DEFAULT_CURRENCY, NEED_WANT_OPTIONS } from '@finance/shared';
+import { DEFAULT_CURRENCY, NEED_WANT_OPTIONS } from '@finance/shared/constants';
 import { relations } from 'drizzle-orm';
 
 // ─── Auth ────────────────────────────────────────────────────────────────────

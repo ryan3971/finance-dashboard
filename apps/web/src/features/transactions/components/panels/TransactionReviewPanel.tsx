@@ -3,7 +3,7 @@ import {
   NEED_WANT_OPTIONS,
   type NeedWant,
   TRANSFER_KEYWORDS,
-} from '@finance/shared';
+} from '@finance/shared/constants';
 import {
   useConfirmTransfer,
   useDismissTransfer,

@@ -1,4 +1,4 @@
-import type { AnticipatedBudgetResponse } from '@finance/shared';
+import type { AnticipatedBudgetResponse } from '@finance/shared/types/anticipated-budget';
 import { anticipatedBudgetKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';

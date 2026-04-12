@@ -2,7 +2,7 @@ import type {
   CreateAnticipatedBudgetInput,
   UpdateAnticipatedBudgetInput,
   UpsertMonthOverrideInput,
-} from '@finance/shared';
+} from '@finance/shared/schemas/anticipated-budget';
 import { and, eq, inArray } from 'drizzle-orm';
 import Decimal from 'decimal.js';
 import {

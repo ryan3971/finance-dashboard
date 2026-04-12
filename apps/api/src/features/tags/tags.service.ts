@@ -3,7 +3,7 @@ import { DatabaseError } from 'pg';
 import { db } from '@/db';
 import { tags } from '@/db/schema';
 import { TagError, TagErrorCode } from './tags.errors';
-import type { CreateTagInput } from '@finance/shared';
+import type { CreateTagInput } from '@finance/shared/schemas/tags';
 
 const TAG_COLUMNS = {
   id: tags.id,

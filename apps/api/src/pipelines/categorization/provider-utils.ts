@@ -1,4 +1,4 @@
-import type { NeedWant } from '@finance/shared';
+import type { NeedWant } from '@finance/shared/constants';
 import { eq, isNull, or } from 'drizzle-orm';
 import { categories } from '@/db/schema';
 import { db } from '@/db';
