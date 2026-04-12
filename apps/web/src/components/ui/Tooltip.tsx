@@ -9,7 +9,7 @@ function TooltipContent({
   className,
   sideOffset = 4,
   ...props
-}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>) {
+}: Readonly<React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>>) {
   return (
     <TooltipPrimitive.Content
       sideOffset={sideOffset}

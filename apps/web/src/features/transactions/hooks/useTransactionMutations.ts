@@ -16,6 +16,8 @@ export function useCreateTransaction() {
       return data;
     },
     onSuccess: () => {
+      // TODO: if I want to be more efficient, I could instead of invalidating the whole list query, directly add the new transaction to the cache for the relevant queries (e.g. transactions list with matching filters, individual transaction query) using queryClient.setQueryData. But for now, I'll just invalidate the whole list to keep it simple and ensure all relevant queries are updated.
+      // TODO: this may be where I want to invalidate the dashboard queries as well if I want the dashboard to update in real-time while the user is still on it, instead of waiting until they navigate back to it (currently relying on refetchOnWindowFocus: true for that). Alternatively, I could consider setting up some shared keys so that invalidating transactions also invalidates the relevant dashboard queries without having to specify them all here.
       void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
       toast.success(TOAST.TRANSACTION_CREATED);
     },

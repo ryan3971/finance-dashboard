@@ -14,7 +14,17 @@ import { eq } from 'drizzle-orm';
 import { seedUserCategories, seedUserRules } from '@/db/seed-categories';
 
 const BCRYPT_ROUNDS = 12;
-
+/**
+ * Registers a new user by:
+ *  1) checking for existing email
+ *  2) hashing the password with bcrypt
+ *  3) creating the user in the database
+ *  4) seeding their category tree with default categories and rules
+ *  5) issuing an access and refresh token pair for immediate authentication.
+ * All database operations are performed within a transaction to ensure atomicity — if any step fails, the entire operation is rolled back, leaving no partial data (e.g. a user without seeded categories or issued tokens).
+ * @param input The registration input containing the user's email and password
+ * @returns
+ */
 export async function registerUser(input: RegisterInput) {
   // Check for existing user
   const existing = await db
@@ -27,6 +37,7 @@ export async function registerUser(input: RegisterInput) {
     throw new AuthError(AuthErrorCode.EMAIL_TAKEN);
   }
 
+  // Hash the password with bcrypt. The salt is generated automatically and included in the hash string.
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
 
   // Create user, seed their category tree, and issue tokens atomically.
@@ -57,7 +68,12 @@ export async function registerUser(input: RegisterInput) {
     refreshToken,
   };
 }
-
+/**
+ * Logs in a user by
+ *  1) verifying their credentials
+ *  2) issuing a new access and refresh token.
+ * Implements constant-time password comparison to prevent user enumeration.
+ */
 export async function loginUser(input: LoginInput) {
   const [user] = await db
     .select({
@@ -91,7 +107,25 @@ export async function loginUser(input: LoginInput) {
     refreshToken,
   };
 }
-
+/**
+ * Exchanges a valid refresh token for a new access/refresh token pair (token rotation).
+ *
+ * Two-stage validation is intentional:
+ *  1. **JWT signature check** — verifies the token was issued by this server and hasn't been
+ *     tampered with. Rejects immediately if the signature is invalid or the token is expired.
+ *  2. **DB lookup by hash** — confirms the token is still active (i.e. hasn't already been
+ *     rotated or explicitly revoked). The raw token is never stored; only its SHA-256 hash is.
+ *
+ * On success, the old token is deleted and a new pair is issued inside a single transaction.
+ * If the insert fails the delete is rolled back, so the user's session is never silently destroyed.
+ *
+ * @param incomingRefreshToken - The refresh token string sent by the client (typically from an
+ *   HttpOnly cookie).
+ * @returns A new `{ accessToken, refreshToken }` pair. The client must store the new refresh
+ *   token and discard the old one.
+ * @throws {AuthError} `INVALID_REFRESH_TOKEN` — JWT signature/expiry check failed.
+ * @throws {AuthError} `REFRESH_TOKEN_NOT_FOUND` — token not in DB or past its `expiresAt` date.
+ */
 export async function refreshAccessToken(incomingRefreshToken: string) {
   let payload: { sub: string; email: string };
   try {
@@ -136,6 +170,13 @@ export async function logoutUser(incomingRefreshToken: string) {
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
+/**
+ *
+ * @param userId The user ID to associate with the tokens
+ * @param email The user's email, included in the token payload for convenience (e.g. to avoid a DB lookup when refreshing the access token)
+ * @param tx An optional transaction object. If provided, the token pair will be issued within this transaction; otherwise, a new transaction will be created for the DB operations. This allows the caller to control transactional boundaries, ensuring atomicity when issuing tokens alongside other operations (e.g. user creation).
+ * @returns
+ */
 async function issueTokenPair(
   userId: string,
   email: string,
@@ -162,7 +203,12 @@ async function issueTokenPair(
 
   return { accessToken, refreshToken };
 }
-
+/**
+ * Storing it as a SHA-256 hash means that if the database is compromised,
+ * attackers cannot impersonate users with stolen tokens.
+ * @param token The raw refresh token string
+ * @returns
+ */
 function hashRefreshToken(token: string): string {
   // SHA-256 hash of the raw token value for storage
   // We use crypto rather than bcrypt here because we need exact lookup,
