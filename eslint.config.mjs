@@ -430,6 +430,16 @@ export default defineConfig(
     },
   },
 
+  // ── API: seed scripts may import from features (they are dev-only orchestrators) ──
+  {
+    name: 'api/seed-scripts-feature-access',
+    files: ['apps/api/src/db/seed-*.ts'],
+    plugins: { import: importPlugin },
+    rules: {
+      'import/no-restricted-paths': 'off',
+    },
+  },
+
   // ── API: intra-feature layer ordering  (routes → services → db) ───────────
   // Service files sit below route handlers; they must not reach upward into routes.
   {
