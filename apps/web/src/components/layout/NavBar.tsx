@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { to: '/accounts' as const, label: 'Accounts' },
   { to: '/import' as const, label: 'Import' },
   { to: '/anticipated-budget' as const, label: 'Budget' },
+  { to: '/dashboard/snapshot' as const, label: 'Snapshot' },
   { to: '/dashboard/income' as const, label: 'Income' },
   { to: '/dashboard/expenses' as const, label: 'Expenses' },
   { to: '/config' as const, label: 'Config' },

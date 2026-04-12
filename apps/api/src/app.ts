@@ -3,6 +3,7 @@ import accountsMutationRouter from './features/accounts/accounts-mutation.routes
 import accountsRouter from './features/accounts/accounts.routes';
 import incomeDashboardRouter from './features/dashboards/income/income.routes';
 import expensesDashboardRouter from './features/dashboards/expenses/expenses.routes';
+import snapshotDashboardRouter from './features/dashboards/snapshot/snapshot.routes';
 import anticipatedBudgetItemRouter from './features/anticipated-budget/anticipated-budget-item.routes';
 import anticipatedBudgetRouter from './features/anticipated-budget/anticipated-budget.routes';
 import authRouter from './features/auth/auth.routes';
@@ -56,7 +57,7 @@ export function createApp() {
     anticipatedBudgetRouter,
     anticipatedBudgetItemRouter
   );
-  app.use('/api/v1/dashboard', incomeDashboardRouter, expensesDashboardRouter);
+  app.use('/api/v1/dashboard', incomeDashboardRouter, expensesDashboardRouter, snapshotDashboardRouter);
 
   // The error handler must be registered before any other error middleware and after all controllers
   Sentry.setupExpressErrorHandler(app);

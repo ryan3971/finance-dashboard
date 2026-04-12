@@ -40,3 +40,49 @@ export interface ExpenseCategoriesResponse {
   year: number;
   rows: ExpenseCategoryRow[];
 }
+
+export interface SnapshotAccountRow {
+  id: string;
+  name: string;
+  type: string;
+  institution: string;
+  currency: string;
+  isCredit: boolean;
+  balance: number;
+}
+
+export interface SnapshotEmergencyFund {
+  target: number | null;
+  balance: number;
+  percentage: number | null;
+}
+
+export interface SnapshotColumnValues {
+  total: number;
+  needs: number;
+  wants: number;
+}
+
+export interface SnapshotMonthlyIncome {
+  income: number;
+  incomeLessInvestment: SnapshotColumnValues;
+}
+
+export interface SnapshotAnticipated {
+  hasEntries: boolean;
+  expectedIncome: number;
+  expectedSpendingIncome: SnapshotColumnValues;
+  expectedExpenses: SnapshotColumnValues;
+  expectedAvailable: SnapshotColumnValues;
+  remainingBudget: SnapshotColumnValues;
+}
+
+export interface SnapshotDashboardResponse {
+  month: number;
+  year: number;
+  accounts: SnapshotAccountRow[];
+  emergencyFund: SnapshotEmergencyFund;
+  monthlyIncome: SnapshotMonthlyIncome;
+  monthlyExpenses: SnapshotColumnValues;
+  anticipated: SnapshotAnticipated;
+}
