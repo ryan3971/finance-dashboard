@@ -296,6 +296,26 @@ export default defineConfig(
               except: ['./dashboards'],
             },
             {
+              target: './apps/api/src/features/dashboards/expenses',
+              from: './apps/api/src/features/dashboards',
+              except: ['./expenses'],
+            },
+            {
+              target: './apps/api/src/features/dashboards/income',
+              from: './apps/api/src/features/dashboards',
+              except: ['./income'],
+            },
+            {
+              target: './apps/api/src/features/dashboards/snapshot',
+              from: './apps/api/src/features/dashboards',
+              except: ['./snapshot'],
+            },
+            {
+              target: './apps/api/src/features/dashboards/ytd',
+              from: './apps/api/src/features/dashboards',
+              except: ['./ytd'],
+            },
+            {
               target: './apps/api/src/features/imports',
               from: './apps/api/src/features',
               except: ['./imports'],
