@@ -3,7 +3,7 @@ import {
   useDeactivateAccount,
   useReactivateAccount,
 } from '@/features/accounts/hooks/useAccountMutations';
-import type { Account } from '@/features/accounts/hooks/useAccounts';
+import type { Account } from '@/hooks/useAccounts';
 import { ACCOUNT_TYPE_ORDER } from '@finance/shared';
 import { AccountEditPanel } from './components/AccountEditPanel';
 import { AccountRow } from './components/AccountRow';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { DeactivateAccountDialog } from './components/DeactivateAccountDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { useAllAccounts } from '@/features/accounts/hooks/useAccounts';
+import { useAllAccounts } from '@/hooks/useAccounts';
 
 // Matches the number of Account fields displayed as table columns
 const ACCOUNT_SKELETON_ROW_COUNT = 5;

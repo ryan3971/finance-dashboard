@@ -1,4 +1,4 @@
-import type { Account } from '@/features/accounts/hooks/useAccounts';
+import type { Account } from '@/hooks/useAccounts';
 import { AccountEditPanel } from './AccountEditPanel';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';

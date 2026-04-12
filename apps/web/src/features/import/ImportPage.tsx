@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/common/FormField';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Select } from '@/components/ui/Select';
-import { useAccounts } from '@/features/accounts/hooks/useAccounts';
+import { useAccounts } from '@/hooks/useAccounts';
 import { ImportResultCard } from './components/ImportResultCard';
 import { useImportUpload } from './hooks/useImportUpload';
 

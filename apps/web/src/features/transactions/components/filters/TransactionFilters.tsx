@@ -1,5 +1,5 @@
 import { Select } from '@/components/ui/Select';
-import { useAccounts } from '@/features/accounts/hooks/useAccounts';
+import { useAccounts } from '@/hooks/useAccounts';
 import { useCategories } from '@/hooks/useCategories';
 
 export interface FilterState {

@@ -3,7 +3,7 @@ import {
   useCreateAccount,
   useUpdateAccount,
 } from '@/features/accounts/hooks/useAccountMutations';
-import type { Account } from '@/features/accounts/hooks/useAccounts';
+import type { Account } from '@/hooks/useAccounts';
 
 interface Props {
   readonly account: Account | null;

@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import type { Account } from '@/features/accounts/hooks/useAccounts';
+import type { Account } from '@/hooks/useAccounts';
 import { Button } from '@/components/ui/Button';
 
 interface Props {

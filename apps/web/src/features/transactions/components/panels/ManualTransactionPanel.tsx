@@ -15,7 +15,7 @@ import { Controller, useController, useForm } from 'react-hook-form';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useAccounts } from '@/features/accounts/hooks/useAccounts';
+import { useAccounts } from '@/hooks/useAccounts';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const DEFAULT_TAG_COLOR = '#6B7280';

@@ -165,3 +165,7 @@ The fix:
 web/feature-boundaries — added the web→api cross-app zone at the end of its zones array
 api/feature-boundaries — added the api→web cross-app zone at the end of its zones array
 monorepo/cross-app-isolation — renamed to monorepo/shared-pkg-isolation, narrowed files to packages/** only (no longer touches apps/**), retains only the packages/shared → apps restriction
+---
+Created src/hooks/useAccounts.ts — moved useAccounts, useAllAccounts, and the Account interface to the shared hooks layer (same as useCategories)
+Deleted features/accounts/hooks/useAccounts.ts
+Updated all 8 imports across: AccountsPage, AccountRow, AccountEditPanel, DeactivateAccountDialog, useAccountMutations, ManualTransactionPanel, TransactionFilters, and ImportPage to import from @/hooks/useAccounts
