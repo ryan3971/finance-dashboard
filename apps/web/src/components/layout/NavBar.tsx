@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { to: '/dashboard/snapshot' as const, label: 'Snapshot' },
   { to: '/dashboard/income' as const, label: 'Income' },
   { to: '/dashboard/expenses' as const, label: 'Expenses' },
+  { to: '/dashboard/ytd' as const, label: 'YTD' },
   { to: '/config' as const, label: 'Config' },
 ];
 

@@ -37,3 +37,14 @@ export const CONFIDENCE = {
 // Auto-rule creation defaults
 export const AUTO_RULE_PRIORITY = 5;
 export const KEYWORD_SLICE_LENGTH = 40;
+
+// Investment transaction action types
+export const INVESTMENT_ACTION = {
+  DEPOSIT: 'deposit',
+  WITHDRAWAL: 'withdrawal',
+  BUY: 'buy',
+  SELL: 'sell',
+  DIVIDEND: 'dividend',
+  TRANSFER: 'transfer',
+  FEE: 'fee',
+} as const;

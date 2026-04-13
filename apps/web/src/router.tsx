@@ -11,6 +11,7 @@ import { AnticipatedBudgetPage } from '@/features/anticipated-budget/Anticipated
 import { ExpensesPage } from '@/features/dashboards/expenses/ExpensesPage';
 import { IncomePage } from '@/features/dashboards/income/IncomePage';
 import { SnapshotPage } from '@/features/dashboards/snapshot/SnapshotPage';
+import { YtdPage } from '@/features/dashboards/ytd/YtdPage';
 import { ConfigPage } from '@/features/config/ConfigPage';
 import { ImportPage } from '@/features/import/ImportPage';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -112,6 +113,13 @@ const snapshotDashboardRoute = createRoute({
   component: SnapshotPage,
 });
 
+const ytdDashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard/ytd',
+  beforeLoad: requireAuth,
+  component: YtdPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
@@ -123,6 +131,7 @@ const routeTree = rootRoute.addChildren([
   incomeDashboardRoute,
   expenseDashboardRoute,
   snapshotDashboardRoute,
+  ytdDashboardRoute,
 ]);
 
 export const router = createRouter({

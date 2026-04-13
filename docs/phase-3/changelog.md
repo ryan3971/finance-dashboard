@@ -157,15 +157,71 @@ getUserConfig moved here from the service
 All four query functions imported from the repository
 Promise.all over all five fetches (unchanged parallelism)
 year/month derived here from new Date() and passed into buildSnapshotResponse
+
 ---
-Everything looks correct. The root cause was that in ESLint's flat config, rules are not merged across config objects — the last matching config for a given rule wins. The monorepo/cross-app-isolation block was defined after web/feature-boundaries and api/feature-boundaries, and since all three used import/no-restricted-paths, the monorepo block silently replaced the feature boundary zones for all apps/** files.
+
+Everything looks correct. The root cause was that in ESLint's flat config, rules are not merged across config objects — the last matching config for a given rule wins. The monorepo/cross-app-isolation block was defined after web/feature-boundaries and api/feature-boundaries, and since all three used import/no-restricted-paths, the monorepo block silently replaced the feature boundary zones for all apps/\*\* files.
 
 The fix:
 
 web/feature-boundaries — added the web→api cross-app zone at the end of its zones array
 api/feature-boundaries — added the api→web cross-app zone at the end of its zones array
 monorepo/cross-app-isolation — renamed to monorepo/shared-pkg-isolation, narrowed files to packages/** only (no longer touches apps/**), retains only the packages/shared → apps restriction
+
 ---
+
 Created src/hooks/useAccounts.ts — moved useAccounts, useAllAccounts, and the Account interface to the shared hooks layer (same as useCategories)
 Deleted features/accounts/hooks/useAccounts.ts
 Updated all 8 imports across: AccountsPage, AccountRow, AccountEditPanel, DeactivateAccountDialog, useAccountMutations, ManualTransactionPanel, TransactionFilters, and ImportPage to import from @/hooks/useAccounts
+
+---
+
+API (new):
+
+ytd.service.ts — 3 DB queries (income by month, expenses by month+needWant, investment contributions where action='deposit') + buildYtdResponse (future months → null, past months → computed values with Decimal.js)
+ytd.routes.ts — GET /dashboard/ytd?year=YYYY
+ytd.routes.test.ts — 10 integration tests covering auth, blank future months, spending income calculation, needs/wants/expenses, transfer exclusion, and user isolation
+app.ts — registered the new router
+Shared types (dashboard.ts):
+
+YtdMonth as a discriminated union (null variant for future months, number variant for past months — enables proper TypeScript narrowing without assertions)
+YtdDashboardResponse
+Frontend (new):
+
+useYtdDashboard.ts — query hook
+YtdPage.tsx — 12-row table with totals row, blank cells for future months, text-positive/text-danger colour coding on net values
+Wiring (modified):
+
+queryKeys.ts — dashboardKeys.ytd
+router.tsx — /dashboard/ytd route
+NavBar.tsx — YTD nav link between Expenses and Config
+
+---
+
+constants.ts:41-49 — INVESTMENT_ACTION added with all known action values from the questrade adapter
+ytd.service.ts:35 — monthOf helper centralises the EXTRACT(MONTH FROM ...)::int pattern; each query now calls monthOf(col) instead of repeating the raw SQL
+ytd.service.ts:111 — INVESTMENT_ACTION.DEPOSIT replaces the 'deposit' literal
+ytd.service.ts:182-183 — dead throw removed; ! assertion kept with eslint-disable and an explanatory comment
+
+---
+
+Decomposition
+
+YtdAmountCell — renders one <td> with a colored <span>; replaces the repeated inline pattern across YtdRow and the totals row (10 instances collapsed)
+YtdTotalsRow — typed with Omit<DataMonth, 'month'>; now a six-liner
+YtdSkeleton — isolated component; SKELETON_ROWS hoisted to module scope so the array is constructed once at import time, not per render
+Color logic
+
+amountColorClass(value, variant) — single switch covers all five variants; the five distinct rules are now each written once
+Type safety
+
+DataMonth = Extract<YtdMonth, { spendingIncome: number }> — named alias used throughout
+Filter uses the explicit type predicate (m): m is DataMonth so dataMonths is narrowed to DataMonth[] and the reduce sees number, not number | null
+MONTH_LABELS[month.month - 1] ?? String(month.month) — satisfies noUncheckedIndexedAccess; bad values surface visibly
+Correctness
+
+totals reduce rounds each accumulation step to two decimal places via Math.round(x \* 100) / 100
+totals useMemo dependency changed from data?.months to dataMonths — it directly depends on the filtered array, not the upstream source
+Refetch indicator
+
+Table wrapper gets transition-opacity duration-200 and toggles between opacity-50 / opacity-100 on isFetching — the noop placeholder is gone

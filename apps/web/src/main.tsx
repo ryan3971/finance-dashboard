@@ -10,11 +10,12 @@ import { TooltipProvider } from '@/components/ui/Tooltip';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
+      retry: 1, // Retry failed requests once
     },
   },
 });

@@ -86,3 +86,26 @@ export interface SnapshotDashboardResponse {
   monthlyExpenses: SnapshotColumnValues;
   anticipated: SnapshotAnticipated;
 }
+
+export type YtdMonth =
+  | {
+      month: number;
+      spendingIncome: null;
+      expenses: null;
+      netSpendingIncome: null;
+      wants: null;
+      needs: null;
+    }
+  | {
+      month: number;
+      spendingIncome: number;
+      expenses: number;
+      netSpendingIncome: number;
+      wants: number;
+      needs: number;
+    };
+
+export interface YtdDashboardResponse {
+  year: number;
+  months: YtdMonth[];
+}

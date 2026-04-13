@@ -38,4 +38,5 @@ export const dashboardKeys = {
   expensesCategories: (year: number) =>
     ['dashboard', 'expenses', 'categories', year] as const,
   snapshot: () => ['dashboard', 'snapshot'] as const,
+  ytd: (year: number) => ['dashboard', 'ytd', year] as const,
 };
