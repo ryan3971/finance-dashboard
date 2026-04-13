@@ -4,6 +4,7 @@
 import { sql } from 'drizzle-orm';
 import { userConfig } from '@/db/schema';
 import { db } from '@/db';
+import { assertDefined } from '@/lib/assert';
 
 export interface DashboardUserConfig {
   emergencyFundTarget: string | null;
@@ -29,5 +30,6 @@ export async function queryDashboardUserConfig(
       investmentsPercentage: userConfig.investmentsPercentage,
     });
 
+  assertDefined(row, 'Expected user config upsert to return a row');
   return row;
 }

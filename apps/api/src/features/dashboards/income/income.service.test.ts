@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildIncomeResponse } from './income.service';
+import { assertDefined } from '@/lib/assert';
 
 const noPercentages = {
   needsPercentage: null,
@@ -24,9 +25,15 @@ describe('buildIncomeResponse', () => {
   it('fills present months with correct total and leaves others at 0', () => {
     const rows = [{ month: 3, total: '4500.00' }];
     const result = buildIncomeResponse(2025, rows, noPercentages);
-    expect(result.months[2].total).toBe(4500);
-    expect(result.months[0].total).toBe(0);
-    expect(result.months[11].total).toBe(0);
+    const march = result.months[2];
+    assertDefined(march, 'Expected month at index 2 (March)');
+    const jan = result.months[0];
+    assertDefined(jan, 'Expected month at index 0 (January)');
+    const dec = result.months[11];
+    assertDefined(dec, 'Expected month at index 11 (December)');
+    expect(march.total).toBe(4500);
+    expect(jan.total).toBe(0);
+    expect(dec.total).toBe(0);
   });
 
   it('sets allocation null for all months when no percentages configured', () => {
@@ -39,6 +46,7 @@ describe('buildIncomeResponse', () => {
     const rows = [{ month: 1, total: '1000.00' }];
     const result = buildIncomeResponse(2025, rows, percentages50_30_20);
     const jan = result.months[0];
+    assertDefined(jan, 'Expected month at index 0 (January)');
     expect(jan.allocation).toEqual({
       needs: 500,
       wants: 300,
@@ -48,7 +56,9 @@ describe('buildIncomeResponse', () => {
 
   it('returns zero allocations (not null) for empty months when percentages configured', () => {
     const result = buildIncomeResponse(2025, [], percentages50_30_20);
-    expect(result.months[0].allocation).toEqual({
+    const jan = result.months[0];
+    assertDefined(jan, 'Expected month at index 0 (January)');
+    expect(jan.allocation).toEqual({
       needs: 0,
       wants: 0,
       investments: 0,
@@ -63,6 +73,7 @@ describe('buildIncomeResponse', () => {
       { needsPercentage: 33, wantsPercentage: 33, investmentsPercentage: 34 }
     );
     const jun = result.months[5];
+    assertDefined(jun, 'Expected month at index 5 (June)');
     expect(jun.allocation).not.toBeNull();
     expect(jun.allocation!.needs).toBe(33);
     expect(jun.allocation!.wants).toBe(33);

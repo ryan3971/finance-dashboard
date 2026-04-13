@@ -4,6 +4,7 @@ import { categories, categorizationRules, users } from './schema';
 import { db } from './index';
 import { seedSystemCategories, seedUserRules } from './seed-categories';
 import { RULES } from './seeds/rules';
+import { assertDefined } from '@/lib/assert';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -31,13 +32,16 @@ async function getCategoryId(
       return null;
     }
 
+    const parentRow = parent[0];
+    assertDefined(parentRow, 'Expected parent category row after length check');
+
     const sub = await db
       .select({ id: categories.id })
       .from(categories)
       .where(
         and(
           isNull(categories.userId),
-          eq(categories.parentId, parent[0].id),
+          eq(categories.parentId, parentRow.id),
           eq(categories.name, name)
         )
       )
@@ -49,7 +53,9 @@ async function getCategoryId(
       );
       return null;
     }
-    return sub[0].id;
+    const subRow = sub[0];
+    assertDefined(subRow, 'Expected subcategory row after length check');
+    return subRow.id;
   }
 
   const result = await db
@@ -68,7 +74,9 @@ async function getCategoryId(
     console.warn(`  ⚠ Category not found: "${name}"`);
     return null;
   }
-  return result[0].id;
+  const resultRow = result[0];
+  assertDefined(resultRow, 'Expected category row after length check');
+  return resultRow.id;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────

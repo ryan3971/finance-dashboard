@@ -7,6 +7,7 @@ import {
 import { createApp } from '@/app';
 import { db } from '@/db';
 import request from 'supertest';
+import { assertDefined } from '@/lib/assert';
 
 const app = createApp();
 
@@ -57,6 +58,7 @@ describe('GET /api/v1/categories', () => {
       .insert(categories)
       .values({ name: 'Parent', isIncome: false, userId: user.id })
       .returning({ id: categories.id });
+    assertDefined(parent, 'Expected parent category insert to return a row');
 
     await db.insert(categories).values({
       name: 'Child',
@@ -80,7 +82,7 @@ describe('GET /api/v1/categories', () => {
     const parentNode = tree.find((c) => c.name === 'Parent');
     expect(parentNode).toBeDefined();
     expect(parentNode?.subcategories).toHaveLength(1);
-    expect(parentNode?.subcategories[0].name).toBe('Child');
+    expect(parentNode?.subcategories[0]?.name).toBe('Child');
   });
 
   it("does not include another user's categories", async () => {

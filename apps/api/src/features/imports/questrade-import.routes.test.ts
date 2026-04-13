@@ -10,6 +10,7 @@ import {
 } from '../../testing/test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
+import { assertDefined } from '@/lib/assert';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 
@@ -87,15 +88,21 @@ describe('Questrade CSV import end-to-end', () => {
 
     const dividends = invTxns.filter((t) => t.rawAction === 'DIV');
     expect(dividends.length).toBe(2);
-    expect(dividends[0].action).toBe('dividend');
+    const firstDividend = dividends[0];
+    assertDefined(firstDividend, 'Expected at least one dividend transaction');
+    expect(firstDividend.action).toBe('dividend');
 
     const deposits = invTxns.filter((t) => t.rawAction === 'CON');
     expect(deposits.length).toBeGreaterThan(0);
-    expect(deposits[0].action).toBe('deposit');
+    const firstDeposit = deposits[0];
+    assertDefined(firstDeposit, 'Expected at least one deposit transaction');
+    expect(firstDeposit.action).toBe('deposit');
 
     const transfers = invTxns.filter((t) => t.rawAction === 'TF6');
     expect(transfers.length).toBe(1);
-    expect(transfers[0].action).toBe('transfer');
+    const firstTransfer = transfers[0];
+    assertDefined(firstTransfer, 'Expected at least one transfer transaction');
+    expect(firstTransfer.action).toBe('transfer');
   });
 
   it('maps empty-action distribution rows to dividend via Activity Type fallback', async () => {

@@ -32,6 +32,7 @@ import { processImport } from '../features/imports/import.service';
 import { seedSystemCategories, seedUserCategories, seedUserRules } from './seed-categories';
 import { DEV_ACCOUNTS } from './seeds/accounts';
 import { DEV_USER } from './seeds/users';
+import { assertDefined } from '@/lib/assert';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -62,8 +63,10 @@ async function ensureUser(): Promise<string> {
     .limit(1);
 
   if (existing.length > 0) {
-    log(`Already exists: ${existing[0].email} (id: ${existing[0].id})`);
-    const userId = existing[0].id;
+    const existingUser = existing[0];
+    assertDefined(existingUser, 'Expected existing user row');
+    log(`Already exists: ${existingUser.email} (id: ${existingUser.id})`);
+    const userId = existingUser.id;
 
     // User may have been created before category seeding was added — ensure categories exist
     const [uncategorized] = await db
@@ -97,6 +100,7 @@ async function ensureUser(): Promise<string> {
       .insert(users)
       .values({ email: DEV_USER.email, passwordHash })
       .returning({ id: users.id, email: users.email });
+    assertDefined(created, 'Expected user insert to return a row');
 
     await seedUserCategories(created.id, tx);
     await seedUserRules(created.id, tx);
@@ -120,8 +124,10 @@ async function ensureAccounts(userId: string): Promise<Record<string, string>> {
       .limit(1);
 
     if (existing.length > 0) {
-      log(`Already exists: ${def.name} (id: ${existing[0].id})`);
-      accountIds[def.name] = existing[0].id;
+      const existingAccount = existing[0];
+      assertDefined(existingAccount, 'Expected existing account row');
+      log(`Already exists: ${def.name} (id: ${existingAccount.id})`);
+      accountIds[def.name] = existingAccount.id;
       continue;
     }
 
@@ -136,6 +142,7 @@ async function ensureAccounts(userId: string): Promise<Record<string, string>> {
         currency: 'CAD',
       })
       .returning({ id: accounts.id });
+    assertDefined(account, 'Expected account insert to return a row');
 
     log(`Created: ${def.name} (id: ${account.id})`);
     accountIds[def.name] = account.id;
@@ -152,6 +159,7 @@ async function importFixtures(
 
   for (const def of DEV_ACCOUNTS) {
     const accountId = accountIds[def.name];
+    assertDefined(accountId, `Expected account ID for "${def.name}" in accountIds map`);
     const fixturePath = path.join(FIXTURES_DIR, def.fixture.file);
 
     if (!fs.existsSync(fixturePath)) {

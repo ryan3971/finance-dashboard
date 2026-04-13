@@ -56,11 +56,11 @@ export async function detectTransfers(
   const windowDays = config.transferWindowDays;
   const dates = activeTxns.map((t) => t.date);
   const batchWindowStart = offsetDate(
-    dates.reduce((a, b) => (a < b ? a : b), dates[0]),
+    dates.reduce((a, b) => (a < b ? a : b)),
     -windowDays
   );
   const batchWindowEnd = offsetDate(
-    dates.reduce((a, b) => (a > b ? a : b), dates[0]),
+    dates.reduce((a, b) => (a > b ? a : b)),
     windowDays
   );
   const uniqueInverseAmounts = [

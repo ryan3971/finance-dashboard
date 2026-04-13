@@ -225,3 +225,19 @@ totals useMemo dependency changed from data?.months to dataMonths — it directl
 Refetch indicator
 
 Table wrapper gets transition-opacity duration-200 and toggles between opacity-50 / opacity-100 on isFetching — the noop placeholder is gone
+---
+All 130+ type errors resolved. Here's a summary of what was done:
+
+6 fix patterns across ~25 files:
+
+assertDefined after DB destructuring — production services (import.service.ts, transactions.service.ts, user-config-query.ts, anticipated-budget.service.ts, categories.service.ts) and seed files
+
+?. optional chaining in detect() methods — amex.adapter.ts uses firstRow[0]?.trim()...; CIBC and TD adapt with ?? '' on the RegExp.test() call since ?. returns string | undefined
+
+assertDefined after validate()-confirmed row access — amex.adapter.ts and debit-credit.adapter.ts parse() methods
+
+assertDefined on regex capture groups — utils.ts
+
+reduce without initial value — transfer-detection.service.ts; TypeScript infers string return when no initial value is passed
+
+??= nullish assignment in reduce accumulator — transactions.service.ts (acc[key] ??= []).push(...) replaces the two-step if (!acc[key]) acc[key] = [] pattern

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { describe, expect, it } from 'vitest';
 import { CibcAdapter } from './cibc.adapter';
 import { parseCsv } from '../../pipeline/parser';
+import { assertDefined } from '@/lib/assert';
 
 const adapter = new CibcAdapter();
 const FIXTURE = path.join(__dirname, './../__fixtures__', 'cibc.csv');
@@ -40,11 +41,14 @@ describe('CibcAdapter', () => {
 
     expect(results).toHaveLength(15);
 
+    const r0 = results[0];
+    assertDefined(r0, 'Expected results[0]');
+
     // Debit: positive debit col → negative amount
-    expect(Number(results[0].amount)).toBe(-198.45);
+    expect(Number(r0.amount)).toBe(-198.45);
 
     // Quoted description with comma parsed correctly
-    expect(results[0].rawDescription).toBe('WAREHOUSE GROCERY CO W552 VANCOUVER, BC');
+    expect(r0.rawDescription).toBe('WAREHOUSE GROCERY CO W552 VANCOUVER, BC');
 
     // Payment: credit col → positive amount
     const payment = results.find((r) => Number(r.amount) > 0);
@@ -56,13 +60,17 @@ describe('CibcAdapter', () => {
     const content = fs.readFileSync(FIXTURE, 'utf-8');
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'test-account-id');
-    expect(results[0].metadata?.cardNumber).toContain('4321');
+    const r0 = results[0];
+    assertDefined(r0, 'Expected results[0]');
+    expect(r0.metadata?.cardNumber).toContain('4321');
   });
 
   it('compositeKey includes accountId prefix', () => {
     const content = fs.readFileSync(FIXTURE, 'utf-8');
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'acc-456');
-    expect(results[0].compositeKey).toMatch(/^acc-456-/);
+    const r0 = results[0];
+    assertDefined(r0, 'Expected results[0]');
+    expect(r0.compositeKey).toMatch(/^acc-456-/);
   });
 });

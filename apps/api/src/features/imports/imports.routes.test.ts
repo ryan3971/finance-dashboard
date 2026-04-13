@@ -9,6 +9,7 @@ import {
 } from '../../testing/test-helpers';
 import { createApp } from '@/app';
 import request from 'supertest';
+import { assertDefined } from '@/lib/assert';
 
 const app = createApp();
 
@@ -112,6 +113,8 @@ describe('POST /api/v1/imports/upload', () => {
 
     const txBody = txRes.body as PaginatedResponse<{ categoryName: string }>;
     expect(txBody.data.length).toBeGreaterThan(0);
-    expect(txBody.data[0].categoryName).toBe('Uncategorized');
+    const firstTx = txBody.data[0];
+    assertDefined(firstTx, 'Expected at least one transaction in response');
+    expect(firstTx.categoryName).toBe('Uncategorized');
   });
 });

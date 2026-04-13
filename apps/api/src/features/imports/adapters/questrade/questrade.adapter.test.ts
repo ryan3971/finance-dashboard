@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import assert from 'node:assert/strict';
 import { parseCsv } from '../../pipeline/parser';
 import { QuestradeAdapter } from './questrade.adapter';
+import { assertDefined } from '@/lib/assert';
 
 const adapter = new QuestradeAdapter();
 const FIXTURE = path.join(__dirname, './../__fixtures__', 'questrade.csv');
@@ -104,6 +105,8 @@ describe('QuestradeAdapter', () => {
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'test-account-id');
     // compositeKey uses accountNumber from the file, not the passed accountId
-    expect(results[0].compositeKey).toMatch(/^10000001-/);
+    const r0 = results[0];
+    assertDefined(r0, 'Expected results[0]');
+    expect(r0.compositeKey).toMatch(/^10000001-/);
   });
 });

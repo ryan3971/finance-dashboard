@@ -1,4 +1,5 @@
 import { count, eq } from 'drizzle-orm';
+import { assertDefined } from '@/lib/assert';
 import { categories, transactions } from '@/db/schema';
 import { db, type DbTransaction } from '@/db';
 import type { CreateCategoryInput } from '@finance/shared/schemas/categories';
@@ -180,10 +181,12 @@ export async function deleteCategory(
         .where(eq(transactions.subcategoryId, id));
     } else {
       // Top-level: block if subcategories still exist
-      const [{ subcategoryCount }] = await conn
+      const [countRow] = await conn
         .select({ subcategoryCount: count() })
         .from(categories)
         .where(eq(categories.parentId, id));
+      assertDefined(countRow, 'Expected subcategory count row');
+      const { subcategoryCount } = countRow;
 
       if (subcategoryCount > 0) {
         throw new CategoryError(CategoryErrorCode.HAS_SUBCATEGORIES);

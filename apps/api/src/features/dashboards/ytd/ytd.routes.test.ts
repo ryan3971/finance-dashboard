@@ -8,6 +8,7 @@ import { createApp } from '@/app';
 import { db } from '@/db';
 import { accounts, investmentTransactions, transactions } from '@/db/schema';
 import request from 'supertest';
+import { assertDefined } from '@/lib/assert';
 
 const app = createApp();
 
@@ -31,6 +32,7 @@ async function createTestAccount(userId: string): Promise<string> {
       isActive: true,
     })
     .returning({ id: accounts.id });
+  assertDefined(row, 'Expected account insert to return a row');
   return row.id;
 }
 

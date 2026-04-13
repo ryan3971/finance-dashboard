@@ -1,3 +1,5 @@
+import { assertDefined } from '@/lib/assert';
+
 /**
  * Normalise a transaction description for storage and CompositeKey generation.
  */
@@ -58,7 +60,11 @@ export function parseDate(raw: string): string {
   // DD Mon YYYY  (Amex: "15 Feb 2026")
   const amexSpaceMatch = /^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/.exec(trimmed);
   if (amexSpaceMatch) {
+    // Groups 1–3 are always captured when this regex matches
     const [, day, mon, year] = amexSpaceMatch;
+    assertDefined(day, 'regex group 1: day');
+    assertDefined(mon, 'regex group 2: mon');
+    assertDefined(year, 'regex group 3: year');
     const month = months[mon];
     if (!month) throw new Error(`Unrecognised month abbreviation: "${mon}"`);
     return `${year}-${month}-${day.padStart(2, '0')}`;
@@ -67,7 +73,11 @@ export function parseDate(raw: string): string {
   // DD-Mon-YY  (Amex legacy: "15-Jun-25")
   const amexDashMatch = /^(\d{2})-([A-Za-z]{3})-(\d{2})$/.exec(trimmed);
   if (amexDashMatch) {
+    // Groups 1–3 are always captured when this regex matches
     const [, day, mon, yr] = amexDashMatch;
+    assertDefined(day, 'regex group 1: day');
+    assertDefined(mon, 'regex group 2: mon');
+    assertDefined(yr, 'regex group 3: yr');
     const month = months[mon];
     if (!month) throw new Error(`Unrecognised month abbreviation: "${mon}"`);
     const year = parseInt(yr, 10) >= 50 ? `19${yr}` : `20${yr}`;

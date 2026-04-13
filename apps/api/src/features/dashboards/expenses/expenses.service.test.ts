@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildExpensesResponse } from './expenses.service';
+import { assertDefined } from '@/lib/assert';
 
 describe('buildExpensesResponse', () => {
   it('returns 12 months when rows is empty', () => {
@@ -23,6 +24,7 @@ describe('buildExpensesResponse', () => {
       { month: 3, needWant: 'Need', total: '500.00' },
     ]);
     const march = result.months[2];
+    assertDefined(march, 'Expected month at index 2 (March)');
     expect(march.need).toBe(500);
     expect(march.want).toBe(0);
     expect(march.other).toBe(0);
@@ -34,6 +36,7 @@ describe('buildExpensesResponse', () => {
       { month: 5, needWant: 'Want', total: '200.00' },
     ]);
     const may = result.months[4];
+    assertDefined(may, 'Expected month at index 4 (May)');
     expect(may.need).toBe(0);
     expect(may.want).toBe(200);
     expect(may.other).toBe(0);
@@ -45,6 +48,7 @@ describe('buildExpensesResponse', () => {
       { month: 7, needWant: 'NA', total: '100.00' },
     ]);
     const july = result.months[6];
+    assertDefined(july, 'Expected month at index 6 (July)');
     expect(july.need).toBe(0);
     expect(july.want).toBe(0);
     expect(july.other).toBe(100);
@@ -56,6 +60,7 @@ describe('buildExpensesResponse', () => {
       { month: 1, needWant: null, total: '75.00' },
     ]);
     const jan = result.months[0];
+    assertDefined(jan, 'Expected month at index 0 (January)');
     expect(jan.other).toBe(75);
     expect(jan.total).toBe(75);
   });
@@ -65,6 +70,7 @@ describe('buildExpensesResponse', () => {
       { month: 2, needWant: 'SomeOtherValue', total: '60.00' },
     ]);
     const feb = result.months[1];
+    assertDefined(feb, 'Expected month at index 1 (February)');
     expect(feb.other).toBe(60);
     expect(feb.total).toBe(60);
   });
@@ -76,6 +82,7 @@ describe('buildExpensesResponse', () => {
       { month: 6, needWant: 'NA', total: '50.00' },
     ]);
     const june = result.months[5];
+    assertDefined(june, 'Expected month at index 5 (June)');
     expect(june.need).toBe(300);
     expect(june.want).toBe(150);
     expect(june.other).toBe(50);
@@ -98,6 +105,7 @@ describe('buildExpensesResponse', () => {
       { month: 1, needWant: 'Need', total: '100.00' },
     ]);
     const dec = result.months[11];
+    assertDefined(dec, 'Expected month at index 11 (December)');
     expect(dec.need).toBe(0);
     expect(dec.want).toBe(0);
     expect(dec.other).toBe(0);

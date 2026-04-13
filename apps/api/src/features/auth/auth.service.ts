@@ -12,6 +12,7 @@ import { createHash } from 'crypto';
 import { db, type DbTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
 import { seedUserCategories, seedUserRules } from '@/db/seed-categories';
+import { assertDefined } from '@/lib/assert';
 
 const BCRYPT_ROUNDS = 12;
 /**
@@ -52,6 +53,8 @@ export async function registerUser(input: RegisterInput) {
           passwordHash,
         })
         .returning({ id: users.id, email: users.email });
+
+      assertDefined(user, 'User insert returned no rows');
 
       await seedUserCategories(user.id, tx);
       await seedUserRules(user.id, tx);

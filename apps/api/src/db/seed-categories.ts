@@ -4,6 +4,7 @@ import { categories, categorizationRules } from './schema';
 import { db } from './index';
 import type { DbTransaction } from './index';
 import { SYSTEM_CATEGORIES } from './seeds/categories';
+import { assertDefined } from '@/lib/assert';
 
 export async function seedSystemCategories(): Promise<void> {
   console.log('Seeding system categories...');
@@ -34,9 +35,12 @@ export async function seedSystemCategories(): Promise<void> {
           icon: cat.icon,
         })
         .returning({ id: categories.id });
+      assertDefined(inserted, 'Expected category insert to return a row');
       parentId = inserted.id;
     } else {
-      parentId = existing[0].id;
+      const existingCat = existing[0];
+      assertDefined(existingCat, 'Expected existing category row');
+      parentId = existingCat.id;
     }
 
     for (const subName of cat.subcategories) {

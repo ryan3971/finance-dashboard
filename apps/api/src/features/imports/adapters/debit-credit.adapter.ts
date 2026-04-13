@@ -5,6 +5,7 @@ import {
   parseDate,
 } from '../pipeline/utils';
 import { DEFAULT_CURRENCY, ISO_DATE_REGEX } from '@finance/shared/constants';
+import { assertDefined } from '@/lib/assert';
 import type {
   CsvAdapter,
   RawTransaction,
@@ -59,8 +60,13 @@ export abstract class DebitCreditAdapter implements CsvAdapter {
     for (const row of dataRows) {
       if (!this.validate(row).valid) continue;
 
-      const date = parseDate(row[0]);
-      const rawDescription = row[1].trim();
+      // Fields confirmed present by validate() above
+      const rawDate = row[0];
+      assertDefined(rawDate, 'Expected date field in row after validation');
+      const date = parseDate(rawDate);
+      const rawDescriptionField = row[1];
+      assertDefined(rawDescriptionField, 'Expected description field in row after validation');
+      const rawDescription = rawDescriptionField.trim();
       const description = normaliseDescription(rawDescription);
       const debit = parseAmount(row[2]);
       const credit = parseAmount(row[3]);

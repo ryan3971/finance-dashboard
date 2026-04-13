@@ -16,6 +16,7 @@ import {
 } from '@/db/schema';
 import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { db } from '@/db';
+import { assertDefined } from '@/lib/assert';
 
 const entryColumns = {
   id: anticipatedBudget.id,
@@ -144,6 +145,7 @@ export async function createEntry(
     .insert(anticipatedBudget)
     .values({ ...input, userId })
     .returning(entryColumns);
+  assertDefined(row, 'Expected anticipated budget insert to return a row');
 
   const category = await resolveCategoryColumns(row.categoryId);
 

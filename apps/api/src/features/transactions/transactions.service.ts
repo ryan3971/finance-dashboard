@@ -21,6 +21,7 @@ import {
 import type { NeedWant } from '@finance/shared/constants';
 import type { PatchTransactionInput } from '@finance/shared/types/transactions';
 import { db } from '@/db';
+import { assertDefined } from '@/lib/assert';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -137,8 +138,9 @@ export async function listTransactions(
   const tagsByTxn = tagRows.reduce<
     Record<string, { id: string; name: string; color: string | null }[]>
   >((acc, t) => {
-    if (!acc[t.transactionId]) acc[t.transactionId] = [];
-    acc[t.transactionId].push({
+    const tags = acc[t.transactionId] ?? [];
+    acc[t.transactionId] = tags;
+    tags.push({
       id: t.tagId,
       name: t.tagName,
       color: t.tagColor,
@@ -148,11 +150,13 @@ export async function listTransactions(
 
   const data = rows.map((r) => ({ ...r, tags: tagsByTxn[r.id] ?? [] }));
 
-  const [{ count }] = await db
+  const [countRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
     .where(and(...conditions));
+  assertDefined(countRow, 'Expected count row');
+  const { count } = countRow;
 
   return {
     data,

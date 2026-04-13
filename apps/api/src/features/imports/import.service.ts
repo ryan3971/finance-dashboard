@@ -23,6 +23,7 @@ import type {
 import { buildCompositeKey } from './pipeline/utils';
 import { db } from '@/db';
 import { detectTransfers } from '@/pipelines/transfer-detection/transfer-detection.service';
+import { assertDefined } from '@/lib/assert';
 import { IMPORT_STATUS, TRANSACTION_SOURCE } from '@/lib/constants';
 import { logger } from '@/middleware/logger';
 import { parseCsv } from './pipeline/parser';
@@ -129,6 +130,7 @@ export async function processImport(
       rowCount: rows.length,
     })
     .returning({ id: imports.id });
+  assertDefined(importRecord, 'Expected import insert to return a row');
 
   const result: ImportResult = {
     importId: importRecord.id,

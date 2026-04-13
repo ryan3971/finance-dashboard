@@ -9,6 +9,7 @@ import { createApp } from '@/app';
 import { db } from '@/db';
 import { categories, transactions } from '@/db/schema';
 import request from 'supertest';
+import { assertDefined } from '@/lib/assert';
 
 const app = createApp();
 
@@ -371,10 +372,12 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .insert(categories)
       .values({ name: 'Food', isIncome: false })
       .returning({ id: categories.id });
+    assertDefined(parentCat, 'Expected parentCat insert to return a row');
     const [childCat] = await db
       .insert(categories)
       .values({ name: 'Groceries', isIncome: false, parentId: parentCat.id })
       .returning({ id: categories.id });
+    assertDefined(childCat, 'Expected childCat insert to return a row');
 
     await insertExpenseTransaction(accountId, {
       date: '2025-05-10',
@@ -432,10 +435,12 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .insert(categories)
       .values({ name: 'Transport', isIncome: false })
       .returning({ id: categories.id });
+    assertDefined(parentCat, 'Expected parentCat insert to return a row');
     const [childCat] = await db
       .insert(categories)
       .values({ name: 'Gas', isIncome: false, parentId: parentCat.id })
       .returning({ id: categories.id });
+    assertDefined(childCat, 'Expected childCat insert to return a row');
 
     await insertExpenseTransaction(accountId, {
       date: '2025-06-01',

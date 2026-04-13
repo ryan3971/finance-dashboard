@@ -9,6 +9,7 @@ import {
 import assert from 'node:assert/strict';
 import { createApp } from '@/app';
 import request from 'supertest';
+import { assertDefined } from '@/lib/assert';
 
 const app = createApp();
 
@@ -162,7 +163,9 @@ describe('GET /api/v1/transactions — date and category filters', () => {
     const body = res.body as PaginatedResponse<{ date: string }>;
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].date).toBe('2026-02-12');
+    const firstRow = body.data[0];
+    assertDefined(firstRow, 'Expected at least one transaction in response');
+    expect(firstRow.date).toBe('2026-02-12');
   });
 
   it('returns empty array for date range with no transactions', async () => {

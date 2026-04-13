@@ -10,6 +10,7 @@ import type {
   RawTransaction,
   ValidationResult,
 } from '@finance/shared/types/adapters';
+import { assertDefined } from '@/lib/assert';
 
 export class AmexAdapter implements CsvAdapter {
   readonly institution = 'amex';
@@ -19,10 +20,10 @@ export class AmexAdapter implements CsvAdapter {
   detect(firstRow: string[]): boolean {
     return (
       firstRow.length >= 4 &&
-      firstRow[0].trim().toLowerCase() === 'date' &&
-      firstRow[1].trim().toLowerCase() === 'date processed' &&
-      firstRow[2].trim().toLowerCase() === 'description' &&
-      firstRow[3].trim().toLowerCase() === 'amount'
+      firstRow[0]?.trim().toLowerCase() === 'date' &&
+      firstRow[1]?.trim().toLowerCase() === 'date processed' &&
+      firstRow[2]?.trim().toLowerCase() === 'description' &&
+      firstRow[3]?.trim().toLowerCase() === 'amount'
     );
   }
 
@@ -46,8 +47,13 @@ export class AmexAdapter implements CsvAdapter {
       const validation = this.validate(row);
       if (!validation.valid) continue;
 
-      const date = parseDate(row[0]);
-      const rawDescription = row[2].trim();
+      // Fields confirmed present by validate() above
+      const rawDate = row[0];
+      assertDefined(rawDate, 'Expected date field in row after validation');
+      const date = parseDate(rawDate);
+      const rawDescriptionField = row[2];
+      assertDefined(rawDescriptionField, 'Expected description field in row after validation');
+      const rawDescription = rawDescriptionField.trim();
       const description = normaliseDescription(rawDescription);
       // Amex: positive = charge (money out) → negate
       const amount = -parseAmount(row[3]);

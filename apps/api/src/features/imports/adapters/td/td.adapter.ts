@@ -7,7 +7,7 @@ export class TdAdapter extends DebitCreditAdapter {
   detect(firstRow: string[]): boolean {
     return (
       firstRow.length === 5 &&
-      ISO_DATE_REGEX.test(firstRow[0]?.trim()) &&
+      ISO_DATE_REGEX.test(firstRow[0]?.trim() ?? '') &&
       !firstRow[4]?.includes('****')
     );
   }

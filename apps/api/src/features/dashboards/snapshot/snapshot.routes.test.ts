@@ -9,6 +9,7 @@ import { db } from '@/db';
 import { accounts, transactions, userConfig } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
+import { assertDefined } from '@/lib/assert';
 
 const app = createApp();
 
@@ -52,6 +53,7 @@ async function insertAccount(
       isCredit: opts.type === 'credit',
     })
     .returning({ id: accounts.id });
+  assertDefined(account, 'Expected account insert to return a row');
   return account.id;
 }
 
@@ -139,6 +141,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
 
     expect(res1.status).toBe(200);
     const account = (res1.body.accounts as { name: string; balance: number }[])[0];
+    assertDefined(account, 'Expected at least one account in snapshot response');
     expect(account.name).toBe('Chequing');
     expect(account.balance).toBe(0);
 
@@ -150,6 +153,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .set('Authorization', `Bearer ${token}`);
 
     const updated = (res2.body.accounts as { balance: number }[])[0];
+    assertDefined(updated, 'Expected at least one account in updated snapshot response');
     expect(updated.balance).toBe(3300);
   });
 
