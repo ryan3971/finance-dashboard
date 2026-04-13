@@ -6,6 +6,7 @@ import type {
   IncomeDashboardResponse,
   IncomeMonthAllocation,
 } from '@finance/shared/types/dashboard';
+import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 export interface IncomeRow {
   month: number;
@@ -70,7 +71,7 @@ export function buildIncomeResponse(
 
   const rowMap = new Map<number, string>(rows.map((r) => [r.month, r.total]));
 
-  const months = Array.from({ length: 12 }, (_, i) => {
+  const months = Array.from({ length: MONTHS_IN_YEAR }, (_, i) => {
     const month = i + 1;
     const amount = new Decimal(rowMap.get(month) ?? '0.00');
 

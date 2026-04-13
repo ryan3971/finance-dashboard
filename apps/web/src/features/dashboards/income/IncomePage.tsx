@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
 import { useIncomeDashboard } from './useIncomeDashboard';
+import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 function pct(part: number, total: number) {
   if (total === 0) return null;
@@ -103,7 +104,7 @@ export function IncomePage() {
       {isLoading && (
         <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
           <div className="px-4 py-2.5 bg-surface-subtle border-b border-border-subtle" />
-          {Array.from({ length: 12 }, (_, i) => (
+          {Array.from({ length: MONTHS_IN_YEAR }, (_, i) => (
             <div
               key={`skeleton-${i}`}
               className="px-4 py-3 border-t border-border-subtle flex gap-4"

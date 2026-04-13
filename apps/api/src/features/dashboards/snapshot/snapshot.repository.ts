@@ -6,6 +6,7 @@ import {
   transactions,
 } from '@/db/schema';
 import { db } from '@/db';
+import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 export interface AccountBalanceRow {
   id: string;
@@ -35,8 +36,8 @@ function monthDateRange(
 ): { startDate: string; endDate: string } {
   const mm = String(month).padStart(2, '0');
   const startDate = `${year}-${mm}-01`;
-  const nextMonth = month === 12 ? 1 : month + 1;
-  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === MONTHS_IN_YEAR ? 1 : month + 1;
+  const nextYear = month === MONTHS_IN_YEAR ? year + 1 : year;
   const nextMm = String(nextMonth).padStart(2, '0');
   const endDate = `${nextYear}-${nextMm}-01`;
   return { startDate, endDate };

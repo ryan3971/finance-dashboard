@@ -47,6 +47,8 @@ export const TRANSFER_KEYWORDS = [
 
 export const DEFAULT_CURRENCY = 'CAD';
 
+export const MONTHS_IN_YEAR = 12;
+
 export const FIELD_LIMITS = {
   NOTE_MAX: 500,
   TAG_NAME_MAX: 15,

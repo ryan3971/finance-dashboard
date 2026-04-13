@@ -14,9 +14,8 @@ import {
   anticipatedBudgetMonths,
   categories,
 } from '@/db/schema';
+import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { db } from '@/db';
-
-const MONTHS_IN_YEAR = 12;
 
 const entryColumns = {
   id: anticipatedBudget.id,

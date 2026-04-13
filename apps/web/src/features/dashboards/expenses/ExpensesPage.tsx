@@ -15,6 +15,7 @@ import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
 import { useExpenseCategories } from './useExpenseCategories';
 import { useExpensesDashboard } from './useExpensesDashboard';
+import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const TH_BASE =
@@ -100,7 +101,7 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
         Monthly Breakdown
       </h2>
 
-      {isLoading && <SkeletonTable columns={5} rows={12} />}
+      {isLoading && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
       {isError && (
         <EmptyState variant="error" message="Failed to load expense data." />
       )}

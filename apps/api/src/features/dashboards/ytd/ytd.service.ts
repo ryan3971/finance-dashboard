@@ -4,7 +4,7 @@ import { accounts, investmentTransactions, transactions } from '@/db/schema';
 import { db } from '@/db';
 import Decimal from 'decimal.js';
 import { INVESTMENT_ACTION } from '@/lib/constants';
-import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
+import { NEED_WANT_OPTIONS, MONTHS_IN_YEAR } from '@finance/shared/constants';
 import type {
   YtdDashboardResponse,
   YtdMonth,
@@ -138,7 +138,7 @@ export function buildYtdResponse(
     number,
     { need: Decimal; want: Decimal; total: Decimal }
   >();
-  for (let m = 1; m <= 12; m++) {
+  for (let m = 1; m <= MONTHS_IN_YEAR; m++) {
     expenseBuckets.set(m, {
       need: new Decimal(0),
       want: new Decimal(0),
@@ -158,7 +158,7 @@ export function buildYtdResponse(
   }
 
   const months: YtdMonth[] = [];
-  for (let m = 1; m <= 12; m++) {
+  for (let m = 1; m <= MONTHS_IN_YEAR; m++) {
     const isFuture =
       year > currentYear || (year === currentYear && m > currentMonth);
 

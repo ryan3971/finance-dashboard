@@ -7,7 +7,7 @@ import type {
   ExpenseCategoryRow,
   ExpenseDashboardResponse,
 } from '@finance/shared/types/dashboard';
-import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
+import { NEED_WANT_OPTIONS, MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 const categoryAlias = alias(categories, 'cat');
 const subcategoryAlias = alias(categories, 'sub');
@@ -62,7 +62,7 @@ export function buildExpensesResponse(
     number,
     { need: Decimal; want: Decimal; other: Decimal }
   >();
-  for (let m = 1; m <= 12; m++) {
+  for (let m = 1; m <= MONTHS_IN_YEAR; m++) {
     buckets.set(m, {
       need: new Decimal(0),
       want: new Decimal(0),
