@@ -55,7 +55,20 @@ export async function cleanDatabase(): Promise<void> {
   await db.delete(users);
 }
 
-// export async function registerUser(
+export async function registerUser(
+  app: Application,
+  email = 'test@example.com'
+): Promise<RegisterResult> {
+  const res = await request(app)
+    .post('/api/v1/auth/register')
+    .send({ email, password: 'password123' });
+  // supertest types res.body as `any`; the cast satisfies no-unsafe-return
+  // without hiding a real type gap — the shape is validated by the route's
+  // Zod schema before it ever reaches this helper.
+  return res.body as RegisterResult;
+}
+
+// export async function registerAndGetToken(
 //   app: Application,
 //   email = 'test@example.com'
 // ): Promise<RegisterResult> {

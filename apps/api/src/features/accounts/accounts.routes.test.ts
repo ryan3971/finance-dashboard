@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { cleanDatabase, registerAndGetToken } from '@/testing/test-helpers';
+import { cleanDatabase, registerUser } from '@/testing/test-helpers';
 import { createApp } from '@/app';
 import request from 'supertest';
 import type { AccountRequest, AccountResponse, PatchAccountRequest } from '@/testing/types';
@@ -18,7 +18,7 @@ const patchAccountRequest = (body: PatchAccountRequest): PatchAccountRequest => 
 
 describe('GET /api/v1/accounts', () => {
   it('returns empty array for new user', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .get('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`);
@@ -28,7 +28,7 @@ describe('GET /api/v1/accounts', () => {
   });
 
   it('filters inactive accounts by default; includes them when ?includeInactive=true', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
 
     const createRes = await request(app)
       .post('/api/v1/accounts')
@@ -65,9 +65,9 @@ describe('GET /api/v1/accounts', () => {
   });
 
   it('returns only accounts belonging to the authenticated user', async () => {
-    const [tokenA, tokenB] = await Promise.all([
-      registerAndGetToken(app, 'a@example.com'),
-      registerAndGetToken(app, 'b@example.com'),
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'a@example.com'),
+      registerUser(app, 'b@example.com'),
     ]);
 
     const createRes = await request(app)
@@ -100,7 +100,7 @@ describe('GET /api/v1/accounts', () => {
 
 describe('POST /api/v1/accounts', () => {
   it('creates an account and returns all fields', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -129,7 +129,7 @@ describe('POST /api/v1/accounts', () => {
   });
 
   it('derives isCredit from type, ignoring the request body value', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -148,7 +148,7 @@ describe('POST /api/v1/accounts', () => {
   });
 
   it('returns 400 for invalid institution', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -159,7 +159,7 @@ describe('POST /api/v1/accounts', () => {
   });
 
   it('returns 400 for invalid type', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -170,7 +170,7 @@ describe('POST /api/v1/accounts', () => {
   });
 
   it('returns 400 when required fields are missing', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -198,7 +198,7 @@ describe('POST /api/v1/accounts', () => {
 
 describe('GET /api/v1/accounts/:id', () => {
   it('returns the full account shape for an owned account', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -232,7 +232,7 @@ describe('GET /api/v1/accounts/:id', () => {
   });
 
   it('returns 404 for unknown id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .get(`/api/v1/accounts/${UNKNOWN_ID}`)
       .set('Authorization', `Bearer ${token}`);
@@ -241,9 +241,9 @@ describe('GET /api/v1/accounts/:id', () => {
   });
 
   it("returns 404 when accessing another user's account", async () => {
-    const [tokenA, tokenB] = await Promise.all([
-      registerAndGetToken(app, 'a@example.com'),
-      registerAndGetToken(app, 'b@example.com'),
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'a@example.com'),
+      registerUser(app, 'b@example.com'),
     ]);
 
     const createRes = await request(app)
@@ -273,11 +273,8 @@ describe('GET /api/v1/accounts/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  // GET /:id passes req.params.id directly to Drizzle without idParamsSchema validation.
-  // A non-UUID string causes a PostgreSQL type error that the generic handler maps to 500.
-  // The mutation routes (PATCH, deactivate, reactivate) use idParamsSchema and return 400.
   it('returns 500 for a malformed (non-UUID) id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .get(`/api/v1/accounts/${MALFORMED_ID}`)
       .set('Authorization', `Bearer ${token}`);
@@ -288,7 +285,7 @@ describe('GET /api/v1/accounts/:id', () => {
 
 describe('PATCH /api/v1/accounts/:id', () => {
   it('updates account fields and returns the updated shape', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -320,7 +317,7 @@ describe('PATCH /api/v1/accounts/:id', () => {
   });
 
   it('updating type to credit auto-sets isCredit to true', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -346,7 +343,7 @@ describe('PATCH /api/v1/accounts/:id', () => {
   });
 
   it('returns 400 for an empty body', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -372,7 +369,7 @@ describe('PATCH /api/v1/accounts/:id', () => {
   });
 
   it('returns 400 for a malformed (non-UUID) id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .patch(`/api/v1/accounts/${MALFORMED_ID}`)
       .set('Authorization', `Bearer ${token}`)
@@ -383,7 +380,7 @@ describe('PATCH /api/v1/accounts/:id', () => {
   });
 
   it('returns 404 for unknown id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .patch(`/api/v1/accounts/${UNKNOWN_ID}`)
       .set('Authorization', `Bearer ${token}`)
@@ -393,9 +390,9 @@ describe('PATCH /api/v1/accounts/:id', () => {
   });
 
   it("returns 404 when patching another user's account", async () => {
-    const [tokenA, tokenB] = await Promise.all([
-      registerAndGetToken(app, 'a@example.com'),
-      registerAndGetToken(app, 'b@example.com'),
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'a@example.com'),
+      registerUser(app, 'b@example.com'),
     ]);
 
     const createRes = await request(app)
@@ -431,7 +428,7 @@ describe('PATCH /api/v1/accounts/:id', () => {
 
 describe('POST /api/v1/accounts/:id/deactivate', () => {
   it('sets isActive to false and returns the updated account', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -456,7 +453,7 @@ describe('POST /api/v1/accounts/:id/deactivate', () => {
   });
 
   it('returns 400 for a malformed (non-UUID) id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post(`/api/v1/accounts/${MALFORMED_ID}/deactivate`)
       .set('Authorization', `Bearer ${token}`);
@@ -466,7 +463,7 @@ describe('POST /api/v1/accounts/:id/deactivate', () => {
   });
 
   it('returns 404 for unknown id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post(`/api/v1/accounts/${UNKNOWN_ID}/deactivate`)
       .set('Authorization', `Bearer ${token}`);
@@ -475,9 +472,9 @@ describe('POST /api/v1/accounts/:id/deactivate', () => {
   });
 
   it("returns 404 when deactivating another user's account", async () => {
-    const [tokenA, tokenB] = await Promise.all([
-      registerAndGetToken(app, 'a@example.com'),
-      registerAndGetToken(app, 'b@example.com'),
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'a@example.com'),
+      registerUser(app, 'b@example.com'),
     ]);
 
     const createRes = await request(app)
@@ -510,7 +507,7 @@ describe('POST /api/v1/accounts/:id/deactivate', () => {
 
 describe('POST /api/v1/accounts/:id/reactivate', () => {
   it('sets isActive back to true for a deactivated account', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const createRes = await request(app)
       .post('/api/v1/accounts')
       .set('Authorization', `Bearer ${token}`)
@@ -540,7 +537,7 @@ describe('POST /api/v1/accounts/:id/reactivate', () => {
   });
 
   it('returns 400 for a malformed (non-UUID) id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post(`/api/v1/accounts/${MALFORMED_ID}/reactivate`)
       .set('Authorization', `Bearer ${token}`);
@@ -550,7 +547,7 @@ describe('POST /api/v1/accounts/:id/reactivate', () => {
   });
 
   it('returns 404 for unknown id', async () => {
-    const token = await registerAndGetToken(app);
+    const { accessToken: token } = await registerUser(app);
     const res = await request(app)
       .post(`/api/v1/accounts/${UNKNOWN_ID}/reactivate`)
       .set('Authorization', `Bearer ${token}`);
@@ -559,9 +556,9 @@ describe('POST /api/v1/accounts/:id/reactivate', () => {
   });
 
   it("returns 404 when reactivating another user's account", async () => {
-    const [tokenA, tokenB] = await Promise.all([
-      registerAndGetToken(app, 'a@example.com'),
-      registerAndGetToken(app, 'b@example.com'),
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'a@example.com'),
+      registerUser(app, 'b@example.com'),
     ]);
 
     const createRes = await request(app)
