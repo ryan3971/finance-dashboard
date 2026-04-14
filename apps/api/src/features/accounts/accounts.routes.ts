@@ -7,6 +7,7 @@ import {
 } from './accounts.services';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { type Request, type Response, Router } from 'express';
+import { idParamsSchema } from '@/lib/common-schemas';
 
 const router = Router();
 router.use(requireAuth);
@@ -27,7 +28,8 @@ router.post('/', async (req: Request, res: Response) => {
 
 // GET /api/v1/accounts/:id
 router.get('/:id', async (req: Request<{ id: string }>, res: Response) => {
-  const account = await getAccountById(req.params.id, getAuthUser(req).id);
+  const { id } = idParamsSchema.parse(req.params);
+  const account = await getAccountById(id, getAuthUser(req).id);
 
   if (!account) {
     throw new AccountError(AccountErrorCode.NOT_FOUND);

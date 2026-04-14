@@ -13,20 +13,12 @@ import {
   users,
 } from '@/db/schema';
 import type { Application } from 'express';
-import type { AuthResponse } from '@finance/shared/types/auth';
 import { db } from '@/db';
 import { isNotNull } from 'drizzle-orm';
 import request from 'supertest';
+import type { AuthResponse } from '@/testing/types';
+import { expect } from 'vitest';
 
-export type { AuthResponse };
-
-export interface AccountResponse {
-  id: string;
-  name: string;
-  type: string;
-  institution: string;
-  isCredit: boolean;
-}
 
 export interface ImportSummaryResponse {
   importedCount: number;
@@ -63,28 +55,30 @@ export async function cleanDatabase(): Promise<void> {
   await db.delete(users);
 }
 
-export async function registerUser(
-  app: Application,
-  email = 'test@example.com'
-): Promise<RegisterResult> {
-  const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({ email, password: 'password123' });
-  // supertest types res.body as `any`; the cast satisfies no-unsafe-return
-  // without hiding a real type gap — the shape is validated by the route's
-  // Zod schema before it ever reaches this helper.
-  return res.body as RegisterResult;
-}
+// export async function registerUser(
+//   app: Application,
+//   email = 'test@example.com'
+// ): Promise<RegisterResult> {
+//   const res = await request(app)
+//     .post('/api/v1/auth/register')
+//     .send({ email, password: 'password123' });
+//   // supertest types res.body as `any`; the cast satisfies no-unsafe-return
+//   // without hiding a real type gap — the shape is validated by the route's
+//   // Zod schema before it ever reaches this helper.
+//   return res.body as RegisterResult;
+// }
 
-export async function registerAndLogin(
+export async function registerAndGetToken(
   app: Application,
-  email = 'test@example.com'
+  email = 'test@example.com',
+  password = 'password123',
+  overrides = {}
 ): Promise<string> {
   const res = await request(app)
     .post('/api/v1/auth/register')
-    .send({ email, password: 'password123' });
-  // Same boundary cast as registerUser: supertest's `any` body requires a cast
-  // to satisfy no-unsafe-member-access. The shape is guaranteed by the route.
+    .send({ email, password, ...overrides });
+  expect(res.status).toBe(201);
+  expect((res.body as AuthResponse).accessToken).toBeDefined();
   return (res.body as AuthResponse).accessToken;
 }
 
@@ -95,7 +89,8 @@ export async function createAccount(
     name: string;
     type: string;
     institution: string;
-    isCredit?: boolean;
+    isCredit: boolean;
+    currency: string;
   }
 ): Promise<string> {
   const res = await request(app)
