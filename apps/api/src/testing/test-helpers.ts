@@ -16,9 +16,7 @@ import type { Application } from 'express';
 import { db } from '@/db';
 import { isNotNull } from 'drizzle-orm';
 import request from 'supertest';
-import type { AuthResponse } from '@/testing/types';
-import { expect } from 'vitest';
-
+import type { AuthResponse, AccountResponse, TransactionResponse } from '@/testing/types';
 
 export interface ImportSummaryResponse {
   importedCount: number;
@@ -33,11 +31,6 @@ export interface PaginatedResponse<T> {
     page: number;
     totalPages: number;
   };
-}
-
-export interface RegisterResult {
-  accessToken: string;
-  user: { id: string; email: string };
 }
 
 export async function cleanDatabase(): Promise<void> {
@@ -58,41 +51,42 @@ export async function cleanDatabase(): Promise<void> {
 export async function registerUser(
   app: Application,
   email = 'test@example.com'
-): Promise<RegisterResult> {
+): Promise<AuthResponse> {
   const res = await request(app)
     .post('/api/v1/auth/register')
     .send({ email, password: 'password123' });
   // supertest types res.body as `any`; the cast satisfies no-unsafe-return
   // without hiding a real type gap — the shape is validated by the route's
   // Zod schema before it ever reaches this helper.
-  return res.body as RegisterResult;
+  return res.body as AuthResponse;
 }
 
 // export async function registerAndGetToken(
 //   app: Application,
-//   email = 'test@example.com'
-// ): Promise<RegisterResult> {
+//   email = 'test@example.com',
+//   password = 'password123',
+//   overrides = {}
+// ): Promise<string> {
 //   const res = await request(app)
 //     .post('/api/v1/auth/register')
-//     .send({ email, password: 'password123' });
-//   // supertest types res.body as `any`; the cast satisfies no-unsafe-return
-//   // without hiding a real type gap — the shape is validated by the route's
-//   // Zod schema before it ever reaches this helper.
-//   return res.body as RegisterResult;
+//     .send({ email, password, ...overrides });
+//   expect(res.status).toBe(201);
+//   expect((res.body as AuthResponse).accessToken).toBeDefined();
+//   return (res.body as AuthResponse).accessToken;
 // }
 
-export async function registerAndGetToken(
+// Retrieving 500 transactions is a bit hacky but allows us to avoid adding a dedicated test-only route or directly querying the database in tests that need to verify transaction details after an operation like deletion or categorization.
+export async function getTransaction(
   app: Application,
-  email = 'test@example.com',
-  password = 'password123',
-  overrides = {}
-): Promise<string> {
+  token: string,
+  id: string
+): Promise<TransactionResponse | undefined> {
   const res = await request(app)
-    .post('/api/v1/auth/register')
-    .send({ email, password, ...overrides });
-  expect(res.status).toBe(201);
-  expect((res.body as AuthResponse).accessToken).toBeDefined();
-  return (res.body as AuthResponse).accessToken;
+    .get('/api/v1/transactions')
+    .set('Authorization', `Bearer ${token}`)
+    .query({ limit: 500 });
+  const body = res.body as PaginatedResponse<TransactionResponse>;
+  return body.data.find((t) => t.id === id);
 }
 
 export async function createAccount(
@@ -113,3 +107,4 @@ export async function createAccount(
   // Same boundary cast: supertest body is `any`; cast required by no-unsafe-member-access.
   return (res.body as AccountResponse).id;
 }
+
