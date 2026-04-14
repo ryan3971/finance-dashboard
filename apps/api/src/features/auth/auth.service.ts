@@ -14,7 +14,10 @@ import { eq } from 'drizzle-orm';
 import { seedUserCategories, seedUserRules } from '@/db/seed-categories';
 import { assertDefined } from '@/lib/assert';
 
-const BCRYPT_ROUNDS = 12;
+// Configurable via BCRYPT_ROUNDS env var so tests can set a lower value (e.g. 4)
+// without touching production behaviour. Mirrors the pattern used in db/index.ts
+// for DATABASE_URL — config.ts freezes its snapshot before test setup can override it.
+const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS ?? '12', 10);
 /**
  * Registers a new user by:
  *  1) checking for existing email

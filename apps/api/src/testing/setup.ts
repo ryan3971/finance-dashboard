@@ -1,6 +1,13 @@
 import '@/lib/config'; // ensures dotenv runs before tests
 
-import { vi } from 'vitest';
+// Reduce bcrypt work factor for tests. auth.service.ts reads this from process.env
+// at module-load time (after setup runs), so it must be set here before any test
+// file imports auth.service.ts. Using 4 rounds cuts per-test hashing time from
+// ~300 ms to ~5 ms while still exercising the real bcrypt path.
+process.env.BCRYPT_ROUNDS = '4';
+
+import { beforeAll, vi } from 'vitest';
+import { resetTestSystemData } from './reset-test-system-data';
 
 // Override DATABASE_URL for the test environment.
 // Tests run against finance_test, never finance_dev.
