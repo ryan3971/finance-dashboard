@@ -3,15 +3,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '@/app';
 import request from 'supertest';
 import type { AuthResponse } from '@/testing/types';
+import { TEST_CREDENTIALS } from '@/testing/constants';
 
 const app = createApp();
 
 beforeEach(() => cleanDatabase());
-
-const TEST_CREDENTIALS = {
-  email: 'test@example.com',
-  password: 'password123',
-} as const;
 
 // Extracts the name=value segment of the refresh_token cookie from a set-cookie
 // response header array so it can be forwarded as a Cookie request header.
