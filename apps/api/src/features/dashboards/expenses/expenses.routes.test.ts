@@ -23,6 +23,32 @@ beforeEach(async () => {
   await cleanDatabase();
 });
 
+interface ExpenseMonth {
+  month: number;
+  need: number;
+  want: number;
+  other: number;
+  total: number;
+}
+
+interface ExpensesBody {
+  year: number;
+  months: ExpenseMonth[];
+  annualTotal: number;
+}
+
+interface CategoryRow {
+  month: number;
+  category: string | null;
+  subcategory: string | null;
+  total: number;
+}
+
+interface CategoriesBody {
+  year: number;
+  rows: CategoryRow[];
+}
+
 // ─── GET /api/v1/dashboard/expenses ──────────────────────────────────────────
 
 describe('GET /api/v1/dashboard/expenses', () => {
@@ -54,21 +80,15 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.year).toBe(2025);
-    expect(res.body.months).toHaveLength(12);
+    const body = res.body as ExpensesBody;
+    expect(body.year).toBe(2025);
+    expect(body.months).toHaveLength(12);
     expect(
-      (
-        res.body.months as {
-          need: number;
-          want: number;
-          other: number;
-          total: number;
-        }[]
-      ).every(
+      body.months.every(
         (m) => m.need === 0 && m.want === 0 && m.other === 0 && m.total === 0
       )
     ).toBe(true);
-    expect(res.body.annualTotal).toBe(0);
+    expect(body.annualTotal).toBe(0);
   });
 
   it('returns correct need bucket for a single transaction', async () => {
@@ -83,7 +103,7 @@ describe('GET /api/v1/dashboard/expenses', () => {
 
     await transactionFixture(accountId, {
       date: '2025-03-10',
-      amount: '120.00',
+      amount: '-120.00',
       needWant: 'Need',
     });
 
@@ -92,15 +112,8 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const mar = (
-      res.body.months as {
-        month: number;
-        need: number;
-        want: number;
-        other: number;
-        total: number;
-      }[]
-    ).find((m) => m.month === 3);
+    const body = res.body as ExpensesBody;
+    const mar = body.months.find((m) => m.month === 3);
     expect(mar?.need).toBe(120);
     expect(mar?.want).toBe(0);
     expect(mar?.other).toBe(0);
@@ -115,7 +128,7 @@ describe('GET /api/v1/dashboard/expenses', () => {
 
     await transactionFixture(accountId, {
       date: '2025-04-05',
-      amount: '80.00',
+      amount: '-80.00',
       needWant: 'Want',
     });
 
@@ -124,9 +137,8 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const apr = (
-      res.body.months as { month: number; want: number; total: number }[]
-    ).find((m) => m.month === 4);
+    const body = res.body as ExpensesBody;
+    const apr = body.months.find((m) => m.month === 4);
     expect(apr?.want).toBe(80);
     expect(apr?.total).toBe(80);
   });
@@ -139,7 +151,7 @@ describe('GET /api/v1/dashboard/expenses', () => {
 
     await transactionFixture(accountId, {
       date: '2025-05-15',
-      amount: '50.00',
+      amount: '-50.00',
       needWant: null,
     });
 
@@ -148,9 +160,8 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const may = (
-      res.body.months as { month: number; other: number; total: number }[]
-    ).find((m) => m.month === 5);
+    const body = res.body as ExpensesBody;
+    const may = body.months.find((m) => m.month === 5);
     expect(may?.other).toBe(50);
     expect(may?.total).toBe(50);
   });
@@ -163,7 +174,7 @@ describe('GET /api/v1/dashboard/expenses', () => {
 
     await transactionFixture(accountId, {
       date: '2025-06-20',
-      amount: '35.00',
+      amount: '-35.00',
       needWant: 'NA',
     });
 
@@ -172,9 +183,8 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const june = (
-      res.body.months as { month: number; other: number; total: number }[]
-    ).find((m) => m.month === 6);
+    const body = res.body as ExpensesBody;
+    const june = body.months.find((m) => m.month === 6);
     expect(june?.other).toBe(35);
     expect(june?.total).toBe(35);
   });
@@ -187,12 +197,12 @@ describe('GET /api/v1/dashboard/expenses', () => {
 
     await transactionFixture(accountId, {
       date: '2025-02-01',
-      amount: '200.00',
+      amount: '-200.00',
       needWant: 'Need',
     });
     await transactionFixture(accountId, {
       date: '2025-02-15',
-      amount: '150.00',
+      amount: '-150.00',
       needWant: 'Need',
     });
 
@@ -201,12 +211,11 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const feb = (
-      res.body.months as { month: number; need: number; total: number }[]
-    ).find((m) => m.month === 2);
+    const body = res.body as ExpensesBody;
+    const feb = body.months.find((m) => m.month === 2);
     expect(feb?.need).toBe(350);
     expect(feb?.total).toBe(350);
-    expect(res.body.annualTotal).toBe(350);
+    expect(body.annualTotal).toBe(350);
   });
 
   it('excludes income transactions', async () => {
@@ -226,9 +235,8 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const july = (res.body.months as { month: number; total: number }[]).find(
-      (m) => m.month === 7
-    );
+    const body = res.body as ExpensesBody;
+    const july = body.months.find((m) => m.month === 7);
     expect(july?.total).toBe(0);
   });
 
@@ -249,9 +257,8 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const aug = (res.body.months as { month: number; total: number }[]).find(
-      (m) => m.month === 8
-    );
+    const body = res.body as ExpensesBody;
+    const aug = body.months.find((m) => m.month === 8);
     expect(aug?.total).toBe(0);
   });
 
@@ -265,7 +272,7 @@ describe('GET /api/v1/dashboard/expenses', () => {
     });
     await transactionFixture(accountA, {
       date: '2025-09-01',
-      amount: '1000.00',
+      amount: '-1000.00',
       needWant: 'Need',
     });
 
@@ -278,9 +285,8 @@ describe('GET /api/v1/dashboard/expenses', () => {
       .set('Authorization', `Bearer ${accessTokenB}`);
 
     expect(res.status).toBe(200);
-    expect(
-      (res.body.months as { total: number }[]).every((m) => m.total === 0)
-    ).toBe(true);
+    const body = res.body as ExpensesBody;
+    expect(body.months.every((m) => m.total === 0)).toBe(true);
   });
 });
 
@@ -309,8 +315,9 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.year).toBe(2025);
-    expect(res.body.rows).toEqual([]);
+    const body = res.body as CategoriesBody;
+    expect(body.year).toBe(2025);
+    expect(body.rows).toEqual([]);
   });
 
   it('returns a row with null category and subcategory for uncategorized transactions', async () => {
@@ -321,7 +328,7 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
 
     await transactionFixture(accountId, {
       date: '2025-03-01',
-      amount: '100.00',
+      amount: '-100.00',
       categoryId: null,
       subcategoryId: null,
     });
@@ -331,11 +338,12 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.rows).toHaveLength(1);
-    expect(res.body.rows[0].category).toBeNull();
-    expect(res.body.rows[0].subcategory).toBeNull();
-    expect(res.body.rows[0].month).toBe(3);
-    expect(res.body.rows[0].total).toBe(100);
+    const body = res.body as CategoriesBody;
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0]?.category).toBeNull();
+    expect(body.rows[0]?.subcategory).toBeNull();
+    expect(body.rows[0]?.month).toBe(3);
+    expect(body.rows[0]?.total).toBe(100);
   });
 
   it('returns correct category and subcategory names', async () => {
@@ -353,7 +361,7 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
 
     await transactionFixture(accountId, {
       date: '2025-05-10',
-      amount: '75.00',
+      amount: '-75.00',
       categoryId: parentCat.id,
       subcategoryId: childCat.id,
     });
@@ -363,11 +371,12 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.rows).toHaveLength(1);
-    expect(res.body.rows[0].category).toBe('Food');
-    expect(res.body.rows[0].subcategory).toBe('Groceries');
-    expect(res.body.rows[0].month).toBe(5);
-    expect(res.body.rows[0].total).toBe(75);
+    const body = res.body as CategoriesBody;
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0]?.category).toBe('Food');
+    expect(body.rows[0]?.subcategory).toBe('Groceries');
+    expect(body.rows[0]?.month).toBe(5);
+    expect(body.rows[0]?.total).toBe(75);
   });
 
   it('groups by month producing separate rows', async () => {
@@ -378,11 +387,11 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
 
     await transactionFixture(accountId, {
       date: '2025-01-15',
-      amount: '50.00',
+      amount: '-50.00',
     });
     await transactionFixture(accountId, {
       date: '2025-02-20',
-      amount: '60.00',
+      amount: '-60.00',
     });
 
     const res = await request(app)
@@ -390,7 +399,8 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.rows).toHaveLength(2);
+    const body = res.body as CategoriesBody;
+    expect(body.rows).toHaveLength(2);
   });
 
   it('sums multiple transactions with same category in the same month into one row', async () => {
@@ -411,13 +421,13 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
 
     await transactionFixture(accountId, {
       date: '2025-06-01',
-      amount: '40.00',
+      amount: '-40.00',
       categoryId: parentCat.id,
       subcategoryId: childCat.id,
     });
     await transactionFixture(accountId, {
       date: '2025-06-15',
-      amount: '35.00',
+      amount: '-35.00',
       categoryId: parentCat.id,
       subcategoryId: childCat.id,
     });
@@ -427,8 +437,9 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.rows).toHaveLength(1);
-    expect(res.body.rows[0].total).toBe(75);
+    const body = res.body as CategoriesBody;
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0]?.total).toBe(75);
   });
 
   it('excludes income and transfer transactions', async () => {
@@ -453,7 +464,8 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.rows).toEqual([]);
+    const body = res.body as CategoriesBody;
+    expect(body.rows).toEqual([]);
   });
 
   it('isolates data between users', async () => {
@@ -463,7 +475,7 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
     });
     await transactionFixture(accountA, {
       date: '2025-08-01',
-      amount: '200.00',
+      amount: '-200.00',
     });
 
     const { accessToken: accessTokenB } = await registerUser(
@@ -475,6 +487,7 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
       .set('Authorization', `Bearer ${accessTokenB}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.rows).toEqual([]);
+    const body = res.body as CategoriesBody;
+    expect(body.rows).toEqual([]);
   });
 });

@@ -36,7 +36,7 @@ export async function queryMonthlyExpenses(
     .select({
       month: monthExpr.as('month'),
       needWant: transactions.needWant,
-      total: sql<string>`CAST(SUM(${transactions.amount}) AS text)`.as('total'),
+      total: sql<string>`CAST(-SUM(${transactions.amount}) AS text)`.as('total'),
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -113,7 +113,7 @@ export async function queryExpensesByCategory(
       month: monthExpr.as('month'),
       category: categoryAlias.name,
       subcategory: subcategoryAlias.name,
-      total: sql<string>`CAST(SUM(${transactions.amount}) AS text)`.as('total'),
+      total: sql<string>`CAST(-SUM(${transactions.amount}) AS text)`.as('total'),
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))

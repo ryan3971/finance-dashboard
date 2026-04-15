@@ -1,4 +1,4 @@
-import { and, eq, gte, isNull, lt, sql } from 'drizzle-orm';
+import { and, eq, gte, lt, sql } from 'drizzle-orm';
 import { accounts, transactions } from '@/db/schema';
 import { db } from '@/db';
 import Decimal from 'decimal.js';
@@ -45,7 +45,7 @@ export async function queryMonthlyIncome(
       and(
         eq(accounts.userId, userId),
         eq(transactions.isIncome, true),
-        isNull(transactions.needWant),
+        //isNull(transactions.needWant),
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)

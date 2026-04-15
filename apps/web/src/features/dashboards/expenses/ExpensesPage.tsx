@@ -3,6 +3,7 @@ import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
+  type CellContext,
   type ColumnDef,
   type SortingState,
   useReactTable,
@@ -145,6 +146,10 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
   );
 }
 
+function TotalCell({ getValue }: Readonly<CellContext<ExpenseCategoryRow, unknown>>) {
+  return <span className="font-mono font-medium text-danger">{fmt(getValue<number>())}</span>;
+}
+
 function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
   const { data, isLoading, isError } = useExpenseCategories(year);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -174,11 +179,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
       {
         accessorKey: 'total',
         header: 'Total',
-        cell: ({ getValue }) => (
-          <span className="font-mono font-medium text-danger">
-            {fmt(getValue<number>())}
-          </span>
-        ),
+        cell: TotalCell,
         meta: {
           thClassName: `${TH_BASE} text-right`,
           tdClassName: 'px-4 py-3 text-sm text-right',
@@ -229,11 +230,12 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
                         header.column.columnDef.header,
                         header.getContext()
                       )}
-                      {header.column.getIsSorted() === 'asc'
-                        ? ' ↑'
-                        : header.column.getIsSorted() === 'desc'
-                          ? ' ↓'
-                          : ''}
+                      {(() => {
+                        const sorted = header.column.getIsSorted();
+                        if (sorted === 'asc') return ' ↑';
+                        if (sorted === 'desc') return ' ↓';
+                        return '';
+                      })()}
                     </th>
                   ))}
                 </tr>

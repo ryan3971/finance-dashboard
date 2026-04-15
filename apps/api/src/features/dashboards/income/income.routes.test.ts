@@ -181,29 +181,29 @@ describe('GET /api/v1/dashboard/income', () => {
     expect(feb?.total).toBe(3500);
   });
 
-  it('excludes transactions where needWant is not null', async () => {
-    const { accessToken } = await registerUser(app);
-    const accountId = await createAccount(app, accessToken, {
-      ...DEFAULT_ACCOUNT_DATA,
-    });
+  // it('excludes transactions where needWant is not null', async () => {
+  //   const { accessToken } = await registerUser(app);
+  //   const accountId = await createAccount(app, accessToken, {
+  //     ...DEFAULT_ACCOUNT_DATA,
+  //   });
 
-    await transactionFixture(accountId, {
-      date: '2025-04-10',
-      amount: '3000.00',
-      isIncome: true,
-      needWant: 'Need',
-    });
+  //   await transactionFixture(accountId, {
+  //     date: '2025-04-10',
+  //     amount: '3000.00',
+  //     isIncome: true,
+  //     needWant: 'Need',
+  //   });
 
-    const res = await request(app)
-      .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${accessToken}`);
+  //   const res = await request(app)
+  //     .get('/api/v1/dashboard/income?year=2025')
+  //     .set('Authorization', `Bearer ${accessToken}`);
 
-    expect(res.status).toBe(200);
-    const apr = (res.body.months as { month: number; total: number }[]).find(
-      (m) => m.month === 4
-    );
-    expect(apr?.total).toBe(0);
-  });
+  //   expect(res.status).toBe(200);
+  //   const apr = (res.body.months as { month: number; total: number }[]).find(
+  //     (m) => m.month === 4
+  //   );
+  //   expect(apr?.total).toBe(0);
+  // });
 
   it('excludes non-income transactions', async () => {
     const { accessToken } = await registerUser(app);
