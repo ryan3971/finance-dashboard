@@ -85,3 +85,18 @@ export interface TransactionResponse {
   subcategoryName: string | null;
   tags: { id: string; name: string; color: string | null }[];
 }
+
+// ─── Categorization Rule Test Types ──────────────────────────────────────────────
+
+export interface RuleResponse {
+  id: string;
+  keyword: string;
+  sourceName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
+  needWant: string | null;
+  priority: number;
+  createdAt: string;
+}

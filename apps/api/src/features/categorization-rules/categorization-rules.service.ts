@@ -61,10 +61,12 @@ export async function updateRule(
   const execute = async (conn: typeof db | DbTransaction) => {
     await fetchOwnedRule(id, userId, conn);
 
-    await conn
-      .update(categorizationRules)
-      .set(input)
-      .where(eq(categorizationRules.id, id));
+    if (Object.keys(input).length > 0) {  // Drizzle will throw if we try to update with an empty object, so we check first
+      await conn
+        .update(categorizationRules)
+        .set(input)
+        .where(eq(categorizationRules.id, id));
+    }
 
     const [updated] = await ruleSelect(conn)
       .where(eq(categorizationRules.id, id))

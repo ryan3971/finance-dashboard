@@ -108,3 +108,15 @@ export async function createAccount(
   return (res.body as AccountResponse).id;
 }
 
+export async function createCategory(
+  app: Application,
+  token: string,
+  options: { name: string; isIncome?: boolean; parentId?: string }
+): Promise<string> {
+  const res = await request(app)
+    .post('/api/v1/categories')
+    .set('Authorization', `Bearer ${token}`)
+    .send(options);
+  return (res.body as { id: string }).id;
+}
+
