@@ -6,7 +6,7 @@ import {
   cleanDatabase,
   createAccount,
   type ImportSummaryResponse,
-  registerAndLogin,
+  registerAndGetToken,
 } from '../../testing/test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
@@ -16,10 +16,7 @@ import request from 'supertest';
 
 const app = createApp();
 
-const FIXTURE = path.join(
-  __dirname,
-  './adapters/__fixtures__/questrade.csv'
-);
+const FIXTURE = path.join(__dirname, './adapters/__fixtures__/questrade.csv');
 
 let accessToken: string;
 let tfsaAccountId: string;
@@ -27,7 +24,7 @@ let tfsaAccountId: string;
 beforeEach(async () => {
   await cleanDatabase();
 
-  accessToken = await registerAndLogin(app, 'questrade-test@example.com');
+  accessToken = await registerAndGetToken(app, 'questrade-test@example.com');
   tfsaAccountId = await createAccount(app, accessToken, {
     name: 'Questrade TFSA',
     type: 'tfsa',

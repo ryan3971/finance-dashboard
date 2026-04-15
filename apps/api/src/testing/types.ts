@@ -119,3 +119,14 @@ export interface TagResponse {
   color: string | null;
   createdAt: string;
 }
+
+// ── User Config Test Types ──────────────────────────────────────────────
+export interface UserConfigResponse {
+  id: string;
+  userId: string;
+  emergencyFundTarget: string | null;
+  needsPercentage: number | null;
+  wantsPercentage: number | null;
+  investmentsPercentage: number | null;
+  updatedAt: string;
+}

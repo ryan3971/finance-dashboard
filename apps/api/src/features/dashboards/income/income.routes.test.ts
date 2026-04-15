@@ -2,42 +2,24 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   cleanDatabase,
   createAccount,
-  registerAndLogin,
   registerUser,
 } from '@/testing/test-helpers';
 import { createApp } from '@/app';
-import { db } from '@/db';
-import { transactions } from '@/db/schema';
+import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
 import request from 'supertest';
 
+const DEFAULT_ACCOUNT_DATA = {
+  name: 'Chequing',
+  type: 'chequing',
+  institution: 'td',
+  isCredit: false,
+  currency: 'CAD',
+};
 const app = createApp();
 
 beforeEach(async () => {
   await cleanDatabase();
 });
-
-let counter = 0;
-
-async function insertIncomeTransaction(
-  accountId: string,
-  opts: { date: string; amount: string; needWant?: string | null; isIncome?: boolean }
-) {
-  counter += 1;
-  await db.insert(transactions).values({
-    accountId,
-    date: opts.date,
-    description: `income-tx-${counter}`,
-    rawDescription: `income-tx-${counter}`,
-    amount: opts.amount,
-    currency: 'CAD',
-    isIncome: opts.isIncome ?? true,
-    needWant: opts.needWant ?? null,
-    isTransfer: false,
-    flaggedForReview: false,
-    compositeKey: `test-income-${counter}-${opts.date}-${opts.amount}`,
-    source: 'manual',
-  });
-}
 
 describe('GET /api/v1/dashboard/income', () => {
   it('returns 401 without auth', async () => {
@@ -46,26 +28,26 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('returns 400 for missing year param', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
     const res = await request(app)
       .get('/api/v1/dashboard/income')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
     expect(res.status).toBe(400);
   });
 
   it('returns 400 for out-of-range year', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=1999')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
     expect(res.status).toBe(400);
   });
 
   it('returns 12 months all 0.00 with null allocation when no transactions and no config', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.year).toBe(2025);
@@ -81,21 +63,20 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('returns correct total for a month with income', async () => {
-    const token = await registerAndLogin(app);
-    const accountId = await createAccount(app, token, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
     });
 
-    await insertIncomeTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: '2025-03-15',
       amount: '4500.00',
+      isIncome: true,
     });
 
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     const mar = (res.body.months as { month: number; total: number }[]).find(
@@ -110,20 +91,19 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('returns null allocation when percentages not configured', async () => {
-    const token = await registerAndLogin(app);
-    const accountId = await createAccount(app, token, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
     });
-    await insertIncomeTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: '2025-03-15',
       amount: '4500.00',
+      isIncome: true,
     });
 
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(
@@ -134,20 +114,19 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('returns populated allocation after percentages configured', async () => {
-    const token = await registerAndLogin(app);
-    const accountId = await createAccount(app, token, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
     });
-    await insertIncomeTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: '2025-03-15',
       amount: '4500.00',
+      isIncome: true,
     });
 
     await request(app)
       .patch('/api/v1/user-config')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send({
         allocations: {
           needsPercentage: 50,
@@ -158,7 +137,7 @@ describe('GET /api/v1/dashboard/income', () => {
 
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     const mar = (
@@ -175,25 +154,25 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('sums multiple transactions in the same month', async () => {
-    const token = await registerAndLogin(app);
-    const accountId = await createAccount(app, token, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
     });
 
-    await insertIncomeTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: '2025-02-01',
       amount: '2000.00',
+      isIncome: true,
     });
-    await insertIncomeTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: '2025-02-15',
       amount: '1500.00',
+      isIncome: true,
     });
 
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     const feb = (res.body.months as { month: number; total: number }[]).find(
@@ -203,22 +182,21 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('excludes transactions where needWant is not null', async () => {
-    const token = await registerAndLogin(app);
-    const accountId = await createAccount(app, token, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
     });
 
-    await insertIncomeTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: '2025-04-10',
       amount: '3000.00',
+      isIncome: true,
       needWant: 'Need',
     });
 
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     const apr = (res.body.months as { month: number; total: number }[]).find(
@@ -228,14 +206,12 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('excludes non-income transactions', async () => {
-    const token = await registerAndLogin(app);
-    const accountId = await createAccount(app, token, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
     });
 
-    await insertIncomeTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: '2025-05-01',
       amount: '500.00',
       isIncome: false,
@@ -243,7 +219,7 @@ describe('GET /api/v1/dashboard/income', () => {
 
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     const may = (res.body.months as { month: number; total: number }[]).find(
@@ -253,21 +229,26 @@ describe('GET /api/v1/dashboard/income', () => {
   });
 
   it('isolates data between users', async () => {
-    const tokenA = await registerAndLogin(app, 'a@example.com');
-    const accountA = await createAccount(app, tokenA, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken: accessTokenA } = await registerUser(
+      app,
+      'a@example.com'
+    );
+    const accountA = await createAccount(app, accessTokenA, {
+      ...DEFAULT_ACCOUNT_DATA,
     });
-    await insertIncomeTransaction(accountA, {
+    await transactionFixture(accountA, {
       date: '2025-06-01',
       amount: '5000.00',
+      isIncome: true,
     });
 
-    const { accessToken: tokenB } = await registerUser(app, 'b@example.com');
+    const { accessToken: accessTokenB } = await registerUser(
+      app,
+      'b@example.com'
+    );
     const res = await request(app)
       .get('/api/v1/dashboard/income?year=2025')
-      .set('Authorization', `Bearer ${tokenB}`);
+      .set('Authorization', `Bearer ${accessTokenB}`);
 
     expect(res.status).toBe(200);
     expect(

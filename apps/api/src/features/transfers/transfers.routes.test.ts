@@ -120,7 +120,9 @@ describe('POST /api/v1/transfers/confirm', () => {
     const auth = await registerUser(app);
     const accountA = await accountFixture(auth.user.id);
     const accountB = await accountFixture(auth.user.id);
-    const freshA = await transactionFixture(accountA.id, { flaggedForReview: true });
+    const freshA = await transactionFixture(accountA.id, {
+      flaggedForReview: true,
+    });
     const freshB = await transactionFixture(accountB.id, { isTransfer: true });
 
     const res = await request(app)
@@ -129,7 +131,9 @@ describe('POST /api/v1/transfers/confirm', () => {
       .send({ transactionId: freshA.id, pairedTransactionId: freshB.id });
 
     expect(res.status).toBe(409);
-    expect(res.body).toMatchObject({ error: 'Transaction is already confirmed as a transfer' });
+    expect(res.body).toMatchObject({
+      error: 'Transaction is already confirmed as a transfer',
+    });
   });
 
   it('returns 204 and marks the transaction as a transfer when no pair is provided', async () => {
@@ -165,8 +169,14 @@ describe('POST /api/v1/transfers/confirm', () => {
     expect(updatedB?.flaggedForReview).toBe(false);
 
     const [[rowA], [rowB]] = await Promise.all([
-      db.select({ transferPairId: transactions.transferPairId }).from(transactions).where(eq(transactions.id, txnA.id)),
-      db.select({ transferPairId: transactions.transferPairId }).from(transactions).where(eq(transactions.id, txnB.id)),
+      db
+        .select({ transferPairId: transactions.transferPairId })
+        .from(transactions)
+        .where(eq(transactions.id, txnA.id)),
+      db
+        .select({ transferPairId: transactions.transferPairId })
+        .from(transactions)
+        .where(eq(transactions.id, txnB.id)),
     ]);
     expect(rowA?.transferPairId).toBe(txnB.id);
     expect(rowB?.transferPairId).toBe(txnA.id);

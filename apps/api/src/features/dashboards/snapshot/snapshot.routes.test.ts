@@ -1,23 +1,19 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  cleanDatabase,
-  registerAndLogin,
-  registerUser,
-} from '@/testing/test-helpers';
+import { cleanDatabase, registerUser } from '@/testing/test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
-import { accounts, transactions, userConfig } from '@/db/schema';
+import { userConfig } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import request from 'supertest';
+import { accountFixture } from '@/testing/fixtures/account.fixture';
+import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
 import { assertDefined } from '@/lib/assert';
+import request from 'supertest';
 
 const app = createApp();
 
 beforeEach(async () => {
   await cleanDatabase();
 });
-
-let counter = 0;
 
 function currentYearMonth() {
   const now = new Date();
@@ -37,57 +33,10 @@ function priorMonthDateStr(day: number) {
   return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-async function insertAccount(
-  userId: string,
-  opts: { name: string; type: string; institution: string }
-): Promise<string> {
-  const [account] = await db
-    .insert(accounts)
-    .values({
-      userId,
-      name: opts.name,
-      type: opts.type,
-      institution: opts.institution,
-      currency: 'CAD',
-      isActive: true,
-      isCredit: opts.type === 'credit',
-    })
-    .returning({ id: accounts.id });
-  assertDefined(account, 'Expected account insert to return a row');
-  return account.id;
-}
-
-async function insertTransaction(
-  accountId: string,
-  opts: {
-    date: string;
-    amount: string;
-    isIncome?: boolean;
-    needWant?: string | null;
-    isTransfer?: boolean;
-  }
-) {
-  counter += 1;
-  await db.insert(transactions).values({
-    accountId,
-    date: opts.date,
-    description: `tx-${counter}`,
-    rawDescription: `tx-${counter}`,
-    amount: opts.amount,
-    currency: 'CAD',
-    isIncome: opts.isIncome ?? false,
-    needWant: opts.needWant ?? null,
-    isTransfer: opts.isTransfer ?? false,
-    flaggedForReview: false,
-    compositeKey: `test-snapshot-${counter}-${opts.date}-${opts.amount}`,
-    source: 'manual',
-  });
-}
-
-async function setAllocations(token: string) {
+async function setAllocations(accessToken: string) {
   await request(app)
     .patch('/api/v1/user-config')
-    .set('Authorization', `Bearer ${token}`)
+    .set('Authorization', `Bearer ${accessToken}`)
     .send({
       allocations: {
         needsPercentage: 50,
@@ -104,12 +53,12 @@ describe('GET /api/v1/dashboard/snapshot', () => {
   });
 
   it('returns current month and year', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
     const { year, month } = currentYearMonth();
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.year).toBe(year);
@@ -117,58 +66,84 @@ describe('GET /api/v1/dashboard/snapshot', () => {
   });
 
   it('returns empty accounts array when no accounts exist', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.accounts).toEqual([]);
   });
 
   it('returns account with correct running balance', async () => {
-    const { accessToken: token, user } = await registerUser(app);
-    const accountId = await insertAccount(user.id, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
-    });
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
 
     const res1 = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res1.status).toBe(200);
-    const account = (res1.body.accounts as { name: string; balance: number }[])[0];
-    assertDefined(account, 'Expected at least one account in snapshot response');
+    const account = (
+      res1.body.accounts as { name: string; balance: number }[]
+    )[0];
+    assertDefined(
+      account,
+      'Expected at least one account in snapshot response'
+    );
     expect(account.name).toBe('Chequing');
     expect(account.balance).toBe(0);
 
-    await insertTransaction(accountId, { date: currentMonthDateStr(5), amount: '4500.00', isIncome: true });
-    await insertTransaction(accountId, { date: currentMonthDateStr(10), amount: '1200.00', isIncome: false });
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '4500.00',
+      isIncome: true,
+    });
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(10),
+      amount: '1200.00',
+      isIncome: false,
+    });
 
     const res2 = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     const updated = (res2.body.accounts as { balance: number }[])[0];
-    assertDefined(updated, 'Expected at least one account in updated snapshot response');
+    assertDefined(
+      updated,
+      'Expected at least one account in updated snapshot response'
+    );
     expect(updated.balance).toBe(3300);
   });
 
   it('returns emergency fund percentage when target configured', async () => {
-    const { accessToken: token, user } = await registerUser(app);
-    const accountId = await insertAccount(user.id, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '10000.00',
+      isIncome: true,
     });
 
-    await insertTransaction(accountId, { date: currentMonthDateStr(5), amount: '10000.00', isIncome: true });
-
     // Ensure user_config row exists then set emergency fund target directly
-    await request(app).get('/api/v1/user-config').set('Authorization', `Bearer ${token}`);
+    await request(app)
+      .get('/api/v1/user-config')
+      .set('Authorization', `Bearer ${accessToken}`);
     await db
       .update(userConfig)
       .set({ emergencyFundTarget: '20000' })
@@ -176,7 +151,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.emergencyFund.target).toBe(20000);
@@ -185,11 +160,11 @@ describe('GET /api/v1/dashboard/snapshot', () => {
   });
 
   it('returns null emergency fund percentage when target not configured', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.emergencyFund.target).toBeNull();
@@ -197,47 +172,59 @@ describe('GET /api/v1/dashboard/snapshot', () => {
   });
 
   it('includes only current-month income transactions', async () => {
-    const { accessToken: token, user } = await registerUser(app);
-    const accountId = await insertAccount(user.id, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
-    });
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
 
     // Current month income
-    await insertTransaction(accountId, { date: currentMonthDateStr(15), amount: '5000.00', isIncome: true });
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(15),
+      amount: '5000.00',
+      isIncome: true,
+    });
     // Prior month income — should be excluded from monthly totals
-    await insertTransaction(accountId, { date: priorMonthDateStr(15), amount: '9999.00', isIncome: true });
+    await transactionFixture(accountId, {
+      date: priorMonthDateStr(15),
+      amount: '9999.00',
+      isIncome: true,
+    });
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.monthlyIncome.income).toBe(5000);
   });
 
   it('buckets current-month expenses by Need and Want', async () => {
-    const { accessToken: token, user } = await registerUser(app);
-    const accountId = await insertAccount(user.id, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
-    });
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
 
-    await insertTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: currentMonthDateStr(5),
       amount: '800.00',
       isIncome: false,
       needWant: 'Need',
     });
-    await insertTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: currentMonthDateStr(10),
       amount: '300.00',
       isIncome: false,
       needWant: 'Want',
     });
-    await insertTransaction(accountId, {
+    await transactionFixture(accountId, {
       date: currentMonthDateStr(12),
       amount: '50.00',
       isIncome: false,
@@ -246,7 +233,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.monthlyExpenses.needs).toBe(800);
@@ -255,23 +242,23 @@ describe('GET /api/v1/dashboard/snapshot', () => {
   });
 
   it('returns hasEntries: false when no anticipated budget entries exist', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.anticipated.hasEntries).toBe(false);
   });
 
   it('computes expectedIncome and expectedExpenses from monthly_amount', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
     const { year } = currentYearMonth();
 
     const incomeEntry = await request(app)
       .post('/api/v1/anticipated-budget')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send({
         name: 'Salary',
         isIncome: true,
@@ -285,7 +272,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
 
     const expenseEntry = await request(app)
       .post('/api/v1/anticipated-budget')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send({
         name: 'Rent',
         isIncome: false,
@@ -297,11 +284,11 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       });
     expect(expenseEntry.status).toBe(201);
 
-    await setAllocations(token);
+    await setAllocations(accessToken);
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.anticipated.hasEntries).toBe(true);
@@ -313,12 +300,12 @@ describe('GET /api/v1/dashboard/snapshot', () => {
   });
 
   it('uses month override amount when present', async () => {
-    const token = await registerAndLogin(app);
+    const { accessToken } = await registerUser(app);
     const { year, month } = currentYearMonth();
 
     const entryRes = await request(app)
       .post('/api/v1/anticipated-budget')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send({
         name: 'Insurance',
         isIncome: false,
@@ -334,13 +321,13 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     // Override the current month with a different amount
     const overrideRes = await request(app)
       .put(`/api/v1/anticipated-budget/${entryId}/months/${month}`)
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send({ amount: '350' });
     expect(overrideRes.status).toBe(204);
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
     // Override amount (350) should take precedence over monthly_amount (100)
@@ -348,22 +335,27 @@ describe('GET /api/v1/dashboard/snapshot', () => {
   });
 
   it('isolates data between users', async () => {
-    const { accessToken: tokenA, user: userA } = await registerUser(app, 'snap-a@example.com');
-    const accountA = await insertAccount(userA.id, {
-      name: 'Chequing',
-      type: 'chequing',
-      institution: 'td',
-    });
-    await insertTransaction(accountA, {
+    const { accessToken: accessTokenA, user: userA } = await registerUser(
+      app,
+      'snap-a@example.com'
+    );
+    const accountId = (
+      await accountFixture(userA.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+    await transactionFixture(accountId, {
       date: currentMonthDateStr(10),
       amount: '8000.00',
       isIncome: true,
     });
 
-    const { accessToken: tokenB } = await registerUser(app, 'snap-b@example.com');
+    const { accessToken: accessTokenB } = await registerUser(app, 'snap-b@example.com');
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${tokenB}`);
+      .set('Authorization', `Bearer ${accessTokenB}`);
 
     expect(res.status).toBe(200);
     expect(res.body.accounts).toEqual([]);
@@ -373,7 +365,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     // Ensure user A's data is still present
     const resA = await request(app)
       .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${tokenA}`);
+      .set('Authorization', `Bearer ${accessTokenA}`);
     expect(resA.body.accounts).toHaveLength(1);
     expect(resA.body.monthlyIncome.income).toBe(8000);
   });

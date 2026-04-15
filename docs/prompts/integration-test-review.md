@@ -25,3 +25,5 @@ Review the integration test(s) in [FILE_PATH] and provide a structured critique 
 For each issue found, provide: the line or block it applies to, a brief explanation of the problem, and a concrete suggestion to fix it. Prioritize issues by severity (critical / moderate / minor).
 
 Review the CLAUDE.md file for any relevant context on the project or testing approach.
+
+@apps/api/src/features/auth/auth.routes.test.ts  and @apps/api/src/features/transactions/transactions.routes.test.ts  can be used as references to understand the tests format and setup 

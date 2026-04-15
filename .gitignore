@@ -28,6 +28,9 @@ launch.json
 *.log
 pnpm-debug.log*
 
+# archived files
+archived/
+
 # Test coverage
 coverage/
 

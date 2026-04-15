@@ -59,20 +59,6 @@ export async function registerUser(
   return res.body as AuthResponse;
 }
 
-// export async function registerAndGetToken(
-//   app: Application,
-//   email = 'test@example.com',
-//   password = 'password123',
-//   overrides = {}
-// ): Promise<string> {
-//   const res = await request(app)
-//     .post('/api/v1/auth/register')
-//     .send({ email, password, ...overrides });
-//   expect(res.status).toBe(201);
-//   expect((res.body as AuthResponse).accessToken).toBeDefined();
-//   return (res.body as AuthResponse).accessToken;
-// }
-
 // Retrieving 500 transactions is a bit hacky but allows us to avoid adding a dedicated test-only route or directly querying the database in tests that need to verify transaction details after an operation like deletion or categorization.
 export async function getTransaction(
   app: Application,
@@ -123,18 +109,28 @@ const AMEX_MANUAL_FIXTURE = path.join(
   '../features/imports/adapters/__fixtures__/amex_manual.csv'
 );
 
-export async function uploadAmex(
+export async function uploadCsv(
   app: Application,
   token: string,
-  accountId: string
+  accountId: string,
+  fixturePath: string,
+  filename: string
 ): Promise<ImportSummaryResponse> {
   const res = await request(app)
     .post('/api/v1/imports/upload')
     .set('Authorization', `Bearer ${token}`)
     .field('accountId', accountId)
-    .attach('file', AMEX_MANUAL_FIXTURE, 'amex_manual.csv');
+    .attach('file', fixturePath, filename);
   expect(res.status).toBe(201);
   return res.body as ImportSummaryResponse;
+}
+
+export async function uploadAmex(
+  app: Application,
+  token: string,
+  accountId: string
+): Promise<ImportSummaryResponse> {
+  return uploadCsv(app, token, accountId, AMEX_MANUAL_FIXTURE, 'amex_manual.csv');
 }
 
 export async function createTag(
