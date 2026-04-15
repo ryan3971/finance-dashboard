@@ -57,6 +57,7 @@ export function TransactionsPage() {
     startDate: search.startDate ?? '',
     endDate: search.endDate ?? '',
     categoryId: search.categoryId ?? '',
+    subcategoryId: search.subcategoryId ?? '',
     flaggedOnly: search.flaggedOnly ?? false,
   };
   const page = search.page ?? 1;
@@ -68,6 +69,7 @@ export function TransactionsPage() {
         startDate: newFilters.startDate || undefined,
         endDate: newFilters.endDate || undefined,
         categoryId: newFilters.categoryId || undefined,
+        subcategoryId: newFilters.subcategoryId || undefined,
         flaggedOnly: newFilters.flaggedOnly || undefined,
         page: undefined,
       },
@@ -112,6 +114,7 @@ export function TransactionsPage() {
             startDate: filters.startDate || undefined,
             endDate: filters.endDate || undefined,
             categoryId: filters.categoryId || undefined,
+            subcategoryId: filters.subcategoryId || undefined,
             flagged: filters.flaggedOnly || undefined,
             limit: PAGINATION.EXPORT_LIMIT,
           },
@@ -128,6 +131,7 @@ export function TransactionsPage() {
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
     categoryId: filters.categoryId || undefined,
+    subcategoryId: filters.subcategoryId || undefined,
     flagged: filters.flaggedOnly || undefined,
     page,
   });

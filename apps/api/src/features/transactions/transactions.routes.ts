@@ -17,6 +17,7 @@ const listQuerySchema = z.object({
   startDate: isoDate.optional(),
   endDate: isoDate.optional(),
   categoryId: z.string().uuid().optional(),
+  subcategoryId: z.string().uuid().optional(),
   flagged: z
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
@@ -32,7 +33,7 @@ const listQuerySchema = z.object({
 
 // GET /api/v1/transactions
 router.get('/', async (req: Request, res: Response) => {
-  const { accountId, startDate, endDate, categoryId, flagged, page, limit } =
+  const { accountId, startDate, endDate, categoryId, subcategoryId, flagged, page, limit } =
     listQuerySchema.parse(req.query);
 
   const result = await listTransactions(
@@ -42,6 +43,7 @@ router.get('/', async (req: Request, res: Response) => {
       startDate: startDate,
       endDate: endDate,
       categoryId: categoryId,
+      subcategoryId: subcategoryId,
       flagged: flagged ?? false,
     },
     { page, limit }

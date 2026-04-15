@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   cleanDatabase,
   createAccount,
+  createCategory,
   createTag,
   uploadAmex,
   registerUser,
@@ -147,6 +148,43 @@ describe('GET /api/v1/transactions', () => {
       expect(tx.categoryId).toBe(uncategorizedId);
     }
   });
+
+  it('filters by subcategoryId and verifies all returned rows match', async () => {
+    const { accessToken } = await setupWithImport();
+
+    const parentId = await createCategory(app, accessToken, { name: 'Food', isIncome: false });
+    const subcategoryId = await createCategory(app, accessToken, {
+      name: 'Groceries',
+      parentId,
+    });
+
+    const txn = await getFirstTransaction(app, accessToken);
+    await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId: parentId, subcategoryId });
+
+    const res = await request(app)
+      .get(`/api/v1/transactions?subcategoryId=${subcategoryId}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as PaginatedResponse<{ subcategoryId: string }>;
+    expect(body.pagination.total).toBe(1);
+    for (const tx of body.data) {
+      expect(tx.subcategoryId).toBe(subcategoryId);
+    }
+  });
+
+  it('returns 400 for a malformed subcategoryId', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get(`/api/v1/transactions?subcategoryId=${MALFORMED_ID}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(400);
+  });
+
 
   it('amounts are negative for charges', async () => {
     // 2026-03-14 has exactly one charge: TIM HORTONS #412 (CSV: 12.00 → DB: -12.00)

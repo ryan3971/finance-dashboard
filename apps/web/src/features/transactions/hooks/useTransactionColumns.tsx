@@ -119,6 +119,21 @@ export function useTransactionColumns({
         enableSorting: false,
       },
       {
+        id: 'subcategory',
+        accessorKey: 'subcategoryName',
+        meta: { label: 'Subcategory' },
+        header: () => 'Subcategory',
+        cell: ({ row }) => {
+          const tx = row.original;
+          return (
+            <div className="flex items-center gap-1.5">
+              <span>{tx.subcategoryName ?? '—'}</span>
+            </div>
+          );
+        },
+        enableSorting: false,
+      },
+      {
         id: 'tags',
         meta: { label: 'Tags', tdClassName: 'px-4 py-3 max-w-xs' },
         header: () => 'Tags',

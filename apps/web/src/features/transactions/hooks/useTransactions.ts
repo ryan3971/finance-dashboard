@@ -50,6 +50,7 @@ export function useTransactions({
   startDate,
   endDate,
   categoryId,
+  subcategoryId,
   flagged,
   page = 1,
 }: {
@@ -57,6 +58,7 @@ export function useTransactions({
   startDate?: string;
   endDate?: string;
   categoryId?: string;
+  subcategoryId?: string;
   flagged?: boolean;
   page?: number;
 } = {}) {
@@ -66,12 +68,21 @@ export function useTransactions({
       startDate,
       endDate,
       categoryId,
+      subcategoryId,
       flagged,
       page,
     }),
     queryFn: async () => {
       const { data } = await api.get<TransactionsResponse>('/transactions', {
-        params: { accountId, startDate, endDate, categoryId, flagged, page },
+        params: {
+          accountId,
+          startDate,
+          endDate,
+          categoryId,
+          subcategoryId, 
+          flagged,
+          page,
+        },
       });
       return data;
     },

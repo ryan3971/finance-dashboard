@@ -7,6 +7,7 @@ export interface FilterState {
   startDate: string;
   endDate: string;
   categoryId: string;
+  subcategoryId: string;
   flaggedOnly: boolean;
 }
 
@@ -52,8 +53,18 @@ export function TransactionFilters({ filters, onChange }: Props) {
       />
 
       <Select
-        value={filters.categoryId}
-        onChange={(e) => update({ categoryId: e.target.value })}
+        value={filters.subcategoryId || filters.categoryId}
+        onChange={(e) => {
+          const val = e.target.value;
+          const isSub = categories?.some((c) =>
+            c.subcategories.some((s) => s.id === val)
+          );
+          update(
+            isSub
+              ? { subcategoryId: val, categoryId: '' }
+              : { categoryId: val, subcategoryId: '' }
+          );
+        }}
       >
         <option value="">All categories</option>
         {categories?.map((cat) => (

@@ -16,7 +16,6 @@ import {
 import type { Application } from 'express';
 import { db } from '@/db';
 import { isNotNull } from 'drizzle-orm';
-import { expect } from 'vitest';
 import request from 'supertest';
 import type {
   AuthResponse,
@@ -53,6 +52,9 @@ export async function registerUser(
   const res = await request(app)
     .post('/api/v1/auth/register')
     .send({ email, password: 'password123' });
+  if (res.status !== 201) {
+    throw new Error(`registerUser failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
   // supertest types res.body as `any`; the cast satisfies no-unsafe-return
   // without hiding a real type gap — the shape is validated by the route's
   // Zod schema before it ever reaches this helper.
@@ -88,6 +90,9 @@ export async function createAccount(
     .post('/api/v1/accounts')
     .set('Authorization', `Bearer ${token}`)
     .send(options);
+  if (res.status !== 201) {
+    throw new Error(`createAccount failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
   // Same boundary cast: supertest body is `any`; cast required by no-unsafe-member-access.
   return (res.body as AccountResponse).id;
 }
@@ -101,6 +106,9 @@ export async function createCategory(
     .post('/api/v1/categories')
     .set('Authorization', `Bearer ${token}`)
     .send(options);
+  if (res.status !== 201) {
+    throw new Error(`createCategory failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
   return (res.body as { id: string }).id;
 }
 
@@ -121,7 +129,9 @@ export async function uploadCsv(
     .set('Authorization', `Bearer ${token}`)
     .field('accountId', accountId)
     .attach('file', fixturePath, filename);
-  expect(res.status).toBe(201);
+  if (res.status !== 201) {
+    throw new Error(`uploadCsv failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
   return res.body as ImportSummaryResponse;
 }
 
@@ -142,7 +152,9 @@ export async function createTag(
     .post('/api/v1/tags')
     .set('Authorization', `Bearer ${token}`)
     .send({ name });
-  expect(res.status).toBe(201);
+  if (res.status !== 201) {
+    throw new Error(`createTag failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
   return (res.body as { id: string }).id;
 }
 

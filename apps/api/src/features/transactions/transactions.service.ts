@@ -30,6 +30,7 @@ export interface TransactionFilters {
   startDate?: string;
   endDate?: string;
   categoryId?: string;
+  subcategoryId?: string;
   flagged?: boolean;
 }
 
@@ -87,6 +88,8 @@ export async function listTransactions(
   if (filters.categoryId)
     conditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.flagged) conditions.push(eq(transactions.flaggedForReview, true));
+  if (filters.subcategoryId)
+    conditions.push(eq(transactions.subcategoryId, filters.subcategoryId));
 
   const rows = await db
     .select({

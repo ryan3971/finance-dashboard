@@ -30,6 +30,7 @@ const transactionsSearchSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   categoryId: z.string().optional(),
+  subcategoryId: z.string().optional(),
   flaggedOnly: z.boolean().optional(),
   page: z.number().int().positive().optional(),
 });
