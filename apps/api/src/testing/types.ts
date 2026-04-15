@@ -100,3 +100,22 @@ export interface RuleResponse {
   priority: number;
   createdAt: string;
 }
+
+// ─── Transaction Pagination Test Types ──────────────────────────────────────────────
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// ── Tag Test Types ──────────────────────────────────────────────
+export interface TagResponse {
+  id: string;
+  name: string;
+  color: string | null;
+  createdAt: string;
+}

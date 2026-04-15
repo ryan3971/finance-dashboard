@@ -61,9 +61,34 @@ API-only literals that appear in 2+ files belong in `src/lib/constants.ts` — i
 
 Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles all `DomainError` instances generically.
 
-## Testing
 
-Route-level integration tests against a real database — no mocking. Hardcode all expected values (error codes, status codes, field names) directly in assertions. Never import production constants as expected values — if a value changes, the test must break to force a deliberate decision.
+## Integration Test Guidelines
+
+### What to Assert
+- Assert against the external contract (status codes, response body fields, side effects) -- never against internal implementation details.
+- If you can refactor internals without changing observable behavior, tests should stay green. If observable behavior changes, tests should fail.
+
+### Hardcoding Values
+- Always hardcode expected values in assertions (status codes, field values, error messages). Never derive them dynamically from the application code under test.
+- Use `toMatchObject` over deep equality when only a subset of fields defines the contract. This keeps tests resilient to additive changes (new fields) while still catching regressions on the fields that matter.
+
+### Schema / Type Validation
+- Do not import Zod schemas or shared type definitions into tests. If the schema changes, the test should catch it -- importing the same schema means both sides change together and the regression is silently missed.
+- Define expected shapes inline in the test as a local interface or inline cast. This also serves as documentation of the endpoint contract.
+
+### Handling `any` on Response Bodies
+- Cast response bodies to a local interface to resolve unsafe member access lint errors:
+```ts
+  interface ResponseBody {
+    year: number;
+    title: string;
+  }
+  const body = response.body as ResponseBody;
+  expect(body.year).toBe(2024);
+```
+- Type casts on response bodies are acceptable in tests. The assertions that follow are the actual safety net -- the cast just satisfies the type checker.
+- Do not cast inputs to the functions/services under test. Those should be properly typed so TypeScript catches mismatches between test data and function signatures.
+- Do not suppress lint errors with `eslint-disable` or `as any`.
 
 ## Data access
 

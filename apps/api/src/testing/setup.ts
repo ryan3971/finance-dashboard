@@ -28,3 +28,12 @@ vi.mock('@/middleware/logger', () => ({
   },
   httpLogger: vi.fn((req: unknown, res: unknown, next: () => void) => next()),
 }));
+
+// Seed the test category/rule set once per file before any test runs.
+// System rows (userId IS NULL) survive cleanDatabase() between tests, so the
+// set is stable for the whole file without per-test re-seeding.
+// The replace is unconditional so a stale production set from a prior manual
+// seed run can never bleed into tests.
+beforeAll(async () => {
+  await resetTestSystemData();
+});

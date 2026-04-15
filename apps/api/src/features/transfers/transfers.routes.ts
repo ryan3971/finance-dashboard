@@ -18,6 +18,12 @@ router.post('/confirm', async (req: Request, res: Response) => {
       // pairedTransactionId is optional — omit if only one side is known
       pairedTransactionId: z.string().uuid().optional(),
     })
+    .refine(
+      (data) =>
+        data.pairedTransactionId === undefined ||
+        data.pairedTransactionId !== data.transactionId,
+      { message: 'pairedTransactionId must differ from transactionId' }
+    )
     .parse(req.body);
 
   await confirmTransfer(

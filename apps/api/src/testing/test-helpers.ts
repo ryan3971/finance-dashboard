@@ -1,3 +1,4 @@
+import * as path from 'path';
 import {
   accounts,
   anticipatedBudget,
@@ -15,22 +16,19 @@ import {
 import type { Application } from 'express';
 import { db } from '@/db';
 import { isNotNull } from 'drizzle-orm';
+import { expect } from 'vitest';
 import request from 'supertest';
-import type { AuthResponse, AccountResponse, TransactionResponse } from '@/testing/types';
+import type {
+  AuthResponse,
+  AccountResponse,
+  TransactionResponse,
+  PaginatedResponse,
+} from '@/testing/types';
 
 export interface ImportSummaryResponse {
   importedCount: number;
   duplicateCount: number;
   errorCount: number;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    totalPages: number;
-  };
 }
 
 export async function cleanDatabase(): Promise<void> {
@@ -120,3 +118,64 @@ export async function createCategory(
   return (res.body as { id: string }).id;
 }
 
+const AMEX_MANUAL_FIXTURE = path.join(
+  __dirname,
+  '../features/imports/adapters/__fixtures__/amex_manual.csv'
+);
+
+export async function uploadAmex(
+  app: Application,
+  token: string,
+  accountId: string
+): Promise<ImportSummaryResponse> {
+  const res = await request(app)
+    .post('/api/v1/imports/upload')
+    .set('Authorization', `Bearer ${token}`)
+    .field('accountId', accountId)
+    .attach('file', AMEX_MANUAL_FIXTURE, 'amex_manual.csv');
+  expect(res.status).toBe(201);
+  return res.body as ImportSummaryResponse;
+}
+
+export async function createTag(
+  app: Application,
+  token: string,
+  name: string
+): Promise<string> {
+  const res = await request(app)
+    .post('/api/v1/tags')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ name });
+  expect(res.status).toBe(201);
+  return (res.body as { id: string }).id;
+}
+
+/** Lists all transactions for the user and returns the first row. */
+export async function getFirstTransaction(
+  app: Application,
+  accessToken: string
+): Promise<TransactionResponse> {
+  const res = await request(app)
+    .get('/api/v1/transactions')
+    .set('Authorization', `Bearer ${accessToken}`);
+  const { data } = res.body as PaginatedResponse<TransactionResponse>;
+  const first = data[0];
+  if (!first) throw new Error('No transactions found');
+  return first;
+}
+
+/** Returns the id of a seeded category by name. */
+export async function getCategoryId(
+  app: Application,
+  accessToken: string,
+  name: string
+): Promise<string> {
+  const res = await request(app)
+    .get('/api/v1/categories')
+    .set('Authorization', `Bearer ${accessToken}`);
+  const cat = (res.body as { id: string; name: string }[]).find(
+    (c) => c.name === name
+  );
+  if (!cat) throw new Error(`Category '${name}' not found`);
+  return cat.id;
+}
