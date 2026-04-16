@@ -96,7 +96,7 @@ describe('GET /api/v1/anticipated-budget', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
 
-    const entry = res.body[0] as AnticipatedBudgetEntry;
+    const [entry] = res.body as [AnticipatedBudgetEntry];
     expect(entry.months).toHaveLength(12);
     expect(entry.months[0]).toMatchObject({ month: 1, amount: 1500, isOverride: false });
     expect(entry.months[11]).toMatchObject({ month: 12, amount: 1500, isOverride: false });
@@ -121,7 +121,7 @@ describe('GET /api/v1/anticipated-budget', () => {
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${accessToken}`);
 
-    const entry = res.body[0] as AnticipatedBudgetEntry;
+    const [entry] = res.body as [AnticipatedBudgetEntry];
     const march = entry.months.find((m) => m.month === 3);
     expect(march).toMatchObject({ month: 3, amount: 1800, isOverride: true });
 
@@ -170,7 +170,7 @@ describe('GET /api/v1/anticipated-budget', () => {
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${accessToken}`);
 
-    const entry = res.body[0] as AnticipatedBudgetEntry;
+    const [entry] = res.body as [AnticipatedBudgetEntry];
     const june = entry.months.find((m) => m.month === 6);
     expect(june).toMatchObject({ month: 6, amount: 800, isOverride: true });
 
@@ -406,7 +406,9 @@ describe('PUT /api/v1/anticipated-budget/:id/months/:month', () => {
     const list = await request(app)
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${accessToken}`);
-    const entry = list.body[0] as AnticipatedBudgetEntry;
+    expect(list.status).toBe(200);
+    expect(list.body).toHaveLength(1);
+    const [entry] = list.body as [AnticipatedBudgetEntry];
     const june = entry.months.find((m) => m.month === 6);
     expect(june).toMatchObject({ month: 6, amount: 2000, isOverride: true });
   });
@@ -435,7 +437,9 @@ describe('PUT /api/v1/anticipated-budget/:id/months/:month', () => {
     const list = await request(app)
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${accessToken}`);
-    const entry = list.body[0] as AnticipatedBudgetEntry;
+    expect(list.status).toBe(200);
+    expect(list.body).toHaveLength(1);
+    const [entry] = list.body as [AnticipatedBudgetEntry];
     const june = entry.months.find((m) => m.month === 6);
     expect(june).toMatchObject({ month: 6, amount: 2500, isOverride: true });
   });
@@ -523,7 +527,9 @@ describe('DELETE /api/v1/anticipated-budget/:id/months/:month', () => {
     const list = await request(app)
       .get('/api/v1/anticipated-budget?year=2025')
       .set('Authorization', `Bearer ${accessToken}`);
-    const entry = list.body[0] as AnticipatedBudgetEntry;
+    expect(list.status).toBe(200);
+    expect(list.body).toHaveLength(1);
+    const [entry] = list.body as [AnticipatedBudgetEntry];
     const march = entry.months.find((m) => m.month === 3);
     expect(march).toMatchObject({ month: 3, amount: 1500, isOverride: false });
   });
