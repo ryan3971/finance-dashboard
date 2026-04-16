@@ -1,11 +1,15 @@
 import { eq, inArray, isNull } from 'drizzle-orm';
 import { assertDefined } from '@/lib/assert';
 import { db } from '@/db';
-import { anticipatedBudget, anticipatedBudgetMonths, categories } from '@/db/schema';
+import {
+  anticipatedBudget,
+  anticipatedBudgetMonths,
+  categories,
+} from '@/db/schema';
 import {
   TEST_ANTICIPATED_BUDGET,
   TEST_ANTICIPATED_BUDGET_MONTHS,
-} from '@/db/seeds/test-anticipated-budget';
+} from '@/testing/seeds/test-anticipated-budget';
 
 /**
  * Insert the test anticipated-budget entries and their month overrides for the
@@ -87,7 +91,9 @@ export async function seedTestAnticipatedBudget(
  * cascade) for the given user.  Useful in beforeEach hooks when a test file
  * seeds data in beforeAll and needs a clean slate between individual tests.
  */
-export async function clearTestAnticipatedBudget(userId: string): Promise<void> {
+export async function clearTestAnticipatedBudget(
+  userId: string
+): Promise<void> {
   const rows = await db
     .select({ id: anticipatedBudget.id })
     .from(anticipatedBudget)
@@ -99,7 +105,5 @@ export async function clearTestAnticipatedBudget(userId: string): Promise<void> 
   await db
     .delete(anticipatedBudgetMonths)
     .where(inArray(anticipatedBudgetMonths.anticipatedBudgetId, ids));
-  await db
-    .delete(anticipatedBudget)
-    .where(inArray(anticipatedBudget.id, ids));
+  await db.delete(anticipatedBudget).where(inArray(anticipatedBudget.id, ids));
 }

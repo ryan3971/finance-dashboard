@@ -1,4 +1,4 @@
-import type { SeedRule } from './rules';
+import type { SeedRule } from '../../db/seeds/rules';
 
 // Test rule set — minimal and frozen.
 //
