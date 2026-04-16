@@ -1,3 +1,6 @@
+// IGNORE THIS FILE - it is a future implementation
+
+/**
 import {
   buildCategorizationPrompt,
   buildCategoryList,
@@ -98,3 +101,4 @@ export async function categorizeWithOpenAI(
     return null;
   }
 }
+*/

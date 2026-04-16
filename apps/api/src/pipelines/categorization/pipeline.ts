@@ -2,11 +2,14 @@ import { and, eq } from 'drizzle-orm';
 import { applyRules, type LoadedRule, loadRules } from './rules-engine';
 import { categories } from '@/db/schema';
 import type { CategorizationResult } from './pipeline.types';
-import { categorizeWithAnthropic } from './anthropic-provider';
-import { categorizeWithOpenAI } from './openai-provider';
+//import { categorizeWithAnthropic } from './anthropic-provider';
+//import { categorizeWithOpenAI } from './openai-provider';
 import { CATEGORY_SOURCE, CONFIDENCE } from '@/lib/constants';
-import { config } from '@/lib/config';
+//import { config } from '@/lib/config';
 import { db } from '@/db';
+
+// IGNORE THE AI RELATED IMPLEMENTATIONS FOR NOW - They will be implemented in the future
+
 
 // Re-export for callers that batch-load rules before a loop (e.g. import pipeline)
 export { loadRules } from './rules-engine';
@@ -36,12 +39,13 @@ async function getUncategorizedId(userId: string): Promise<string> {
   return cat.id;
 }
 
-const AI_ENABLED = () => config.aiEnabled;
+// const AI_ENABLED = () => config.aiEnabled;
 
 /**
  * Select and call the configured AI provider.
  * Returns null on failure or low confidence — caller handles fallback.
  */
+/**
 async function runAiProvider(
   description: string,
   amount: number,
@@ -56,7 +60,7 @@ async function runAiProvider(
   // Default: Anthropic Claude Haiku
   return categorizeWithAnthropic(description, amount, currency, userId);
 }
-
+*/
 /**
  * Categorize a single transaction.
  *
@@ -82,11 +86,12 @@ export async function categorize(
   if (ruleResult) return ruleResult;
 
   // Step 2: AI provider (feature-flagged, provider configurable)
+  /*
   if (AI_ENABLED()) {
     const aiResult = await runAiProvider(description, amount, currency, userId);
     if (aiResult) return aiResult;
   }
-
+*/
   // Step 3: Fallback — user's Uncategorized category
   const fallbackId = await getUncategorizedId(userId);
   return {

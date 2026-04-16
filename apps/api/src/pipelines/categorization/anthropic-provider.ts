@@ -1,3 +1,5 @@
+// IGNORE THIS FILE - it is a future implementation
+/** 
 import {
   buildCategorizationPrompt,
   buildCategoryList,
@@ -101,3 +103,4 @@ export async function categorizeWithAnthropic(
     return null;
   }
 }
+*/
