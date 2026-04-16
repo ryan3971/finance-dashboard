@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { cleanDatabase, registerUser, setAllocations, setEmergencyFundTarget } from '@/testing/test-helpers';
+import {
+  cleanDatabase,
+  registerUser,
+  setAllocations,
+  setEmergencyFundTarget,
+} from '@/testing/test-helpers';
 import { createApp } from '@/app';
 import { accountFixture } from '@/testing/fixtures/account.fixture';
 import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
@@ -82,7 +87,8 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
     const account = body.accounts[0];
-    if (!account) throw new Error('Expected at least one account in snapshot response');
+    if (!account)
+      throw new Error('Expected at least one account in snapshot response');
     expect(account.name).toBe('Chequing');
     expect(account.balance).toBe(0);
   });
@@ -115,7 +121,8 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
     const account = body.accounts[0];
-    if (!account) throw new Error('Expected at least one account in snapshot response');
+    if (!account)
+      throw new Error('Expected at least one account in snapshot response');
     expect(account.balance).toBe(3300);
   });
 
@@ -150,7 +157,8 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
     const account = body.accounts[0];
-    if (!account) throw new Error('Expected at least one account in snapshot response');
+    if (!account)
+      throw new Error('Expected at least one account in snapshot response');
     expect(account.name).toBe('VISA');
     // Debt owed = charge (500) − payment (200) = 300
     expect(account.balance).toBe(300);
