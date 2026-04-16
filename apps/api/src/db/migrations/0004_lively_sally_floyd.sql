@@ -1,0 +1,2 @@
+UPDATE "transactions" SET "need_want" = NULL WHERE "is_income" = true AND "need_want" IS NOT NULL;--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "income_need_want_check" CHECK ("transactions"."is_income" = false OR "transactions"."need_want" IS NULL);

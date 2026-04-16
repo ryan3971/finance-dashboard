@@ -60,6 +60,7 @@ async function getOwnedTransaction(transactionId: string, userId: string) {
       id: transactions.id,
       description: transactions.description,
       accountId: transactions.accountId,
+      isIncome: transactions.isIncome,
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -193,7 +194,9 @@ export async function patchTransaction(
   }
   if (input.subcategoryId !== undefined)
     updateData.subcategoryId = input.subcategoryId;
-  if (input.needWant !== undefined) updateData.needWant = input.needWant;
+  // needWant is only valid on expenses — silently coerce to null for income transactions
+  if (input.needWant !== undefined)
+    updateData.needWant = txn.isIncome ? null : input.needWant;
   if (input.note !== undefined) updateData.note = input.note;
 
   await db.update(transactions).set(updateData).where(eq(transactions.id, id));
@@ -268,7 +271,7 @@ export async function createManualTransaction(
       currency: input.currency,
       categoryId: input.categoryId ?? null,
       subcategoryId: input.subcategoryId ?? null,
-      needWant: input.needWant ?? null,
+      needWant: isIncome ? null : (input.needWant ?? null),
       categorySource: input.categoryId
         ? CATEGORY_SOURCE.MANUAL
         : CATEGORY_SOURCE.DEFAULT,

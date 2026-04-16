@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   date,
   integer,
   jsonb,
@@ -12,7 +13,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { DEFAULT_CURRENCY, NEED_WANT_OPTIONS } from '@finance/shared/constants';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
@@ -103,9 +104,7 @@ export const tags = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (t) => ({
-    uniqUserName: unique().on(t.userId, t.name),
-  })
+  (t) => [unique().on(t.userId, t.name)]
 );
 
 // ─── Imports ─────────────────────────────────────────────────────────────────
@@ -134,40 +133,49 @@ export const imports = pgTable('imports', {
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
-export const transactions = pgTable('transactions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  accountId: uuid('account_id')
-    .references(() => accounts.id)
-    .notNull(),
-  importId: uuid('import_id').references(() => imports.id),
-  date: date('date').notNull(),
-  description: text('description').notNull(),
-  rawDescription: text('raw_description').notNull(),
-  sourceName: text('source_name'),
-  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
-  currency: text('currency').notNull().default(DEFAULT_CURRENCY),
-  categoryId: uuid('category_id').references(() => categories.id),
-  subcategoryId: uuid('subcategory_id').references(() => categories.id),
-  needWant: text('need_want'),
-  categorySource: text('category_source'),
-  categoryConfidence: numeric('category_confidence', {
-    precision: 4,
-    scale: 3,
-  }),
-  isTransfer: boolean('is_transfer').notNull().default(false),
-  transferPairId: uuid('transfer_pair_id'),
-  isIncome: boolean('is_income').notNull().default(false),
-  flaggedForReview: boolean('flagged_for_review').notNull().default(false),
-  compositeKey: text('composite_key').unique().notNull(),
-  note: text('note'),
-  source: text('source').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const transactions = pgTable(
+  'transactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id')
+      .references(() => accounts.id)
+      .notNull(),
+    importId: uuid('import_id').references(() => imports.id),
+    date: date('date').notNull(),
+    description: text('description').notNull(),
+    rawDescription: text('raw_description').notNull(),
+    sourceName: text('source_name'),
+    amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default(DEFAULT_CURRENCY),
+    categoryId: uuid('category_id').references(() => categories.id),
+    subcategoryId: uuid('subcategory_id').references(() => categories.id),
+    needWant: text('need_want'),
+    categorySource: text('category_source'),
+    categoryConfidence: numeric('category_confidence', {
+      precision: 4,
+      scale: 3,
+    }),
+    isTransfer: boolean('is_transfer').notNull().default(false),
+    transferPairId: uuid('transfer_pair_id'),
+    isIncome: boolean('is_income').notNull().default(false),
+    flaggedForReview: boolean('flagged_for_review').notNull().default(false),
+    compositeKey: text('composite_key').unique().notNull(),
+    note: text('note'),
+    source: text('source').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    check(
+      'income_need_want_check',
+      sql`${t.isIncome} = false OR ${t.needWant} IS NULL`
+    ),
+  ]
+);
 
 export const transactionTags = pgTable(
   'transaction_tags',
@@ -179,9 +187,7 @@ export const transactionTags = pgTable(
       .references(() => tags.id, { onDelete: 'cascade' })
       .notNull(),
   },
-  (table) => ({
-    pk: primaryKey({ columns: [table.transactionId, table.tagId] }),
-  })
+  (table) => [primaryKey({ columns: [table.transactionId, table.tagId] })]
 );
 
 // ─── Investment Tracking ──────────────────────────────────────────────────────
@@ -294,9 +300,7 @@ export const anticipatedBudgetMonths = pgTable(
     month: integer('month').notNull(),
     amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
   },
-  (t) => ({
-    uniqEntryMonth: unique().on(t.anticipatedBudgetId, t.month),
-  })
+  (t) => [unique().on(t.anticipatedBudgetId, t.month)]
 );
 
 // ─── Relations ───────────────────────────────────────────────────────────────

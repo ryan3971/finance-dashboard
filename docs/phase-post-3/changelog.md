@@ -105,3 +105,15 @@ snapshot.routes.test.ts:110-113 — Fixed the expense fixture from '1200.00' to 
 snapshot.repository.ts:122-123 — Changed SUM(${transactions.amount}) to SUM(-${transactions.amount}). Expense amounts are stored as negative values by convention; negating them in the query means the service receives positive totals it can accumulate directly without any sign-flip logic at the service layer.
 
 snapshot.routes.test.ts:215-232 — Fixed the three expense fixtures from '800.00', '300.00', '50.00' to '-800.00', '-300.00', '-50.00'. The test now seeds data the way the real import pipeline does, so it will catch any future regression where the sign-flip is removed.
+---
+Task 1 — DB constraint (done in prior session)
+Migration 0004_lively_sally_floyd.sql: cleans 31 violations, then adds CHECK (is_income = false OR need_want IS NULL).
+
+Task 2 — Categorization pipeline (pipeline.ts:83-87)
+After rules engine match, coerce ruleResult.needWant = null when amount > 0.
+
+Task 3 — Manual transaction create (transactions.service.ts:271)
+needWant: isIncome ? null : (input.needWant ?? null) — the isIncome flag is already computed one line above.
+
+Task 4 — Transaction patch (transactions.service.ts:196-198)
+Also added isIncome to the getOwnedTransaction select. Guard: updateData.needWant = txn.isIncome ? null : input.needWant.

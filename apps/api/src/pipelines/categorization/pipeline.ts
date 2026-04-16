@@ -83,7 +83,11 @@ export async function categorize(
   const ruleResult = rules
     ? applyRules(description, rules)
     : await loadRules(userId).then((r) => applyRules(description, r));
-  if (ruleResult) return ruleResult;
+  if (ruleResult) {
+    // needWant is only meaningful for expenses — income transactions must have null
+    if (amount > 0) ruleResult.needWant = null;
+    return ruleResult;
+  }
 
   // Step 2: AI provider (feature-flagged, provider configurable)
   /*
