@@ -1,4 +1,4 @@
-import { and, eq, isNull, gte, lt, sql } from 'drizzle-orm';
+import { and, eq, gte, lt, sql } from 'drizzle-orm';
 import {
   accounts,
   anticipatedBudget,
@@ -54,13 +54,13 @@ export async function queryAccountBalances(
       institution: accounts.institution,
       currency: accounts.currency,
       isCredit: accounts.isCredit,
-      // Non-credit: income adds, expenses subtract.
-      // Credit: expenses add (charges), income subtracts (payments).
+      // Amounts are signed: positive = income, negative = expense.
+      // Non-credit: sum signed amounts directly.
+      // Credit: invert — a negative charge increases debt, a positive payment reduces it.
       balance: sql<string>`CAST(COALESCE(SUM(
         CASE
-          WHEN ${transactions.isIncome} = true  AND ${accounts.isCredit} = false THEN  ${transactions.amount}
-          WHEN ${transactions.isIncome} = false AND ${accounts.isCredit} = true  THEN  ${transactions.amount}
-          WHEN ${transactions.isIncome} IS NOT NULL                              THEN -${transactions.amount}
+          WHEN ${accounts.isCredit} = false THEN  ${transactions.amount}
+          WHEN ${accounts.isCredit} = true  THEN -${transactions.amount}
           ELSE 0
         END
       ), 0) AS text)`.as('balance'),
@@ -98,7 +98,6 @@ export async function queryCurrentMonthIncome(
       and(
         eq(accounts.userId, userId),
         eq(transactions.isIncome, true),
-        isNull(transactions.needWant),
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)
@@ -118,8 +117,10 @@ export async function queryCurrentMonthExpenses(
   return db
     .select({
       needWant: transactions.needWant,
+      // Expense amounts are stored as negative values (convention). Negate so
+      // the service receives positive totals it can accumulate directly.
       total:
-        sql<string>`CAST(COALESCE(SUM(${transactions.amount}), 0) AS text)`.as(
+        sql<string>`CAST(COALESCE(SUM(-${transactions.amount}), 0) AS text)`.as(
           'total'
         ),
     })

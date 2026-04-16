@@ -97,3 +97,11 @@ expenses.service.ts:39 — queryMonthlyExpenses: changed SUM(amount) → -SUM(am
 expenses.service.ts:117 — queryExpensesByCategory: same negation so category totals are also positive.
 
 expenses.routes.test.ts — Updated all expense transaction fixture amounts from positive to negative (matching the real sign convention), and replaced unsafe res.body.x member accesses with properly typed res.body as ExpensesBody / res.body as CategoriesBody casts.
+---
+snapshot.repository.ts:59-66 — Replaced the four-branch CASE with a simpler two-branch one. Since amounts already carry their sign, non-credit accounts just sum them directly; credit accounts invert the sign so that a negative charge increases the reported balance (debt) and a positive payment reduces it. The old isIncome-based branching was wrong for two of the four combinations.
+
+snapshot.routes.test.ts:110-113 — Fixed the expense fixture from '1200.00' to '-1200.00' to follow the system convention (amount < 0 = expense). The old positive amount was accidentally cancelling the CASE bug so the test stayed green while hiding the defect.
+---
+snapshot.repository.ts:122-123 — Changed SUM(${transactions.amount}) to SUM(-${transactions.amount}). Expense amounts are stored as negative values by convention; negating them in the query means the service receives positive totals it can accumulate directly without any sign-flip logic at the service layer.
+
+snapshot.routes.test.ts:215-232 — Fixed the three expense fixtures from '800.00', '300.00', '50.00' to '-800.00', '-300.00', '-50.00'. The test now seeds data the way the real import pipeline does, so it will catch any future regression where the sign-flip is removed.

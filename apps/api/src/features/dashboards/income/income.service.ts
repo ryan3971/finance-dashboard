@@ -45,7 +45,6 @@ export async function queryMonthlyIncome(
       and(
         eq(accounts.userId, userId),
         eq(transactions.isIncome, true),
-        //isNull(transactions.needWant),
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)

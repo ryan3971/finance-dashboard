@@ -11,6 +11,25 @@ import request from 'supertest';
 
 const app = createApp();
 
+interface SnapshotBody {
+  year: number;
+  month: number;
+  accounts: { name: string; balance: number }[];
+  emergencyFund: {
+    target: number | null;
+    balance: number;
+    percentage: number | null;
+  };
+  monthlyIncome: { income: number };
+  monthlyExpenses: { needs: number; wants: number; total: number };
+  anticipated: {
+    hasEntries: boolean;
+    expectedIncome: number;
+    expectedExpenses: { needs: number; total: number };
+    expectedSpendingIncome: { total: number };
+  };
+}
+
 beforeEach(async () => {
   await cleanDatabase();
 });
@@ -60,9 +79,10 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.year).toBe(year);
-    expect(res.body.month).toBe(month);
+    expect(body.year).toBe(year);
+    expect(body.month).toBe(month);
   });
 
   it('returns empty accounts array when no accounts exist', async () => {
@@ -72,8 +92,9 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.accounts).toEqual([]);
+    expect(body.accounts).toEqual([]);
   });
 
   it('returns account with correct running balance', async () => {
@@ -90,10 +111,9 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body1 = res1.body as SnapshotBody;
     expect(res1.status).toBe(200);
-    const account = (
-      res1.body.accounts as { name: string; balance: number }[]
-    )[0];
+    const account = body1.accounts[0];
     assertDefined(
       account,
       'Expected at least one account in snapshot response'
@@ -108,7 +128,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     });
     await transactionFixture(accountId, {
       date: currentMonthDateStr(10),
-      amount: '1200.00',
+      amount: '-1200.00',
       isIncome: false,
     });
 
@@ -116,12 +136,50 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
-    const updated = (res2.body.accounts as { balance: number }[])[0];
+    const body2 = res2.body as SnapshotBody;
+    const updated = body2.accounts[0];
     assertDefined(
       updated,
       'Expected at least one account in updated snapshot response'
     );
     expect(updated.balance).toBe(3300);
+  });
+
+  it('returns credit account balance as charge minus payment (debt owed)', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'VISA',
+        type: 'credit',
+        institution: 'td',
+        isCredit: true,
+      })
+    ).id;
+
+    // Charge: stored as negative amount, isIncome=false
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '-500.00',
+      isIncome: false,
+    });
+    // Payment: stored as positive amount, isIncome=true
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(10),
+      amount: '200.00',
+      isIncome: true,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    const account = body.accounts[0];
+    assertDefined(account, 'Expected at least one account in snapshot response');
+    expect(account.name).toBe('VISA');
+    // Debt owed = charge (500) − payment (200) = 300
+    expect(account.balance).toBe(300);
   });
 
   it('returns emergency fund percentage when target configured', async () => {
@@ -153,10 +211,11 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.emergencyFund.target).toBe(20000);
-    expect(res.body.emergencyFund.balance).toBe(10000);
-    expect(res.body.emergencyFund.percentage).toBe(50);
+    expect(body.emergencyFund.target).toBe(20000);
+    expect(body.emergencyFund.balance).toBe(10000);
+    expect(body.emergencyFund.percentage).toBe(50);
   });
 
   it('returns null emergency fund percentage when target not configured', async () => {
@@ -166,9 +225,10 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.emergencyFund.target).toBeNull();
-    expect(res.body.emergencyFund.percentage).toBeNull();
+    expect(body.emergencyFund.target).toBeNull();
+    expect(body.emergencyFund.percentage).toBeNull();
   });
 
   it('includes only current-month income transactions', async () => {
@@ -198,8 +258,9 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.monthlyIncome.income).toBe(5000);
+    expect(body.monthlyIncome.income).toBe(5000);
   });
 
   it('buckets current-month expenses by Need and Want', async () => {
@@ -214,19 +275,19 @@ describe('GET /api/v1/dashboard/snapshot', () => {
 
     await transactionFixture(accountId, {
       date: currentMonthDateStr(5),
-      amount: '800.00',
+      amount: '-800.00',
       isIncome: false,
       needWant: 'Need',
     });
     await transactionFixture(accountId, {
       date: currentMonthDateStr(10),
-      amount: '300.00',
+      amount: '-300.00',
       isIncome: false,
       needWant: 'Want',
     });
     await transactionFixture(accountId, {
       date: currentMonthDateStr(12),
-      amount: '50.00',
+      amount: '-50.00',
       isIncome: false,
       needWant: null,
     });
@@ -235,10 +296,11 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.monthlyExpenses.needs).toBe(800);
-    expect(res.body.monthlyExpenses.wants).toBe(300);
-    expect(res.body.monthlyExpenses.total).toBe(1150);
+    expect(body.monthlyExpenses.needs).toBe(800);
+    expect(body.monthlyExpenses.wants).toBe(300);
+    expect(body.monthlyExpenses.total).toBe(1150);
   });
 
   it('returns hasEntries: false when no anticipated budget entries exist', async () => {
@@ -248,8 +310,9 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.anticipated.hasEntries).toBe(false);
+    expect(body.anticipated.hasEntries).toBe(false);
   });
 
   it('computes expectedIncome and expectedExpenses from monthly_amount', async () => {
@@ -290,13 +353,14 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.anticipated.hasEntries).toBe(true);
-    expect(res.body.anticipated.expectedIncome).toBe(5000);
-    expect(res.body.anticipated.expectedExpenses.needs).toBe(1500);
-    expect(res.body.anticipated.expectedExpenses.total).toBe(1500);
+    expect(body.anticipated.hasEntries).toBe(true);
+    expect(body.anticipated.expectedIncome).toBe(5000);
+    expect(body.anticipated.expectedExpenses.needs).toBe(1500);
+    expect(body.anticipated.expectedExpenses.total).toBe(1500);
     // expectedSpendingIncome.total = 5000 * (1 - 0.20) = 4000
-    expect(res.body.anticipated.expectedSpendingIncome.total).toBe(4000);
+    expect(body.anticipated.expectedSpendingIncome.total).toBe(4000);
   });
 
   it('uses month override amount when present', async () => {
@@ -329,9 +393,10 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
     // Override amount (350) should take precedence over monthly_amount (100)
-    expect(res.body.anticipated.expectedExpenses.needs).toBe(350);
+    expect(body.anticipated.expectedExpenses.needs).toBe(350);
   });
 
   it('isolates data between users', async () => {
@@ -357,16 +422,18 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessTokenB}`);
 
+    const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    expect(res.body.accounts).toEqual([]);
-    expect(res.body.monthlyIncome.income).toBe(0);
-    expect(res.body.anticipated.hasEntries).toBe(false);
+    expect(body.accounts).toEqual([]);
+    expect(body.monthlyIncome.income).toBe(0);
+    expect(body.anticipated.hasEntries).toBe(false);
 
     // Ensure user A's data is still present
     const resA = await request(app)
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessTokenA}`);
-    expect(resA.body.accounts).toHaveLength(1);
-    expect(resA.body.monthlyIncome.income).toBe(8000);
+    const bodyA = resA.body as SnapshotBody;
+    expect(bodyA.accounts).toHaveLength(1);
+    expect(bodyA.monthlyIncome.income).toBe(8000);
   });
 });
