@@ -304,7 +304,7 @@ describe('PATCH /api/v1/transactions/:id', () => {
   it('creates a categorization rule when createRule is true', async () => {
     const { accessToken } = await setupWithImport();
     const txn = await getFirstTransaction(app, accessToken);
-    const categoryId = await getCategoryId(app, accessToken, 'Groceries');
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
 
     await request(app)
       .patch(`/api/v1/transactions/${txn.id}`)
