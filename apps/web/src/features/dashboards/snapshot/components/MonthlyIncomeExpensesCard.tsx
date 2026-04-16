@@ -3,19 +3,21 @@ import type { SnapshotColumnValues, SnapshotMonthlyIncome } from '@finance/share
 import { fmt } from '@/lib/utils';
 
 interface Props {
-  monthlyIncome: SnapshotMonthlyIncome;
-  monthlyExpenses: SnapshotColumnValues;
+  readonly monthlyIncome: SnapshotMonthlyIncome;
+  readonly monthlyExpenses: SnapshotColumnValues;
 }
 
 function AmountCell({
   value,
   className,
 }: {
-  value: number;
-  className?: string;
+  readonly value: number;
+  readonly className?: string;
 }) {
   return (
-    <td className={`px-4 py-3 text-sm font-mono font-medium text-right ${className ?? ''}`}>
+    <td
+      className={`px-4 py-3 text-sm font-mono font-medium text-right ${className ?? ''}`}
+    >
       {fmt(value)}
     </td>
   );
