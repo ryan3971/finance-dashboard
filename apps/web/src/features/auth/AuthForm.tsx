@@ -1,7 +1,7 @@
 import { loginSchema, registerSchema } from '@finance/shared/schemas/auth';
 import type { AuthResponse } from '@finance/shared/types/auth';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import api from '@/lib/api';
@@ -68,10 +68,19 @@ interface AuthFormProps {
 interface FormValues { email: string; password: string }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Navigate after render so RouterWrapper has synced the new auth state into
+  // the router context before requireAuth runs. Calling navigate() synchronously
+  // inside onSubmit would race against that update and redirect back to /login.
+  useEffect(() => {
+    if (isAuthenticated) {
+      void navigate({ to: '/', replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const {
     endpoint,
@@ -98,7 +107,6 @@ export function AuthForm({ mode }: AuthFormProps) {
     try {
       const { data } = await api.post<AuthResponse>(endpoint, values);
       login(data.accessToken, data.user);
-      void navigate({ to: '/', replace: true });
     } catch (err: unknown) {
       setServerError(getApiErrorMessage(err, fallbackError));
     } finally {

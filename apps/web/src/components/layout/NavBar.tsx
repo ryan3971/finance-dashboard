@@ -1,4 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import api from '@/lib/api';
 import { useAuth } from '@/features/auth/useAuth';
 
@@ -15,8 +16,17 @@ const NAV_LINKS = [
 ];
 
 export function NavBar() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Navigate after render so RouterWrapper has synced the cleared auth state into
+  // the router context. Calling navigate() synchronously after logout() would race
+  // against that update and leave the user on the current (now-protected) route.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      void navigate({ to: '/login', replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   async function handleLogout() {
     try {
@@ -25,7 +35,6 @@ export function NavBar() {
       // swallow — clear local state regardless
     }
     logout();
-    void navigate({ to: '/login', replace: true });
   }
 
   return (
