@@ -71,8 +71,16 @@ function buildIncomeLessInvestment(
   // percentages null: no config set.
   // income.isZero(): config is set but no income this month — show zero
   // allocation rather than collapsing to the same state as "no config".
-  if (percentages === null || income.isZero()) {
+  // TODO: this should use the amount invested to compute the Income less Investment, than apply the 
+  // config valeus to that.
+  if (income.isZero()) {
     return zeroColumns();
+  } else if (percentages === null) {
+    return {
+      needs: 0,
+      wants: 0,
+      total: income.toNumber(),
+    };
   }
   const needs = income.mul(percentages.needs).div(100).toDecimalPlaces(2);
   const wants = income.mul(percentages.wants).div(100).toDecimalPlaces(2);
@@ -217,10 +225,7 @@ export function buildSnapshotResponse(
     expectedSpendingIncome,
     expectedExpenses
   );
-  const remainingBudget = subtractColumns(
-    expectedSpendingIncome,
-    monthlyExpenses
-  );
+  const remainingBudget = subtractColumns(expectedAvailable, monthlyExpenses);
 
   return {
     month,
