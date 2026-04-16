@@ -225,7 +225,7 @@ export function buildSnapshotResponse(
     expectedSpendingIncome,
     expectedExpenses
   );
-  const remainingBudget = subtractColumns(expectedAvailable, monthlyExpenses);
+  const remainingBudget = subtractColumns(expectedSpendingIncome, monthlyExpenses);
 
   return {
     month,
