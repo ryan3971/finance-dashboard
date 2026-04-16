@@ -2,8 +2,8 @@ import { isNull } from 'drizzle-orm';
 import { categories, categorizationRules } from '@/db/schema';
 import { assertDefined } from '@/lib/assert';
 import { db } from '@/db';
-import { TEST_CATEGORIES } from '@/testing/seeds/test-categories';
-import { TEST_RULES } from '@/testing/seeds/test-rules';
+import { TEST_CATEGORIES } from '@/testing/seeds/categories';
+import { TEST_RULES } from '@/testing/seeds/rules';
 
 /**
  * Replace system-level categories and rules with the test set.

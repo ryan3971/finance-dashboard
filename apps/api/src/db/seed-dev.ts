@@ -24,22 +24,21 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-import { accounts, categories, categorizationRules, users } from './schema';
+import { accounts, anticipatedBudget, categories, categorizationRules, users } from './schema';
 import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from './index';
 import { processImport } from '../features/imports/import.service';
-import { seedSystemCategories, seedUserCategories, seedUserRules } from './seed-categories';
-import { DEV_ACCOUNTS } from './seeds/accounts';
-import { DEV_USER } from './seeds/users';
+import { seedUserCategories, seedUserRules } from './seed-categories';
+import { DEV_ACCOUNTS } from '../testing/seeds/accounts';
+import { DEV_USER } from '../testing/seeds/users';
 import { assertDefined } from '@/lib/assert';
+import { resetTestSystemData } from '@/testing/seeders/reset-system-data';
+import { seedTestAnticipatedBudget } from '@/testing/seeders/seed-anticipated-budget';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const FIXTURES_DIR = path.resolve(
-  __dirname,
-  '../features/imports/adapters/__fixtures__'
-);
+const FIXTURES_DIR = path.resolve(__dirname, '../testing/csv');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -72,7 +71,9 @@ async function ensureUser(): Promise<string> {
     const [uncategorized] = await db
       .select({ id: categories.id })
       .from(categories)
-      .where(and(eq(categories.userId, userId), eq(categories.name, 'Uncategorized')))
+      .where(
+        and(eq(categories.userId, userId), eq(categories.name, 'Uncategorized'))
+      )
       .limit(1);
 
     if (!uncategorized) {
@@ -159,7 +160,10 @@ async function importFixtures(
 
   for (const def of DEV_ACCOUNTS) {
     const accountId = accountIds[def.name];
-    assertDefined(accountId, `Expected account ID for "${def.name}" in accountIds map`);
+    assertDefined(
+      accountId,
+      `Expected account ID for "${def.name}" in accountIds map`
+    );
     const fixturePath = path.join(FIXTURES_DIR, def.fixture.file);
 
     if (!fs.existsSync(fixturePath)) {
@@ -180,14 +184,18 @@ async function importFixtures(
       if (result.importedCount > 0) {
         log(
           `${def.name}: imported ${result.importedCount} rows` +
-          (result.flaggedCount > 0 ? `, ${result.flaggedCount} flagged` : '')
+            (result.flaggedCount > 0 ? `, ${result.flaggedCount} flagged` : '')
         );
       } else if (result.duplicateCount > 0) {
-        log(`${def.name}: already imported (${result.duplicateCount} duplicates skipped)`);
+        log(
+          `${def.name}: already imported (${result.duplicateCount} duplicates skipped)`
+        );
       }
 
       if (result.errorCount > 0) {
-        log(`${def.name}: ⚠ ${result.errorCount} errors — ${result.errors.join(', ')}`);
+        log(
+          `${def.name}: ⚠ ${result.errorCount} errors — ${result.errors.join(', ')}`
+        );
       }
     } catch (err) {
       log(`${def.name}: ✗ Import failed — ${String(err)}`);
@@ -195,16 +203,39 @@ async function importFixtures(
   }
 }
 
+// ─── Steps (continued) ────────────────────────────────────────────────────────
+
+async function ensureAnticipatedBudget(userId: string): Promise<void> {
+  section('Anticipated budget');
+
+  const existing = await db
+    .select({ id: anticipatedBudget.id })
+    .from(anticipatedBudget)
+    .where(eq(anticipatedBudget.userId, userId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    log('Already seeded — skipping');
+    return;
+  }
+
+  const entryIds = await seedTestAnticipatedBudget(userId);
+  log(`Seeded ${entryIds.size} entries`);
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log('Finance Dashboard — dev seed');
-  console.log(`Database: ${process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@')}`);
+  console.log(
+    `Database: ${process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@')}`
+  );
 
-  await seedSystemCategories();
+  await resetTestSystemData();
   const userId = await ensureUser();
   const accountIds = await ensureAccounts(userId);
   await importFixtures(userId, accountIds);
+  await ensureAnticipatedBudget(userId);
 
   section('Done');
   console.log('\n  Login credentials:');

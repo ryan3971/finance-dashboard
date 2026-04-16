@@ -6,10 +6,10 @@ import { TdAdapter } from './td/td.adapter';
 import { parseCsv } from '../pipeline/parser';
 import { assertDefined } from '@/lib/assert';
 
-const FIXTURES = path.join(__dirname, '__fixtures__');
+const FIXTURES = path.join(__dirname, '../../../testing/csv');
 
-const tdRows = parseCsv(fs.readFileSync(path.join(FIXTURES, 'td_manual.csv'), 'utf-8'));
-const cibcRows = parseCsv(fs.readFileSync(path.join(FIXTURES, 'cibc_manual.csv'), 'utf-8'));
+const tdRows = parseCsv(fs.readFileSync(path.join(FIXTURES, 'td.csv'), 'utf-8'));
+const cibcRows = parseCsv(fs.readFileSync(path.join(FIXTURES, 'cibc.csv'), 'utf-8'));
 
 // ---------------------------------------------------------------------------
 // Shared DebitCreditAdapter behaviour — tested once via the TD concrete class

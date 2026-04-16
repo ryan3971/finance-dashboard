@@ -42,7 +42,7 @@ describe('GET /api/v1/transactions', () => {
   });
 
   it('returns paginated transactions after import', async () => {
-    // amex_manual.csv has 6 rows (5 charges + 1 payment), dates 2026-03-14 to 2026-03-26
+    // amex.csv has 6 rows (5 charges + 1 payment), dates 2026-03-14 to 2026-03-26
     const { accessToken } = await setupWithImport();
 
     const res = await request(app)
@@ -57,7 +57,7 @@ describe('GET /api/v1/transactions', () => {
   });
 
   it('respects pagination limit', async () => {
-    // amex_manual.csv: 6 rows total → ceil(6/2) = 3 pages at limit=2
+    // amex.csv: 6 rows total → ceil(6/2) = 3 pages at limit=2
     const { accessToken } = await setupWithImport();
 
     const res = await request(app)
@@ -116,8 +116,8 @@ describe('GET /api/v1/transactions', () => {
   });
 
   it('filters flagged transactions', async () => {
-    // In the test env (no rules, AI disabled) every imported transaction falls through
-    // to the Uncategorized fallback, which sets flaggedForReview=true on all rows.
+    // With the test rule set active, only unmatched payees (e.g. SUNRISE BOUTIQUE)
+    // fall through to Uncategorized and are flagged for review.
     const { accessToken } = await setupWithImport();
 
     const res = await request(app)
@@ -135,7 +135,11 @@ describe('GET /api/v1/transactions', () => {
   it('filters by categoryId and verifies all returned rows match', async () => {
     const { accessToken } = await setupWithImport();
 
-    const uncategorizedId = await getCategoryId(app, accessToken, 'Uncategorized');
+    const uncategorizedId = await getCategoryId(
+      app,
+      accessToken,
+      'Uncategorized'
+    );
 
     const res = await request(app)
       .get(`/api/v1/transactions?categoryId=${uncategorizedId}`)
@@ -152,7 +156,10 @@ describe('GET /api/v1/transactions', () => {
   it('filters by subcategoryId and verifies all returned rows match', async () => {
     const { accessToken } = await setupWithImport();
 
-    const parentId = await createCategory(app, accessToken, { name: 'Food', isIncome: false });
+    const parentId = await createCategory(app, accessToken, {
+      name: 'Food',
+      isIncome: false,
+    });
     const subcategoryId = await createCategory(app, accessToken, {
       name: 'Groceries',
       parentId,
@@ -184,7 +191,6 @@ describe('GET /api/v1/transactions', () => {
 
     expect(res.status).toBe(400);
   });
-
 
   it('amounts are negative for charges', async () => {
     // 2026-03-14 has exactly one charge: TIM HORTONS #412 (CSV: 12.00 → DB: -12.00)
@@ -267,7 +273,7 @@ describe('PATCH /api/v1/transactions/:id', () => {
   it('categorizes a transaction and clears flaggedForReview', async () => {
     const { accessToken } = await setupWithImport();
     const txn = await getFirstTransaction(app, accessToken);
-    const categoryId = await getCategoryId(app, accessToken, 'Groceries');
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
 
     const res = await request(app)
       .patch(`/api/v1/transactions/${txn.id}`)
@@ -363,9 +369,12 @@ describe('PATCH /api/v1/transactions/:id', () => {
 
 describe('POST /api/v1/transactions', () => {
   it('returns 401 without auth token', async () => {
-    const res = await request(app)
-      .post('/api/v1/transactions')
-      .send({ accountId: UNKNOWN_ID, date: '2024-01-01', description: 'test', amount: -10 });
+    const res = await request(app).post('/api/v1/transactions').send({
+      accountId: UNKNOWN_ID,
+      date: '2024-01-01',
+      description: 'test',
+      amount: -10,
+    });
     expect(res.status).toBe(401);
   });
 
@@ -395,7 +404,7 @@ describe('POST /api/v1/transactions', () => {
       accountId,
       date: '2024-03-15',
       currency: 'CAD',
-      isIncome: false,      // derived from negative amount
+      isIncome: false, // derived from negative amount
       flaggedForReview: true, // no category assigned at creation
     });
   });
@@ -413,12 +422,22 @@ describe('POST /api/v1/transactions', () => {
     const positiveRes = await request(app)
       .post('/api/v1/transactions')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ accountId, date: '2024-03-15', description: 'Payroll', amount: 3000 });
+      .send({
+        accountId,
+        date: '2024-03-15',
+        description: 'Payroll',
+        amount: 3000,
+      });
 
     const negativeRes = await request(app)
       .post('/api/v1/transactions')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ accountId, date: '2024-03-16', description: 'Groceries', amount: -50 });
+      .send({
+        accountId,
+        date: '2024-03-16',
+        description: 'Groceries',
+        amount: -50,
+      });
 
     expect(positiveRes.status).toBe(201);
     expect((positiveRes.body as { isIncome: boolean }).isIncome).toBe(true);
@@ -441,12 +460,17 @@ describe('POST /api/v1/transactions', () => {
     const res = await request(app)
       .post('/api/v1/transactions')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ accountId: MALFORMED_ID, date: '2024-03-15', description: 'test', amount: -10 });
+      .send({
+        accountId: MALFORMED_ID,
+        date: '2024-03-15',
+        description: 'test',
+        amount: -10,
+      });
 
     expect(res.status).toBe(400);
   });
 
-  it("returns 422 when accountId does not belong to the user", async () => {
+  it('returns 422 when accountId does not belong to the user', async () => {
     const [{ accessToken: tokenA }, { accessToken: tokenB }] =
       await Promise.all([
         registerUser(app, 'a@example.com'),
@@ -463,7 +487,12 @@ describe('POST /api/v1/transactions', () => {
     const res = await request(app)
       .post('/api/v1/transactions')
       .set('Authorization', `Bearer ${tokenB}`)
-      .send({ accountId, date: '2024-03-15', description: 'Unauthorized', amount: -10 });
+      .send({
+        accountId,
+        date: '2024-03-15',
+        description: 'Unauthorized',
+        amount: -10,
+      });
 
     expect(res.status).toBe(422);
   });

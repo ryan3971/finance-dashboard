@@ -5,9 +5,9 @@ import * as path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 import { isNotNull } from 'drizzle-orm';
-import { db } from '../index';
-import { categories, categorizationRules, users } from '../schema';
-import { seedSystemCategories, seedUserCategories, seedUserRules } from '../seed-categories';
+import { db } from './index';
+import { categories, categorizationRules, users } from './schema';
+import { seedSystemCategories, seedUserCategories, seedUserRules } from './seed-categories';
 
 async function main() {
   await seedSystemCategories();

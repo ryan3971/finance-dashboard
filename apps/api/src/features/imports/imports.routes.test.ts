@@ -18,11 +18,9 @@ const app = createApp();
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-// amex_manual.csv — 6 data rows (1 header)
-const AMEX_FIXTURE = path.join(
-  __dirname,
-  './adapters/__fixtures__/amex_manual.csv'
-);
+// amex.csv — 6 data rows (1 header)
+const AMEX_FIXTURE = path.join(__dirname, '../../testing/csv/amex.csv');
+
 const AMEX_ACCOUNT = {
   name: 'Amex',
   type: 'credit',
@@ -31,11 +29,9 @@ const AMEX_ACCOUNT = {
   currency: 'CAD',
 } as const;
 
-// cibc_manual.csv — 6 rows (no header)
-const CIBC_FIXTURE = path.join(
-  __dirname,
-  './adapters/__fixtures__/cibc_manual.csv'
-);
+// cibc.csv — 6 rows (no header)
+const CIBC_FIXTURE = path.join(__dirname, '../../testing/csv/cibc.csv');
+
 const CIBC_ACCOUNT = {
   name: 'CIBC Chequing',
   type: 'chequing',
@@ -44,14 +40,12 @@ const CIBC_ACCOUNT = {
   currency: 'CAD',
 } as const;
 
-// td_manual.csv — 9 rows (no header):
+// td.csv — 9 rows (no header):
 //   2 credits (income): PRODIGY EDUCATION INC PAYRL (+4000), GST GST TAX REFUND (+500)
 //   7 debits (expenses): WALMART, PRESTO, CREDIT CARD PYMT MSP, 2× E-TRANSFER OUT,
 //                        CORNER STORE, TIM HORTONS
-const TD_FIXTURE = path.join(
-  __dirname,
-  './adapters/__fixtures__/td_manual.csv'
-);
+const TD_FIXTURE = path.join(__dirname, '../../testing/csv/td.csv');
+
 const TD_ACCOUNT = {
   name: 'TD Chequing',
   type: 'chequing',
@@ -64,7 +58,7 @@ async function uploadTd(
   token: string,
   accountId: string
 ): Promise<ImportSummaryResponse> {
-  return uploadCsv(app, token, accountId, TD_FIXTURE, 'td_manual.csv');
+  return uploadCsv(app, token, accountId, TD_FIXTURE, 'td.csv');
 }
 
 beforeEach(() => cleanDatabase());
@@ -84,7 +78,7 @@ describe('POST /api/v1/imports/upload', () => {
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
       .field('accountId', MALFORMED_ID)
-      .attach('file', TD_FIXTURE, 'td_manual.csv');
+      .attach('file', TD_FIXTURE, 'td.csv');
 
     expect(res.status).toBe(400);
   });
@@ -105,7 +99,7 @@ describe('POST /api/v1/imports/upload', () => {
     const res = await request(app)
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', TD_FIXTURE, 'td_manual.csv');
+      .attach('file', TD_FIXTURE, 'td.csv');
 
     expect(res.status).toBe(400);
   });
@@ -124,7 +118,7 @@ describe('POST /api/v1/imports/upload', () => {
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${tokenB}`)
       .field('accountId', accountId)
-      .attach('file', TD_FIXTURE, 'td_manual.csv');
+      .attach('file', TD_FIXTURE, 'td.csv');
 
     expect(res.status).toBe(404);
   });
@@ -140,7 +134,7 @@ describe('POST /api/v1/imports/upload', () => {
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
       .field('accountId', accountId)
-      .attach('file', AMEX_FIXTURE, 'amex_manual.csv');
+      .attach('file', AMEX_FIXTURE, 'amex.csv');
 
     const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
@@ -157,7 +151,7 @@ describe('POST /api/v1/imports/upload', () => {
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
       .field('accountId', accountId)
-      .attach('file', CIBC_FIXTURE, 'cibc_manual.csv');
+      .attach('file', CIBC_FIXTURE, 'cibc.csv');
 
     const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);
@@ -174,7 +168,7 @@ describe('POST /api/v1/imports/upload', () => {
       .post('/api/v1/imports/upload')
       .set('Authorization', `Bearer ${accessToken}`)
       .field('accountId', accountId)
-      .attach('file', TD_FIXTURE, 'td_manual.csv');
+      .attach('file', TD_FIXTURE, 'td.csv');
 
     const body = res.body as ImportSummaryResponse;
     expect(res.status).toBe(201);

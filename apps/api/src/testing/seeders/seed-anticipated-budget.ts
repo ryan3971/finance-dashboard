@@ -9,7 +9,7 @@ import {
 import {
   TEST_ANTICIPATED_BUDGET,
   TEST_ANTICIPATED_BUDGET_MONTHS,
-} from '@/testing/seeds/test-anticipated-budget';
+} from '@/testing/seeds/anticipated-budget';
 
 /**
  * Insert the test anticipated-budget entries and their month overrides for the

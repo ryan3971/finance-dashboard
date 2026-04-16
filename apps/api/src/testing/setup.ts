@@ -7,7 +7,7 @@ import '@/lib/config'; // ensures dotenv runs before tests
 process.env.BCRYPT_ROUNDS = '4';
 
 import { beforeAll, vi } from 'vitest';
-import { resetTestSystemData } from './reset-test-system-data';
+import { resetTestSystemData } from './seeders/reset-system-data';
 
 // Override DATABASE_URL for the test environment.
 // Tests run against finance_test, never finance_dev.

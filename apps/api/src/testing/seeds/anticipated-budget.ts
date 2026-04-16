@@ -51,7 +51,7 @@ export const TEST_ANTICIPATED_BUDGET: TestAnticipatedBudgetEntry[] = [
     isIncome: false,
     monthlyAmount: '1500.00',
     notes: null,
-    effectiveYear: 2025,
+    effectiveYear: 2026,
   },
   // Override entry — default amount with one month overridden
   {
@@ -61,7 +61,7 @@ export const TEST_ANTICIPATED_BUDGET: TestAnticipatedBudgetEntry[] = [
     isIncome: false,
     monthlyAmount: '400.00',
     notes: null,
-    effectiveYear: 2025,
+    effectiveYear: 2026,
   },
   // Irregular entry — no default amount; only override months contribute a value
   {
@@ -71,7 +71,7 @@ export const TEST_ANTICIPATED_BUDGET: TestAnticipatedBudgetEntry[] = [
     isIncome: false,
     monthlyAmount: null,
     notes: null,
-    effectiveYear: 2025,
+    effectiveYear: 2026,
   },
   // Income entry — needWant must be null when isIncome is true
   {
@@ -81,7 +81,7 @@ export const TEST_ANTICIPATED_BUDGET: TestAnticipatedBudgetEntry[] = [
     isIncome: true,
     monthlyAmount: '4000.00',
     notes: null,
-    effectiveYear: 2025,
+    effectiveYear: 2026,
   },
   // Want entry — category-linked, flat amount, no overrides
   {
@@ -91,7 +91,7 @@ export const TEST_ANTICIPATED_BUDGET: TestAnticipatedBudgetEntry[] = [
     isIncome: false,
     monthlyAmount: '200.00',
     notes: null,
-    effectiveYear: 2025,
+    effectiveYear: 2026,
   },
 ];
 

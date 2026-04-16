@@ -57,19 +57,18 @@ describe('GET /api/v1/categories', () => {
 
     const body = res.body as CategoryItem[];
     expect(Array.isArray(body)).toBe(true);
-    expect(body).toHaveLength(5); // Groceries, Dining, Income, Transfer, Uncategorized
+    expect(body).toHaveLength(9); // Groceries, Dining, Income, Transfer, Uncategorized
 
-    const groceries = body.find((c) => c.name === 'Groceries');
-    expect(groceries).toMatchObject({
+    const food = body.find((c) => c.name === 'Food');
+    expect(food).toMatchObject({
       id: expect.any(String) as string,
-      name: 'Groceries',
+      name: 'Food',
       isIncome: false,
-      subcategories: [
-        expect.objectContaining({
-          id: expect.any(String) as string,
-          name: 'Supermarket',
-        }),
-      ],
+      subcategories: expect.arrayContaining([
+        expect.objectContaining({ name: 'Groceries' }),
+        expect.objectContaining({ name: 'Eating Out' }),
+        expect.objectContaining({ name: 'Alcohol' }),
+      ]) as unknown[],
     });
   });
 

@@ -11,7 +11,7 @@ if (!testUrl) {
   process.exit(1);
 }
 
-execSync('tsx src/db/seeds/index.ts', {
+execSync('tsx src/db/seed.ts', {
   stdio: 'inherit',
   cwd: path.resolve(__dirname, '../..'),
   env: { ...process.env, DATABASE_URL: testUrl },

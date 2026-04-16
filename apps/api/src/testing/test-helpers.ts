@@ -53,7 +53,9 @@ export async function registerUser(
     .post('/api/v1/auth/register')
     .send({ email, password: 'password123' });
   if (res.status !== 201) {
-    throw new Error(`registerUser failed: ${res.status} ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `registerUser failed: ${res.status} ${JSON.stringify(res.body)}`
+    );
   }
   // supertest types res.body as `any`; the cast satisfies no-unsafe-return
   // without hiding a real type gap — the shape is validated by the route's
@@ -91,7 +93,9 @@ export async function createAccount(
     .set('Authorization', `Bearer ${token}`)
     .send(options);
   if (res.status !== 201) {
-    throw new Error(`createAccount failed: ${res.status} ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `createAccount failed: ${res.status} ${JSON.stringify(res.body)}`
+    );
   }
   // Same boundary cast: supertest body is `any`; cast required by no-unsafe-member-access.
   return (res.body as AccountResponse).id;
@@ -107,15 +111,14 @@ export async function createCategory(
     .set('Authorization', `Bearer ${token}`)
     .send(options);
   if (res.status !== 201) {
-    throw new Error(`createCategory failed: ${res.status} ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `createCategory failed: ${res.status} ${JSON.stringify(res.body)}`
+    );
   }
   return (res.body as { id: string }).id;
 }
 
-const AMEX_MANUAL_FIXTURE = path.join(
-  __dirname,
-  '../features/imports/adapters/__fixtures__/amex_manual.csv'
-);
+const AMEX_FIXTURE = path.join(__dirname, './csv/amex.csv');
 
 export async function uploadCsv(
   app: Application,
@@ -130,7 +133,9 @@ export async function uploadCsv(
     .field('accountId', accountId)
     .attach('file', fixturePath, filename);
   if (res.status !== 201) {
-    throw new Error(`uploadCsv failed: ${res.status} ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `uploadCsv failed: ${res.status} ${JSON.stringify(res.body)}`
+    );
   }
   return res.body as ImportSummaryResponse;
 }
@@ -140,7 +145,13 @@ export async function uploadAmex(
   token: string,
   accountId: string
 ): Promise<ImportSummaryResponse> {
-  return uploadCsv(app, token, accountId, AMEX_MANUAL_FIXTURE, 'amex_manual.csv');
+  return uploadCsv(
+    app,
+    token,
+    accountId,
+    AMEX_FIXTURE,
+    'amex.csv'
+  );
 }
 
 export async function createTag(
@@ -153,7 +164,9 @@ export async function createTag(
     .set('Authorization', `Bearer ${token}`)
     .send({ name });
   if (res.status !== 201) {
-    throw new Error(`createTag failed: ${res.status} ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `createTag failed: ${res.status} ${JSON.stringify(res.body)}`
+    );
   }
   return (res.body as { id: string }).id;
 }
@@ -186,7 +199,9 @@ export async function setAllocations(
     .set('Authorization', `Bearer ${token}`)
     .send({ allocations });
   if (res.status !== 200) {
-    throw new Error(`setAllocations failed: ${res.status} ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `setAllocations failed: ${res.status} ${JSON.stringify(res.body)}`
+    );
   }
 }
 
