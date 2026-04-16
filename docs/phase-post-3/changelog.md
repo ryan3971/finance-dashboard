@@ -177,3 +177,19 @@ Missing DELETE /months → 404 when override absent	New test: deleting a non-exi
 DELETE /months cross-user isolation missing	New test: user B gets 404 trying to delete user A's month override
 Sequential registerUser in multi-user tests	Parallelised with Promise.all in all three two-user test setups
 Upsert test missing isOverride assertion	toMatchObject({ month: 6, amount: 2500, isOverride: true }) added
+---
+test-anticipated-budget.ts — data definitions
+
+Five frozen entries with their month overrides, following the same pattern as test-categories.ts and test-rules.ts. References categories by name so it stays independent of auto-generated UUIDs.
+
+seed-test-anticipated-budget.ts — seeder
+
+Two exported functions:
+
+seedTestAnticipatedBudget(userId) — resolves category names to IDs from the system rows seeded by resetTestSystemData, inserts all five entries, inserts the three month overrides, returns a Map<entryName, uuid> for use in assertions
+clearTestAnticipatedBudget(userId) — wipes entries (and cascades to months) for a single user; useful when a test file seeds in beforeAll but individual tests mutate data
+Prerequisite: resetTestSystemData() must have run first (already guaranteed by setup.ts's global beforeAll).
+
+test-anticipated-budget-seed.md — reference doc
+
+Covers what each entry exercises, the override table, usage patterns (beforeAll vs beforeEach), and a branch coverage summary table.
