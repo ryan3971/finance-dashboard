@@ -153,3 +153,27 @@ Inline guards: replaced all three assertDefined(account, ...) calls with if (!ac
 Emergency fund helpers: four tests replaced their GET + raw db.update block with await setEmergencyFundTarget(...)
 Parallelized POSTs: the two independent anticipated-budget POSTs in "computes expectedIncome..." now run via Promise.all
 Parallelized GETs: the two final snapshot GETs in "isolates data between users" now run via Promise.all
+---
+packages/shared/src/schemas/anticipated-budget.ts
+Extracted the object definition into an internal anticipatedBudgetBaseSchema so .omit() can still be chained on it before applying a refinement.
+Added a .refine() to createAnticipatedBudgetSchema: rejects any payload where isIncome: true and needWant is non-null → 400 { error: 'Validation error' }.
+Added the same .refine() to updateAnticipatedBudgetSchema using loose != null so a PATCH that omits needWant entirely doesn't trip the check.
+apps/api/src/features/anticipated-budget/anticipated-budget.routes.test.ts
+What changed	How
+Nil UUID hardcoded 5×	Replaced with UNKNOWN_ID from @/testing/constants
+Missing MALFORMED_ID tests	Added to PATCH, DELETE /:id, PUT /:id/months/:month, DELETE /:id/months/:month
+toEqual on month objects	Changed to toMatchObject throughout
+Repeated inline type cast	Replaced with file-level ResolvedMonth / AnticipatedBudgetEntry interfaces
+Setup POSTs with no status check	Added expect(create.status).toBe(201) on every setup request
+isIncome: true + needWant not tested	New test in POST: expects 400 + { error: 'Validation error' }
+POST 400 missing error body assertion	Added toMatchObject({ error: 'Validation error' })
+DELETE /:id missing cross-user test	New test: user B gets 404 trying to delete user A's entry
+Year param not validated	Three new GET tests: missing year, abc, 1999, 2101
+Year scoping not tested	New test: two entries for 2024/2025, GET ?year=2025 returns only 2025 entry
+Irregular entry not tested	New test: monthlyAmount: null entry resolves unoverridden months to 0
+Invalid month params not tested	Added month=0 and month=13 tests for both PUT and DELETE months/:month
+DELETE /months status never asserted	Added expect(del.status).toBe(204)
+Missing DELETE /months → 404 when override absent	New test: deleting a non-existent override returns 404
+DELETE /months cross-user isolation missing	New test: user B gets 404 trying to delete user A's month override
+Sequential registerUser in multi-user tests	Parallelised with Promise.all in all three two-user test setups
+Upsert test missing isOverride assertion	toMatchObject({ month: 6, amount: 2500, isOverride: true }) added
