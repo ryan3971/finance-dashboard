@@ -116,12 +116,18 @@ export async function queryYtdMonthlyInvestmentContributions(
     .groupBy(monthExpr);
 }
 
+export interface YtdConfig {
+  needsPercentage: number | null;
+  wantsPercentage: number | null;
+}
+
 export function buildYtdResponse(
   year: number,
   incomeRows: IncomeRow[],
   expenseRows: ExpenseNeedWantRow[],
   contributionRows: ContributionRow[],
-  today: Date
+  today: Date,
+  config: YtdConfig
 ): YtdDashboardResponse {
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
@@ -176,19 +182,29 @@ export function buildYtdResponse(
 
     const income = new Decimal(incomeMap.get(m) ?? '0');
     const contributions = new Decimal(contributionMap.get(m) ?? '0');
-    const spendingIncome = income.minus(contributions);
+    const spendingIncome = income.minus(contributions); // TODO: may need to change this to add, depending on how contributions are stored (+ or -)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const bucket = expenseBuckets.get(m)!; // always present — pre-initialized for months 1–12 above
-    const netSpendingIncome = spendingIncome.minus(bucket.total);
+    const netSpendingIncome = spendingIncome.minus(bucket.total.abs());
+
+    let wants: Decimal;
+    let needs: Decimal;
+    if (config.wantsPercentage !== null && config.needsPercentage !== null) {
+      wants = spendingIncome.mul(config.wantsPercentage).div(100).minus(bucket.want.abs());
+      needs = spendingIncome.mul(config.needsPercentage).div(100).minus(bucket.need.abs());
+    } else {
+      wants = bucket.want;
+      needs = bucket.need;
+    }
 
     months.push({
       month: m,
       spendingIncome: spendingIncome.toNumber(),
       expenses: bucket.total.toNumber(),
       netSpendingIncome: netSpendingIncome.toNumber(),
-      wants: bucket.want.toNumber(),
-      needs: bucket.need.toNumber(),
+      wants: wants.toNumber(),
+      needs: needs.toNumber(),
     });
   }
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { cleanDatabase, registerUser } from '@/testing/test-helpers';
+import { cleanDatabase, registerUser, setAllocations } from '@/testing/test-helpers';
 import { createApp } from '@/app';
 import { accountFixture } from '@/testing/fixtures/account.fixture';
 import { investmentTransactionFixture } from '@/testing/fixtures/investment-transaction.fixture';
@@ -115,11 +115,25 @@ describe('GET /api/v1/dashboard/ytd', () => {
     expect(jan?.spendingIncome).toBe(4000);
   });
 
-  it('computes expenses, needs, wants correctly', async () => {
+  it('computes wants and needs as remaining budget against config allocations', async () => {
     const { accessToken, user } = await registerUser(app);
     const accountId = (await accountFixture(user.id)).id;
 
-    // Feb 2024: $800 Need, $400 Want, $200 uncategorized
+    await setAllocations(app, accessToken, {
+      needsPercentage: 50,
+      wantsPercentage: 30,
+      investmentsPercentage: 20,
+    });
+
+    // Feb 2024: $4000 income, $800 Need expense, $400 Want expense
+    // spendingIncome = 4000 (no contributions)
+    // needs  = 4000 * 50% - 800 = 1200
+    // wants  = 4000 * 30% - 400 = 800
+    await transactionFixture(accountId, {
+      date: '2024-02-01',
+      amount: '4000.00',
+      isIncome: true,
+    });
     await transactionFixture(accountId, {
       date: '2024-02-05',
       amount: '800.00',
@@ -131,12 +145,6 @@ describe('GET /api/v1/dashboard/ytd', () => {
       amount: '400.00',
       isIncome: false,
       needWant: 'Want',
-    });
-    await transactionFixture(accountId, {
-      date: '2024-02-15',
-      amount: '200.00',
-      isIncome: false,
-      needWant: null,
     });
 
     const res = await request(app)
@@ -150,9 +158,45 @@ describe('GET /api/v1/dashboard/ytd', () => {
       expenses: number;
       needs: number;
       wants: number;
-    };
+    }
     const feb = (res.body.months as YtdMonthBody[]).find((m) => m.month === 2);
-    expect(feb?.expenses).toBe(1400);
+    expect(feb?.expenses).toBe(1200);
+    expect(feb?.needs).toBe(1200);
+    expect(feb?.wants).toBe(800);
+  });
+
+  it('falls back to raw expense buckets when no config is set', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (await accountFixture(user.id)).id;
+
+    // Feb 2024: $800 Need, $400 Want — no allocations configured
+    await transactionFixture(accountId, {
+      date: '2024-02-05',
+      amount: '800.00',
+      isIncome: false,
+      needWant: 'Need',
+    });
+    await transactionFixture(accountId, {
+      date: '2024-02-10',
+      amount: '400.00',
+      isIncome: false,
+      needWant: 'Want',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/ytd?year=2024')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+
+    interface YtdMonthBody {
+      month: number;
+      expenses: number;
+      needs: number;
+      wants: number;
+    }
+    const feb = (res.body.months as YtdMonthBody[]).find((m) => m.month === 2);
+    expect(feb?.expenses).toBe(1200);
     expect(feb?.needs).toBe(800);
     expect(feb?.wants).toBe(400);
   });

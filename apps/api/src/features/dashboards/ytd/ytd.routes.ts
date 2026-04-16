@@ -1,6 +1,7 @@
 import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import { queryDashboardUserConfig } from '@/lib/user-config-query';
 import {
   buildYtdResponse,
   queryYtdMonthlyExpenses,
@@ -24,13 +25,14 @@ router.get('/ytd', async (req: Request, res: Response) => {
   const userId = getAuthUser(req).id;
   const today = new Date();
 
-  const [incomeRows, expenseRows, contributionRows] = await Promise.all([
+  const [incomeRows, expenseRows, contributionRows, config] = await Promise.all([
     queryYtdMonthlyIncome(userId, year),
     queryYtdMonthlyExpenses(userId, year),
     queryYtdMonthlyInvestmentContributions(userId, year),
+    queryDashboardUserConfig(userId),
   ]);
 
-  res.json(buildYtdResponse(year, incomeRows, expenseRows, contributionRows, today));
+  res.json(buildYtdResponse(year, incomeRows, expenseRows, contributionRows, today, config));
 });
 
 export default router;
