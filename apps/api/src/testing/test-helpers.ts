@@ -15,7 +15,7 @@ import {
 } from '@/db/schema';
 import type { Application } from 'express';
 import { db } from '@/db';
-import { isNotNull } from 'drizzle-orm';
+import { eq, isNotNull } from 'drizzle-orm';
 import request from 'supertest';
 import type {
   AuthResponse,
@@ -170,6 +170,44 @@ export async function getFirstTransaction(
   const first = data[0];
   if (!first) throw new Error('No transactions found');
   return first;
+}
+
+export async function setAllocations(
+  app: Application,
+  token: string,
+  allocations: {
+    needsPercentage: number;
+    wantsPercentage: number;
+    investmentsPercentage: number;
+  }
+): Promise<void> {
+  const res = await request(app)
+    .patch('/api/v1/user-config')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ allocations });
+  if (res.status !== 200) {
+    throw new Error(`setAllocations failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
+}
+
+/**
+ * Ensures the user_config row exists (created lazily on first GET) then sets
+ * the emergency fund target directly in the DB. Use this instead of importing
+ * the userConfig schema and drizzle operators into a test file.
+ */
+export async function setEmergencyFundTarget(
+  app: Application,
+  accessToken: string,
+  userId: string,
+  target: string
+): Promise<void> {
+  await request(app)
+    .get('/api/v1/user-config')
+    .set('Authorization', `Bearer ${accessToken}`);
+  await db
+    .update(userConfig)
+    .set({ emergencyFundTarget: target })
+    .where(eq(userConfig.userId, userId));
 }
 
 /** Returns the id of a seeded category by name. */

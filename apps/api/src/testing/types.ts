@@ -130,3 +130,30 @@ export interface UserConfigResponse {
   investmentsPercentage: number | null;
   updatedAt: string;
 }
+
+// ── Dashboard - Snapshot Test Types ──────────────────────────────────────────────
+interface ColumnValues {
+  total: number;
+  needs: number;
+  wants: number;
+}
+export interface SnapshotBody {
+  year: number;
+  month: number;
+  accounts: { name: string; balance: number }[];
+  emergencyFund: {
+    target: number | null;
+    balance: number;
+    percentage: number | null;
+  };
+  monthlyIncome: { income: number; incomeLessInvestment: ColumnValues };
+  monthlyExpenses: { needs: number; wants: number; total: number };
+  anticipated: {
+    hasEntries: boolean;
+    expectedIncome: number;
+    expectedExpenses: ColumnValues;
+    expectedSpendingIncome: ColumnValues;
+    expectedAvailable: ColumnValues;
+    remainingBudget: ColumnValues;
+  };
+}

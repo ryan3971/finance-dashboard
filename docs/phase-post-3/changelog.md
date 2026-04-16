@@ -117,3 +117,39 @@ needWant: isIncome ? null : (input.needWant ?? null) — the isIncome flag is al
 
 Task 4 — Transaction patch (transactions.service.ts:196-198)
 Also added isIncome to the getOwnedTransaction select. Guard: updateData.needWant = txn.isIncome ? null : input.needWant.
+---
+ Here's a summary of what was added:
+
+Interface update — SnapshotBody now includes incomeLessInvestment, expectedAvailable, and remainingBudget (typed via a shared ColumnValues interface), and expectedExpenses now exposes wants.
+
+Extended test — "computes expectedIncome..." now also asserts:
+
+incomeLessInvestment → { total: 0, needs: 0, wants: 0 } (income is zero this month so the service collapses to zeros even with allocations configured)
+expectedSpendingIncome → full object { total: 4000, needs: 2000, wants: 1200 }
+remainingBudget → { total: 4000, needs: 2000, wants: 1200 } (4000 spending income minus 0 actual expenses)
+expectedAvailable → { total: 2500, needs: 500, wants: 1200 } (4000 minus 1500 expected rent)
+New tests:
+
+Test	What it covers
+"excludes prior-month expenses from monthlyExpenses"	Symmetric to the existing income exclusion test
+"excludes transfer transactions from monthlyIncome and monthlyExpenses"	Both income and expense transfers are filtered out
+"excludes inactive accounts from the accounts list"	isActive = false accounts don't appear
+"returns emergency fund percentage above 100 when balance exceeds target"	Percentage can exceed 100
+"returns 0 emergency fund percentage when target is set but balance is zero"	Returns 0 (not null) when target is set but no balance
+"uses one chequing account balance (not the sum) for multiple chequing accounts"	emergencyFund.balance reflects a single account's balance, not the aggregate
+---
+Here's a summary of every change made:
+
+test-helpers.ts
+
+Added eq to the drizzle-orm import
+Added setEmergencyFundTarget(app, accessToken, userId, target) helper — encapsulates the GET-to-seed-the-row + direct DB write, so tests no longer need to import from @/db/schema or drizzle-orm
+snapshot.routes.test.ts
+
+Imports: removed db, userConfig, eq, assertDefined — all were app-side imports the review flagged; added setEmergencyFundTarget
+Shape assertion: added toMatchObject check to "returns current month and year" covering all top-level keys
+Compound test split: "returns account with correct running balance" → two independent tests: "returns zero balance for an account with no transactions" and "adds income and subtracts expense from running balance"
+Inline guards: replaced all three assertDefined(account, ...) calls with if (!account) throw new Error(...)
+Emergency fund helpers: four tests replaced their GET + raw db.update block with await setEmergencyFundTarget(...)
+Parallelized POSTs: the two independent anticipated-budget POSTs in "computes expectedIncome..." now run via Promise.all
+Parallelized GETs: the two final snapshot GETs in "isolates data between users" now run via Promise.all

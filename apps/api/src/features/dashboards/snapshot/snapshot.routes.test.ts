@@ -1,34 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { cleanDatabase, registerUser } from '@/testing/test-helpers';
+import { cleanDatabase, registerUser, setAllocations, setEmergencyFundTarget } from '@/testing/test-helpers';
 import { createApp } from '@/app';
-import { db } from '@/db';
-import { userConfig } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import { accountFixture } from '@/testing/fixtures/account.fixture';
 import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
-import { assertDefined } from '@/lib/assert';
 import request from 'supertest';
+import { type SnapshotBody } from '@/testing/types';
 
 const app = createApp();
-
-interface SnapshotBody {
-  year: number;
-  month: number;
-  accounts: { name: string; balance: number }[];
-  emergencyFund: {
-    target: number | null;
-    balance: number;
-    percentage: number | null;
-  };
-  monthlyIncome: { income: number };
-  monthlyExpenses: { needs: number; wants: number; total: number };
-  anticipated: {
-    hasEntries: boolean;
-    expectedIncome: number;
-    expectedExpenses: { needs: number; total: number };
-    expectedSpendingIncome: { total: number };
-  };
-}
 
 beforeEach(async () => {
   await cleanDatabase();
@@ -52,19 +30,6 @@ function priorMonthDateStr(day: number) {
   return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-async function setAllocations(accessToken: string) {
-  await request(app)
-    .patch('/api/v1/user-config')
-    .set('Authorization', `Bearer ${accessToken}`)
-    .send({
-      allocations: {
-        needsPercentage: 50,
-        wantsPercentage: 30,
-        investmentsPercentage: 20,
-      },
-    });
-}
-
 describe('GET /api/v1/dashboard/snapshot', () => {
   it('returns 401 without auth', async () => {
     const res = await request(app).get('/api/v1/dashboard/snapshot');
@@ -83,6 +48,11 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(res.status).toBe(200);
     expect(body.year).toBe(year);
     expect(body.month).toBe(month);
+    expect(Array.isArray(body.accounts)).toBe(true);
+    expect(body.emergencyFund.target).toBeNull();
+    expect(typeof body.monthlyIncome.income).toBe('number');
+    expect(typeof body.monthlyExpenses.total).toBe('number');
+    expect(body.anticipated.hasEntries).toBe(false);
   });
 
   it('returns empty accounts array when no accounts exist', async () => {
@@ -97,7 +67,27 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.accounts).toEqual([]);
   });
 
-  it('returns account with correct running balance', async () => {
+  it('returns zero balance for an account with no transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    await accountFixture(user.id, {
+      name: 'Chequing',
+      type: 'chequing',
+      institution: 'td',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    const account = body.accounts[0];
+    if (!account) throw new Error('Expected at least one account in snapshot response');
+    expect(account.name).toBe('Chequing');
+    expect(account.balance).toBe(0);
+  });
+
+  it('adds income and subtracts expense from running balance', async () => {
     const { accessToken, user } = await registerUser(app);
     const accountId = (
       await accountFixture(user.id, {
@@ -106,20 +96,6 @@ describe('GET /api/v1/dashboard/snapshot', () => {
         institution: 'td',
       })
     ).id;
-
-    const res1 = await request(app)
-      .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${accessToken}`);
-
-    const body1 = res1.body as SnapshotBody;
-    expect(res1.status).toBe(200);
-    const account = body1.accounts[0];
-    assertDefined(
-      account,
-      'Expected at least one account in snapshot response'
-    );
-    expect(account.name).toBe('Chequing');
-    expect(account.balance).toBe(0);
 
     await transactionFixture(accountId, {
       date: currentMonthDateStr(5),
@@ -132,17 +108,15 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       isIncome: false,
     });
 
-    const res2 = await request(app)
+    const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
       .set('Authorization', `Bearer ${accessToken}`);
 
-    const body2 = res2.body as SnapshotBody;
-    const updated = body2.accounts[0];
-    assertDefined(
-      updated,
-      'Expected at least one account in updated snapshot response'
-    );
-    expect(updated.balance).toBe(3300);
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    const account = body.accounts[0];
+    if (!account) throw new Error('Expected at least one account in snapshot response');
+    expect(account.balance).toBe(3300);
   });
 
   it('returns credit account balance as charge minus payment (debt owed)', async () => {
@@ -176,7 +150,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
     const account = body.accounts[0];
-    assertDefined(account, 'Expected at least one account in snapshot response');
+    if (!account) throw new Error('Expected at least one account in snapshot response');
     expect(account.name).toBe('VISA');
     // Debt owed = charge (500) − payment (200) = 300
     expect(account.balance).toBe(300);
@@ -198,14 +172,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       isIncome: true,
     });
 
-    // Ensure user_config row exists then set emergency fund target directly
-    await request(app)
-      .get('/api/v1/user-config')
-      .set('Authorization', `Bearer ${accessToken}`);
-    await db
-      .update(userConfig)
-      .set({ emergencyFundTarget: '20000' })
-      .where(eq(userConfig.userId, user.id));
+    await setEmergencyFundTarget(app, accessToken, user.id, '20000');
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
@@ -319,35 +286,40 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     const { accessToken } = await registerUser(app);
     const { year } = currentYearMonth();
 
-    const incomeEntry = await request(app)
-      .post('/api/v1/anticipated-budget')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Salary',
-        isIncome: true,
-        categoryId: null,
-        needWant: null,
-        notes: null,
-        monthlyAmount: '5000',
-        effectiveYear: year,
-      });
+    const [incomeEntry, expenseEntry] = await Promise.all([
+      request(app)
+        .post('/api/v1/anticipated-budget')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Salary',
+          isIncome: true,
+          categoryId: null,
+          needWant: null,
+          notes: null,
+          monthlyAmount: '5000',
+          effectiveYear: year,
+        }),
+      request(app)
+        .post('/api/v1/anticipated-budget')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Rent',
+          isIncome: false,
+          categoryId: null,
+          needWant: 'Need',
+          notes: null,
+          monthlyAmount: '1500',
+          effectiveYear: year,
+        }),
+    ]);
     expect(incomeEntry.status).toBe(201);
-
-    const expenseEntry = await request(app)
-      .post('/api/v1/anticipated-budget')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'Rent',
-        isIncome: false,
-        categoryId: null,
-        needWant: 'Need',
-        notes: null,
-        monthlyAmount: '1500',
-        effectiveYear: year,
-      });
     expect(expenseEntry.status).toBe(201);
 
-    await setAllocations(accessToken);
+    await setAllocations(app, accessToken, {
+      needsPercentage: 50,
+      wantsPercentage: 30,
+      investmentsPercentage: 20,
+    });
 
     const res = await request(app)
       .get('/api/v1/dashboard/snapshot')
@@ -359,8 +331,30 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.anticipated.expectedIncome).toBe(5000);
     expect(body.anticipated.expectedExpenses.needs).toBe(1500);
     expect(body.anticipated.expectedExpenses.total).toBe(1500);
-    // expectedSpendingIncome.total = 5000 * (1 - 0.20) = 4000
-    expect(body.anticipated.expectedSpendingIncome.total).toBe(4000);
+    // expectedSpendingIncome: 5000 * (1 − 0.20) = 4000; needs = 4000 * 0.50 = 2000; wants = 4000 * 0.30 = 1200
+    expect(body.anticipated.expectedSpendingIncome).toEqual({
+      total: 4000,
+      needs: 2000,
+      wants: 1200,
+    });
+    // incomeLessInvestment: income = 0 this month, so returns all zeros regardless of allocations
+    expect(body.monthlyIncome.incomeLessInvestment).toEqual({
+      total: 0,
+      needs: 0,
+      wants: 0,
+    });
+    // remainingBudget = expectedSpendingIncome − monthlyExpenses = 4000 − 0 = 4000
+    expect(body.anticipated.remainingBudget).toEqual({
+      total: 4000,
+      needs: 2000,
+      wants: 1200,
+    });
+    // expectedAvailable = expectedSpendingIncome − expectedExpenses = 4000 − 1500 = 2500
+    expect(body.anticipated.expectedAvailable).toEqual({
+      total: 2500,
+      needs: 500,
+      wants: 1200,
+    });
   });
 
   it('uses month override amount when present', async () => {
@@ -399,6 +393,214 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.anticipated.expectedExpenses.needs).toBe(350);
   });
 
+  it('excludes prior-month expenses from monthlyExpenses', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    // Current month expense — should appear in totals
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '-400.00',
+      isIncome: false,
+      needWant: 'Need',
+    });
+    // Prior month expense — should be excluded
+    await transactionFixture(accountId, {
+      date: priorMonthDateStr(15),
+      amount: '-9999.00',
+      isIncome: false,
+      needWant: 'Need',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.monthlyExpenses.total).toBe(400);
+  });
+
+  it('excludes transfer transactions from monthlyIncome and monthlyExpenses', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    // Regular income — should be included
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '3000.00',
+      isIncome: true,
+      isTransfer: false,
+    });
+    // Income transfer — should be excluded
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(6),
+      amount: '1000.00',
+      isIncome: true,
+      isTransfer: true,
+    });
+    // Regular expense — should be included
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(10),
+      amount: '-500.00',
+      isIncome: false,
+      isTransfer: false,
+      needWant: 'Want',
+    });
+    // Expense transfer — should be excluded
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(11),
+      amount: '-800.00',
+      isIncome: false,
+      isTransfer: true,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.monthlyIncome.income).toBe(3000);
+    expect(body.monthlyExpenses.total).toBe(500);
+  });
+
+  it('excludes inactive accounts from the accounts list', async () => {
+    const { accessToken, user } = await registerUser(app);
+
+    await accountFixture(user.id, {
+      name: 'Active Chequing',
+      type: 'chequing',
+      institution: 'td',
+      isActive: true,
+    });
+    await accountFixture(user.id, {
+      name: 'Inactive Savings',
+      type: 'savings',
+      institution: 'td',
+      isActive: false,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.accounts).toHaveLength(1);
+    expect(body.accounts[0]?.name).toBe('Active Chequing');
+  });
+
+  it('returns emergency fund percentage above 100 when balance exceeds target', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '10000.00',
+      isIncome: true,
+    });
+
+    await setEmergencyFundTarget(app, accessToken, user.id, '5000');
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.emergencyFund.balance).toBe(10000);
+    expect(body.emergencyFund.target).toBe(5000);
+    // 10000 / 5000 * 100 = 200
+    expect(body.emergencyFund.percentage).toBe(200);
+  });
+
+  it('returns 0 emergency fund percentage when target is set but balance is zero', async () => {
+    const { accessToken, user } = await registerUser(app);
+
+    // Create a chequing account with no transactions (balance = 0)
+    await accountFixture(user.id, {
+      name: 'Chequing',
+      type: 'chequing',
+      institution: 'td',
+    });
+
+    await setEmergencyFundTarget(app, accessToken, user.id, '10000');
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.emergencyFund.balance).toBe(0);
+    expect(body.emergencyFund.target).toBe(10000);
+    // 0 / 10000 * 100 = 0, not null
+    expect(body.emergencyFund.percentage).toBe(0);
+  });
+
+  it('uses one chequing account balance (not the sum) for emergency fund when multiple exist', async () => {
+    const { accessToken, user } = await registerUser(app);
+
+    // Two chequing accounts each with the same balance so the assertion
+    // holds regardless of which one the service picks first.
+    const accountId1 = (
+      await accountFixture(user.id, {
+        name: 'Chequing A',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+    const accountId2 = (
+      await accountFixture(user.id, {
+        name: 'Chequing B',
+        type: 'chequing',
+        institution: 'rbc',
+      })
+    ).id;
+
+    await transactionFixture(accountId1, {
+      date: currentMonthDateStr(5),
+      amount: '1000.00',
+      isIncome: true,
+    });
+    await transactionFixture(accountId2, {
+      date: currentMonthDateStr(5),
+      amount: '1000.00',
+      isIncome: true,
+    });
+
+    await setEmergencyFundTarget(app, accessToken, user.id, '4000');
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    // One chequing account's balance (1000), not the sum of both (2000)
+    expect(body.emergencyFund.balance).toBe(1000);
+    expect(body.emergencyFund.percentage).toBe(25);
+  });
+
   it('isolates data between users', async () => {
     const { accessToken: accessTokenA, user: userA } = await registerUser(
       app,
@@ -417,21 +619,27 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       isIncome: true,
     });
 
-    const { accessToken: accessTokenB } = await registerUser(app, 'snap-b@example.com');
-    const res = await request(app)
-      .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${accessTokenB}`);
+    const { accessToken: accessTokenB } = await registerUser(
+      app,
+      'snap-b@example.com'
+    );
 
-    const body = res.body as SnapshotBody;
-    expect(res.status).toBe(200);
-    expect(body.accounts).toEqual([]);
-    expect(body.monthlyIncome.income).toBe(0);
-    expect(body.anticipated.hasEntries).toBe(false);
+    const [resB, resA] = await Promise.all([
+      request(app)
+        .get('/api/v1/dashboard/snapshot')
+        .set('Authorization', `Bearer ${accessTokenB}`),
+      request(app)
+        .get('/api/v1/dashboard/snapshot')
+        .set('Authorization', `Bearer ${accessTokenA}`),
+    ]);
+
+    const bodyB = resB.body as SnapshotBody;
+    expect(resB.status).toBe(200);
+    expect(bodyB.accounts).toEqual([]);
+    expect(bodyB.monthlyIncome.income).toBe(0);
+    expect(bodyB.anticipated.hasEntries).toBe(false);
 
     // Ensure user A's data is still present
-    const resA = await request(app)
-      .get('/api/v1/dashboard/snapshot')
-      .set('Authorization', `Bearer ${accessTokenA}`);
     const bodyA = resA.body as SnapshotBody;
     expect(bodyA.accounts).toHaveLength(1);
     expect(bodyA.monthlyIncome.income).toBe(8000);
