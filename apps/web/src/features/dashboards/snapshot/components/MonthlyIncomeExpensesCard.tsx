@@ -36,7 +36,8 @@ export function MonthlyIncomeExpensesCard({ monthlyIncome, monthlyExpenses }: Pr
       <div className="px-6 py-4 border-b border-border-base">
         <h2 className="text-lg font-semibold text-content-primary">Monthly Income &amp; Expenses</h2>
       </div>
-      <table className="w-full text-left">
+      <div className="overflow-x-auto">
+      <table className="min-w-full text-left">
         <thead>
           <tr className="bg-surface-subtle">
             <th className="px-4 py-2.5 text-left text-xs font-medium text-content-secondary uppercase tracking-wider w-2/5" />
@@ -97,6 +98,7 @@ export function MonthlyIncomeExpensesCard({ monthlyIncome, monthlyExpenses }: Pr
           </tr>
         </tbody>
       </table>
+      </div>
       {!allocationConfigured && income > 0 && (
         <p className="px-6 py-3 text-xs text-content-muted border-t border-border-subtle">
           Allocation percentages not configured.{' '}

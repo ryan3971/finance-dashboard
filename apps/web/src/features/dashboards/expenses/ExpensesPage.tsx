@@ -12,6 +12,7 @@ import type {
   ExpenseCategoryRow,
   ExpenseMonth,
 } from '@finance/shared/types/dashboard';
+import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -162,8 +163,8 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
       )}
 
       {data && data.annualTotal > 0 && (
-        <div className="bg-surface rounded-lg border border-border-base overflow-hidden mb-6">
-          <table className="w-full text-left">
+        <DataTable className="mb-6">
+          <table className="min-w-full text-left">
             <thead>
               <tr className="bg-surface-subtle">
                 <th className={`${TH_BASE} w-16`}>Month</th>
@@ -187,7 +188,7 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
               )}
             </tbody>
           </table>
-        </div>
+        </DataTable>
       )}
     </>
   );
@@ -265,7 +266,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
         <EmptyState message="No expense categories for this year." />
       )}
       {data && data.rows.length > 0 && (
-        <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
+        <DataTable>
           <table className="min-w-full divide-y divide-border-subtle">
             <thead className="bg-surface-subtle">
               {table.getHeaderGroups().map((hg) => (
@@ -314,7 +315,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </DataTable>
       )}
     </>
   );

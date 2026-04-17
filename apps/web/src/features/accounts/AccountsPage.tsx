@@ -8,6 +8,7 @@ import { ACCOUNT_TYPE_ORDER } from '@finance/shared/constants';
 import { AccountEditPanel } from './components/AccountEditPanel';
 import { AccountRow } from './components/AccountRow';
 import { Button } from '@/components/ui/Button';
+import { DataTable } from '@/components/ui/DataTable';
 import { DeactivateAccountDialog } from './components/DeactivateAccountDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -119,9 +120,9 @@ export function AccountsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+      <DataTable>
+        <table className="min-w-full text-sm">
+          <thead className="bg-surface-subtle border-b border-border-base">
             <tr>
               <th className="px-4 py-2 text-left font-medium text-content-secondary">
                 Name
@@ -143,11 +144,11 @@ export function AccountsPage() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border-subtle">
             {tableBody}
           </tbody>
         </table>
-      </div>
+      </DataTable>
 
       <DeactivateAccountDialog
         account={confirmDeactivateAccount}

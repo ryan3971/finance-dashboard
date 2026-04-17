@@ -131,10 +131,10 @@ export function ExpectedVsActualCard({ anticipated, monthlyExpenses }: Props) {
           Expected vs Actual
         </h2>
       </div>
-      <div className="grid grid-cols-2 gap-0 divide-x divide-border-base">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
         {/* Left: table */}
-        <div>
-          <table className="w-full text-left">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left">
             <thead>
               <tr className="bg-surface-subtle">
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-content-secondary uppercase tracking-wider w-2/5" />
@@ -198,7 +198,7 @@ export function ExpectedVsActualCard({ anticipated, monthlyExpenses }: Props) {
         </div>
 
         {/* Right: progress bars */}
-        <div className="px-6 py-5 space-y-5">
+        <div className="border-t border-border-base sm:border-t-0 sm:border-l px-6 py-5 space-y-5">
           <BudgetProgress
             label="Total"
             actual={monthlyExpenses.total}

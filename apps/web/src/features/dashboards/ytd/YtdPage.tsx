@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { YtdMonth } from '@finance/shared/types/dashboard';
+import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -167,10 +168,8 @@ export function YtdPage() {
 
       {/* Table */}
       {data && (
-        <div
-          className={`bg-surface rounded-lg border border-border-base overflow-hidden transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}
-        >
-          <table className="w-full text-left">
+        <DataTable className={`transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
+          <table className="min-w-full text-left">
             <thead>
               <tr className="bg-surface-subtle">
                 <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider w-16">
@@ -200,7 +199,7 @@ export function YtdPage() {
               {dataMonths.length > 0 && <YtdTotalsRow totals={totals} />}
             </tbody>
           </table>
-        </div>
+        </DataTable>
       )}
     </PageLayout>
   );

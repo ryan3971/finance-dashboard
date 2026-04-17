@@ -144,7 +144,7 @@ export function useTransactionColumns({
       },
       {
         id: 'tags',
-        meta: { label: 'Tags', tdClassName: 'px-4 py-3 max-w-xs' },
+        meta: { label: 'Tags', thClassName: 'hidden sm:table-cell th-cell', tdClassName: 'hidden sm:table-cell px-4 py-3 max-w-xs' },
         header: () => 'Tags',
         cell: ({ row }) => (
           <TransactionTagsPanel
@@ -157,7 +157,7 @@ export function useTransactionColumns({
       {
         id: 'account',
         accessorKey: 'accountName',
-        meta: { label: 'Account' },
+        meta: { label: 'Account', thClassName: 'hidden md:table-cell th-cell', tdClassName: 'hidden md:table-cell td-cell' },
         header: () => 'Account',
         cell: ({ row }) => row.original.accountName,
         enableSorting: false,

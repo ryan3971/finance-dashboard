@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import { ColumnVisibilityToggle } from '@/features/transactions/components/table/ColumnVisibilityToggle';
 import { flexRender } from '@tanstack/react-table';
+import { DataTable } from '@/components/ui/DataTable';
 import { Pagination } from '@/components/common/Pagination';
 import type {
   PaginationInfo,
@@ -74,12 +75,17 @@ export function TransactionsTable({
     [columnVisibility]
   );
 
-  return (
-    <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
-      <div className="flex justify-end px-3 py-2 border-b border-border-subtle">
-        <ColumnVisibilityToggle table={table} />
-      </div>
+  const paginationNode = pagination && pagination.totalPages > 1 ? (
+    <Pagination
+      page={pagination.page}
+      totalPages={pagination.totalPages}
+      onPrev={() => onPageChange(pagination.page - 1)}
+      onNext={() => onPageChange(pagination.page + 1)}
+    />
+  ) : null;
 
+  return (
+    <DataTable toolbar={<ColumnVisibilityToggle table={table} />} footer={paginationNode}>
       <table className="min-w-full divide-y divide-border-subtle">
         <thead className="bg-surface-subtle">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -141,15 +147,6 @@ export function TransactionsTable({
           })}
         </tbody>
       </table>
-
-      {pagination && pagination.totalPages > 1 && (
-        <Pagination
-          page={pagination.page}
-          totalPages={pagination.totalPages}
-          onPrev={() => onPageChange(pagination.page - 1)}
-          onNext={() => onPageChange(pagination.page + 1)}
-        />
-      )}
-    </div>
+    </DataTable>
   );
 }
