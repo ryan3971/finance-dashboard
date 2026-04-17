@@ -288,6 +288,47 @@ export async function createManualTransaction(
   return created;
 }
 
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+/**
+ * Deletes a transaction. If the transaction is one half of a confirmed transfer
+ * pair, the pair's transferPairId is cleared first (in the same DB transaction)
+ * so no dangling references remain.
+ *
+ * Returns true if deleted, false if not found / not owned.
+ */
+export async function deleteTransaction(
+  id: string,
+  userId: string
+): Promise<boolean> {
+  const [txn] = await db
+    .select({
+      id: transactions.id,
+      transferPairId: transactions.transferPairId,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(and(eq(transactions.id, id), eq(accounts.userId, userId)))
+    .limit(1);
+
+  if (!txn) return false;
+
+  if (txn.transferPairId) {
+    const pairId = txn.transferPairId;
+    await db.transaction(async (tx) => {
+      await tx
+        .update(transactions)
+        .set({ transferPairId: null })
+        .where(eq(transactions.id, pairId));
+      await tx.delete(transactions).where(eq(transactions.id, id));
+    });
+  } else {
+    await db.delete(transactions).where(eq(transactions.id, id));
+  }
+
+  return true;
+}
+
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
 /** Returns null if the transaction was not found / not owned. Throws TAG_NOT_FOUND if the tag doesn't exist. */

@@ -205,6 +205,42 @@ export async function confirmTransfer(
 }
 
 /**
+ * Unmark a confirmed transfer — clears isTransfer and transferPairId on the
+ * target transaction and, if a pair is linked, on the paired transaction too.
+ */
+export async function unmarkTransfer(
+  transactionId: string,
+  userId: string
+): Promise<void> {
+  const [txn] = await db
+    .select({ id: transactions.id, transferPairId: transactions.transferPairId })
+    .from(transactions)
+    .where(and(eq(transactions.id, transactionId), ownedByUser(userId)))
+    .limit(1);
+
+  if (!txn) throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
+
+  if (txn.transferPairId) {
+    const pairId = txn.transferPairId;
+    await db.transaction(async (tx) => {
+      await tx
+        .update(transactions)
+        .set({ isTransfer: false, transferPairId: null })
+        .where(eq(transactions.id, pairId));
+      await tx
+        .update(transactions)
+        .set({ isTransfer: false, transferPairId: null })
+        .where(eq(transactions.id, transactionId));
+    });
+  } else {
+    await db
+      .update(transactions)
+      .set({ isTransfer: false, transferPairId: null })
+      .where(eq(transactions.id, transactionId));
+  }
+}
+
+/**
  * Dismiss a transfer candidate — clears the flagged state without marking as transfer.
  */
 export async function dismissTransferFlag(

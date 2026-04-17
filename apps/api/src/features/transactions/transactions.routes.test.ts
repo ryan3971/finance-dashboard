@@ -8,11 +8,17 @@ import {
   registerUser,
   getCategoryId,
   getFirstTransaction,
+  getTransaction,
 } from '@/testing/test-helpers';
 import { createApp } from '@/app';
 import request from 'supertest';
 import { UNKNOWN_ID, MALFORMED_ID } from '@/testing/constants';
 import type { RuleResponse, PaginatedResponse } from '@/testing/types';
+import { accountFixture } from '@/testing/fixtures/account.fixture';
+import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db';
+import { transactions } from '@/db/schema';
 
 const app = createApp();
 
@@ -625,5 +631,91 @@ describe('DELETE /api/v1/transactions/:id/tags/:tagId', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(400);
+  });
+});
+
+// ── DELETE /api/v1/transactions/:id ──────────────────────────────────────────
+
+describe('DELETE /api/v1/transactions/:id', () => {
+  it('returns 401 without an auth token', async () => {
+    const res = await request(app).delete(
+      `/api/v1/transactions/${UNKNOWN_ID}`
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 for a malformed id', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .delete(`/api/v1/transactions/${MALFORMED_ID}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 for an unknown id', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .delete(`/api/v1/transactions/${UNKNOWN_ID}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ error: 'Transaction not found' });
+  });
+
+  it('returns 404 when the transaction belongs to a different user', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id);
+
+    const otherAuth = await registerUser(app, 'other@example.com');
+    const res = await request(app)
+      .delete(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${otherAuth.accessToken}`);
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 204 and removes the transaction', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id);
+
+    const res = await request(app)
+      .delete(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(204);
+    const found = await getTransaction(app, auth.accessToken, txn.id);
+    expect(found).toBeUndefined();
+  });
+
+  it('clears the paired transferPairId when deleting one side of a transfer pair', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    const txnA = await transactionFixture(accountA.id, {
+      isTransfer: true,
+      amount: '-100.00',
+    });
+    const txnB = await transactionFixture(accountB.id, {
+      isTransfer: true,
+      amount: '100.00',
+      transferPairId: txnA.id,
+    });
+    // Link the pair back on txnA
+    await db
+      .update(transactions)
+      .set({ transferPairId: txnB.id })
+      .where(eq(transactions.id, txnA.id));
+
+    const res = await request(app)
+      .delete(`/api/v1/transactions/${txnA.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(204);
+
+    const [pairRow] = await db
+      .select({ transferPairId: transactions.transferPairId })
+      .from(transactions)
+      .where(eq(transactions.id, txnB.id));
+    expect(pairRow?.transferPairId).toBeNull();
   });
 });

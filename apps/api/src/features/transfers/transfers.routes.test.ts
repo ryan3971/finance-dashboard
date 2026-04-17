@@ -291,3 +291,111 @@ describe('POST /api/v1/transfers/dismiss', () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ── POST /api/v1/transfers/unmark ─────────────────────────────────────────────
+
+describe('POST /api/v1/transfers/unmark', () => {
+  it('returns 401 without an auth token', async () => {
+    const res = await request(app)
+      .post('/api/v1/transfers/unmark')
+      .send({ transactionId: UNKNOWN_ID });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 for a malformed transactionId', async () => {
+    const { accessToken } = await setupWithFlaggedPair();
+    const res = await request(app)
+      .post('/api/v1/transfers/unmark')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ transactionId: MALFORMED_ID });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when transactionId is missing from the body', async () => {
+    const { accessToken } = await setupWithFlaggedPair();
+    const res = await request(app)
+      .post('/api/v1/transfers/unmark')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 when the transaction does not exist', async () => {
+    const { accessToken } = await setupWithFlaggedPair();
+    const res = await request(app)
+      .post('/api/v1/transfers/unmark')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ transactionId: UNKNOWN_ID });
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ error: 'Transaction not found' });
+  });
+
+  it('returns 404 when the transaction belongs to a different user', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, { isTransfer: true });
+
+    const otherAuth = await registerUser(app, 'other@example.com');
+    const res = await request(app)
+      .post('/api/v1/transfers/unmark')
+      .set('Authorization', `Bearer ${otherAuth.accessToken}`)
+      .send({ transactionId: txn.id });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 204 and clears isTransfer on a solo transfer', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, { isTransfer: true });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/unmark')
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ transactionId: txn.id });
+
+    expect(res.status).toBe(204);
+    const updated = await getTransaction(app, auth.accessToken, txn.id);
+    expect(updated?.isTransfer).toBe(false);
+  });
+
+  it('returns 204 and clears isTransfer and transferPairId on both sides of a pair', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    const txnA = await transactionFixture(accountA.id, {
+      amount: '-100.00',
+      isTransfer: true,
+    });
+    const txnB = await transactionFixture(accountB.id, {
+      amount: '100.00',
+      isTransfer: true,
+      transferPairId: txnA.id,
+    });
+    await db
+      .update(transactions)
+      .set({ transferPairId: txnB.id })
+      .where(eq(transactions.id, txnA.id));
+
+    const res = await request(app)
+      .post('/api/v1/transfers/unmark')
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ transactionId: txnA.id });
+
+    expect(res.status).toBe(204);
+
+    const [[rowA], [rowB]] = await Promise.all([
+      db
+        .select({ isTransfer: transactions.isTransfer, transferPairId: transactions.transferPairId })
+        .from(transactions)
+        .where(eq(transactions.id, txnA.id)),
+      db
+        .select({ isTransfer: transactions.isTransfer, transferPairId: transactions.transferPairId })
+        .from(transactions)
+        .where(eq(transactions.id, txnB.id)),
+    ]);
+    expect(rowA?.isTransfer).toBe(false);
+    expect(rowA?.transferPairId).toBeNull();
+    expect(rowB?.isTransfer).toBe(false);
+    expect(rowB?.transferPairId).toBeNull();
+  });
+});

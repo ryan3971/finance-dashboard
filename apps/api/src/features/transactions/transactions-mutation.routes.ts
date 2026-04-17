@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import {
   addTagToTransaction,
   createManualTransaction,
+  deleteTransaction,
   patchTransaction,
   removeTagFromTransaction,
 } from './transactions.service';
@@ -56,6 +57,18 @@ router.patch('/:id', async (req: Request, res: Response) => {
     return;
   }
   res.json(updated);
+});
+
+// ─── DELETE /api/v1/transactions/:id ─────────────────────────────────────────
+
+router.delete('/:id', async (req: Request, res: Response) => {
+  const { id } = transactionParamsSchema.parse(req.params);
+  const deleted = await deleteTransaction(id, getAuthUser(req).id);
+  if (!deleted) {
+    res.status(404).json({ error: 'Transaction not found' });
+    return;
+  }
+  res.status(204).send();
 });
 
 // ─── POST /api/v1/transactions (manual entry) ────────────────────────────────
