@@ -5,6 +5,7 @@ export const CategoryErrorCode = {
   FORBIDDEN: 'CATEGORY_FORBIDDEN',
   INVALID_PARENT: 'CATEGORY_INVALID_PARENT',
   HAS_SUBCATEGORIES: 'CATEGORY_HAS_SUBCATEGORIES',
+  IN_USE_BY_RULES: 'CATEGORY_IN_USE_BY_RULES',
 } as const;
 
 export type CategoryErrorCode =
@@ -15,6 +16,7 @@ const HTTP_STATUS: Record<CategoryErrorCode, number> = {
   [CategoryErrorCode.FORBIDDEN]: 403,
   [CategoryErrorCode.INVALID_PARENT]: 400,
   [CategoryErrorCode.HAS_SUBCATEGORIES]: 409,
+  [CategoryErrorCode.IN_USE_BY_RULES]: 409,
 };
 
 const MESSAGES: Record<CategoryErrorCode, string> = {
@@ -24,6 +26,8 @@ const MESSAGES: Record<CategoryErrorCode, string> = {
     'Parent must be a top-level category owned by you',
   [CategoryErrorCode.HAS_SUBCATEGORIES]:
     'Delete all subcategories before deleting this category',
+  [CategoryErrorCode.IN_USE_BY_RULES]:
+    'This subcategory is used by one or more categorization rules. Remove or update those rules before deleting it.',
 };
 
 export class CategoryError extends DomainError {

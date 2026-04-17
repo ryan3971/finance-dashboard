@@ -1,3 +1,4 @@
+import { categorizationRuleFixture } from '@/testing/fixtures/categorization-rules.fixture';
 import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -551,6 +552,39 @@ describe('DELETE /api/v1/categories/:id', () => {
       .set('Authorization', `Bearer ${tokenB}`);
 
     expect(res.status).toBe(403);
+  });
+
+  it('returns 409 when the subcategory is referenced by a categorization rule', async () => {
+    const { accessToken, user } = await registerUser(app);
+
+    const parentRes = await request(app)
+      .post('/api/v1/categories')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(categoryRequest({ name: 'Food', isIncome: false }));
+    expect(parentRes.status).toBe(201);
+    const { id: parentId } = parentRes.body as { id: string };
+
+    const subRes = await request(app)
+      .post('/api/v1/categories')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(categoryRequest({ name: 'Restaurants', parentId }));
+    expect(subRes.status).toBe(201);
+    const { id: subId } = subRes.body as { id: string };
+
+    await categorizationRuleFixture({
+      userId: user.id,
+      keyword: 'sushi',
+      subcategoryId: subId,
+    });
+
+    const res = await request(app)
+      .delete(`/api/v1/categories/${subId}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({
+      error: 'This subcategory is used by one or more categorization rules. Remove or update those rules before deleting it.',
+    });
   });
 
   it('returns 400 for a malformed (non-UUID) id', async () => {

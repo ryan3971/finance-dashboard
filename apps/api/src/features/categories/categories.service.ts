@@ -1,6 +1,6 @@
 import { count, eq } from 'drizzle-orm';
 import { assertDefined } from '@/lib/assert';
-import { categories, transactions } from '@/db/schema';
+import { categories, categorizationRules, transactions } from '@/db/schema';
 import { db, type DbTransaction } from '@/db';
 import type { CreateCategoryInput } from '@finance/shared/schemas/categories';
 import { CategoryError, CategoryErrorCode } from './categories.errors';
@@ -174,7 +174,17 @@ export async function deleteCategory(
     const category = await fetchOwnedCategory(id, userId, conn);
 
     if (category.parentId !== null) {
-      // Subcategory: fall back transactions to the parent category
+      // Subcategory: block if any categorization rules reference it
+      const [ruleCount] = await conn
+        .select({ ruleCount: count() })
+        .from(categorizationRules)
+        .where(eq(categorizationRules.subcategoryId, id));
+      assertDefined(ruleCount, 'Expected rule count row');
+      if (ruleCount.ruleCount > 0) {
+        throw new CategoryError(CategoryErrorCode.IN_USE_BY_RULES);
+      }
+
+      // Fall back transactions to the parent category
       await conn
         .update(transactions)
         .set({ subcategoryId: null, categoryId: category.parentId })

@@ -1,5 +1,6 @@
 import { categoryKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/errors';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -97,7 +98,8 @@ export function useDeleteSubcategory() {
       void queryClient.invalidateQueries({ queryKey: categoryKeys.all() });
       toast.success(TOAST.SUBCATEGORY_DELETED);
     },
-    onError: () => toast.error(TOAST.SUBCATEGORY_DELETE_FAILED),
+    onError: (err: unknown) =>
+      toast.error(getApiErrorMessage(err, TOAST.SUBCATEGORY_DELETE_FAILED)),
   });
 }
 
