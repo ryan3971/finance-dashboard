@@ -189,6 +189,36 @@ describe('GET /api/v1/transactions', () => {
     }
   });
 
+
+
+  it('filters by isIncome', async () => {
+    // amex.csv: 1 payment (isIncome=true) + 5 charges (isIncome=false)
+    // not 100% accurate since the "income" is a transfer but it will suffice for this test
+    const { accessToken } = await setupWithImport();
+
+    const incomeRes = await request(app)
+      .get('/api/v1/transactions?isIncome=true')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(incomeRes.status).toBe(200);
+    const incomeBody = incomeRes.body as PaginatedResponse<{ isIncome: boolean }>;
+    expect(incomeBody.pagination.total).toBe(1);
+    for (const tx of incomeBody.data) {
+      expect(tx.isIncome).toBe(true);
+    }
+
+    const expenseRes = await request(app)
+      .get('/api/v1/transactions?isIncome=false')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(expenseRes.status).toBe(200);
+    const expenseBody = expenseRes.body as PaginatedResponse<{ isIncome: boolean }>;
+    expect(expenseBody.pagination.total).toBe(5);
+    for (const tx of expenseBody.data) {
+      expect(tx.isIncome).toBe(false);
+    }
+  });
+
   it('returns 400 for a malformed subcategoryId', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)

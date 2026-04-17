@@ -1,27 +1,24 @@
 import { getAuthUser, requireAuth } from '@/lib/auth';
-import { ISO_DATE_REGEX, PAGINATION } from '@finance/shared/constants';
+import { PAGINATION } from '@finance/shared/constants';
 import type { Request, Response } from 'express';
 import { listTransactions } from './transactions.service';
 import { Router } from 'express';
 import { z } from 'zod';
+import { transactionFiltersSchema } from '@finance/shared/schemas/transactions';
 
 const router = Router();
 router.use(requireAuth);
 
-// ─── Schemas ─────────────────────────────────────────────────────────────────
+const booleanParam = z
+  .enum(['true', 'false'])
+  .transform((v) => v === 'true')
+  .optional();
 
-const isoDate = z.string().regex(ISO_DATE_REGEX, 'Must be YYYY-MM-DD');
-
-const listQuerySchema = z.object({
-  accountId: z.string().uuid().optional(),
-  startDate: isoDate.optional(),
-  endDate: isoDate.optional(),
-  categoryId: z.string().uuid().optional(),
-  subcategoryId: z.string().uuid().optional(),
-  flagged: z
-    .enum(['true', 'false'])
-    .transform((v) => v === 'true')
-    .optional(),
+const listQuerySchema = transactionFiltersSchema.extend({
+  // Query params arrive as strings — override the boolean fields with string→boolean transforms
+  flagged: booleanParam,
+  isIncome: booleanParam,
+  isTransfer: booleanParam,
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce
     .number()
@@ -33,7 +30,7 @@ const listQuerySchema = z.object({
 
 // GET /api/v1/transactions
 router.get('/', async (req: Request, res: Response) => {
-  const { accountId, startDate, endDate, categoryId, subcategoryId, flagged, page, limit } =
+  const { accountId, startDate, endDate, categoryId, subcategoryId, flagged, isIncome, page, limit } =
     listQuerySchema.parse(req.query);
 
   const result = await listTransactions(
@@ -45,6 +42,7 @@ router.get('/', async (req: Request, res: Response) => {
       categoryId: categoryId,
       subcategoryId: subcategoryId,
       flagged: flagged ?? false,
+      isIncome,
     },
     { page, limit }
   );

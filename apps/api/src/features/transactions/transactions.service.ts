@@ -32,6 +32,7 @@ export interface TransactionFilters {
   categoryId?: string;
   subcategoryId?: string;
   flagged?: boolean;
+  isIncome?: boolean;
 }
 
 export interface PaginationParams {
@@ -91,6 +92,8 @@ export async function listTransactions(
   if (filters.flagged) conditions.push(eq(transactions.flaggedForReview, true));
   if (filters.subcategoryId)
     conditions.push(eq(transactions.subcategoryId, filters.subcategoryId));
+  if (filters.isIncome !== undefined)
+    conditions.push(eq(transactions.isIncome, filters.isIncome));
 
   const rows = await db
     .select({
