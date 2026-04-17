@@ -8,10 +8,14 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-import type { ExpenseCategoryRow, ExpenseMonth } from '@finance/shared/types/dashboard';
+import type {
+  ExpenseCategoryRow,
+  ExpenseMonth,
+} from '@finance/shared/types/dashboard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
 import { useExpenseCategories } from './useExpenseCategories';
@@ -64,7 +68,9 @@ function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
         </span>
       </td>
       <td className="px-4 py-3 text-sm text-right">
-        <span className="font-mono font-medium text-info">{fmt(month.need)}</span>
+        <span className="font-mono font-medium text-info">
+          {fmt(month.need)}
+        </span>
         {hasExpenses && (
           <span className="block text-xs text-content-muted">
             {pct(month.need, month.total)}
@@ -72,7 +78,9 @@ function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
         )}
       </td>
       <td className="px-4 py-3 text-sm text-right">
-        <span className="font-mono font-medium text-accent">{fmt(month.want)}</span>
+        <span className="font-mono font-medium text-accent">
+          {fmt(month.want)}
+        </span>
         {hasExpenses && (
           <span className="block text-xs text-content-muted">
             {pct(month.want, month.total)}
@@ -93,15 +101,57 @@ function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
   );
 }
 
+function ExpenseMonthTotalsRow({
+  total,
+  need,
+  want,
+  other,
+}: {
+  readonly total: number;
+  readonly need: number;
+  readonly want: number;
+  readonly other: number;
+}) {
+  return (
+    <tr className="border-t-2 border-border-base bg-surface-subtle font-semibold">
+      <td className="px-4 py-3 text-sm text-content-primary">Total</td>
+      <td className="px-4 py-3 text-sm font-mono font-medium text-right">
+        <span className={total > 0 ? 'text-danger' : 'text-content-muted'}>
+          {fmt(total)}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm font-mono font-medium text-right text-info">
+        {fmt(need)}
+      </td>
+      <td className="px-4 py-3 text-sm font-mono font-medium text-right text-accent">
+        {fmt(want)}
+      </td>
+      <td className="px-4 py-3 text-sm font-mono font-medium text-right text-content-secondary">
+        {fmt(other)}
+      </td>
+    </tr>
+  );
+}
+
 function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
   const { data, isLoading, isError } = useExpensesDashboard(year);
 
+  const totals = useMemo(
+    () =>
+      data?.months.reduce(
+        (acc, m) => ({
+          total: Math.round((acc.total + m.total) * 100) / 100,
+          need: Math.round((acc.need + m.need) * 100) / 100,
+          want: Math.round((acc.want + m.want) * 100) / 100,
+          other: Math.round((acc.other + m.other) * 100) / 100,
+        }),
+        { total: 0, need: 0, want: 0, other: 0 },
+      ) ?? null,
+    [data?.months],
+  );
+
   return (
     <>
-      <h2 className="text-lg font-semibold text-content-primary mb-4">
-        Monthly Breakdown
-      </h2>
-
       {isLoading && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
       {isError && (
         <EmptyState variant="error" message="Failed to load expense data." />
@@ -112,42 +162,45 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
       )}
 
       {data && data.annualTotal > 0 && (
-        <>
-          <div className="bg-surface rounded-lg border border-border-base overflow-hidden mb-6">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-surface-subtle">
-                  <th className={`${TH_BASE} w-16`}>Month</th>
-                  <th className={`${TH_BASE} text-right`}>Total Expenses</th>
-                  <th className={`${TH_BASE} text-right`}>Need</th>
-                  <th className={`${TH_BASE} text-right`}>Want</th>
-                  <th className={`${TH_BASE} text-right`}>Other</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.months.map((month) => (
-                  <ExpenseMonthRow key={month.month} month={month} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="bg-surface rounded-lg border border-border-base p-6 mb-8">
-            <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-              Annual Expenses
-            </p>
-            <p className="text-2xl font-semibold text-danger font-mono">
-              {fmt(data.annualTotal)}
-            </p>
-          </div>
-        </>
+        <div className="bg-surface rounded-lg border border-border-base overflow-hidden mb-6">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-surface-subtle">
+                <th className={`${TH_BASE} w-16`}>Month</th>
+                <th className={`${TH_BASE} text-right`}>Total Expenses</th>
+                <th className={`${TH_BASE} text-right`}>Need</th>
+                <th className={`${TH_BASE} text-right`}>Want</th>
+                <th className={`${TH_BASE} text-right`}>Other</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.months.map((month) => (
+                <ExpenseMonthRow key={month.month} month={month} />
+              ))}
+              {totals && (
+                <ExpenseMonthTotalsRow
+                  total={totals.total}
+                  need={totals.need}
+                  want={totals.want}
+                  other={totals.other}
+                />
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   );
 }
 
-function TotalCell({ getValue }: Readonly<CellContext<ExpenseCategoryRow, unknown>>) {
-  return <span className="font-mono font-medium text-danger">{fmt(getValue<number>())}</span>;
+function TotalCell({
+  getValue,
+}: Readonly<CellContext<ExpenseCategoryRow, unknown>>) {
+  return (
+    <span className="font-mono font-medium text-danger">
+      {fmt(getValue<number>())}
+    </span>
+  );
 }
 
 function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
@@ -223,7 +276,9 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
                       className={header.column.columnDef.meta?.thClassName}
                       onClick={header.column.getToggleSortingHandler()}
                       style={{
-                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                        cursor: header.column.getCanSort()
+                          ? 'pointer'
+                          : 'default',
                       }}
                     >
                       {flexRender(
@@ -249,7 +304,10 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
                       key={cell.id}
                       className={cell.column.columnDef.meta?.tdClassName}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -272,7 +330,31 @@ export function ExpensesPage() {
         <YearSelector year={year} onChange={setYear} />
       </div>
 
-      <ExpenseMonthlyBreakdown year={year} />
+      {/* Monthly breakdown and expense transactions side by side */}
+      <div className="flex gap-6 items-start mb-8">
+        <div className="flex-none">
+          <h2 className="text-lg font-semibold text-content-primary mb-4">
+            Monthly Breakdown
+          </h2>
+          <ExpenseMonthlyBreakdown year={year} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-semibold text-content-primary mb-4">
+            Expense Transactions
+          </h2>
+          <TransactionTablePane
+            key={year}
+            presetFilters={{ isIncome: false }}
+            defaultFilters={{
+              startDate: `${year}-01-01`,
+              endDate: `${year}-12-31`,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Category breakdown: full width */}
       <ExpenseCategoryBreakdown year={year} />
     </PageLayout>
   );

@@ -6,6 +6,8 @@ import {
 } from '../constants';
 import { z } from 'zod';
 
+// ─── Transaction Schemas ─────────────────────────────────────────────────────────────────
+
 export const needWantSchema = z.enum(NEED_WANT_OPTIONS);
 
 export const createTransactionSchema = z
@@ -33,3 +35,19 @@ export const createTransactionSchema = z
   });
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
+
+// ─── Transaction Filters Schema ─────────────────────────────────────────────────────────────────
+
+export const transactionFiltersSchema = z.object({
+  accountId: z.string().uuid().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  categoryId: z.string().uuid().optional(),
+  subcategoryId: z.string().uuid().optional(),
+  flagged: z.boolean().optional(),
+  isIncome: z.boolean().optional(), // new
+  isTransfer: z.boolean().optional(), // future
+  tagIds: z.array(z.string()).optional(), // future
+});
+
+export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;
