@@ -1,6 +1,7 @@
 import {
   isTransactionReviewable,
   useTransactionColumns,
+  type ExpandedPanel,
 } from '@/features/transactions/hooks/useTransactionColumns';
 import { Fragment, useMemo, useState } from 'react';
 import {
@@ -23,18 +24,22 @@ const UNKNOWN_PAGE_COUNT = -1;
 
 interface TransactionsTableProps {
   readonly transactions: Transaction[];
-  readonly reviewingId: string | null;
-  readonly onReviewToggle: (id: string) => void;
+  readonly expandedPanel: ExpandedPanel | null;
+  readonly onExpand: (id: string, mode: 'review' | 'edit') => void;
+  readonly onCollapse: () => void;
   readonly onDuplicate: (tx: Transaction) => void;
+  readonly onDelete: (id: string) => void;
   readonly pagination?: PaginationInfo;
   readonly onPageChange: (page: number) => void;
 }
 
 export function TransactionsTable({
   transactions,
-  reviewingId,
-  onReviewToggle,
+  expandedPanel,
+  onExpand,
+  onCollapse,
   onDuplicate,
+  onDelete,
   pagination,
   onPageChange,
 }: TransactionsTableProps) {
@@ -42,9 +47,11 @@ export function TransactionsTable({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const columns = useTransactionColumns({
-    reviewingId,
-    onReviewToggle,
+    expandedPanel,
+    onReviewToggle: (id) => onExpand(id, 'review'),
+    onEdit: (id) => onExpand(id, 'edit'),
     onDuplicate,
+    onDelete,
   });
 
   const table = useReactTable({
@@ -118,12 +125,13 @@ export function TransactionsTable({
                   ))}
                 </tr>
 
-                {reviewingId === row.original.id && (
+                {expandedPanel?.id === row.original.id && (
                   <tr>
                     <td colSpan={visibleColumnCount} className="p-0">
                       <TransactionReviewPanel
                         transaction={row.original}
-                        onClose={() => onReviewToggle(row.original.id)}
+                        mode={expandedPanel.mode}
+                        onClose={onCollapse}
                       />
                     </td>
                   </tr>

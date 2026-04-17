@@ -8,6 +8,7 @@ import {
   useConfirmTransfer,
   useDismissTransfer,
   usePatchTransaction,
+  useUnmarkTransfer,
 } from '@/features/transactions/hooks/useTransactionMutations';
 import { Button } from '@/components/ui/Button';
 import { CategorySelect } from '@/components/common/CategorySelect';
@@ -19,12 +20,14 @@ import { useState } from 'react';
 interface Props {
   readonly transaction: Transaction;
   readonly onClose: () => void;
+  readonly mode?: 'review' | 'edit';
 }
 
-export function TransactionReviewPanel({ transaction, onClose }: Props) {
+export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }: Props) {
   const patch = usePatchTransaction();
   const confirmTransfer = useConfirmTransfer();
   const dismissTransfer = useDismissTransfer();
+  const unmarkTransfer = useUnmarkTransfer();
 
   const [categoryId, setCategoryId] = useState(transaction.categoryId ?? '');
   const [subcategoryId, setSubcategoryId] = useState(
@@ -38,6 +41,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
   const [saving, setSaving] = useState(false);
 
   const isTransferCandidate =
+    mode === 'review' &&
     transaction.flaggedForReview &&
     TRANSFER_KEYWORDS.some((k) => transaction.description.includes(k));
 
@@ -80,11 +84,22 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
     }
   }
 
+  async function handleUnmarkTransfer() {
+    setSaving(true);
+    try {
+      await unmarkTransfer.mutateAsync(transaction.id);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="bg-info-bg border-t border-info-border px-4 py-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-content-primary">
-          Review: {transaction.sourceName ?? transaction.description}
+          {mode === 'edit' ? 'Edit' : 'Review'}:{' '}
+          {transaction.sourceName ?? transaction.description}
         </h3>
         <button
           onClick={onClose}
@@ -120,6 +135,39 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
           >
             Not a transfer
           </Button>
+        </div>
+      )}
+
+      {mode === 'edit' && (
+        <div className="flex gap-2 items-center p-3 bg-warning-bg border border-warning-border rounded">
+          <span className="text-xs text-warning flex-1">
+            {transaction.isTransfer
+              ? 'This transaction is marked as a transfer and excluded from income/expense totals.'
+              : 'Mark as a transfer to exclude this transaction from income/expense totals.'}
+          </span>
+          {transaction.isTransfer ? (
+            <Button
+              variant="warning"
+              size="sm"
+              onClick={() => {
+                void handleUnmarkTransfer();
+              }}
+              disabled={saving}
+            >
+              Remove transfer
+            </Button>
+          ) : (
+            <Button
+              variant="warning"
+              size="sm"
+              onClick={() => {
+                void handleConfirmTransfer();
+              }}
+              disabled={saving}
+            >
+              Mark as transfer
+            </Button>
+          )}
         </div>
       )}
 
@@ -177,7 +225,7 @@ export function TransactionReviewPanel({ transaction, onClose }: Props) {
           onClick={() => {
             void handleSave();
           }}
-          disabled={saving || !categoryId}
+          disabled={saving || (mode === 'review' && !categoryId)}
           size="md"
         >
           {saving ? 'Saving...' : 'Save'}

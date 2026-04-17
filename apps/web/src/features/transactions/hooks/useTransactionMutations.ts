@@ -43,6 +43,34 @@ export function usePatchTransaction() {
   });
 }
 
+export function useDeleteTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete<unknown>(`/transactions/${id}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      toast.success(TOAST.TRANSACTION_DELETED);
+    },
+    onError: () => toast.error(TOAST.TRANSACTION_DELETE_FAILED),
+  });
+}
+
+export function useUnmarkTransfer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (transactionId: string) => {
+      await api.post('/transfers/unmark', { transactionId });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      toast.success(TOAST.TRANSFER_UNMARKED);
+    },
+    onError: () => toast.error(TOAST.TRANSFER_UNMARK_FAILED),
+  });
+}
+
 export function useConfirmTransfer() {
   const queryClient = useQueryClient();
   return useMutation({

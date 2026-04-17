@@ -36,16 +36,25 @@ function SortIcon({ sorted }: { readonly sorted: false | 'asc' | 'desc' }) {
   return <ChevronsUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
 }
 
+export interface ExpandedPanel {
+  id: string;
+  mode: 'review' | 'edit';
+}
+
 interface UseTransactionColumnsOptions {
-  reviewingId: string | null;
+  expandedPanel: ExpandedPanel | null;
   onReviewToggle: (id: string) => void;
+  onEdit: (id: string) => void;
   onDuplicate: (tx: Transaction) => void;
+  onDelete: (id: string) => void;
 }
 
 export function useTransactionColumns({
-  reviewingId,
+  expandedPanel,
   onReviewToggle,
+  onEdit,
   onDuplicate,
+  onDelete,
 }: UseTransactionColumnsOptions): ColumnDef<Transaction>[] {
   return useMemo<ColumnDef<Transaction>[]>(
     () => [
@@ -200,13 +209,27 @@ export function useTransactionColumns({
                 {isTransactionReviewable(tx) && (
                   <>
                     <DropdownMenuItem onClick={() => onReviewToggle(tx.id)}>
-                      {reviewingId === tx.id ? 'Close review' : 'Review'}
+                      {expandedPanel?.id === tx.id && expandedPanel.mode === 'review'
+                        ? 'Close review'
+                        : 'Review'}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
+                <DropdownMenuItem onClick={() => onEdit(tx.id)}>
+                  {expandedPanel?.id === tx.id && expandedPanel.mode === 'edit'
+                    ? 'Close edit'
+                    : 'Edit'}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onDuplicate(tx)}>
                   Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(tx.id)}
+                  className="text-danger"
+                >
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -215,6 +238,6 @@ export function useTransactionColumns({
         enableSorting: false,
       },
     ],
-    [reviewingId, onReviewToggle, onDuplicate]
+    [expandedPanel, onReviewToggle, onEdit, onDuplicate, onDelete]
   );
 }

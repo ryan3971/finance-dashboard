@@ -6,6 +6,14 @@ import { triggerCsvDownload } from '@/features/transactions/utils/exportCsv';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ManualTransactionPanel } from '@/features/transactions/components/panels/ManualTransactionPanel';
 import type { ManualTransactionInitialValues } from '@/features/transactions/components/panels/ManualTransactionPanel';
@@ -14,10 +22,12 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 import { TransactionsTable } from '@/features/transactions/components/table/TransactionsTable';
 import { useCallback, useState } from 'react';
+import { useDeleteTransaction } from '@/features/transactions/hooks/useTransactionMutations';
 import { useTransactions } from '@/features/transactions/hooks/useTransactions';
 import api from '@/lib/api';
 import { parseAmount } from '@/lib/utils';
 import { PAGINATION } from '@finance/shared/constants';
+import type { ExpandedPanel } from '@/features/transactions/hooks/useTransactionColumns';
 
 const TRANSACTION_SKELETON_ROW_COUNT = 8;
 
@@ -46,7 +56,8 @@ function TransactionsSkeleton() {
 export function TransactionsPage() {
   const search = useSearch({ from: '/' });
   const navigate = useNavigate({ from: '/' });
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelInitialValues, setPanelInitialValues] =
     useState<ManualTransactionInitialValues>();
@@ -80,9 +91,23 @@ export function TransactionsPage() {
     void navigate({ search: (prev) => ({ ...prev, page: newPage }) });
   }
 
-  const handleReviewToggle = useCallback((id: string) => {
-    setReviewingId((prev) => (prev === id ? null : id));
+  const deleteTransaction = useDeleteTransaction();
+
+  const handlePanelToggle = useCallback((id: string, mode: 'review' | 'edit') => {
+    setExpandedPanel((prev) =>
+      prev?.id === id && prev.mode === mode ? null : { id, mode }
+    );
   }, []);
+
+  const handleCollapse = useCallback(() => setExpandedPanel(null), []);
+
+  const handleDeleteRequest = useCallback((id: string) => setDeletingId(id), []);
+
+  async function handleDeleteConfirm() {
+    if (!deletingId) return;
+    await deleteTransaction.mutateAsync(deletingId);
+    setDeletingId(null);
+  }
 
   const handleDuplicate = useCallback((tx: Transaction) => {
     setPanelInitialValues({
@@ -158,9 +183,11 @@ export function TransactionsPage() {
     content = (
       <TransactionsTable
         transactions={transactions}
-        reviewingId={reviewingId}
-        onReviewToggle={handleReviewToggle}
+        expandedPanel={expandedPanel}
+        onExpand={handlePanelToggle}
+        onCollapse={handleCollapse}
         onDuplicate={handleDuplicate}
+        onDelete={handleDeleteRequest}
         pagination={pagination}
         onPageChange={handlePageChange}
       />
@@ -214,6 +241,30 @@ export function TransactionsPage() {
           onClose={handleClosePanel}
         />
       )}
+
+      <Dialog open={deletingId !== null} onOpenChange={(open) => { if (!open) setDeletingId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete transaction?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" size="md" onClick={() => setDeletingId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="warning"
+              size="md"
+              disabled={deleteTransaction.isPending}
+              onClick={() => { void handleDeleteConfirm(); }}
+            >
+              {deleteTransaction.isPending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 }
