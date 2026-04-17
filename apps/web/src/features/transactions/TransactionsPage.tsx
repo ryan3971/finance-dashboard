@@ -196,7 +196,7 @@ export function TransactionsPage() {
 
   return (
     <PageLayout>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold text-content-primary">
             Transactions
@@ -207,7 +207,7 @@ export function TransactionsPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {flaggedCount > 0 && (
             <Badge
               variant="warning"

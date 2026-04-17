@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -207,8 +208,8 @@ export function RulesTab() {
           hint="Rules are created automatically when you categorise transactions during import review."
         />
       ) : (
-        <div className="bg-white rounded border border-border-base overflow-hidden">
-          <table className="w-full text-left">
+        <DataTable>
+          <table className="min-w-full text-left">
             <thead>
               <tr className="bg-surface-muted">
                 <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
@@ -232,7 +233,7 @@ export function RulesTab() {
               ))}
             </tbody>
           </table>
-        </div>
+        </DataTable>
       )}
     </div>
   );

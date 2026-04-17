@@ -94,7 +94,7 @@ interface Props {
 
 export function MonthChips({ months, onSave, onRemove, isSaving }: Props) {
   return (
-    <div className="grid grid-cols-6 gap-2 pt-3 border-t border-border-subtle">
+    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-3 border-t border-border-subtle">
       {months.map((m) => (
         <MonthChip
           key={m.month}

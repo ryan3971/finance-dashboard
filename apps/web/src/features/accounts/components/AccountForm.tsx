@@ -50,7 +50,7 @@ export function AccountForm({
       }}
       className="space-y-3"
     >
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <FormField label="Name" labelSize="xs" error={errors.name?.message}>
           <Input placeholder="e.g. Chequing" {...register('name')} />
         </FormField>
