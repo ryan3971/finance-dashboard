@@ -4,6 +4,7 @@ import type { IncomeMonth } from '@finance/shared/types/dashboard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
 import { useIncomeDashboard } from './useIncomeDashboard';
@@ -100,73 +101,93 @@ export function IncomePage() {
         </div>
       )}
 
-      {/* Loading */}
-      {isLoading && (
-        <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
-          <div className="px-4 py-2.5 bg-surface-subtle border-b border-border-subtle" />
-          {Array.from({ length: MONTHS_IN_YEAR }, (_, i) => (
-            <div
-              key={`skeleton-${i}`}
-              className="px-4 py-3 border-t border-border-subtle flex gap-4"
-            >
-              <Skeleton className="h-4 w-8" />
-              <Skeleton className="h-4 w-24 ml-auto" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-20" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Error */}
-      {isError && (
-        <EmptyState variant="error" message="Failed to load income data." />
-      )}
-
-      {/* Table */}
-      {data && (
-        <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-surface-subtle">
-                <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider w-16">
-                  Month
-                </th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                  Total Income
-                </th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                  Needs
-                </th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                  Wants
-                </th>
-                <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
-                  Investments
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.months.map((month) => (
-                <IncomeRow key={month.month} month={month} />
+      <div className="flex gap-6 items-start">
+        {/* Left column: income breakdown table + annual summary */}
+        <div className="flex-none">
+          {/* Loading */}
+          {isLoading && (
+            <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
+              <div className="px-4 py-2.5 bg-surface-subtle border-b border-border-subtle" />
+              {Array.from({ length: MONTHS_IN_YEAR }, (_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="px-4 py-3 border-t border-border-subtle flex gap-4"
+                >
+                  <Skeleton className="h-4 w-8" />
+                  <Skeleton className="h-4 w-24 ml-auto" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* Annual summary */}
-      {data && (
-        <div className="bg-surface rounded-lg border border-border-base p-6 mt-6">
-          <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
-            Annual Income
-          </p>
-          <p className="text-2xl font-semibold text-positive font-mono">
-            {fmt(annualTotal)}
-          </p>
+          {/* Error */}
+          {isError && (
+            <EmptyState variant="error" message="Failed to load income data." />
+          )}
+
+          {/* Table */}
+          {data && (
+            <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-surface-subtle">
+                    <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider w-16">
+                      Month
+                    </th>
+                    <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
+                      Total Income
+                    </th>
+                    <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
+                      Needs
+                    </th>
+                    <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
+                      Wants
+                    </th>
+                    <th className="px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider text-right">
+                      Investments
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.months.map((month) => (
+                    <IncomeRow key={month.month} month={month} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Annual summary */}
+          {data && (
+            <div className="bg-surface rounded-lg border border-border-base p-6 mt-6">
+              <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
+                Annual Income
+              </p>
+              <p className="text-2xl font-semibold text-positive font-mono">
+                {fmt(annualTotal)}
+              </p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right column: income transactions */}
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-semibold text-content-primary mb-4">
+            Transactions
+          </h2>
+          <TransactionTablePane
+            key={year}
+            presetFilters={{ isIncome: true }}
+            defaultFilters={{
+              startDate: `${year}-01-01`,
+              endDate: `${year}-12-31`,
+            }}
+          />
+        </div>
+      </div>
     </PageLayout>
   );
 }

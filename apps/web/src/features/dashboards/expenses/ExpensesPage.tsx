@@ -12,6 +12,7 @@ import type { ExpenseCategoryRow, ExpenseMonth } from '@finance/shared/types/das
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
 import { useExpenseCategories } from './useExpenseCategories';
@@ -98,10 +99,6 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
 
   return (
     <>
-      <h2 className="text-lg font-semibold text-content-primary mb-4">
-        Monthly Breakdown
-      </h2>
-
       {isLoading && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
       {isError && (
         <EmptyState variant="error" message="Failed to load expense data." />
@@ -132,7 +129,7 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
             </table>
           </div>
 
-          <div className="bg-surface rounded-lg border border-border-base p-6 mb-8">
+          <div className="bg-surface rounded-lg border border-border-base p-6">
             <p className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">
               Annual Expenses
             </p>
@@ -272,7 +269,31 @@ export function ExpensesPage() {
         <YearSelector year={year} onChange={setYear} />
       </div>
 
-      <ExpenseMonthlyBreakdown year={year} />
+      {/* Monthly breakdown and expense transactions side by side */}
+      <div className="flex gap-6 items-start mb-8">
+        <div className="flex-none">
+          <h2 className="text-lg font-semibold text-content-primary mb-4">
+            Monthly Breakdown
+          </h2>
+          <ExpenseMonthlyBreakdown year={year} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-semibold text-content-primary mb-4">
+            Transactions
+          </h2>
+          <TransactionTablePane
+            key={year}
+            presetFilters={{ isIncome: false }}
+            defaultFilters={{
+              startDate: `${year}-01-01`,
+              endDate: `${year}-12-31`,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Category breakdown: full width */}
       <ExpenseCategoryBreakdown year={year} />
     </PageLayout>
   );

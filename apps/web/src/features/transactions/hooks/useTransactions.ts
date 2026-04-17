@@ -52,6 +52,7 @@ export function useTransactions({
   categoryId,
   subcategoryId,
   flagged,
+  isIncome,
   page = 1,
 }: {
   accountId?: string;
@@ -60,6 +61,7 @@ export function useTransactions({
   categoryId?: string;
   subcategoryId?: string;
   flagged?: boolean;
+  isIncome?: boolean;
   page?: number;
 } = {}) {
   return useQuery<TransactionsResponse>({
@@ -70,6 +72,7 @@ export function useTransactions({
       categoryId,
       subcategoryId,
       flagged,
+      isIncome,
       page,
     }),
     queryFn: async () => {
@@ -79,8 +82,9 @@ export function useTransactions({
           startDate,
           endDate,
           categoryId,
-          subcategoryId, 
+          subcategoryId,
           flagged,
+          isIncome,
           page,
         },
       });
