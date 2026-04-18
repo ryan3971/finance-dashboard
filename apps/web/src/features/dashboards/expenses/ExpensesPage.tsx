@@ -41,31 +41,12 @@ function SkeletonTable({
   readonly rows: number;
 }) {
   return (
-    <div
-      className={cn(
-        // layout
-        'overflow-hidden mb-8',
-        // visual
-        'bg-surface rounded-lg border border-border-base',
-      )}
-    >
-      <div
-        className={cn(
-          // layout
-          'px-4 py-2.5',
-          // visual
-          'bg-surface-subtle border-b border-border-subtle',
-        )}
-      />
+    <div className="overflow-hidden mb-8 bg-surface rounded-lg border border-border-base">
+      <div className="px-4 py-2.5 bg-surface-subtle border-b border-border-subtle" />
       {Array.from({ length: rows }, (_, i) => (
         <div
           key={`skeleton-${i}`}
-          className={cn(
-            // layout
-            'flex gap-4 px-4 py-3',
-            // visual
-            'border-t border-border-subtle',
-          )}
+          className="flex gap-4 px-4 py-3 border-t border-border-subtle"
         >
           <Skeleton className="h-4 w-8" />
           {Array.from({ length: columns - 1 }, (_, j) => (
@@ -82,14 +63,7 @@ function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
   return (
     <tr className="border-t border-border-subtle">
       <td className={cn(TD_BASE, 'w-16')}>{MONTH_LABELS[month.month - 1]}</td>
-      <td
-        className={cn(
-          // layout
-          'px-4 py-3 text-right',
-          // visual
-          'text-sm font-mono font-medium',
-        )}
-      >
+      <td className="px-4 py-3 text-right text-sm font-mono font-medium">
         <span className={cn(hasExpenses ? 'text-danger' : 'text-content-muted')}>
           {fmt(month.total)}
         </span>
@@ -140,62 +114,20 @@ function ExpenseMonthTotalsRow({
   readonly other: number;
 }) {
   return (
-    <tr
-      className={cn(
-        // visual
-        'border-t-2 border-border-base bg-surface-subtle font-semibold',
-      )}
-    >
-      <td
-        className={cn(
-          // layout
-          'px-4 py-3',
-          // visual
-          'text-sm text-content-primary',
-        )}
-      >
-        Total
-      </td>
-      <td
-        className={cn(
-          // layout
-          'px-4 py-3 text-right',
-          // visual
-          'text-sm font-mono font-medium',
-        )}
-      >
+    <tr className="border-t-2 border-border-base bg-surface-subtle font-semibold">
+      <td className="px-4 py-3 text-sm text-content-primary">Total</td>
+      <td className="px-4 py-3 text-right text-sm font-mono font-medium">
         <span className={cn(total > 0 ? 'text-danger' : 'text-content-muted')}>
           {fmt(total)}
         </span>
       </td>
-      <td
-        className={cn(
-          // layout
-          'px-4 py-3 text-right',
-          // visual
-          'text-sm font-mono font-medium text-info',
-        )}
-      >
+      <td className="px-4 py-3 text-right text-sm font-mono font-medium text-info">
         {fmt(need)}
       </td>
-      <td
-        className={cn(
-          // layout
-          'px-4 py-3 text-right',
-          // visual
-          'text-sm font-mono font-medium text-accent',
-        )}
-      >
+      <td className="px-4 py-3 text-right text-sm font-mono font-medium text-accent">
         {fmt(want)}
       </td>
-      <td
-        className={cn(
-          // layout
-          'px-4 py-3 text-right',
-          // visual
-          'text-sm font-mono font-medium text-content-secondary',
-        )}
-      >
+      <td className="px-4 py-3 text-right text-sm font-mono font-medium text-content-secondary">
         {fmt(other)}
       </td>
     </tr>
@@ -308,7 +240,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
         },
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -322,14 +254,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
 
   return (
     <>
-      <h2
-        className={cn(
-          // layout
-          'mb-4',
-          // visual
-          'text-lg font-semibold text-content-primary',
-        )}
-      >
+      <h2 className="mb-4 text-lg font-semibold text-content-primary">
         Category Breakdown
       </h2>
 
@@ -359,7 +284,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                       {(() => {
                         const sorted = header.column.getIsSorted();
@@ -382,7 +307,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </td>
                   ))}
@@ -409,28 +334,14 @@ export function ExpensesPage() {
       {/* Monthly breakdown and expense transactions side by side */}
       <div className="flex gap-6 items-start mb-8">
         <div className="flex-none">
-          <h2
-            className={cn(
-              // layout
-              'mb-4',
-              // visual
-              'text-lg font-semibold text-content-primary',
-            )}
-          >
+          <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Monthly Breakdown
           </h2>
           <ExpenseMonthlyBreakdown year={year} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <h2
-            className={cn(
-              // layout
-              'mb-4',
-              // visual
-              'text-lg font-semibold text-content-primary',
-            )}
-          >
+          <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Expense Transactions
           </h2>
           <TransactionTablePane

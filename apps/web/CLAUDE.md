@@ -330,53 +330,39 @@ these styles manually on a new table.
 <DataTable className="transition-opacity duration-200 ...">
 ```
 
-### cn() Usage
-
-Use `cn()` (clsx + tailwind-merge) for all conditional or composed classNames.
-Never use string interpolation or ternaries that produce full className strings —
-`cn()` handles conflict resolution when two utilities target the same CSS property.
-
-// Correct
-
-<div className={cn('px-4 py-3 text-sm', isActive && 'bg-surface-subtle', className)}>
-
-// Incorrect
-
-<div className={`px-4 py-3 text-sm ${isActive ? 'bg-surface-subtle' : ''}`}>
-
-Required any time className is conditional, composed from multiple sources,
-or accepting a className prop from outside the component.
-
 ### className Organization
 
-Split className strings into layout and visual concerns — either mentally for short
-strings, or explicitly with `cn()` and comments for longer ones:
+Order classes consistently: **layout → visual → conditional**. The ordering is
+enforced by convention — no inline comments needed.
 
 ```tsx
-<div className={cn(
-  // layout
-  'flex items-center justify-between gap-4 px-4 py-3',
-  // visual
-  'bg-surface border border-border-base rounded-lg',
-  // conditional
-  isOverBudget && 'border-danger',
+// Short / unconditional — plain string, layout then visual
+<td className="px-4 py-3 text-right text-sm font-mono text-content-secondary">
+
+// Long or conditional — cn(), same order, conditional always last
+<td className={cn(
+  'px-4 py-3 text-right',
+  'text-sm font-mono font-medium',
+  isOverBudget && 'text-danger',
 )}>
+
+// Accepting external className prop — always cn()
+<div className={cn('px-4 py-3 bg-surface rounded-lg', className)}>
 ```
 
 **Layout utilities:** `flex grid gap p m w h items-* justify-* col-span-*`
 **Visual utilities:** `bg text border rounded shadow opacity transition`
 
-**When to use `cn()`:**
+**Use `cn()` when:**
 - Any conditional class is present
-- The combined string exceeds one readable line
-- The component accepts a `className` prop from outside
-- Two class sources need to be merged (base classes + prop classes)
+- The component accepts an external `className` prop
+- Two class sources need to be merged
 
-**When a plain string is fine:**
-- Short, unconditional, no external `className` prop
+**Use a plain string when:**
+- Classes are unconditional and fit on one readable line
 
-Conditional classes always go last. Never mix `cn()` and string interpolation
-on the same element.
+Never wrap a single unconditional string in `cn()` — it adds noise with no benefit.
+Never mix `cn()` and string interpolation on the same element.
 
 ## Naming & Structure Conventions
 
