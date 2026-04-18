@@ -134,24 +134,24 @@ Avoid raw Tailwind `gray-*`, `blue-*`, `green-*` in semantic contexts — use th
 
 ### Typography Scale
 
-| Class combo | Use |
-|---|---|
-| `text-xl font-semibold` | Page `<h1>` |
-| `text-lg font-semibold` | Section titles |
-| `text-sm font-medium` | Panel headings, form labels |
-| `text-sm` | Table rows, body text |
-| `text-xs font-semibold uppercase tracking-wider` | Column headers, section group labels |
-| `text-xs` | Chips, badges, metadata |
-| `font-mono` | Amounts (`AmountCell`), rule keywords |
+| Class combo                                      | Use                                   |
+| ------------------------------------------------ | ------------------------------------- |
+| `text-xl font-semibold`                          | Page `<h1>`                           |
+| `text-lg font-semibold`                          | Section titles                        |
+| `text-sm font-medium`                            | Panel headings, form labels           |
+| `text-sm`                                        | Table rows, body text                 |
+| `text-xs font-semibold uppercase tracking-wider` | Column headers, section group labels  |
+| `text-xs`                                        | Chips, badges, metadata               |
+| `font-mono`                                      | Amounts (`AmountCell`), rule keywords |
 
 ### Border Radius
 
-| Class | Value | Use |
-|---|---|---|
-| `rounded` | 0.25rem | Chips, tags, `sm` buttons |
-| `rounded-md` | ~6px | `md` buttons, inputs |
-| `rounded-lg` | 0.5rem (`--radius`) | Cards, panels, table wrappers |
-| `rounded-full` | pill | Tag pills, count badges, status indicators |
+| Class          | Value               | Use                                        |
+| -------------- | ------------------- | ------------------------------------------ |
+| `rounded`      | 0.25rem             | Chips, tags, `sm` buttons                  |
+| `rounded-md`   | ~6px                | `md` buttons, inputs                       |
+| `rounded-lg`   | 0.5rem (`--radius`) | Cards, panels, table wrappers              |
+| `rounded-full` | pill                | Tag pills, count badges, status indicators |
 
 ### Spacing Patterns
 
@@ -170,38 +170,43 @@ Avoid raw Tailwind `gray-*`, `blue-*`, `green-*` in semantic contexts — use th
 ### Cards and Table Wrappers
 
 Plain content card:
+
 ```tsx
 <div className="bg-surface rounded-lg border border-border-base p-6">
 ```
 
-Table-containing card (no inner padding):
-```tsx
-<div className="bg-white rounded border border-border-base overflow-hidden">
-  <table className="w-full text-left">
-    <thead><tr className="bg-surface-muted">
-      <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
-```
+Table-containing card (no inner padding) — always use the TanStack variant below.
+The legacy pattern using `bg-white`, `rounded`, and `w-full` is incorrect and should
+not be replicated.
 
 TanStack Table variant (used in `TransactionsTable`):
+
 ```tsx
 <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
   <table className="min-w-full divide-y divide-border-subtle">
     <thead className="bg-surface-subtle">  {/* th uses th-cell or meta.thClassName */}
     <tbody className="divide-y divide-border-subtle">  {/* td uses td-cell or meta.tdClassName */}
 ```
+
 Column-specific cell classes go in `column.meta.thClassName` / `column.meta.tdClassName`, not inline in the table renderer.
 
 ### Inline Expand/Edit Panel Pattern
 
 Used in `AccountRow` and `TransactionsTable`. A hidden row is inserted directly below the data row:
+
 ```tsx
 <Fragment key={row.id}>
   <tr>...</tr>
   {isExpanded && (
-    <tr><td colSpan={N} className="p-0"><SomePanelComponent /></td></tr>
+    <tr>
+      <td colSpan={N} className="p-0">
+        <SomePanelComponent />
+      </td>
+    </tr>
   )}
 </Fragment>
 ```
+
 Panel shell: `bg-info-bg border-t border-info-border px-4 py-4 space-y-4`.
 Panel header: `flex items-center justify-between` — title `text-sm font-medium text-content-primary`, close button `✕`.
 
@@ -210,19 +215,20 @@ Panel header: `flex items-center justify-between` — title `text-sm font-medium
 ```tsx
 <div className="fixed inset-y-0 right-0 w-96 bg-surface border-l border-border-base shadow-xl overflow-y-auto z-40 flex flex-col">
 ```
+
 Header bar: `flex items-center justify-between px-4 py-4 border-b border-border-subtle`.
 
 ### Badge / Pill System (`components/ui/Badge`)
 
 `<Badge variant="..." rounded="sm|full">`
 
-| Variant | Colors | When to use |
-|---|---|---|
-| `success` | `bg-positive-bg text-positive` | Active status |
-| `neutral` | `bg-surface-muted text-content-secondary` | Inactive status |
+| Variant   | Colors                                                        | When to use            |
+| --------- | ------------------------------------------------------------- | ---------------------- |
+| `success` | `bg-positive-bg text-positive`                                | Active status          |
+| `neutral` | `bg-surface-muted text-content-secondary`                     | Inactive status        |
 | `warning` | `bg-warning-subtle text-warning border border-warning-border` | Flagged/pending review |
-| `info` | `bg-info-subtle text-info` | "Need" classification |
-| `accent` | `bg-accent-bg text-accent` | "Want" classification |
+| `info`    | `bg-info-subtle text-info`                                    | "Need" classification  |
+| `accent`  | `bg-accent-bg text-accent`                                    | "Want" classification  |
 
 `rounded="full"` for count/summary pills; `rounded="sm"` (default) for classification labels.
 
@@ -237,22 +243,24 @@ Shape: `rounded-full px-2 py-0.5 text-xs font-medium`. Selected: `opacity-100`. 
 <span className="group">
   <button className="opacity-0 group-hover:opacity-100 transition-opacity ...">
 ```
+
 Used for inline edit/delete on chips (`SubcategoryChip`) and table rows (`RulesTab`).
 
 ### Button Variants (`components/ui/Button`)
 
-| Variant | Use |
-|---|---|
-| `primary` | Main CTA — dark bg, white text |
-| `secondary` | Alternative/cancel — bordered, no fill |
-| `ghost` | Inline/tertiary actions — text only |
-| `warning` | Destructive-but-reversible (deactivate, confirm transfer) |
+| Variant     | Use                                                       |
+| ----------- | --------------------------------------------------------- |
+| `primary`   | Main CTA — dark bg, white text                            |
+| `secondary` | Alternative/cancel — bordered, no fill                    |
+| `ghost`     | Inline/tertiary actions — text only                       |
+| `warning`   | Destructive-but-reversible (deactivate, confirm transfer) |
 
 Sizes: `sm` (`px-3 py-1 text-xs rounded`), `md` (`px-4 py-1.5 text-sm rounded-md`).
 
 ### Need/Want Toggle Group
 
 Segmented button group (not `<select>`):
+
 ```tsx
 // active:   bg-content-primary text-white border-content-primary
 // inactive: border-border-strong text-content-secondary hover:bg-surface-subtle
@@ -268,7 +276,11 @@ Segmented button group (not `<select>`):
 ### EmptyState (`components/common/EmptyState`)
 
 ```tsx
-<EmptyState message="No items." hint="Optional sub-text." variant="default|error" />
+<EmptyState
+  message="No items."
+  hint="Optional sub-text."
+  variant="default|error"
+/>
 // default: text-content-muted; error: text-danger; container: text-center py-12
 ```
 
@@ -278,16 +290,93 @@ Segmented button group (not `<select>`):
 
 ### Form Control Utilities (`index.css @layer components`)
 
-| Utility | Use |
-|---|---|
-| `input-base` | Full-width text inputs |
-| `select-base` | `<select>` and date inputs in filter bars |
-| `label-sm` | Standard form label (`text-sm font-medium text-gray-700 mb-1`) |
-| `label-xs` | Compact label inside panels |
+| Utility       | Use                                                                     |
+| ------------- | ----------------------------------------------------------------------- |
+| `input-base`  | Full-width text inputs                                                  |
+| `select-base` | `<select>` and date inputs in filter bars                               |
+| `label-sm`    | Standard form label (`text-sm font-medium text-content-secondary mb-1`) |
+| `label-xs`    | Compact label inside panels                                             |
 
 Use `<FormField label="..." error={...} labelSize="xs|sm">` for all form fields.
 
----
+## Responsive Design
+
+### Breakpoints
+
+Use `sm` (640px) as the primary mobile/desktop dividing line. Use `md` (768px)
+for secondary column reveals (e.g. lower-priority table columns).
+
+- Default (no prefix): mobile layout
+- `sm:`: tablet and up — most layout changes happen here
+- `md:`: desktop — used sparingly for table column visibility only
+
+### Tables — DataTable component
+
+All tables must be wrapped in `<DataTable>` from `@/components/ui/DataTable`.
+It provides the card shell (`bg-surface rounded-lg border border-border-base
+overflow-hidden`) and an inner `overflow-x-auto` scroll container. Never apply
+these styles manually on a new table.
+
+```tsx
+// Standard usage
+<DataTable>
+  <table className="min-w-full ...">
+
+// With toolbar (e.g. column toggle) and footer (e.g. pagination)
+<DataTable toolbar={<ColumnVisibilityToggle />} footer={<Pagination />}>
+  <table className="min-w-full ...">
+
+// With extra classes on the card (e.g. opacity transition)
+<DataTable className="transition-opacity duration-200 ...">
+```
+
+### cn() Usage
+
+Use `cn()` (clsx + tailwind-merge) for all conditional or composed classNames.
+Never use string interpolation or ternaries that produce full className strings —
+`cn()` handles conflict resolution when two utilities target the same CSS property.
+
+// Correct
+
+<div className={cn('px-4 py-3 text-sm', isActive && 'bg-surface-subtle', className)}>
+
+// Incorrect
+
+<div className={`px-4 py-3 text-sm ${isActive ? 'bg-surface-subtle' : ''}`}>
+
+Required any time className is conditional, composed from multiple sources,
+or accepting a className prop from outside the component.
+
+### className Organization
+
+Split className strings into layout and visual concerns — either mentally for short
+strings, or explicitly with `cn()` and comments for longer ones:
+
+```tsx
+<div className={cn(
+  // layout
+  'flex items-center justify-between gap-4 px-4 py-3',
+  // visual
+  'bg-surface border border-border-base rounded-lg',
+  // conditional
+  isOverBudget && 'border-danger',
+)}>
+```
+
+**Layout utilities:** `flex grid gap p m w h items-* justify-* col-span-*`
+**Visual utilities:** `bg text border rounded shadow opacity transition`
+
+**When to use `cn()`:**
+- Any conditional class is present
+- The combined string exceeds one readable line
+- The component accepts a `className` prop from outside
+- Two class sources need to be merged (base classes + prop classes)
+
+**When a plain string is fine:**
+- Short, unconditional, no external `className` prop
+
+Conditional classes always go last. Never mix `cn()` and string interpolation
+on the same element.
 
 ## Naming & Structure Conventions
 
@@ -297,16 +386,16 @@ Use `<FormField label="..." error={...} labelSize="xs|sm">` for all form fields.
 
 ### Component State Conventions
 
-| State | Convention |
-|---|---|
-| Inactive / archived | `opacity-50` on the row |
-| Transfer (neutral) | `opacity-60` on the row |
-| Flagged for review | `bg-warning-bg` on the row |
-| Editing (inline) | Replace display span with `<Input>` + Save/Cancel inline |
-| Loading / pending | Disable button with `mutation.isPending`; `<Skeleton>` for lists |
-| Empty | `<EmptyState>` centered with `py-12` |
-| Field error | `FormField error` prop → `text-sm text-danger` below input |
-| Server error | Separate `useState`, `text-xs text-danger` or `text-sm text-danger` |
+| State               | Convention                                                          |
+| ------------------- | ------------------------------------------------------------------- |
+| Inactive / archived | `opacity-50` on the row                                             |
+| Transfer (neutral)  | `opacity-60` on the row                                             |
+| Flagged for review  | `bg-warning-bg` on the row                                          |
+| Editing (inline)    | Replace display span with `<Input>` + Save/Cancel inline            |
+| Loading / pending   | Disable button with `mutation.isPending`; `<Skeleton>` for lists    |
+| Empty               | `<EmptyState>` centered with `py-12`                                |
+| Field error         | `FormField error` prop → `text-sm text-danger` below input          |
+| Server error        | Separate `useState`, `text-xs text-danger` or `text-sm text-danger` |
 
 ---
 
@@ -324,6 +413,7 @@ Monetary amount fields differ by endpoint:
 ### Amount Display
 
 Always use `AmountCell` (or equivalent logic):
+
 - Positive (income): `+CAD X.XX`, color `text-positive`
 - Negative (expense): `-CAD X.XX`, color `text-danger`
 - Transfer (neutral): `text-content-muted`
