@@ -6,5 +6,7 @@ declare module '@tanstack/react-table' {
     label?: string;
     thClassName?: string;
     tdClassName?: string;
+    colWidth?: string;
+    truncate?: boolean;
   }
 }

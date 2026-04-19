@@ -6,9 +6,10 @@ interface DataTableProps {
   toolbar?: ReactNode;
   footer?: ReactNode;
   className?: string;
+  maxHeight?: string;
 }
 
-export function DataTable({ children, toolbar, footer, className }: DataTableProps) {
+export function DataTable({ children, toolbar, footer, className, maxHeight }: DataTableProps) {
   return (
     <div className={cn('bg-surface rounded-lg border border-border-base overflow-hidden', className)}>
       {toolbar != null && (
@@ -16,7 +17,7 @@ export function DataTable({ children, toolbar, footer, className }: DataTablePro
           {toolbar}
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="overflow-auto" style={maxHeight ? { maxHeight } : undefined}>
         {children}
       </div>
       {footer}

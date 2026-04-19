@@ -15,7 +15,6 @@ import { AmountCell } from '@/features/transactions/components/table/AmountCell'
 import { Badge } from '@/components/ui/Badge';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
-import { TransactionTagsPanel } from '@/features/transactions/components/panels/TransactionTagsPanel';
 import { parseAmount } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -63,6 +62,7 @@ export function useTransactionColumns({
         accessorKey: 'date',
         meta: {
           label: 'Date',
+          colWidth: 'w-24',
           tdClassName: 'td-cell whitespace-nowrap',
         },
         header: ({ column }) => (
@@ -82,7 +82,9 @@ export function useTransactionColumns({
         accessorKey: 'description',
         meta: {
           label: 'Description',
-          tdClassName: 'td-cell',
+          colWidth: 'w-auto',
+          tdClassName: 'px-4 py-3',
+          truncate: true,
         },
         header: ({ column }) => (
           <button
@@ -97,16 +99,24 @@ export function useTransactionColumns({
           const tx = row.original;
           return (
             <div>
-              <p className="max-w-xs truncate text-sm text-content-primary">
+              <span
+                className="block truncate text-sm text-content-primary"
+                title={tx.sourceName ?? tx.description}
+              >
                 {tx.sourceName ?? tx.description}
                 {tx.isTransfer && (
                   <span className="ml-1.5 text-xs text-content-muted">
                     (transfer)
                   </span>
                 )}
-              </p>
+              </span>
               {tx.note && (
-                <p className="text-xs text-content-muted mt-0.5">{tx.note}</p>
+                <span
+                  className="block truncate text-xs text-content-muted mt-0.5"
+                  title={tx.note}
+                >
+                  {tx.note}
+                </span>
               )}
             </div>
           );
@@ -116,15 +126,22 @@ export function useTransactionColumns({
       {
         id: 'category',
         accessorKey: 'categoryName',
-        meta: { 
-          label: 'Category' 
+        meta: {
+          label: 'Category',
+          colWidth: 'w-36',
+          truncate: true,
         },
         header: () => 'Category',
         cell: ({ row }) => {
           const tx = row.original;
           return (
-            <div className="flex items-center gap-1.5">
-              <span>{tx.categoryName ?? '—'}</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span
+                className="block truncate"
+                title={tx.categoryName ?? undefined}
+              >
+                {tx.categoryName ?? '—'}
+              </span>
               {tx.needWant && tx.needWant !== 'NA' && (
                 <Badge variant={tx.needWant === 'Need' ? 'info' : 'accent'}>
                   {tx.needWant}
@@ -138,16 +155,21 @@ export function useTransactionColumns({
       {
         id: 'subcategory',
         accessorKey: 'subcategoryName',
-        meta: { 
-          label: 'Subcategory' 
+        meta: {
+          label: 'Subcategory',
+          colWidth: 'w-36',
+          truncate: true,
         },
         header: () => 'Subcategory',
         cell: ({ row }) => {
           const tx = row.original;
           return (
-            <div className="flex items-center gap-1.5">
-              <span>{tx.subcategoryName ?? '—'}</span>
-            </div>
+            <span
+              className="block truncate"
+              title={tx.subcategoryName ?? undefined}
+            >
+              {tx.subcategoryName ?? '—'}
+            </span>
           );
         },
         enableSorting: false,
@@ -156,16 +178,34 @@ export function useTransactionColumns({
         id: 'tags',
         meta: {
           label: 'Tags',
-          thClassName: 'hidden sm:table-cell th-cell',
-          tdClassName: 'hidden sm:table-cell td-cell max-w-xs',
+          colWidth: 'w-40',
+          thClassName: 'th-cell',
+          tdClassName: 'px-4 py-3',
         },
         header: () => 'Tags',
-        cell: ({ row }) => (
-          <TransactionTagsPanel
-            transactionId={row.original.id}
-            attachedTags={row.original.tags}
-          />
-        ),
+        cell: ({ row }) => {
+          const tags = row.original.tags;
+          const visible = tags.slice(0, 2);
+          const overflow = tags.length - visible.length;
+          return (
+            <div className="flex items-center gap-1 overflow-hidden">
+              {visible.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="rounded-full px-2 py-0.5 text-xs font-medium text-white shrink-0"
+                  style={{ backgroundColor: tag.color ?? '#6B7280' }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+              {overflow > 0 && (
+                <span className="text-xs text-content-muted shrink-0">
+                  +{overflow}
+                </span>
+              )}
+            </div>
+          );
+        },
         enableSorting: false,
       },
       {
@@ -173,19 +213,29 @@ export function useTransactionColumns({
         accessorKey: 'accountName',
         meta: {
           label: 'Account',
-          thClassName: 'hidden md:table-cell th-cell',
-          tdClassName: 'hidden md:table-cell td-cell',
+          colWidth: 'w-32',
+          thClassName: 'th-cell',
+          tdClassName: 'td-cell',
+          truncate: true,
         },
         header: () => 'Account',
-        cell: ({ row }) => row.original.accountName,
+        cell: ({ row }) => (
+          <span
+            className="block truncate"
+            title={row.original.accountName ?? undefined}
+          >
+            {row.original.accountName}
+          </span>
+        ),
         enableSorting: false,
       },
       {
         id: 'amount',
         accessorKey: 'amount',
-        meta: { 
-          label: 'Amount', 
-          tdClassName: 'td-cell text-right' 
+        meta: {
+          label: 'Amount',
+          colWidth: 'w-32',
+          tdClassName: 'px-4 py-3 text-right',
         },
         header: ({ column }) => (
           <button
@@ -210,6 +260,7 @@ export function useTransactionColumns({
         id: ACTIONS_COLUMN_ID,
         meta: {
           label: 'Actions',
+          colWidth: 'w-10',
           thClassName: 'th-cell w-10',
           tdClassName: 'px-2 py-3 text-right',
         },
