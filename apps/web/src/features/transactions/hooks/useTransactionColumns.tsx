@@ -287,12 +287,14 @@ export function useTransactionColumns({
                       <DropdownMenuSeparator />
                     </>
                   )}
-                  <DropdownMenuItem onClick={() => onEdit(tx.id)}>
-                    {expandedPanel?.id === tx.id &&
-                    expandedPanel.mode === 'edit'
-                      ? 'Close edit'
-                      : 'Edit'}
-                  </DropdownMenuItem>
+                  {!isTransactionReviewable(tx) && (
+                    <DropdownMenuItem onClick={() => onEdit(tx.id)}>
+                      {expandedPanel?.id === tx.id &&
+                      expandedPanel.mode === 'edit'
+                        ? 'Close edit'
+                        : 'Edit'}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => onDuplicate(tx)}>
                     Duplicate
                   </DropdownMenuItem>
