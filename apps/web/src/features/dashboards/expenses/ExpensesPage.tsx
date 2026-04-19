@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getSortedRowModel,
   type CellContext,
   type ColumnDef,
+  type ExpandedState,
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
@@ -23,10 +25,18 @@ import { useExpenseCategories } from './useExpenseCategories';
 import { useExpensesDashboard } from './useExpensesDashboard';
 import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
+// TODO: consider extracting component in this file to another file to reduce its size
+
 const CURRENT_YEAR = new Date().getFullYear();
 const TH_BASE =
   'px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider';
 const TD_BASE = 'px-4 py-3 text-sm text-content-secondary';
+
+function sortIndicator(dir: false | 'asc' | 'desc'): string {
+  if (dir === 'asc') return ' ↑';
+  if (dir === 'desc') return ' ↓';
+  return '';
+}
 
 function pct(part: number, total: number): string | null {
   if (total === 0) return null;
@@ -58,46 +68,37 @@ function SkeletonTable({
   );
 }
 
+function MonthAmountCell({
+  value,
+  total,
+  colorClass,
+}: {
+  readonly value: number;
+  readonly total: number;
+  readonly colorClass: string;
+}) {
+  return (
+    <td className="px-4 py-3 text-sm text-right">
+      <span className={cn('font-mono font-medium', colorClass)}>{fmt(value)}</span>
+      {total > 0 && (
+        <span className="block text-xs text-content-muted">{pct(value, total)}</span>
+      )}
+    </td>
+  );
+}
+
 function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
-  const hasExpenses = month.total > 0;
   return (
     <tr className="border-t border-border-subtle">
       <td className={cn(TD_BASE, 'w-16')}>{MONTH_LABELS[month.month - 1]}</td>
       <td className="px-4 py-3 text-right text-sm font-mono font-medium">
-        <span className={cn(hasExpenses ? 'text-danger' : 'text-content-muted')}>
+        <span className={cn(month.total > 0 ? 'text-danger' : 'text-content-muted')}>
           {fmt(month.total)}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-right">
-        <span className="font-mono font-medium text-info">
-          {fmt(month.need)}
-        </span>
-        {hasExpenses && (
-          <span className="block text-xs text-content-muted">
-            {pct(month.need, month.total)}
-          </span>
-        )}
-      </td>
-      <td className="px-4 py-3 text-sm text-right">
-        <span className="font-mono font-medium text-accent">
-          {fmt(month.want)}
-        </span>
-        {hasExpenses && (
-          <span className="block text-xs text-content-muted">
-            {pct(month.want, month.total)}
-          </span>
-        )}
-      </td>
-      <td className="px-4 py-3 text-sm text-right">
-        <span className="font-mono font-medium text-content-secondary">
-          {fmt(month.other)}
-        </span>
-        {hasExpenses && (
-          <span className="block text-xs text-content-muted">
-            {pct(month.other, month.total)}
-          </span>
-        )}
-      </td>
+      <MonthAmountCell value={month.need} total={month.total} colorClass="text-info" />
+      <MonthAmountCell value={month.want} total={month.total} colorClass="text-accent" />
+      <MonthAmountCell value={month.other} total={month.total} colorClass="text-content-secondary" />
     </tr>
   );
 }
@@ -141,10 +142,10 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
     () =>
       data?.months.reduce(
         (acc, m) => ({
-          total: Math.round((acc.total + m.total) * 100) / 100,
-          need: Math.round((acc.need + m.need) * 100) / 100,
-          want: Math.round((acc.want + m.want) * 100) / 100,
-          other: Math.round((acc.other + m.other) * 100) / 100,
+          total: acc.total + m.total,
+          need: acc.need + m.need,
+          want: acc.want + m.want,
+          other: acc.other + m.other,
         }),
         { total: 0, need: 0, want: 0, other: 0 },
       ) ?? null,
@@ -158,45 +159,169 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
         <EmptyState variant="error" message="Failed to load expense data." />
       )}
 
-      {data && data.annualTotal === 0 && (
-        <EmptyState message="No expenses for this year." />
-      )}
-
-      {data && data.annualTotal > 0 && (
-        <DataTable className="mb-6">
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="bg-surface-subtle">
-                <th className={cn(TH_BASE, 'w-16')}>Month</th>
-                <th className={cn(TH_BASE, 'text-right')}>Total Expenses</th>
-                <th className={cn(TH_BASE, 'text-right')}>Need</th>
-                <th className={cn(TH_BASE, 'text-right')}>Want</th>
-                <th className={cn(TH_BASE, 'text-right')}>Other</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.months.map((month) => (
-                <ExpenseMonthRow key={month.month} month={month} />
-              ))}
-              {totals && (
-                <ExpenseMonthTotalsRow
-                  total={totals.total}
-                  need={totals.need}
-                  want={totals.want}
-                  other={totals.other}
-                />
-              )}
-            </tbody>
-          </table>
-        </DataTable>
+      {data && (
+        data.annualTotal === 0 ? (
+          <EmptyState message="No expenses for this year." />
+        ) : (
+          <DataTable className="mb-6">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="bg-surface-subtle">
+                  <th className={cn(TH_BASE, 'w-16')}>Month</th>
+                  <th className={cn(TH_BASE, 'text-right')}>Total Expenses</th>
+                  <th className={cn(TH_BASE, 'text-right')}>Need</th>
+                  <th className={cn(TH_BASE, 'text-right')}>Want</th>
+                  <th className={cn(TH_BASE, 'text-right')}>Other</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.months.map((month) => (
+                  <ExpenseMonthRow key={month.month} month={month} />
+                ))}
+                {totals && <ExpenseMonthTotalsRow {...totals} />}
+              </tbody>
+            </table>
+          </DataTable>
+        )
       )}
     </>
   );
 }
 
-function TotalCell({
-  getValue,
-}: Readonly<CellContext<ExpenseCategoryRow, unknown>>) {
+// ─── Category tree types & transform ─────────────────────────────────────────
+
+interface ExpenseCategoryTreeRow {
+  key: string;
+  label: string;
+  total: number;
+  // % of grand total for category rows; % of parent category total for subcategory rows
+  pct: number;
+  subRows?: ExpenseCategoryTreeRow[];
+}
+
+// Use a sentinel key for null-category rows to avoid collision with a real
+// category that happens to be named "Uncategorized".
+function groupByCategoryKey(
+  filtered: ExpenseCategoryRow[],
+): Map<string, { label: string; rows: ExpenseCategoryRow[] }> {
+  const categoryMap = new Map<string, { label: string; rows: ExpenseCategoryRow[] }>();
+  for (const row of filtered) {
+    const catKey = row.category ?? '__null_category__';
+    const catLabel = row.category ?? 'Uncategorized';
+    let entry = categoryMap.get(catKey);
+    if (!entry) {
+      entry = { label: catLabel, rows: [] };
+      categoryMap.set(catKey, entry);
+    }
+    entry.rows.push(row);
+  }
+  return categoryMap;
+}
+
+// Separate named subcategory rows from null-subcategory transactions.
+// Null-subcategory totals are absorbed into a dedicated "Uncategorized" child
+// rather than silently inflating the parent row only.
+function buildSubRows(
+  catKey: string,
+  catRows: ExpenseCategoryRow[],
+  categoryTotal: number,
+): ExpenseCategoryTreeRow[] {
+  const subcategoryMap = new Map<string, number>();
+  let uncategorizedSubtotal = 0;
+
+  for (const row of catRows) {
+    if (row.subcategory === null) {
+      uncategorizedSubtotal += row.total;
+    } else {
+      subcategoryMap.set(row.subcategory, (subcategoryMap.get(row.subcategory) ?? 0) + row.total);
+    }
+  }
+
+  const subRows: ExpenseCategoryTreeRow[] = Array.from(subcategoryMap.entries())
+    .map(([label, total]) => ({
+      key: `${catKey}::${label}`,
+      label,
+      total,
+      pct: categoryTotal > 0 ? total / categoryTotal : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  // Always append the "Uncategorized" child last when null-subcategory transactions exist.
+  if (uncategorizedSubtotal > 0) {
+    subRows.push({
+      key: `${catKey}::__null_sub__`,
+      label: 'Uncategorized',
+      total: uncategorizedSubtotal,
+      pct: categoryTotal > 0 ? uncategorizedSubtotal / categoryTotal : 0,
+    });
+  }
+
+  return subRows;
+}
+
+function buildCategoryTree(
+  rows: ExpenseCategoryRow[],
+  monthFilter: number | null,
+): ExpenseCategoryTreeRow[] {
+  const filtered =
+    monthFilter === null ? rows : rows.filter((r) => r.month === monthFilter);
+
+  const grandTotal = filtered.reduce((sum, r) => sum + r.total, 0);
+  if (grandTotal === 0) return [];
+
+  const categoryMap = groupByCategoryKey(filtered);
+  const treeRows: ExpenseCategoryTreeRow[] = [];
+
+  for (const [catKey, { label: catLabel, rows: catRows }] of categoryMap) {
+    const categoryTotal = catRows.reduce((sum, r) => sum + r.total, 0);
+    const subRows = buildSubRows(catKey, catRows, categoryTotal);
+    treeRows.push({
+      key: catKey,
+      label: catLabel,
+      total: categoryTotal,
+      pct: grandTotal > 0 ? categoryTotal / grandTotal : 0,
+      // subRows is always non-empty here: every category has at least one named
+      // subcategory or an "Uncategorized" child from null-subcategory transactions.
+      subRows: subRows.length > 0 ? subRows : undefined,
+    });
+  }
+
+  // Sort: null-category ("Uncategorized") always last; named categories by total desc.
+  treeRows.sort((a, b) => {
+    if (a.key === '__null_category__') return 1;
+    if (b.key === '__null_category__') return -1;
+    return b.total - a.total;
+  });
+
+  return treeRows;
+}
+
+// ─── Month date range helper ──────────────────────────────────────────────────
+
+function getMonthDateRange(year: number, month: number) {
+  const mm = String(month).padStart(2, '0');
+  // new Date(year, month, 0) gives the last day of `month` (1-indexed).
+  const lastDay = new Date(year, month, 0).getDate();
+  return {
+    start: `${year}-${mm}-01`,
+    end: `${year}-${mm}-${String(lastDay).padStart(2, '0')}`,
+  };
+}
+
+// ─── ExpenseCategoryBreakdown ─────────────────────────────────────────────────
+
+function renderLabelCell({ row }: CellContext<ExpenseCategoryTreeRow, unknown>) {
+  return (
+    <CategoryLabelCell
+      depth={row.depth}
+      isExpanded={row.getIsExpanded()}
+      label={row.original.label}
+      onToggle={row.getToggleExpandedHandler()}
+    />
+  );
+}
+
+function renderTotalCell({ getValue }: CellContext<ExpenseCategoryTreeRow, unknown>) {
   return (
     <span className="font-mono font-medium text-danger">
       {fmt(getValue<number>())}
@@ -204,39 +329,105 @@ function TotalCell({
   );
 }
 
-function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
+function renderPctCell({ getValue, row }: CellContext<ExpenseCategoryTreeRow, unknown>) {
+  return (
+    <span className="text-xs font-mono text-content-muted">
+      {(getValue<number>() * 100).toFixed(1)}%
+      {row.depth === 1 && (
+        <span className="ml-1 text-content-disabled">of cat.</span>
+      )}
+    </span>
+  );
+}
+
+function CategoryLabelCell({
+  depth,
+  isExpanded,
+  label,
+  onToggle,
+}: {
+  readonly depth: number;
+  readonly isExpanded: boolean;
+  readonly label: string;
+  readonly onToggle: () => void;
+}) {
+  return (
+    <div className={cn('flex items-center gap-2', depth === 1 && 'pl-8')}>
+      {depth === 0 ? (
+        <button
+          onClick={onToggle}
+          className="w-4 h-4 text-xs font-mono leading-none flex-shrink-0 text-content-muted hover:text-content-primary"
+        >
+          {isExpanded ? '−' : '+'}
+        </button>
+      ) : (
+        <span className="w-4 flex-shrink-0" />
+      )}
+      <span
+        className={cn(
+          'text-sm',
+          depth === 0 ? 'font-medium text-content-primary' : 'text-content-secondary',
+        )}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function ExpenseCategoryBreakdown({
+  year,
+  monthFilter,
+}: {
+  readonly year: number;
+  readonly monthFilter: number | null;
+}) {
   const { data, isLoading, isError } = useExpenseCategories(year);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [expanded, setExpanded] = useState<ExpandedState>(true);
 
-  const tableData = useMemo(() => data?.rows ?? [], [data]);
+  // Reset to all-expanded whenever the visible data set changes.
+  useEffect(() => {
+    setExpanded(true);
+  }, [year, monthFilter]);
 
-  const columns = useMemo<ColumnDef<ExpenseCategoryRow>[]>(
+  const treeData = useMemo(
+    () => buildCategoryTree(data?.rows ?? [], monthFilter),
+    [data, monthFilter],
+  );
+
+  const isAllExpanded = expanded === true;
+
+  const columns = useMemo<ColumnDef<ExpenseCategoryTreeRow>[]>(
     () => [
       {
-        accessorKey: 'month',
-        header: 'Month',
-        cell: ({ getValue }) => MONTH_LABELS[getValue<number>() - 1],
-        meta: { thClassName: TH_BASE, tdClassName: TD_BASE },
-      },
-      {
-        accessorKey: 'category',
+        id: 'label',
+        accessorKey: 'label',
         header: 'Category',
-        cell: ({ getValue }) => getValue<string | null>() ?? '—',
-        meta: { thClassName: TH_BASE, tdClassName: TD_BASE },
-      },
-      {
-        accessorKey: 'subcategory',
-        header: 'Subcategory',
-        cell: ({ getValue }) => getValue<string | null>() ?? '—',
-        meta: { thClassName: TH_BASE, tdClassName: TD_BASE },
+        // To disable sorting below depth 0 in the future, replace getSortedRowModel
+        // with a custom sort function that returns 0 for child rows, preserving their
+        // insertion order while still sorting top-level category rows.
+        cell: renderLabelCell,
+        meta: { thClassName: TH_BASE, tdClassName: 'px-4 py-3' },
       },
       {
         accessorKey: 'total',
         header: 'Total',
-        cell: TotalCell,
+        cell: renderTotalCell,
         meta: {
           thClassName: cn(TH_BASE, 'text-right'),
           tdClassName: 'px-4 py-3 text-sm text-right',
+        },
+      },
+      {
+        accessorKey: 'pct',
+        header: '% of Total',
+        // Percentage is derived from total — sorting by it would duplicate sorting by total.
+        enableSorting: false,
+        cell: renderPctCell,
+        meta: {
+          thClassName: cn(TH_BASE, 'text-right'),
+          tdClassName: 'px-4 py-3 text-right',
         },
       },
     ],
@@ -244,28 +435,41 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
   );
 
   const table = useReactTable({
-    data: tableData,
+    data: treeData,
     columns,
-    state: { sorting },
+    getSubRows: (row) => row.subRows,
+    state: { sorting, expanded },
     onSortingChange: setSorting,
+    onExpandedChange: setExpanded,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
   });
 
   return (
     <>
-      <h2 className="mb-4 text-lg font-semibold text-content-primary">
-        Category Breakdown
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-content-primary">
+          Category Breakdown
+        </h2>
+        {treeData.length > 0 && (
+          <button
+            onClick={() => setExpanded(isAllExpanded ? {} : true)}
+            className="text-xs text-content-muted hover:text-content-primary transition-colors"
+          >
+            {isAllExpanded ? 'Collapse All' : 'Expand All'}
+          </button>
+        )}
+      </div>
 
-      {isLoading && <SkeletonTable columns={4} rows={8} />}
+      {isLoading && <SkeletonTable columns={3} rows={8} />}
       {isError && (
         <EmptyState variant="error" message="Failed to load category data." />
       )}
-      {data && data.rows.length === 0 && (
+      {data && treeData.length === 0 && (
         <EmptyState message="No expense categories for this year." />
       )}
-      {data && data.rows.length > 0 && (
+      {data && treeData.length > 0 && (
         <DataTable>
           <table className="min-w-full divide-y divide-border-subtle">
             <thead className="bg-surface-subtle">
@@ -277,21 +481,14 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
                       className={header.column.columnDef.meta?.thClassName}
                       onClick={header.column.getToggleSortingHandler()}
                       style={{
-                        cursor: header.column.getCanSort()
-                          ? 'pointer'
-                          : 'default',
+                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
                       }}
                     >
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext(),
                       )}
-                      {(() => {
-                        const sorted = header.column.getIsSorted();
-                        if (sorted === 'asc') return ' ↑';
-                        if (sorted === 'desc') return ' ↓';
-                        return '';
-                      })()}
+                      {sortIndicator(header.column.getIsSorted())}
                     </th>
                   ))}
                 </tr>
@@ -305,10 +502,7 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
                       key={cell.id}
                       className={cell.column.columnDef.meta?.tdClassName}
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
@@ -321,14 +515,40 @@ function ExpenseCategoryBreakdown({ year }: { readonly year: number }) {
   );
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export function ExpensesPage() {
   const [year, setYear] = useState(CURRENT_YEAR);
+  const [monthFilter, setMonthFilter] = useState<number | null>(null);
+
+  function handleYearChange(newYear: number) {
+    setYear(newYear);
+    setMonthFilter(null);
+  }
+
+  const dateRange = monthFilter
+    ? getMonthDateRange(year, monthFilter)
+    : { start: `${year}-01-01`, end: `${year}-12-31` };
 
   return (
     <PageLayout>
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-xl font-semibold text-content-primary">Expenses</h1>
-        <YearSelector year={year} onChange={setYear} />
+        <YearSelector year={year} onChange={handleYearChange} />
+        <select
+          className="select-base"
+          value={monthFilter ?? ''}
+          onChange={(e) =>
+            setMonthFilter(e.target.value ? Number(e.target.value) : null)
+          }
+        >
+          <option value="">All Months</option>
+          {MONTH_LABELS.map((label, i) => (
+            <option key={label} value={i + 1}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Monthly breakdown and expense transactions side by side */}
@@ -345,18 +565,18 @@ export function ExpensesPage() {
             Expense Transactions
           </h2>
           <TransactionTablePane
-            key={year}
+            key={`${year}-${monthFilter ?? 'all'}`}
             presetFilters={{ isIncome: false }}
             defaultFilters={{
-              startDate: `${year}-01-01`,
-              endDate: `${year}-12-31`,
+              startDate: dateRange.start,
+              endDate: dateRange.end,
             }}
           />
         </div>
       </div>
 
       {/* Category breakdown: full width */}
-      <ExpenseCategoryBreakdown year={year} />
+      <ExpenseCategoryBreakdown year={year} monthFilter={monthFilter} />
     </PageLayout>
   );
 }
