@@ -20,8 +20,14 @@ import type {
   Transaction,
 } from '@/features/transactions/hooks/useTransactions';
 import { TransactionReviewPanel } from '@/features/transactions/components/panels/TransactionReviewPanel';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { cn } from '@/lib/utils';
 
 const UNKNOWN_PAGE_COUNT = -1;
+
+// Tailwind breakpoint values
+const SM_QUERY = '(min-width: 640px)';
+const MD_QUERY = '(min-width: 768px)';
 
 interface TransactionsTableProps {
   readonly transactions: Transaction[];
@@ -32,6 +38,7 @@ interface TransactionsTableProps {
   readonly onDelete: (id: string) => void;
   readonly pagination?: PaginationInfo;
   readonly onPageChange: (page: number) => void;
+  readonly maxHeight?: string;
 }
 
 export function TransactionsTable({
@@ -43,9 +50,18 @@ export function TransactionsTable({
   onDelete,
   pagination,
   onPageChange,
+  maxHeight,
 }: TransactionsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  const isSm = useMediaQuery(SM_QUERY);
+  const isMd = useMediaQuery(MD_QUERY);
+
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => ({
+    subcategory: isSm,
+    tags: isSm,
+    account: isMd,
+  }));
 
   const columns = useTransactionColumns({
     expandedPanel,
@@ -85,17 +101,24 @@ export function TransactionsTable({
   ) : null;
 
   return (
-    <DataTable toolbar={<ColumnVisibilityToggle table={table} />} footer={paginationNode}>
-      <table className="min-w-full divide-y divide-border-subtle">
-        <thead className="bg-surface-subtle">
+    <DataTable
+      toolbar={<ColumnVisibilityToggle table={table} />}
+      footer={paginationNode}
+      maxHeight={maxHeight}
+    >
+      <table className="min-w-full table-fixed divide-y divide-border-subtle">
+        <colgroup>
+          {table.getVisibleLeafColumns().map((col) => (
+            <col key={col.id} className={col.columnDef.meta?.colWidth} />
+          ))}
+        </colgroup>
+        <thead className="sticky top-0 z-10 bg-surface-subtle">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className={
-                    header.column.columnDef.meta?.thClassName ?? 'th-cell'
-                  }
+                  className={header.column.columnDef.meta?.thClassName ?? 'th-cell'}
                 >
                   {flexRender(
                     header.column.columnDef.header,
@@ -112,16 +135,19 @@ export function TransactionsTable({
             return (
               <Fragment key={row.id}>
                 <tr
-                  className={`hover:bg-surface-subtle ${
-                    reviewable ? 'bg-warning-bg' : ''
-                  } ${row.original.isTransfer ? 'opacity-60' : ''}`}
+                  className={cn(
+                    'hover:bg-surface-subtle',
+                    reviewable && 'bg-warning-bg',
+                    row.original.isTransfer && 'opacity-60',
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className={
-                        cell.column.columnDef.meta?.tdClassName ?? 'td-cell'
-                      }
+                      className={cn(
+                        cell.column.columnDef.meta?.tdClassName ?? 'td-cell',
+                        cell.column.columnDef.meta?.truncate && 'max-w-0',
+                      )}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
