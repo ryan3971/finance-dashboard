@@ -1,8 +1,8 @@
 import {
   isTransactionReviewable,
   useTransactionColumns,
-  type ExpandedPanel,
 } from '@/features/transactions/hooks/useTransactionColumns';
+import type { ExpandedPanel } from '@/features/transactions/types/panels';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -20,6 +20,7 @@ import type {
   PaginationInfo,
   Transaction,
 } from '@/features/transactions/hooks/useTransactions';
+import { TransactionDetailPanel } from '@/features/transactions/components/panels/TransactionDetailPanel';
 import { TransactionReviewPanel } from '@/features/transactions/components/panels/TransactionReviewPanel';
 
 const UNKNOWN_PAGE_COUNT = -1;
@@ -30,7 +31,7 @@ const MD_QUERY = '(min-width: 768px)';
 interface TransactionsTableProps {
   readonly transactions: Transaction[];
   readonly expandedPanel: ExpandedPanel | null;
-  readonly onExpand: (id: string, mode: 'review' | 'edit') => void;
+  readonly onExpand: (id: string, mode: ExpandedPanel['mode']) => void;
   readonly onCollapse: () => void;
   readonly onDuplicate: (tx: Transaction) => void;
   readonly onDelete: (id: string) => void;
@@ -150,10 +151,14 @@ export function TransactionsTable({
               <Fragment key={row.id}>
                 <tr
                   className={cn(
-                    'hover:bg-surface-subtle',
+                    'cursor-pointer hover:bg-surface-subtle',
                     reviewable && 'bg-warning-bg',
                     row.original.isTransfer && 'opacity-60',
                   )}
+                  onClick={() => {
+                    if (expandedPanel?.id === row.original.id && expandedPanel.mode !== 'detail') return;
+                    onExpand(row.original.id, 'detail');
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
@@ -174,11 +179,19 @@ export function TransactionsTable({
                 {expandedPanel?.id === row.original.id && (
                   <tr>
                     <td colSpan={visibleColumnCount} className="p-0">
-                      <TransactionReviewPanel
-                        transaction={row.original}
-                        mode={expandedPanel.mode}
-                        onClose={onCollapse}
-                      />
+                      {expandedPanel.mode === 'detail' && (
+                        <TransactionDetailPanel
+                          transaction={row.original}
+                          onClose={onCollapse}
+                        />
+                      )}
+                      {(expandedPanel.mode === 'review' || expandedPanel.mode === 'edit') && (
+                        <TransactionReviewPanel
+                          transaction={row.original}
+                          mode={expandedPanel.mode}
+                          onClose={onCollapse}
+                        />
+                      )}
                     </td>
                   </tr>
                 )}

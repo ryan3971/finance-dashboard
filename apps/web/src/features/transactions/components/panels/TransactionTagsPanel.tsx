@@ -74,8 +74,15 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
     setShowCreate(false);
   }
 
+  // role="none" marks this as a layout container, not an interactive element.
+  // stopPropagation prevents clicks/keys inside the tag editor from triggering the row-level detail panel.
   return (
-    <div className="flex flex-wrap gap-1 items-center">
+    <div
+      className="flex flex-wrap gap-1 items-center"
+      role="none"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
       {/* Attached tags */}
       {attachedTags.map((tag) => (
         <Tooltip key={tag.id}>

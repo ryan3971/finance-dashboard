@@ -7,7 +7,7 @@ import {
   type ManualTransactionInitialValues,
 } from '@/features/transactions/components/panels/ManualTransactionPanel';
 import { TransactionsTable } from '@/features/transactions/components/table/TransactionsTable';
-import { type ExpandedPanel } from '@/features/transactions/hooks/useTransactionColumns';
+import type { ExpandedPanel } from '@/features/transactions/types/panels';
 import {
   type PaginationInfo,
   type Transaction,
@@ -116,7 +116,7 @@ export function TransactionTablePane({
   const deleteTransaction = useDeleteTransaction();
 
   const handlePanelToggle = useCallback(
-    (id: string, mode: 'review' | 'edit') => {
+    (id: string, mode: ExpandedPanel['mode']) => {
       setExpandedPanel((prev) =>
         prev?.id === id && prev.mode === mode ? null : { id, mode }
       );
@@ -171,6 +171,7 @@ export function TransactionTablePane({
     } else {
       setLocalPage(newPage);
     }
+    setExpandedPanel(null);
   }
 
   const { data, isLoading, isError } = useTransactions({

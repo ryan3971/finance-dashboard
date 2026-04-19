@@ -17,6 +17,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 import { parseAmount } from '@/lib/utils';
 import { useMemo } from 'react';
+import type { ExpandedPanel } from '@/features/transactions/types/panels';
 
 export const ACTIONS_COLUMN_ID = 'actions';
 
@@ -33,11 +34,6 @@ function SortIcon({ sorted }: { readonly sorted: false | 'asc' | 'desc' }) {
   if (sorted === 'asc') return <ChevronUp className="ml-1 inline h-3 w-3" />;
   if (sorted === 'desc') return <ChevronDown className="ml-1 inline h-3 w-3" />;
   return <ChevronsUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
-}
-
-export interface ExpandedPanel {
-  id: string;
-  mode: 'review' | 'edit';
 }
 
 interface UseTransactionColumnsOptions {
@@ -269,42 +265,45 @@ export function useTransactionColumns({
           const tx = row.original;
           return (
             <DropdownMenu>
+              {/* stopPropagation prevents the row-level onClick (detail panel) from firing when the menu is used */}
               <DropdownMenuTrigger asChild>
                 <button
                   className="p-1 rounded text-content-muted hover:bg-surface-muted hover:text-content-primary focus:outline-none"
                   aria-label="Row actions"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isTransactionReviewable(tx) && (
-                  <>
-                    <DropdownMenuItem onClick={() => onReviewToggle(tx.id)}>
-                      {expandedPanel?.id === tx.id &&
-                      expandedPanel.mode === 'review'
-                        ? 'Close review'
-                        : 'Review'}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem onClick={() => onEdit(tx.id)}>
-                  {expandedPanel?.id === tx.id && expandedPanel.mode === 'edit'
-                    ? 'Close edit'
-                    : 'Edit'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDuplicate(tx)}>
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => onDelete(tx.id)}
-                  className="text-danger"
-                >
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {isTransactionReviewable(tx) && (
+                    <>
+                      <DropdownMenuItem onClick={() => onReviewToggle(tx.id)}>
+                        {expandedPanel?.id === tx.id &&
+                        expandedPanel.mode === 'review'
+                          ? 'Close review'
+                          : 'Review'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={() => onEdit(tx.id)}>
+                    {expandedPanel?.id === tx.id &&
+                    expandedPanel.mode === 'edit'
+                      ? 'Close edit'
+                      : 'Edit'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDuplicate(tx)}>
+                    Duplicate
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(tx.id)}
+                    className="text-danger"
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
             </DropdownMenu>
           );
         },
