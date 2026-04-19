@@ -6,7 +6,7 @@ import { parseCsv } from '../../pipeline/parser';
 import { assertDefined } from '@/lib/assert';
 
 const adapter = new AmexAdapter();
-const FIXTURE = path.join(__dirname, './../__fixtures__', 'amex.csv');
+const FIXTURE = path.join(__dirname, '../../../../testing/csv', 'amex.csv');
 
 describe('AmexAdapter', () => {
   it('detect() returns true for Amex header row', () => {
