@@ -3,7 +3,7 @@ import {
   useTransactionColumns,
   type ExpandedPanel,
 } from '@/features/transactions/hooks/useTransactionColumns';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   getCoreRowModel,
@@ -21,11 +21,9 @@ import type {
   Transaction,
 } from '@/features/transactions/hooks/useTransactions';
 import { TransactionReviewPanel } from '@/features/transactions/components/panels/TransactionReviewPanel';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const UNKNOWN_PAGE_COUNT = -1;
 
-// Tailwind breakpoint values
 const SM_QUERY = '(min-width: 640px)';
 const MD_QUERY = '(min-width: 768px)';
 
@@ -54,14 +52,29 @@ export function TransactionsTable({
 }: TransactionsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const isSm = useMediaQuery(SM_QUERY);
-  const isMd = useMediaQuery(MD_QUERY);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+    const isSm = window.matchMedia(SM_QUERY).matches;
+    const isMd = window.matchMedia(MD_QUERY).matches;
+    return { subcategory: isSm, tags: isSm, account: isMd };
+  });
 
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => ({
-    subcategory: isSm,
-    tags: isSm,
-    account: isMd,
-  }));
+  useEffect(() => {
+    const smMql = window.matchMedia(SM_QUERY);
+    const mdMql = window.matchMedia(MD_QUERY);
+    const sync = () =>
+      setColumnVisibility((prev) => ({
+        ...prev,
+        subcategory: smMql.matches,
+        tags: smMql.matches,
+        account: mdMql.matches,
+      }));
+    smMql.addEventListener('change', sync);
+    mdMql.addEventListener('change', sync);
+    return () => {
+      smMql.removeEventListener('change', sync);
+      mdMql.removeEventListener('change', sync);
+    };
+  }, []);
 
   const columns = useTransactionColumns({
     expandedPanel,
