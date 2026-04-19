@@ -1,7 +1,7 @@
 import { NavBar } from '@/components/layout/NavBar';
 import type { ReactNode } from 'react';
 
-export function PageLayout({ children }: { children: ReactNode }) {
+export function PageLayout({ children }: { readonly children: ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />

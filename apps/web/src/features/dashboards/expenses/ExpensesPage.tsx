@@ -332,15 +332,15 @@ export function ExpensesPage() {
       </div>
 
       {/* Monthly breakdown and expense transactions side by side */}
-      <div className="flex gap-6 items-start mb-8">
-        <div className="flex-none">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start mb-8">
+        <div>
           <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Monthly Breakdown
           </h2>
           <ExpenseMonthlyBreakdown year={year} />
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
           <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Expense Transactions
           </h2>

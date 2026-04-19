@@ -4,6 +4,7 @@ import {
   type ExpandedPanel,
 } from '@/features/transactions/hooks/useTransactionColumns';
 import { Fragment, useMemo, useState } from 'react';
+import { cn } from '@/lib/utils';
 import {
   getCoreRowModel,
   getSortedRowModel,
@@ -75,17 +76,21 @@ export function TransactionsTable({
     [columnVisibility]
   );
 
-  const paginationNode = pagination && pagination.totalPages > 1 ? (
-    <Pagination
-      page={pagination.page}
-      totalPages={pagination.totalPages}
-      onPrev={() => onPageChange(pagination.page - 1)}
-      onNext={() => onPageChange(pagination.page + 1)}
-    />
-  ) : null;
+  const paginationNode =
+    pagination && pagination.totalPages > 1 ? (
+      <Pagination
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        onPrev={() => onPageChange(pagination.page - 1)}
+        onNext={() => onPageChange(pagination.page + 1)}
+      />
+    ) : null;
 
   return (
-    <DataTable toolbar={<ColumnVisibilityToggle table={table} />} footer={paginationNode}>
+    <DataTable
+      toolbar={<ColumnVisibilityToggle table={table} />}
+      footer={paginationNode}
+    >
       <table className="min-w-full divide-y divide-border-subtle">
         <thead className="bg-surface-subtle">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -112,9 +117,11 @@ export function TransactionsTable({
             return (
               <Fragment key={row.id}>
                 <tr
-                  className={`hover:bg-surface-subtle ${
-                    reviewable ? 'bg-warning-bg' : ''
-                  } ${row.original.isTransfer ? 'opacity-60' : ''}`}
+                  className={cn(
+                    'hover:bg-surface-subtle',
+                    reviewable && 'bg-warning-bg',
+                    row.original.isTransfer && 'opacity-60'
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td

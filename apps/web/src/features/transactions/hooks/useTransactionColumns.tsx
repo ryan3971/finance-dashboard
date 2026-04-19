@@ -61,7 +61,10 @@ export function useTransactionColumns({
       {
         id: 'date',
         accessorKey: 'date',
-        meta: { label: 'Date', tdClassName: 'td-cell whitespace-nowrap' },
+        meta: {
+          label: 'Date',
+          tdClassName: 'td-cell whitespace-nowrap',
+        },
         header: ({ column }) => (
           <button
             className="flex items-center hover:text-content-primary"
@@ -77,7 +80,10 @@ export function useTransactionColumns({
       {
         id: 'description',
         accessorKey: 'description',
-        meta: { label: 'Description', tdClassName: 'px-4 py-3' },
+        meta: {
+          label: 'Description',
+          tdClassName: 'td-cell',
+        },
         header: ({ column }) => (
           <button
             className="flex items-center hover:text-content-primary"
@@ -91,7 +97,7 @@ export function useTransactionColumns({
           const tx = row.original;
           return (
             <div>
-              <p className="text-sm text-content-primary truncate max-w-xs">
+              <p className="max-w-xs truncate text-sm text-content-primary">
                 {tx.sourceName ?? tx.description}
                 {tx.isTransfer && (
                   <span className="ml-1.5 text-xs text-content-muted">
@@ -110,7 +116,9 @@ export function useTransactionColumns({
       {
         id: 'category',
         accessorKey: 'categoryName',
-        meta: { label: 'Category' },
+        meta: { 
+          label: 'Category' 
+        },
         header: () => 'Category',
         cell: ({ row }) => {
           const tx = row.original;
@@ -130,7 +138,9 @@ export function useTransactionColumns({
       {
         id: 'subcategory',
         accessorKey: 'subcategoryName',
-        meta: { label: 'Subcategory' },
+        meta: { 
+          label: 'Subcategory' 
+        },
         header: () => 'Subcategory',
         cell: ({ row }) => {
           const tx = row.original;
@@ -144,7 +154,11 @@ export function useTransactionColumns({
       },
       {
         id: 'tags',
-        meta: { label: 'Tags', thClassName: 'hidden sm:table-cell th-cell', tdClassName: 'hidden sm:table-cell px-4 py-3 max-w-xs' },
+        meta: {
+          label: 'Tags',
+          thClassName: 'hidden sm:table-cell th-cell',
+          tdClassName: 'hidden sm:table-cell td-cell max-w-xs',
+        },
         header: () => 'Tags',
         cell: ({ row }) => (
           <TransactionTagsPanel
@@ -157,7 +171,11 @@ export function useTransactionColumns({
       {
         id: 'account',
         accessorKey: 'accountName',
-        meta: { label: 'Account', thClassName: 'hidden md:table-cell th-cell', tdClassName: 'hidden md:table-cell td-cell' },
+        meta: {
+          label: 'Account',
+          thClassName: 'hidden md:table-cell th-cell',
+          tdClassName: 'hidden md:table-cell td-cell',
+        },
         header: () => 'Account',
         cell: ({ row }) => row.original.accountName,
         enableSorting: false,
@@ -165,7 +183,10 @@ export function useTransactionColumns({
       {
         id: 'amount',
         accessorKey: 'amount',
-        meta: { label: 'Amount', tdClassName: 'px-4 py-3 text-right' },
+        meta: { 
+          label: 'Amount', 
+          tdClassName: 'td-cell text-right' 
+        },
         header: ({ column }) => (
           <button
             className="flex w-full items-center justify-end hover:text-content-primary"
@@ -199,7 +220,7 @@ export function useTransactionColumns({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="rounded p-1 text-content-muted hover:bg-surface-muted hover:text-content-primary focus:outline-none"
+                  className="p-1 rounded text-content-muted hover:bg-surface-muted hover:text-content-primary focus:outline-none"
                   aria-label="Row actions"
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -209,7 +230,8 @@ export function useTransactionColumns({
                 {isTransactionReviewable(tx) && (
                   <>
                     <DropdownMenuItem onClick={() => onReviewToggle(tx.id)}>
-                      {expandedPanel?.id === tx.id && expandedPanel.mode === 'review'
+                      {expandedPanel?.id === tx.id &&
+                      expandedPanel.mode === 'review'
                         ? 'Close review'
                         : 'Review'}
                     </DropdownMenuItem>
