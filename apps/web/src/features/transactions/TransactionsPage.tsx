@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ManualTransactionPanel } from '@/features/transactions/components/panels/ManualTransactionPanel';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
+import { RebalancingTab } from '@/features/rebalancing/components/RebalancingTab';
 import type {
   PaginationInfo,
   Transaction,
@@ -21,6 +23,9 @@ export function TransactionsPage() {
   const [addPanelOpen, setAddPanelOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo | undefined>();
   const [flaggedCount, setFlaggedCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'transactions' | 'rebalancing'>(
+    'transactions'
+  );
 
   const filters: FilterState = {
     accountId: search.accountId ?? '',
@@ -88,43 +93,63 @@ export function TransactionsPage() {
           <h1 className="text-xl font-semibold text-content-primary">
             Transactions
           </h1>
-          {pagination && (
+          {activeTab === 'transactions' && pagination && (
             <p className="text-sm text-content-muted mt-0.5">
               {pagination.total} total
             </p>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {flaggedCount > 0 && (
-            <Badge
-              variant="warning"
-              rounded="full"
-              className="px-3 py-1 text-sm"
+        {activeTab === 'transactions' && (
+          <div className="flex flex-wrap items-center gap-2">
+            {flaggedCount > 0 && (
+              <Badge
+                variant="warning"
+                rounded="full"
+                className="px-3 py-1 text-sm"
+              >
+                {flaggedCount} need{flaggedCount === 1 ? 's' : ''} review
+              </Badge>
+            )}
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={isExporting}
+              onClick={() => void handleExportCsv()}
             >
-              {flaggedCount} need{flaggedCount === 1 ? 's' : ''} review
-            </Badge>
-          )}
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={isExporting}
-            onClick={() => void handleExportCsv()}
-          >
-            {isExporting ? 'Exporting…' : 'Export CSV'}
-          </Button>
-          <Button size="sm" onClick={() => setAddPanelOpen(true)}>
-            Add Transaction
-          </Button>
-        </div>
+              {isExporting ? 'Exporting…' : 'Export CSV'}
+            </Button>
+            <Button size="sm" onClick={() => setAddPanelOpen(true)}>
+              Add Transaction
+            </Button>
+          </div>
+        )}
       </div>
 
-      <TransactionTablePane
-        filterState={filters}
-        onFilterChange={handleFilterChange}
-        page={page}
-        onPageChange={handlePageChange}
-        onDataLoad={handleDataLoad}
-      />
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) =>
+          setActiveTab(v as 'transactions' | 'rebalancing')
+        }
+      >
+        <TabsList>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="rebalancing">Rebalancing</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="transactions">
+          <TransactionTablePane
+            filterState={filters}
+            onFilterChange={handleFilterChange}
+            page={page}
+            onPageChange={handlePageChange}
+            onDataLoad={handleDataLoad}
+          />
+        </TabsContent>
+
+        <TabsContent value="rebalancing">
+          <RebalancingTab />
+        </TabsContent>
+      </Tabs>
 
       {addPanelOpen && (
         <ManualTransactionPanel onClose={() => setAddPanelOpen(false)} />
