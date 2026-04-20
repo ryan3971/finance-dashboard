@@ -13,7 +13,7 @@ import {
 import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
-import { cn, fmt, sortIndicator, TH_CLASS } from '@/lib/utils';
+import { cn, fmt, sortIndicator } from '@/lib/utils';
 import { useExpenseCategories } from '../useExpenseCategories';
 import {
   buildCategoryTree,
@@ -98,14 +98,14 @@ const CATEGORY_COLUMNS: ColumnDef<ExpenseCategoryTreeRow>[] = [
     // with a custom sort function that returns 0 for child rows, preserving their
     // insertion order while still sorting top-level category rows.
     cell: renderLabelCell,
-    meta: { thClassName: TH_CLASS, tdClassName: 'px-4 py-3' },
+    meta: { thClassName: 'th-class', tdClassName: 'px-4 py-3' },
   },
   {
     accessorKey: 'total',
     header: 'Total',
     cell: renderTotalCell,
     meta: {
-      thClassName: cn(TH_CLASS, 'text-right'),
+      thClassName: cn('th-class', 'text-right'),
       tdClassName: 'px-4 py-3 text-sm text-right',
     },
   },
@@ -116,7 +116,7 @@ const CATEGORY_COLUMNS: ColumnDef<ExpenseCategoryTreeRow>[] = [
     enableSorting: false,
     cell: renderShareCell,
     meta: {
-      thClassName: cn(TH_CLASS, 'text-right'),
+      thClassName: cn('th-class', 'text-right'),
       tdClassName: 'px-4 py-3 text-right',
     },
   },

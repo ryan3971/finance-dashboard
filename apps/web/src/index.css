@@ -55,4 +55,12 @@
   .td-cell {
     @apply px-4 py-3 text-sm text-content-secondary;
   }
+
+  /* Dashboard table header and cell styles */
+  .th-class {
+    @apply px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider;
+  }
+  .td-class {
+    @apply px-4 py-3 text-sm text-content-secondary;
+  }
 }

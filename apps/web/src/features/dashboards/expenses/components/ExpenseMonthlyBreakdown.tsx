@@ -4,7 +4,7 @@ import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
-import { cn, fmt, fmtPct, MONTH_LABELS, TH_CLASS, TD_CLASS } from '@/lib/utils';
+import { cn, fmt, fmtPct, MONTH_LABELS } from '@/lib/utils';
 import { useExpensesDashboard } from '../useExpensesDashboard';
 
 function MonthAmountCell({
@@ -43,7 +43,7 @@ function ExpenseMonthRow({
       )}
       onClick={onClick}
     >
-      <td className={cn(TD_CLASS, 'w-16')}>{MONTH_LABELS[month.month - 1]}</td>
+      <td className={cn('td-class', 'w-16')}>{MONTH_LABELS[month.month - 1]}</td>
       <td className="px-4 py-3 text-right text-sm font-mono font-medium">
         <span className={month.total > 0 ? 'text-danger' : 'text-content-muted'}>
           {fmt(month.total)}
@@ -139,11 +139,11 @@ export function ExpenseMonthlyBreakdown({
             <table className="min-w-full text-left">
               <thead>
                 <tr className="bg-surface-subtle">
-                  <th className={cn(TH_CLASS, 'w-16')}>Month</th>
-                  <th className={cn(TH_CLASS, 'text-right')}>Total Expenses</th>
-                  <th className={cn(TH_CLASS, 'text-right')}>Need</th>
-                  <th className={cn(TH_CLASS, 'text-right')}>Want</th>
-                  <th className={cn(TH_CLASS, 'text-right')}>Other</th>
+                  <th className={cn('th-class', 'w-16')}>Month</th>
+                  <th className={cn('th-class', 'text-right')}>Total Expenses</th>
+                  <th className={cn('th-class', 'text-right')}>Need</th>
+                  <th className={cn('th-class', 'text-right')}>Want</th>
+                  <th className={cn('th-class', 'text-right')}>Other</th>
                 </tr>
               </thead>
               <tbody>
