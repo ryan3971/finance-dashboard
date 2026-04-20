@@ -13,7 +13,7 @@ import { useSubmitManualTransaction } from '@/features/transactions/hooks/useSub
 import { useTagSelection } from '@/features/transactions/hooks/useTagSelection';
 import { Button } from '@/components/ui/Button';
 import { CategorySelect } from '@/components/common/CategorySelect';
-import { Controller, useController, useForm } from 'react-hook-form';
+import { Controller, useController, useForm, useWatch } from 'react-hook-form';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -78,6 +78,9 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
     z.input<typeof createTransactionSchema>,
     'subcategoryId'
   >({ control, name: 'subcategoryId' });
+
+  const watchedAmount = useWatch({ control, name: 'amount' });
+  const isIncome = typeof watchedAmount === 'number' && watchedAmount > 0;
 
   async function onSubmit(values: CreateTransactionInput) {
     const success = await submit(values, selectedTagIds);
@@ -164,6 +167,7 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
             subcategoryId={subcategoryField.value ?? ''}
             onCategoryChange={(id) => categoryField.onChange(id || null)}
             onSubcategoryChange={(id) => subcategoryField.onChange(id || null)}
+            isIncome={isIncome}
           />
         </FormField>
 

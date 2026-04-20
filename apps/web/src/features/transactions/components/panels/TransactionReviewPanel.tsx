@@ -15,6 +15,7 @@ import { CategorySelect } from '@/components/common/CategorySelect';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
+import { parseAmount } from '@/lib/utils';
 import { useState } from 'react';
 
 interface Props {
@@ -177,6 +178,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
           subcategoryId={subcategoryId}
           onCategoryChange={setCategoryId}
           onSubcategoryChange={setSubcategoryId}
+          isIncome={parseAmount(transaction.amount) > 0}
         />
       </FormField>
 

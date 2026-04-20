@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SubcategoryChip } from './SubcategoryChip';
+import { useCreateSubcategory } from '@/hooks/useCategoryMutations';
 import {
-  useCreateSubcategory,
   useDeleteCategory,
   useRenameCategory,
 } from '../hooks/useCategoryMutations';
