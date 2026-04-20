@@ -221,3 +221,6 @@ Reduced from 632 lines to 74. Contains only page-level state and layout.
 useState(() => new Date().getFullYear()) — lazy initializer prevents the year from going stale if the app stays open across midnight.
 useCallback for handleYearChange — stable reference; won't defeat a memoized YearSelector.
 getYearDateRange replaces the inline ${year}-12-31 fallback.
+---
+expenses: 3 cases — bucket subtraction + rebalancingAdjustment, reduced annualTotal, unaffected months
+income: 3 cases — reduced total + rebalancingAdjustment, allocation on adjusted amount, zero-out guard when exclusion wipes the month

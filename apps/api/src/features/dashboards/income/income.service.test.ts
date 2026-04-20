@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import Decimal from 'decimal.js';
 import { buildIncomeResponse } from './income.service';
 import { assertDefined } from '@/lib/assert';
 import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
@@ -113,5 +114,59 @@ describe('buildIncomeResponse', () => {
     result.months.forEach((m, i) => {
       expect(m.month).toBe(i + 1);
     });
+  });
+
+  it('subtracts offset exclusion from total and sets rebalancingAdjustment', () => {
+    const adjustments: RebalancingAdjustments = {
+      expenseByMonth: new Map(),
+      categoryByMonth: new Map(),
+      incomeByMonth: new Map([[3, new Decimal(500)]]),
+    };
+    const result = buildIncomeResponse(
+      2025,
+      [{ month: 3, total: '4500.00' }],
+      noPercentages,
+      adjustments
+    );
+    const march = result.months[2];
+    assertDefined(march, 'Expected month at index 2 (March)');
+    expect(march.total).toBe(4000);
+    expect(march.rebalancingAdjustment).toBe(500);
+  });
+
+  it('allocation is computed on the adjusted total, not the raw total', () => {
+    const adjustments: RebalancingAdjustments = {
+      expenseByMonth: new Map(),
+      categoryByMonth: new Map(),
+      incomeByMonth: new Map([[1, new Decimal(200)]]),
+    };
+    const result = buildIncomeResponse(
+      2025,
+      [{ month: 1, total: '1000.00' }],
+      percentages50_30_20,
+      adjustments
+    );
+    const jan = result.months[0];
+    assertDefined(jan, 'Expected month at index 0 (January)');
+    expect(jan.total).toBe(800);
+    expect(jan.allocation).toEqual({ needs: 400, wants: 240, investments: 160 });
+  });
+
+  it('allocation zeroes out when exclusion equals the raw total', () => {
+    const adjustments: RebalancingAdjustments = {
+      expenseByMonth: new Map(),
+      categoryByMonth: new Map(),
+      incomeByMonth: new Map([[1, new Decimal(500)]]),
+    };
+    const result = buildIncomeResponse(
+      2025,
+      [{ month: 1, total: '500.00' }],
+      percentages50_30_20,
+      adjustments
+    );
+    const jan = result.months[0];
+    assertDefined(jan, 'Expected month at index 0 (January)');
+    expect(jan.total).toBe(0);
+    expect(jan.allocation).toEqual({ needs: 0, wants: 0, investments: 0 });
   });
 });

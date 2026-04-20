@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import Decimal from 'decimal.js';
 import { buildExpensesResponse } from './expenses.service';
 import { assertDefined } from '@/lib/assert';
 import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
@@ -137,5 +138,73 @@ describe('buildExpensesResponse', () => {
     expect(dec.want).toBe(0);
     expect(dec.other).toBe(0);
     expect(dec.total).toBe(0);
+  });
+
+  it('subtracts need/want/other adjustments from the correct month and sets rebalancingAdjustment', () => {
+    const adjustments: RebalancingAdjustments = {
+      expenseByMonth: new Map([
+        [3, { need: new Decimal(30), want: new Decimal(20), other: new Decimal(10) }],
+      ]),
+      categoryByMonth: new Map(),
+      incomeByMonth: new Map(),
+    };
+    const result = buildExpensesResponse(
+      2025,
+      [
+        { month: 3, needWant: 'Need', total: '500.00' },
+        { month: 3, needWant: 'Want', total: '300.00' },
+        { month: 3, needWant: 'NA', total: '100.00' },
+      ],
+      adjustments
+    );
+    const march = result.months[2];
+    assertDefined(march, 'Expected month at index 2 (March)');
+    expect(march.need).toBe(470);
+    expect(march.want).toBe(280);
+    expect(march.other).toBe(90);
+    expect(march.total).toBe(840);
+    expect(march.rebalancingAdjustment).toBe(60);
+  });
+
+  it('annualTotal reflects post-adjustment totals', () => {
+    const adjustments: RebalancingAdjustments = {
+      expenseByMonth: new Map([
+        [1, { need: new Decimal(40), want: new Decimal(0), other: new Decimal(0) }],
+      ]),
+      categoryByMonth: new Map(),
+      incomeByMonth: new Map(),
+    };
+    const result = buildExpensesResponse(
+      2025,
+      [
+        { month: 1, needWant: 'Need', total: '100.00' },
+        { month: 6, needWant: 'Want', total: '200.00' },
+      ],
+      adjustments
+    );
+    expect(result.annualTotal).toBe(260);
+  });
+
+  it('months without an adjustment entry have unmodified buckets and rebalancingAdjustment of 0', () => {
+    const adjustments: RebalancingAdjustments = {
+      expenseByMonth: new Map([
+        [3, { need: new Decimal(50), want: new Decimal(0), other: new Decimal(0) }],
+      ]),
+      categoryByMonth: new Map(),
+      incomeByMonth: new Map(),
+    };
+    const result = buildExpensesResponse(
+      2025,
+      [
+        { month: 3, needWant: 'Need', total: '500.00' },
+        { month: 6, needWant: 'Want', total: '200.00' },
+      ],
+      adjustments
+    );
+    const june = result.months[5];
+    assertDefined(june, 'Expected month at index 5 (June)');
+    expect(june.want).toBe(200);
+    expect(june.total).toBe(200);
+    expect(june.rebalancingAdjustment).toBe(0);
   });
 });
