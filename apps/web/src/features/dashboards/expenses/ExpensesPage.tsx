@@ -609,6 +609,17 @@ export function ExpensesPage() {
               startDate: dateRange.start,
               endDate: dateRange.end,
             }}
+            onFilterChange={(newFilters) => {
+              // If the user manually changes the date range in the filter
+              // panel, clear the month selection so the breakdown table and
+              // transaction list stay in sync.
+              if (
+                newFilters.startDate !== dateRange.start ||
+                newFilters.endDate !== dateRange.end
+              ) {
+                setMonthFilter(null);
+              }
+            }}
           />
         </div>
       </div>

@@ -1,7 +1,9 @@
 import {
+  EMPTY_FILTER_STATE,
   type FilterState,
-  TransactionFilters,
-} from '@/features/transactions/components/filters/TransactionFilters';
+} from '@/features/transactions/components/filters/filterState';
+import { TransactionFilters } from '@/features/transactions/components/filters/TransactionFilters';
+
 import {
   ManualTransactionPanel,
   type ManualTransactionInitialValues,
@@ -48,15 +50,6 @@ interface TransactionTablePaneProps {
   ) => void;
 }
 
-const EMPTY_FILTER_STATE: FilterState = {
-  accountId: '',
-  startDate: '',
-  endDate: '',
-  categoryId: '',
-  subcategoryId: '',
-  flaggedOnly: false,
-};
-
 const SKELETON_ROW_COUNT = 6;
 
 function PaneSkeleton() {
@@ -96,10 +89,14 @@ export function TransactionTablePane({
   const isFilterControlled = filterState !== undefined;
   const isPageControlled = page !== undefined;
 
-  const [localFilters, setLocalFilters] = useState<FilterState>({
+  // Captured once at mount — this is what "Clear all" in the filter panel
+  // resets to, preserving any baseline values set by defaultFilters (e.g.
+  // a year's date range from ExpensesPage).
+  const [resetFilters] = useState<FilterState>({
     ...EMPTY_FILTER_STATE,
     ...defaultFilters,
   });
+  const [localFilters, setLocalFilters] = useState<FilterState>(resetFilters);
   const [localPage, setLocalPage] = useState(1);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel | null>(
     null
@@ -161,6 +158,10 @@ export function TransactionTablePane({
     } else {
       setLocalFilters(newFilters);
       if (!isPageControlled) setLocalPage(1);
+      // Notify parent even in uncontrolled mode so it can react to filter
+      // changes (e.g. ExpensesPage clearing its month selection when the
+      // date range is overridden by the user).
+      onFilterChange?.(newFilters);
     }
     setExpandedPanel(null);
   }
@@ -236,6 +237,7 @@ export function TransactionTablePane({
         <TransactionFilters
           filters={activeFilters}
           onChange={handleFilterChange}
+          resetFilters={resetFilters}
         />
       </div>
 

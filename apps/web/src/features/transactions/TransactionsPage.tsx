@@ -1,4 +1,4 @@
-import { type FilterState } from '@/features/transactions/components/filters/TransactionFilters';
+import { type FilterState } from '@/features/transactions/components/filters/filterState';
 import { triggerCsvDownload } from '@/features/transactions/utils/exportCsv';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { Badge } from '@/components/ui/Badge';

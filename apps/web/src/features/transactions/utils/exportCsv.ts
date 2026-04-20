@@ -1,4 +1,4 @@
-import type { FilterState } from '@/features/transactions/components/filters/TransactionFilters';
+import type { FilterState } from '@/features/transactions/components/filters/filterState';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 
 const EXPORT_COLUMNS: { header: string; getValue: (t: Transaction) => string | null | undefined }[] = [
