@@ -8,6 +8,8 @@ import type {
   ExpenseDashboardResponse,
 } from '@finance/shared/types/dashboard';
 import { NEED_WANT_OPTIONS, MONTHS_IN_YEAR } from '@finance/shared/constants';
+import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
+import { totalExpenseAdjForMonth } from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 const categoryAlias = alias(categories, 'cat');
 const subcategoryAlias = alias(categories, 'sub');
@@ -36,7 +38,9 @@ export async function queryMonthlyExpenses(
     .select({
       month: monthExpr.as('month'),
       needWant: transactions.needWant,
-      total: sql<string>`CAST(-SUM(${transactions.amount}) AS text)`.as('total'),
+      total: sql<string>`CAST(-SUM(${transactions.amount}) AS text)`.as(
+        'total'
+      ),
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -56,7 +60,8 @@ export async function queryMonthlyExpenses(
 
 export function buildExpensesResponse(
   year: number,
-  rows: ExpenseNeedWantRow[]
+  rows: ExpenseNeedWantRow[],
+  adjustments: RebalancingAdjustments
 ): ExpenseDashboardResponse {
   const buckets = new Map<
     number,
@@ -83,18 +88,31 @@ export function buildExpensesResponse(
     }
   }
 
+  // Apply rebalancing: subtract each month's adjustment from the corresponding bucket
+  for (const [month, adj] of adjustments.expenseByMonth) {
+    const bucket = buckets.get(month);
+    if (!bucket) continue;
+    bucket.need = bucket.need.minus(adj.need);
+    bucket.want = bucket.want.minus(adj.want);
+    bucket.other = bucket.other.minus(adj.other);
+  }
+
   let annualDecimal = new Decimal(0);
   const months = Array.from(buckets.entries()).map(
     ([month, { need, want, other }]) => {
       const total = need.plus(want).plus(other);
       annualDecimal = annualDecimal.plus(total);
+      const rebalancingAdjustment = totalExpenseAdjForMonth(
+        adjustments,
+        month
+      ).toNumber();
       return {
         month,
         need: need.toNumber(),
         want: want.toNumber(),
         other: other.toNumber(),
         total: total.toNumber(),
-        rebalancingAdjustment: 0,
+        rebalancingAdjustment,
       };
     }
   );
@@ -114,7 +132,9 @@ export async function queryExpensesByCategory(
       month: monthExpr.as('month'),
       category: categoryAlias.name,
       subcategory: subcategoryAlias.name,
-      total: sql<string>`CAST(-SUM(${transactions.amount}) AS text)`.as('total'),
+      total: sql<string>`CAST(-SUM(${transactions.amount}) AS text)`.as(
+        'total'
+      ),
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))

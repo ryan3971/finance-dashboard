@@ -107,6 +107,7 @@ export type YtdMonth =
       netSpendingIncome: number;
       wants: number;
       needs: number;
+      rebalancingAdjustment: number;
     };
 
 export interface YtdDashboardResponse {

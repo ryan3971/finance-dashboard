@@ -23,10 +23,8 @@ import type { NeedWant } from '@finance/shared/constants';
 import type { PatchTransactionInput } from '@finance/shared/types/transactions';
 import { db } from '@/db';
 import { assertDefined } from '@/lib/assert';
-import { updateGroupAfterMemberRemoval } from '@/features/rebalancing/rebalancing.service';
+import { updateGroupAfterMemberRemoval } from '@/pipelines/rebalancing/rebalancing-group-hooks';
 import type { RebalancingRole } from '@finance/shared/types/rebalancing';
-// TODO: address the cross-feature error
-// TODO: update the testing file
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface TransactionFilters {

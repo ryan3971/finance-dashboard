@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { queryDashboardUserConfig } from '@/lib/user-config-query';
 import { buildIncomeResponse, queryMonthlyIncome } from './income.service';
+import {
+  computeRebalancingAdjustments,
+  queryResolvedGroupTransactions,
+} from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 const router = Router();
 router.use(requireAuth);
@@ -19,12 +23,14 @@ router.get('/income', async (req: Request, res: Response) => {
   const { year } = yearQuerySchema.parse(req.query);
   const userId = getAuthUser(req).id;
 
-  const [rows, config] = await Promise.all([
+  const [rows, config, resolvedRows] = await Promise.all([
     queryMonthlyIncome(userId, year),
     queryDashboardUserConfig(userId),
+    queryResolvedGroupTransactions(userId),
   ]);
 
-  res.json(buildIncomeResponse(year, rows, config));
+  const adjustments = computeRebalancingAdjustments(resolvedRows, year);
+  res.json(buildIncomeResponse(year, rows, config, adjustments));
 });
 
 export default router;

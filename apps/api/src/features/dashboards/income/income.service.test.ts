@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { buildIncomeResponse } from './income.service';
 import { assertDefined } from '@/lib/assert';
+import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
+
+const noAdjustments: RebalancingAdjustments = {
+  expenseByMonth: new Map(),
+  categoryByMonth: new Map(),
+  incomeByMonth: new Map(),
+};
 
 const noPercentages = {
   needsPercentage: null,
@@ -16,7 +23,7 @@ const percentages50_30_20 = {
 
 describe('buildIncomeResponse', () => {
   it('returns 12 months when rows is empty', () => {
-    const result = buildIncomeResponse(2025, [], noPercentages);
+    const result = buildIncomeResponse(2025, [], noPercentages, noAdjustments);
     expect(result.year).toBe(2025);
     expect(result.months).toHaveLength(12);
     expect(result.months.every((m) => m.total === 0)).toBe(true);
@@ -24,7 +31,12 @@ describe('buildIncomeResponse', () => {
 
   it('fills present months with correct total and leaves others at 0', () => {
     const rows = [{ month: 3, total: '4500.00' }];
-    const result = buildIncomeResponse(2025, rows, noPercentages);
+    const result = buildIncomeResponse(
+      2025,
+      rows,
+      noPercentages,
+      noAdjustments
+    );
     const march = result.months[2];
     assertDefined(march, 'Expected month at index 2 (March)');
     const jan = result.months[0];
@@ -38,13 +50,23 @@ describe('buildIncomeResponse', () => {
 
   it('sets allocation null for all months when no percentages configured', () => {
     const rows = [{ month: 3, total: '4500.00' }];
-    const result = buildIncomeResponse(2025, rows, noPercentages);
+    const result = buildIncomeResponse(
+      2025,
+      rows,
+      noPercentages,
+      noAdjustments
+    );
     expect(result.months.every((m) => m.allocation === null)).toBe(true);
   });
 
   it('computes correct allocation splits (50/30/20 on 1000.00)', () => {
     const rows = [{ month: 1, total: '1000.00' }];
-    const result = buildIncomeResponse(2025, rows, percentages50_30_20);
+    const result = buildIncomeResponse(
+      2025,
+      rows,
+      percentages50_30_20,
+      noAdjustments
+    );
     const jan = result.months[0];
     assertDefined(jan, 'Expected month at index 0 (January)');
     expect(jan.allocation).toEqual({
@@ -55,7 +77,12 @@ describe('buildIncomeResponse', () => {
   });
 
   it('returns zero allocations (not null) for empty months when percentages configured', () => {
-    const result = buildIncomeResponse(2025, [], percentages50_30_20);
+    const result = buildIncomeResponse(
+      2025,
+      [],
+      percentages50_30_20,
+      noAdjustments
+    );
     const jan = result.months[0];
     assertDefined(jan, 'Expected month at index 0 (January)');
     expect(jan.allocation).toEqual({
@@ -70,7 +97,8 @@ describe('buildIncomeResponse', () => {
     const result = buildIncomeResponse(
       2025,
       rows,
-      { needsPercentage: 33, wantsPercentage: 33, investmentsPercentage: 34 }
+      { needsPercentage: 33, wantsPercentage: 33, investmentsPercentage: 34 },
+      noAdjustments
     );
     const jun = result.months[5];
     assertDefined(jun, 'Expected month at index 5 (June)');
@@ -81,7 +109,7 @@ describe('buildIncomeResponse', () => {
   });
 
   it('includes all 12 months in order', () => {
-    const result = buildIncomeResponse(2025, [], noPercentages);
+    const result = buildIncomeResponse(2025, [], noPercentages, noAdjustments);
     result.months.forEach((m, i) => {
       expect(m.month).toBe(i + 1);
     });

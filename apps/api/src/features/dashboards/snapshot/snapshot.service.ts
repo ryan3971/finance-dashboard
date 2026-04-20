@@ -9,6 +9,7 @@ import type {
   AnticipatedRow,
   ExpenseNeedWantRow,
 } from './snapshot.repository';
+import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 const [NEED, WANT] = NEED_WANT_OPTIONS;
 
@@ -73,7 +74,7 @@ function buildIncomeLessInvestment(
   // percentages null: no config set.
   // income.isZero(): config is set but no income this month — show zero
   // allocation rather than collapsing to the same state as "no config".
-  // TODO: this should use the amount invested to compute the Income less Investment, than apply the 
+  // TODO: this should use the amount invested to compute the Income less Investment, than apply the
   // config valeus to that.
   if (income.isZero()) {
     return zeroColumns();
@@ -164,9 +165,10 @@ export function buildSnapshotResponse(
   expenseRows: ExpenseNeedWantRow[],
   anticipatedRows: AnticipatedRow[],
   config: SnapshotConfig,
-  year: number,
-  month: number
+  date: { year: number; month: number },
+  adjustments: RebalancingAdjustments
 ): SnapshotDashboardResponse {
+  const { year, month } = date;
   // ── Accounts ────────────────────────────────────────────────────────────────
   const accountList = accountRows.map((row) => ({
     id: row.id,
@@ -212,11 +214,28 @@ export function buildSnapshotResponse(
       : null;
 
   // ── Monthly income ──────────────────────────────────────────────────────────
-  const income = new Decimal(incomeTotal);
+  // Offset transactions from resolved rebalancing groups are excluded from income.
+  const incomeExclusion =
+    adjustments.incomeByMonth.get(month) ?? new Decimal(0);
+  const income = new Decimal(incomeTotal).minus(incomeExclusion);
   const incomeLessInvestment = buildIncomeLessInvestment(income, percentages);
 
   // ── Monthly expenses ────────────────────────────────────────────────────────
-  const monthlyExpenses = buildExpensesColumns(expenseRows);
+  const baseExpenses = buildExpensesColumns(expenseRows);
+  const expAdj = adjustments.expenseByMonth.get(month);
+  const totalExpAdj = expAdj
+    ? expAdj.need.plus(expAdj.want).plus(expAdj.other)
+    : new Decimal(0);
+  const monthlyExpenses: SnapshotColumnValues = {
+    total: new Decimal(baseExpenses.total).minus(totalExpAdj).toNumber(),
+    needs: new Decimal(baseExpenses.needs)
+      .minus(expAdj?.need ?? new Decimal(0))
+      .toNumber(),
+    wants: new Decimal(baseExpenses.wants)
+      .minus(expAdj?.want ?? new Decimal(0))
+      .toNumber(),
+    rebalancingAdjustment: totalExpAdj.toNumber(),
+  };
 
   // ── Anticipated ─────────────────────────────────────────────────────────────
   const hasEntries = anticipatedRows.length > 0;
@@ -231,7 +250,10 @@ export function buildSnapshotResponse(
     expectedSpendingIncome,
     expectedExpenses
   );
-  const remainingBudget = subtractColumns(expectedSpendingIncome, monthlyExpenses);
+  const remainingBudget = subtractColumns(
+    expectedSpendingIncome,
+    monthlyExpenses
+  );
 
   return {
     month,

@@ -8,6 +8,10 @@ import {
   queryYtdMonthlyIncome,
   queryYtdMonthlyInvestmentContributions,
 } from './ytd.service';
+import {
+  computeRebalancingAdjustments,
+  queryResolvedGroupTransactions,
+} from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 const router = Router();
 router.use(requireAuth);
@@ -25,14 +29,27 @@ router.get('/ytd', async (req: Request, res: Response) => {
   const userId = getAuthUser(req).id;
   const today = new Date();
 
-  const [incomeRows, expenseRows, contributionRows, config] = await Promise.all([
-    queryYtdMonthlyIncome(userId, year),
-    queryYtdMonthlyExpenses(userId, year),
-    queryYtdMonthlyInvestmentContributions(userId, year),
-    queryDashboardUserConfig(userId),
-  ]);
+  const [incomeRows, expenseRows, contributionRows, config, resolvedRows] =
+    await Promise.all([
+      queryYtdMonthlyIncome(userId, year),
+      queryYtdMonthlyExpenses(userId, year),
+      queryYtdMonthlyInvestmentContributions(userId, year),
+      queryDashboardUserConfig(userId),
+      queryResolvedGroupTransactions(userId),
+    ]);
 
-  res.json(buildYtdResponse(year, incomeRows, expenseRows, contributionRows, today, config));
+  const adjustments = computeRebalancingAdjustments(resolvedRows, year);
+  res.json(
+    buildYtdResponse(
+      year,
+      incomeRows,
+      expenseRows,
+      contributionRows,
+      today,
+      config,
+      adjustments
+    )
+  );
 });
 
 export default router;

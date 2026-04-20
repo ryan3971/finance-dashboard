@@ -6,6 +6,11 @@ import {
   queryExpensesByCategory,
   queryMonthlyExpenses,
 } from './expenses.service';
+import {
+  applyRebalancingToCategories,
+  computeRebalancingAdjustments,
+  queryResolvedGroupTransactions,
+} from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 const router = Router();
 router.use(requireAuth);
@@ -21,16 +26,28 @@ const yearQuerySchema = z.object({
 router.get('/expenses', async (req: Request, res: Response) => {
   const { year } = yearQuerySchema.parse(req.query);
   const userId = getAuthUser(req).id;
-  const rows = await queryMonthlyExpenses(userId, year);
-  res.json(buildExpensesResponse(year, rows));
+
+  const [rows, resolvedRows] = await Promise.all([
+    queryMonthlyExpenses(userId, year),
+    queryResolvedGroupTransactions(userId),
+  ]);
+
+  const adjustments = computeRebalancingAdjustments(resolvedRows, year);
+  res.json(buildExpensesResponse(year, rows, adjustments));
 });
 
 // GET /api/v1/dashboard/expenses/categories?year=YYYY
 router.get('/expenses/categories', async (req: Request, res: Response) => {
   const { year } = yearQuerySchema.parse(req.query);
   const userId = getAuthUser(req).id;
-  const rows = await queryExpensesByCategory(userId, year);
-  res.json({ year, rows });
+
+  const [rows, resolvedRows] = await Promise.all([
+    queryExpensesByCategory(userId, year),
+    queryResolvedGroupTransactions(userId),
+  ]);
+
+  const adjustments = computeRebalancingAdjustments(resolvedRows, year);
+  res.json({ year, rows: applyRebalancingToCategories(rows, adjustments) });
 });
 
 export default router;

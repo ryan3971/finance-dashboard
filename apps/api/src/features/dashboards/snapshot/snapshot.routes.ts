@@ -8,6 +8,10 @@ import {
   queryAnticipatedForMonth,
 } from './snapshot.repository';
 import { buildSnapshotResponse } from './snapshot.service';
+import {
+  computeRebalancingAdjustments,
+  queryResolvedGroupTransactions,
+} from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 const router = Router();
 router.use(requireAuth);
@@ -19,14 +23,23 @@ router.get('/snapshot', async (req: Request, res: Response) => {
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const [accountRows, incomeTotal, expenseRows, anticipatedRows, config] =
-    await Promise.all([
-      queryAccountBalances(userId),
-      queryCurrentMonthIncome(userId, year, month),
-      queryCurrentMonthExpenses(userId, year, month),
-      queryAnticipatedForMonth(userId, year, month),
-      queryDashboardUserConfig(userId),
-    ]);
+  const [
+    accountRows,
+    incomeTotal,
+    expenseRows,
+    anticipatedRows,
+    config,
+    resolvedRows,
+  ] = await Promise.all([
+    queryAccountBalances(userId),
+    queryCurrentMonthIncome(userId, year, month),
+    queryCurrentMonthExpenses(userId, year, month),
+    queryAnticipatedForMonth(userId, year, month),
+    queryDashboardUserConfig(userId),
+    queryResolvedGroupTransactions(userId),
+  ]);
+
+  const adjustments = computeRebalancingAdjustments(resolvedRows, year);
 
   res.json(
     buildSnapshotResponse(
@@ -35,8 +48,8 @@ router.get('/snapshot', async (req: Request, res: Response) => {
       expenseRows,
       anticipatedRows,
       config,
-      year,
-      month
+      { year, month },
+      adjustments
     )
   );
 });

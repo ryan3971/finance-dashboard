@@ -7,6 +7,7 @@ import type {
   IncomeMonthAllocation,
 } from '@finance/shared/types/dashboard';
 import { MONTHS_IN_YEAR } from '@finance/shared/constants';
+import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 export interface IncomeRow {
   month: number;
@@ -58,7 +59,8 @@ export async function queryMonthlyIncome(
 export function buildIncomeResponse(
   year: number,
   rows: IncomeRow[],
-  config: IncomePercentageConfig
+  config: IncomePercentageConfig,
+  adjustments: RebalancingAdjustments
 ): IncomeDashboardResponse {
   const { needsPercentage, wantsPercentage, investmentsPercentage } = config;
   const percentages: AllocationPercentages | null =
@@ -72,12 +74,18 @@ export function buildIncomeResponse(
 
   const months = Array.from({ length: MONTHS_IN_YEAR }, (_, i) => {
     const month = i + 1;
-    const amount = new Decimal(rowMap.get(month) ?? '0.00');
+    const rawAmount = new Decimal(rowMap.get(month) ?? '0.00');
+    // Subtract rebalancing offset exclusions: offset transactions from resolved
+    // groups are not real income and are removed from the reported total.
+    const offsetExclusion =
+      adjustments.incomeByMonth.get(month) ?? new Decimal(0);
+    const amount = rawAmount.minus(offsetExclusion);
+    const rebalancingAdjustment = offsetExclusion.toNumber();
 
     let allocation: IncomeMonthAllocation | null = null;
 
     if (percentages !== null) {
-      if (amount.isZero()) {
+      if (amount.lte(0)) {
         allocation = { needs: 0, wants: 0, investments: 0 };
       } else {
         const needs = amount
@@ -97,7 +105,12 @@ export function buildIncomeResponse(
       }
     }
 
-    return { month, total: amount.toNumber(), allocation, rebalancingAdjustment: 0 };
+    return {
+      month,
+      total: amount.toNumber(),
+      allocation,
+      rebalancingAdjustment,
+    };
   });
 
   return { year, months };

@@ -138,6 +138,8 @@ export function YtdPage() {
             100,
           wants: Math.round((acc.wants + m.wants) * 100) / 100,
           needs: Math.round((acc.needs + m.needs) * 100) / 100,
+          rebalancingAdjustment:
+            Math.round((acc.rebalancingAdjustment + m.rebalancingAdjustment) * 100) / 100,
         }),
         {
           spendingIncome: 0,
@@ -145,6 +147,7 @@ export function YtdPage() {
           netSpendingIncome: 0,
           wants: 0,
           needs: 0,
+          rebalancingAdjustment: 0,
         }
       ),
     [dataMonths]

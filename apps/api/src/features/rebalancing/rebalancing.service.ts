@@ -7,7 +7,7 @@ import {
   rebalancingGroups,
   transactions,
 } from '@/db/schema';
-import { db, type DB, type DbTransaction } from '@/db';
+import { db } from '@/db';
 import Decimal from 'decimal.js';
 import type {
   RebalancingGroup,
@@ -24,6 +24,7 @@ import type {
 import type { z } from 'zod';
 import { RebalancingError, RebalancingErrorCode } from './rebalancing.errors';
 import { assertDefined } from '@/lib/assert';
+import { updateGroupAfterMemberRemoval } from '@/pipelines/rebalancing/rebalancing-group-hooks';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,10 @@ function computeMyShare(
   };
 }
 
-function assembleGroup(group: GroupRow, members: MemberRow[]): RebalancingGroup {
+function assembleGroup(
+  group: GroupRow,
+  members: MemberRow[]
+): RebalancingGroup {
   const { sourceTotal, offsetTotal, myShare } = computeMyShare(
     members,
     group.myShareOverride
@@ -142,13 +146,19 @@ const groupColumns = {
  * The `as unknown as GroupRow[]` cast is safe: the DB CHECK constraint on
  * `status` guarantees it is always a valid RebalancingStatus.
  */
-async function queryGroupRows(userId: string, groupId?: string): Promise<GroupRow[]> {
+async function queryGroupRows(
+  userId: string,
+  groupId?: string
+): Promise<GroupRow[]> {
   const rows = await db
     .select(groupColumns)
     .from(rebalancingGroups)
     .where(
       groupId
-        ? and(eq(rebalancingGroups.userId, userId), eq(rebalancingGroups.id, groupId))
+        ? and(
+            eq(rebalancingGroups.userId, userId),
+            eq(rebalancingGroups.id, groupId)
+          )
         : eq(rebalancingGroups.userId, userId)
     )
     .orderBy(rebalancingGroups.createdAt);
@@ -204,9 +214,7 @@ async function verifyTransactionOwnership(
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-    .where(
-      and(eq(transactions.id, transactionId), eq(accounts.userId, userId))
-    )
+    .where(and(eq(transactions.id, transactionId), eq(accounts.userId, userId)))
     .limit(1);
   return row ?? null;
 }
@@ -220,43 +228,6 @@ async function checkExistingMembership(
     .where(eq(rebalancingGroupTransactions.transactionId, transactionId))
     .limit(1);
   return row?.groupId ?? null;
-}
-
-// ─── Exported side-effect helper (used by transactions.service on delete) ─────
-
-/**
- * Called inside a DB transaction after a member transaction has been deleted.
- * The CASCADE will have already removed the membership row, so the source count
- * here reflects the remaining sources only.
- */
-export async function updateGroupAfterMemberRemoval(
-  tx: DB | DbTransaction,
-  groupId: string,
-  deletedRole: RebalancingRole
-): Promise<void> {
-  const updates: { flaggedForReview: boolean; status?: string } = {
-    flaggedForReview: true,
-  };
-
-  if (deletedRole === 'source') {
-    const [countRow] = await tx
-      .select({ count: sql<number>`count(*)` })
-      .from(rebalancingGroupTransactions)
-      .where(
-        and(
-          eq(rebalancingGroupTransactions.groupId, groupId),
-          eq(rebalancingGroupTransactions.role, 'source')
-        )
-      );
-    if (Number(countRow?.count ?? 0) === 0) {
-      updates.status = 'open';
-    }
-  }
-
-  await tx
-    .update(rebalancingGroups)
-    .set(updates)
-    .where(eq(rebalancingGroups.id, groupId));
 }
 
 // ─── List ─────────────────────────────────────────────────────────────────────
@@ -306,12 +277,20 @@ export async function createGroup(
   userId: string,
   input: CreateGroupInput
 ): Promise<RebalancingGroup> {
-  const owned = await verifyTransactionOwnership(input.initialTransactionId, userId);
-  if (!owned) throw new RebalancingError(RebalancingErrorCode.TRANSACTION_NOT_OWNED);
+  const owned = await verifyTransactionOwnership(
+    input.initialTransactionId,
+    userId
+  );
+  if (!owned)
+    throw new RebalancingError(RebalancingErrorCode.TRANSACTION_NOT_OWNED);
 
-  const existingGroupId = await checkExistingMembership(input.initialTransactionId);
+  const existingGroupId = await checkExistingMembership(
+    input.initialTransactionId
+  );
   if (existingGroupId !== null) {
-    throw new RebalancingError(RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP);
+    throw new RebalancingError(
+      RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP
+    );
   }
 
   const createdGroupId = await db.transaction(async (tx) => {
@@ -338,7 +317,9 @@ export async function createGroup(
       });
     } catch (err) {
       if (isUniqueViolation(err)) {
-        throw new RebalancingError(RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP);
+        throw new RebalancingError(
+          RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP
+        );
       }
       throw err;
     }
@@ -452,11 +433,14 @@ export async function addGroupTransaction(
   if (!group) return null;
 
   const owned = await verifyTransactionOwnership(input.transactionId, userId);
-  if (!owned) throw new RebalancingError(RebalancingErrorCode.TRANSACTION_NOT_OWNED);
+  if (!owned)
+    throw new RebalancingError(RebalancingErrorCode.TRANSACTION_NOT_OWNED);
 
   const existingGroupId = await checkExistingMembership(input.transactionId);
   if (existingGroupId !== null) {
-    throw new RebalancingError(RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP);
+    throw new RebalancingError(
+      RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP
+    );
   }
 
   try {
@@ -467,7 +451,9 @@ export async function addGroupTransaction(
     });
   } catch (err) {
     if (isUniqueViolation(err)) {
-      throw new RebalancingError(RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP);
+      throw new RebalancingError(
+        RebalancingErrorCode.TRANSACTION_ALREADY_IN_GROUP
+      );
     }
     throw err;
   }

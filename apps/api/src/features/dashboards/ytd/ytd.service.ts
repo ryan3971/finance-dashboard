@@ -9,6 +9,8 @@ import type {
   YtdDashboardResponse,
   YtdMonth,
 } from '@finance/shared/types/dashboard';
+import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
+import { totalExpenseAdjForMonth } from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 interface IncomeRow {
   month: number;
@@ -121,13 +123,28 @@ export interface YtdConfig {
   wantsPercentage: number | null;
 }
 
+function computeWantsNeeds(
+  spendingIncome: Decimal,
+  bucket: { need: Decimal; want: Decimal },
+  config: YtdConfig
+): { wants: Decimal; needs: Decimal } {
+  if (config.wantsPercentage !== null && config.needsPercentage !== null) {
+    return {
+      wants: spendingIncome.mul(config.wantsPercentage).div(100).minus(bucket.want.abs()),
+      needs: spendingIncome.mul(config.needsPercentage).div(100).minus(bucket.need.abs()),
+    };
+  }
+  return { wants: bucket.want, needs: bucket.need };
+}
+
 export function buildYtdResponse(
   year: number,
   incomeRows: IncomeRow[],
   expenseRows: ExpenseNeedWantRow[],
   contributionRows: ContributionRow[],
   today: Date,
-  config: YtdConfig
+  config: YtdConfig,
+  adjustments: RebalancingAdjustments
 ): YtdDashboardResponse {
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
@@ -163,6 +180,17 @@ export function buildYtdResponse(
     }
   }
 
+  // Apply rebalancing expense adjustments. YTD expense amounts are negative
+  // (raw SUM of negative transaction amounts), so we ADD the positive adjustment
+  // to make the totals less negative (i.e. reduce reported spending).
+  for (const [month, adj] of adjustments.expenseByMonth) {
+    const bucket = expenseBuckets.get(month);
+    if (!bucket) continue;
+    bucket.need = bucket.need.plus(adj.need);
+    bucket.want = bucket.want.plus(adj.want);
+    bucket.total = bucket.total.plus(adj.need).plus(adj.want).plus(adj.other);
+  }
+
   const months: YtdMonth[] = [];
   for (let m = 1; m <= MONTHS_IN_YEAR; m++) {
     const isFuture =
@@ -180,7 +208,11 @@ export function buildYtdResponse(
       continue;
     }
 
-    const income = new Decimal(incomeMap.get(m) ?? '0');
+    const rawIncome = new Decimal(incomeMap.get(m) ?? '0');
+    // Subtract offset exclusions: offset transactions from resolved rebalancing
+    // groups are not real income and are removed from the reported total.
+    const incomeExclusion = adjustments.incomeByMonth.get(m) ?? new Decimal(0);
+    const income = rawIncome.minus(incomeExclusion);
     const contributions = new Decimal(contributionMap.get(m) ?? '0');
     const spendingIncome = income.minus(contributions); // TODO: may need to change this to add, depending on how contributions are stored (+ or -)
 
@@ -188,15 +220,7 @@ export function buildYtdResponse(
     const bucket = expenseBuckets.get(m)!; // always present — pre-initialized for months 1–12 above
     const netSpendingIncome = spendingIncome.minus(bucket.total.abs());
 
-    let wants: Decimal;
-    let needs: Decimal;
-    if (config.wantsPercentage !== null && config.needsPercentage !== null) {
-      wants = spendingIncome.mul(config.wantsPercentage).div(100).minus(bucket.want.abs());
-      needs = spendingIncome.mul(config.needsPercentage).div(100).minus(bucket.need.abs());
-    } else {
-      wants = bucket.want;
-      needs = bucket.need;
-    }
+    const { wants, needs } = computeWantsNeeds(spendingIncome, bucket, config);
 
     months.push({
       month: m,
@@ -205,6 +229,7 @@ export function buildYtdResponse(
       netSpendingIncome: netSpendingIncome.toNumber(),
       wants: wants.toNumber(),
       needs: needs.toNumber(),
+      rebalancingAdjustment: totalExpenseAdjForMonth(adjustments, m).toNumber(),
     });
   }
 
