@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/Button';
 
 interface PaginationProps {
-  page: number;
-  totalPages: number;
-  onPrev: () => void;
-  onNext: () => void;
+  readonly page: number;
+  readonly totalPages: number;
+  readonly onPrev: () => void;
+  readonly onNext: () => void;
 }
 
 export function Pagination({
