@@ -26,18 +26,20 @@ import { useExpensesDashboard } from './useExpensesDashboard';
 import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 // TODO: consider extracting component in this file to another file to reduce its size
-
+// TODO: hardcoded values are a no no
 const CURRENT_YEAR = new Date().getFullYear();
 const TH_BASE =
   'px-4 py-2.5 text-xs font-semibold text-content-muted uppercase tracking-wider';
 const TD_BASE = 'px-4 py-3 text-sm text-content-secondary';
 
+// TODO: this function is used in multiple places, consider extracting to a utils file
 function sortIndicator(dir: false | 'asc' | 'desc'): string {
   if (dir === 'asc') return ' ↑';
   if (dir === 'desc') return ' ↓';
   return '';
 }
 
+// TODO: this function is used in multiple places, consider extracting to a utils file
 function pct(part: number, total: number): string | null {
   if (total === 0) return null;
   return `${((part / total) * 100).toFixed(1)}%`;
@@ -87,9 +89,23 @@ function MonthAmountCell({
   );
 }
 
-function ExpenseMonthRow({ month }: { readonly month: ExpenseMonth }) {
+function ExpenseMonthRow({
+  month,
+  isSelected,
+  onClick,
+}: {
+  readonly month: ExpenseMonth;
+  readonly isSelected: boolean;
+  readonly onClick: () => void;
+}) {
   return (
-    <tr className="border-t border-border-subtle">
+    <tr
+      className={cn(
+        'border-t border-border-subtle cursor-pointer transition-colors',
+        isSelected ? 'bg-surface-muted' : 'hover:bg-surface-subtle',
+      )}
+      onClick={onClick}
+    >
       <td className={cn(TD_BASE, 'w-16')}>{MONTH_LABELS[month.month - 1]}</td>
       <td className="px-4 py-3 text-right text-sm font-mono font-medium">
         <span className={cn(month.total > 0 ? 'text-danger' : 'text-content-muted')}>
@@ -108,14 +124,25 @@ function ExpenseMonthTotalsRow({
   need,
   want,
   other,
+  isFiltered,
+  onClear,
 }: {
   readonly total: number;
   readonly need: number;
   readonly want: number;
   readonly other: number;
+  readonly isFiltered: boolean;
+  readonly onClear: () => void;
 }) {
   return (
-    <tr className="border-t-2 border-border-base bg-surface-subtle font-semibold">
+    <tr
+      className={cn(
+        'border-t-2 border-border-base bg-surface-subtle font-semibold transition-colors',
+        isFiltered && 'cursor-pointer hover:bg-surface-muted',
+      )}
+      onClick={isFiltered ? onClear : undefined}
+      title={isFiltered ? 'Show all months' : undefined}
+    >
       <td className="px-4 py-3 text-sm text-content-primary">Total</td>
       <td className="px-4 py-3 text-right text-sm font-mono font-medium">
         <span className={cn(total > 0 ? 'text-danger' : 'text-content-muted')}>
@@ -135,7 +162,15 @@ function ExpenseMonthTotalsRow({
   );
 }
 
-function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
+function ExpenseMonthlyBreakdown({
+  year,
+  selectedMonth,
+  onMonthSelect,
+}: {
+  readonly year: number;
+  readonly selectedMonth: number | null;
+  readonly onMonthSelect: (month: number | null) => void;
+}) {
   const { data, isLoading, isError } = useExpensesDashboard(year);
 
   const totals = useMemo(
@@ -152,6 +187,7 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
     [data?.months],
   );
 
+  // TODO: remove the magic numbers
   return (
     <>
       {isLoading && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
@@ -176,9 +212,21 @@ function ExpenseMonthlyBreakdown({ year }: { readonly year: number }) {
               </thead>
               <tbody>
                 {data.months.map((month) => (
-                  <ExpenseMonthRow key={month.month} month={month} />
+                  <ExpenseMonthRow
+                    key={month.month}
+                    month={month}
+                    isSelected={selectedMonth === month.month}
+                    // Toggle: clicking the active month deselects (returns to all months)
+                    onClick={() => onMonthSelect(selectedMonth === month.month ? null : month.month)}
+                  />
                 ))}
-                {totals && <ExpenseMonthTotalsRow {...totals} />}
+                {totals && (
+                  <ExpenseMonthTotalsRow
+                    {...totals}
+                    isFiltered={selectedMonth !== null}
+                    onClear={() => onMonthSelect(null)}
+                  />
+                )}
               </tbody>
             </table>
           </DataTable>
@@ -535,20 +583,6 @@ export function ExpensesPage() {
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-xl font-semibold text-content-primary">Expenses</h1>
         <YearSelector year={year} onChange={handleYearChange} />
-        <select
-          className="select-base"
-          value={monthFilter ?? ''}
-          onChange={(e) =>
-            setMonthFilter(e.target.value ? Number(e.target.value) : null)
-          }
-        >
-          <option value="">All Months</option>
-          {MONTH_LABELS.map((label, i) => (
-            <option key={label} value={i + 1}>
-              {label}
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* Monthly breakdown and expense transactions side by side */}
@@ -557,7 +591,11 @@ export function ExpensesPage() {
           <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Monthly Breakdown
           </h2>
-          <ExpenseMonthlyBreakdown year={year} />
+          <ExpenseMonthlyBreakdown
+            year={year}
+            selectedMonth={monthFilter}
+            onMonthSelect={setMonthFilter}
+          />
         </div>
 
         <div className="min-w-0">
