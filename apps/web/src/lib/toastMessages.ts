@@ -52,6 +52,17 @@ export const TOAST = {
   BUDGET_MONTH_OVERRIDE_SAVE_FAILED: 'Failed to save override',
   BUDGET_MONTH_OVERRIDE_REMOVED: 'Override removed',
   BUDGET_MONTH_OVERRIDE_REMOVE_FAILED: 'Failed to remove override',
+  // Rebalancing Groups
+  REBALANCING_GROUP_CREATED: 'Group created',
+  REBALANCING_GROUP_CREATE_FAILED: 'Failed to create group',
+  REBALANCING_GROUP_UPDATED: 'Group updated',
+  REBALANCING_GROUP_UPDATE_FAILED: 'Failed to update group',
+  REBALANCING_GROUP_DELETED: 'Group deleted',
+  REBALANCING_GROUP_DELETE_FAILED: 'Failed to delete group',
+  REBALANCING_MEMBER_ADDED: 'Transaction added to group',
+  REBALANCING_MEMBER_ADD_FAILED: 'Failed to add transaction to group',
+  REBALANCING_MEMBER_REMOVED: 'Transaction removed from group',
+  REBALANCING_MEMBER_REMOVE_FAILED: 'Failed to remove transaction from group',
   // Tags
   TRANSACTION_TAG_ATTACH_FAILED:
     'Transaction saved, but some tags could not be attached.',

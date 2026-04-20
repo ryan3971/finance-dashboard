@@ -31,6 +31,12 @@ export const anticipatedBudgetKeys = {
   byYear: (year: number) => ['anticipated-budget', year] as const,
 };
 
+export const rebalancingKeys = {
+  all: () => ['rebalancing'] as const,
+  groups: () => ['rebalancing', 'groups'] as const,
+  group: (id: string) => ['rebalancing', 'groups', id] as const,
+};
+
 export const dashboardKeys = {
   all: () => ['dashboard'] as const,
   income: (year: number) => ['dashboard', 'income', year] as const,
