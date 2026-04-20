@@ -14,7 +14,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { cn, fmt, sortIndicator } from '@/lib/utils';
-import { useExpenseCategories } from '../useExpenseCategories';
+import { useExpenseCategories } from '../hooks/useExpenseCategories';
 import {
   buildCategoryTree,
   type ExpenseCategoryTreeRow,
@@ -48,7 +48,9 @@ function CategoryLabelCell({
       <span
         className={cn(
           'text-sm',
-          depth === 0 ? 'font-medium text-content-primary' : 'text-content-secondary',
+          depth === 0
+            ? 'font-medium text-content-primary'
+            : 'text-content-secondary'
         )}
       >
         {label}
@@ -57,7 +59,9 @@ function CategoryLabelCell({
   );
 }
 
-function renderLabelCell({ row }: CellContext<ExpenseCategoryTreeRow, unknown>) {
+function renderLabelCell({
+  row,
+}: CellContext<ExpenseCategoryTreeRow, unknown>) {
   return (
     <CategoryLabelCell
       depth={row.depth}
@@ -68,7 +72,9 @@ function renderLabelCell({ row }: CellContext<ExpenseCategoryTreeRow, unknown>) 
   );
 }
 
-function renderTotalCell({ getValue }: CellContext<ExpenseCategoryTreeRow, unknown>) {
+function renderTotalCell({
+  getValue,
+}: CellContext<ExpenseCategoryTreeRow, unknown>) {
   return (
     <span className="font-mono font-medium text-danger">
       {fmt(getValue<number>())}
@@ -76,7 +82,10 @@ function renderTotalCell({ getValue }: CellContext<ExpenseCategoryTreeRow, unkno
   );
 }
 
-function renderShareCell({ getValue, row }: CellContext<ExpenseCategoryTreeRow, unknown>) {
+function renderShareCell({
+  getValue,
+  row,
+}: CellContext<ExpenseCategoryTreeRow, unknown>) {
   return (
     <span className="text-xs font-mono text-content-muted">
       {(getValue<number>() * 100).toFixed(1)}%
@@ -140,7 +149,7 @@ export function ExpenseCategoryBreakdown({
 
   const treeData = useMemo(
     () => buildCategoryTree(data?.rows ?? [], monthFilter),
-    [data, monthFilter],
+    [data, monthFilter]
   );
 
   // True when all rows are expanded globally, or at least one is explicitly expanded.
@@ -195,12 +204,14 @@ export function ExpenseCategoryBreakdown({
                       className={header.column.columnDef.meta?.thClassName}
                       onClick={header.column.getToggleSortingHandler()}
                       style={{
-                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                        cursor: header.column.getCanSort()
+                          ? 'pointer'
+                          : 'default',
                       }}
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext(),
+                        header.getContext()
                       )}
                       {sortIndicator(header.column.getIsSorted())}
                     </th>
@@ -216,7 +227,10 @@ export function ExpenseCategoryBreakdown({
                       key={cell.id}
                       className={cell.column.columnDef.meta?.tdClassName}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </td>
                   ))}
                 </tr>

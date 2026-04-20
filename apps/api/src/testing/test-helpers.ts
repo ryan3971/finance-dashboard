@@ -7,6 +7,7 @@ import {
   categorizationRules,
   imports,
   investmentTransactions,
+  rebalancingGroups,
   refreshTokens,
   tags,
   transactions,
@@ -42,6 +43,7 @@ export async function cleanDatabase(): Promise<void> {
   await db.delete(anticipatedBudgetMonths);
   await db.delete(anticipatedBudget);
   await db.delete(userConfig);
+  await db.delete(rebalancingGroups);
   await db.delete(users);
 }
 

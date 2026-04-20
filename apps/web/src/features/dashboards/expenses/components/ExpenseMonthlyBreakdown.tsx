@@ -5,7 +5,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { cn, fmt, fmtPct, MONTH_LABELS } from '@/lib/utils';
-import { useExpensesDashboard } from '../useExpensesDashboard';
+import { useExpensesDashboard } from '../hooks/useExpensesDashboard';
 
 function MonthAmountCell({
   value,
@@ -18,9 +18,13 @@ function MonthAmountCell({
 }) {
   return (
     <td className="px-4 py-3 text-sm text-right">
-      <span className={cn('font-mono font-medium', colorClass)}>{fmt(value)}</span>
+      <span className={cn('font-mono font-medium', colorClass)}>
+        {fmt(value)}
+      </span>
       {total > 0 && (
-        <span className="block text-xs text-content-muted">{fmtPct(value, total)}</span>
+        <span className="block text-xs text-content-muted">
+          {fmtPct(value, total)}
+        </span>
       )}
     </td>
   );
@@ -39,19 +43,35 @@ function ExpenseMonthRow({
     <tr
       className={cn(
         'border-t border-border-subtle cursor-pointer transition-colors',
-        isSelected ? 'bg-surface-muted' : 'hover:bg-surface-subtle',
+        isSelected ? 'bg-surface-muted' : 'hover:bg-surface-subtle'
       )}
       onClick={onClick}
     >
-      <td className={cn('td-class', 'w-16')}>{MONTH_LABELS[month.month - 1]}</td>
+      <td className={cn('td-class', 'w-16')}>
+        {MONTH_LABELS[month.month - 1]}
+      </td>
       <td className="px-4 py-3 text-right text-sm font-mono font-medium">
-        <span className={month.total > 0 ? 'text-danger' : 'text-content-muted'}>
+        <span
+          className={month.total > 0 ? 'text-danger' : 'text-content-muted'}
+        >
           {fmt(month.total)}
         </span>
       </td>
-      <MonthAmountCell value={month.need} total={month.total} colorClass="text-info" />
-      <MonthAmountCell value={month.want} total={month.total} colorClass="text-accent" />
-      <MonthAmountCell value={month.other} total={month.total} colorClass="text-content-secondary" />
+      <MonthAmountCell
+        value={month.need}
+        total={month.total}
+        colorClass="text-info"
+      />
+      <MonthAmountCell
+        value={month.want}
+        total={month.total}
+        colorClass="text-accent"
+      />
+      <MonthAmountCell
+        value={month.other}
+        total={month.total}
+        colorClass="text-content-secondary"
+      />
     </tr>
   );
 }
@@ -75,7 +95,7 @@ function ExpenseMonthTotalsRow({
     <tr
       className={cn(
         'border-t-2 border-border-base bg-surface-subtle font-semibold transition-colors',
-        isFiltered && 'cursor-pointer hover:bg-surface-muted',
+        isFiltered && 'cursor-pointer hover:bg-surface-muted'
       )}
       onClick={isFiltered ? onClear : undefined}
       title={isFiltered ? 'Show all months' : undefined}
@@ -119,9 +139,9 @@ export function ExpenseMonthlyBreakdown({
           want: acc.want + m.want,
           other: acc.other + m.other,
         }),
-        { need: 0, want: 0, other: 0 },
+        { need: 0, want: 0, other: 0 }
       ) ?? null,
-    [data?.months],
+    [data?.months]
   );
 
   return (
@@ -131,8 +151,8 @@ export function ExpenseMonthlyBreakdown({
         <EmptyState variant="error" message="Failed to load expense data." />
       )}
 
-      {data && (
-        data.annualTotal === 0 ? (
+      {data &&
+        (data.annualTotal === 0 ? (
           <EmptyState message="No expenses for this year." />
         ) : (
           <DataTable className="mb-6">
@@ -140,7 +160,9 @@ export function ExpenseMonthlyBreakdown({
               <thead>
                 <tr className="bg-surface-subtle">
                   <th className={cn('th-class', 'w-16')}>Month</th>
-                  <th className={cn('th-class', 'text-right')}>Total Expenses</th>
+                  <th className={cn('th-class', 'text-right')}>
+                    Total Expenses
+                  </th>
                   <th className={cn('th-class', 'text-right')}>Need</th>
                   <th className={cn('th-class', 'text-right')}>Want</th>
                   <th className={cn('th-class', 'text-right')}>Other</th>
@@ -153,7 +175,11 @@ export function ExpenseMonthlyBreakdown({
                     month={month}
                     isSelected={selectedMonth === month.month}
                     // Toggle: clicking the active month deselects (returns to all months)
-                    onClick={() => onMonthSelect(selectedMonth === month.month ? null : month.month)}
+                    onClick={() =>
+                      onMonthSelect(
+                        selectedMonth === month.month ? null : month.month
+                      )
+                    }
                   />
                 ))}
                 {subtotals && (
@@ -167,8 +193,7 @@ export function ExpenseMonthlyBreakdown({
               </tbody>
             </table>
           </DataTable>
-        )
-      )}
+        ))}
     </>
   );
 }

@@ -2,6 +2,7 @@ import {
   accounts,
   categories,
   categorizationRules,
+  rebalancingGroupTransactions,
   tags,
   transactions,
   transactionTags,
@@ -22,7 +23,10 @@ import type { NeedWant } from '@finance/shared/constants';
 import type { PatchTransactionInput } from '@finance/shared/types/transactions';
 import { db } from '@/db';
 import { assertDefined } from '@/lib/assert';
-
+import { updateGroupAfterMemberRemoval } from '@/features/rebalancing/rebalancing.service';
+import type { RebalancingRole } from '@finance/shared/types/rebalancing';
+// TODO: address the cross-feature error
+// TODO: update the testing file
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface TransactionFilters {
@@ -117,11 +121,17 @@ export async function listTransactions(
       categoryName: categories.name,
       subcategoryId: transactions.subcategoryId,
       subcategoryName: subcategories.name,
+      rebalancingGroupId: rebalancingGroupTransactions.groupId,
+      rebalancingRole: rebalancingGroupTransactions.role,
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .leftJoin(subcategories, eq(transactions.subcategoryId, subcategories.id))
+    .leftJoin(
+      rebalancingGroupTransactions,
+      eq(rebalancingGroupTransactions.transactionId, transactions.id)
+    )
     .where(and(...conditions))
     .orderBy(desc(transactions.date))
     .limit(limit)
@@ -294,9 +304,10 @@ export async function createManualTransaction(
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 /**
- * Deletes a transaction. If the transaction is one half of a confirmed transfer
- * pair, the pair's transferPairId is cleared first (in the same DB transaction)
- * so no dangling references remain.
+ * Deletes a transaction. Handles two side-effects atomically:
+ * - If part of a confirmed transfer pair, clears the pair's transferPairId.
+ * - If part of a rebalancing group, flags the group for review and sets it
+ *   back to 'open' if the deleted transaction was the only source.
  *
  * Returns true if deleted, false if not found / not owned.
  */
@@ -316,14 +327,33 @@ export async function deleteTransaction(
 
   if (!txn) return false;
 
-  if (txn.transferPairId) {
+  const [membership] = await db
+    .select({
+      groupId: rebalancingGroupTransactions.groupId,
+      role: rebalancingGroupTransactions.role,
+    })
+    .from(rebalancingGroupTransactions)
+    .where(eq(rebalancingGroupTransactions.transactionId, id))
+    .limit(1);
+
+  if (txn.transferPairId || membership) {
     const pairId = txn.transferPairId;
     await db.transaction(async (tx) => {
-      await tx
-        .update(transactions)
-        .set({ transferPairId: null })
-        .where(eq(transactions.id, pairId));
+      if (pairId) {
+        await tx
+          .update(transactions)
+          .set({ transferPairId: null })
+          .where(eq(transactions.id, pairId));
+      }
+      // CASCADE removes the rebalancing_group_transactions row automatically.
       await tx.delete(transactions).where(eq(transactions.id, id));
+      if (membership) {
+        await updateGroupAfterMemberRemoval(
+          tx,
+          membership.groupId,
+          membership.role as RebalancingRole
+        );
+      }
     });
   } else {
     await db.delete(transactions).where(eq(transactions.id, id));

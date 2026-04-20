@@ -1,0 +1,1 @@
+ALTER TABLE "rebalancing_group_transactions" ADD CONSTRAINT "rebalancing_group_transactions_transaction_id_unique" UNIQUE("transaction_id");

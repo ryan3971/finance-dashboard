@@ -336,7 +336,8 @@ export const rebalancingGroupTransactions = pgTable(
       .notNull(),
     transactionId: uuid('transaction_id')
       .references(() => transactions.id, { onDelete: 'cascade' })
-      .notNull(),
+      .notNull()
+      .unique(),
     role: text('role').notNull(),
   },
   (t) => [

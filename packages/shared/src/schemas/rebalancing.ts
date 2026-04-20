@@ -1,7 +1,5 @@
 import { z } from 'zod';
-import { FIELD_LIMITS } from '../constants';
-
-export const REBALANCING_GROUP_LABEL_MAX = 100;
+import { FIELD_LIMITS, REBALANCING_GROUP_LABEL_MAX } from '../constants';
 
 export const createRebalancingGroupSchema = z.object({
   label: z

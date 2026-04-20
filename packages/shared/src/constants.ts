@@ -69,3 +69,5 @@ export const PAGINATION = {
   DEFAULT_LIMIT: 50,
   EXPORT_LIMIT: 10000,
 } as const;
+
+export const REBALANCING_GROUP_LABEL_MAX = 100;
