@@ -303,6 +303,51 @@ export const anticipatedBudgetMonths = pgTable(
   (t) => [unique().on(t.anticipatedBudgetId, t.month)]
 );
 
+// ─── Rebalancing ─────────────────────────────────────────────────────────────
+
+export const rebalancingGroups = pgTable(
+  'rebalancing_groups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    label: text('label').notNull(),
+    status: text('status').notNull().default('open'),
+    myShareOverride: numeric('my_share_override', { precision: 12, scale: 2 }),
+    flaggedForReview: boolean('flagged_for_review').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    check(
+      'rebalancing_groups_status_check',
+      sql`${t.status} IN ('open', 'resolved')`
+    ),
+  ]
+);
+
+export const rebalancingGroupTransactions = pgTable(
+  'rebalancing_group_transactions',
+  {
+    groupId: uuid('group_id')
+      .references(() => rebalancingGroups.id, { onDelete: 'cascade' })
+      .notNull(),
+    transactionId: uuid('transaction_id')
+      .references(() => transactions.id, { onDelete: 'cascade' })
+      .notNull(),
+    role: text('role').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.groupId, t.transactionId] }),
+    check(
+      'rebalancing_group_transactions_role_check',
+      sql`${t.role} IN ('source', 'offset')`
+    ),
+  ]
+);
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many, one }) => ({
@@ -311,6 +356,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   tags: many(tags),
   config: one(userConfig),
   anticipatedBudgetEntries: many(anticipatedBudget),
+  rebalancingGroups: many(rebalancingGroups),
 }));
 
 export const anticipatedBudgetRelations = relations(
@@ -367,5 +413,34 @@ export const transactionsRelations = relations(
       references: [categories.id],
     }),
     transactionTags: many(transactionTags),
+    rebalancingMembership: one(rebalancingGroupTransactions, {
+      fields: [transactions.id],
+      references: [rebalancingGroupTransactions.transactionId],
+    }),
+  })
+);
+
+export const rebalancingGroupsRelations = relations(
+  rebalancingGroups,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [rebalancingGroups.userId],
+      references: [users.id],
+    }),
+    members: many(rebalancingGroupTransactions),
+  })
+);
+
+export const rebalancingGroupTransactionsRelations = relations(
+  rebalancingGroupTransactions,
+  ({ one }) => ({
+    group: one(rebalancingGroups, {
+      fields: [rebalancingGroupTransactions.groupId],
+      references: [rebalancingGroups.id],
+    }),
+    transaction: one(transactions, {
+      fields: [rebalancingGroupTransactions.transactionId],
+      references: [transactions.id],
+    }),
   })
 );

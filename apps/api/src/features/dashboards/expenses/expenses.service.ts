@@ -94,6 +94,7 @@ export function buildExpensesResponse(
         want: want.toNumber(),
         other: other.toNumber(),
         total: total.toNumber(),
+        rebalancingAdjustment: 0,
       };
     }
   );
@@ -138,5 +139,6 @@ export async function queryExpensesByCategory(
     category: r.category,
     subcategory: r.subcategory,
     total: new Decimal(r.total).toNumber(),
+    rebalancingAdjustment: null,
   }));
 }

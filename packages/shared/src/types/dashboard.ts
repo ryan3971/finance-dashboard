@@ -8,6 +8,7 @@ export interface IncomeMonth {
   month: number;
   total: number;
   allocation: IncomeMonthAllocation | null;
+  rebalancingAdjustment: number;
 }
 
 export interface IncomeDashboardResponse {
@@ -21,6 +22,7 @@ export interface ExpenseMonth {
   want: number;
   other: number;
   total: number;
+  rebalancingAdjustment: number;
 }
 
 export interface ExpenseDashboardResponse {
@@ -34,6 +36,7 @@ export interface ExpenseCategoryRow {
   category: string | null;
   subcategory: string | null;
   total: number;
+  rebalancingAdjustment: number | null;
 }
 
 export interface ExpenseCategoriesResponse {
@@ -61,6 +64,7 @@ export interface SnapshotColumnValues {
   total: number;
   needs: number;
   wants: number;
+  rebalancingAdjustment: number;
 }
 
 export interface SnapshotMonthlyIncome {

@@ -29,7 +29,7 @@ interface Percentages {
 }
 
 function zeroColumns(): SnapshotColumnValues {
-  return { total: 0, needs: 0, wants: 0 };
+  return { total: 0, needs: 0, wants: 0, rebalancingAdjustment: 0 };
 }
 
 function subtractColumns(
@@ -40,6 +40,7 @@ function subtractColumns(
     total: new Decimal(a.total).minus(b.total).toNumber(),
     needs: new Decimal(a.needs).minus(b.needs).toNumber(),
     wants: new Decimal(a.wants).minus(b.wants).toNumber(),
+    rebalancingAdjustment: 0,
   };
 }
 
@@ -61,6 +62,7 @@ function buildExpensesColumns(
     total: total.toNumber(),
     needs: needs.toNumber(),
     wants: wants.toNumber(),
+    rebalancingAdjustment: 0,
   };
 }
 
@@ -80,6 +82,7 @@ function buildIncomeLessInvestment(
       needs: 0,
       wants: 0,
       total: income.toNumber(),
+      rebalancingAdjustment: 0,
     };
   }
   const needs = income.mul(percentages.needs).div(100).toDecimalPlaces(2);
@@ -88,6 +91,7 @@ function buildIncomeLessInvestment(
     needs: needs.toNumber(),
     wants: wants.toNumber(),
     total: needs.plus(wants).toNumber(),
+    rebalancingAdjustment: 0,
   };
 }
 
@@ -119,6 +123,7 @@ function accumulateAnticipated(rows: AnticipatedRow[]): AnticipatedTotals {
       total: expTotal.toNumber(),
       needs: expNeeds.toNumber(),
       wants: expWants.toNumber(),
+      rebalancingAdjustment: 0,
     },
   };
 }
@@ -149,6 +154,7 @@ function buildExpectedSpendingIncome(
     total: spendingTotal.toNumber(),
     needs: spendingNeeds.toNumber(),
     wants: spendingWants.toNumber(),
+    rebalancingAdjustment: 0,
   };
 }
 

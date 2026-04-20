@@ -97,7 +97,7 @@ export function buildIncomeResponse(
       }
     }
 
-    return { month, total: amount.toNumber(), allocation };
+    return { month, total: amount.toNumber(), allocation, rebalancingAdjustment: 0 };
   });
 
   return { year, months };

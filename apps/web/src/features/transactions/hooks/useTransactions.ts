@@ -32,6 +32,8 @@ export interface Transaction {
   subcategoryId: string | null;
   subcategoryName: string | null;
   tags: Tag[];
+  rebalancingGroupId: string | null;
+  rebalancingRole: 'source' | 'offset' | null;
 }
 
 export interface PaginationInfo {
