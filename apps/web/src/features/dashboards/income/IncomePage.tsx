@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
-import { useIncomeDashboard } from './useIncomeDashboard';
+import { useIncomeDashboard } from './hooks/useIncomeDashboard';
 import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 function pct(part: number, total: number) {
