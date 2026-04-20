@@ -193,3 +193,31 @@ Prerequisite: resetTestSystemData() must have run first (already guaranteed by s
 test-anticipated-budget-seed.md — reference doc
 
 Covers what each entry exercises, the override table, usage patterns (beforeAll vs beforeEach), and a branch coverage summary table.
+---
+What was done
+apps/web/src/lib/utils.ts
+Added fmtPct — replaces the duplicated pct() function in ExpensesPage and IncomePage. Shared across features.
+Added sortIndicator — narrowed return type to ' ↑' | ' ↓' | '' instead of string. Shared across features.
+Added TH_CLASS / TD_CLASS — named constants for the dashboard table header/cell class strings, replacing the local TH_BASE/TD_BASE magic strings. Available to IncomePage and any future dashboard tab.
+apps/web/src/components/ui/SkeletonTable.tsx (new)
+Extracted from ExpensesPage. Generic columns/rows/className props. Placed in components/ui/ since IncomePage has its own inline skeleton that can be refactored to use this.
+apps/web/src/features/dashboards/expenses/utils/categoryTree.ts (new)
+buildCategoryTree, groupByCategoryKey, buildSubRows — pure transform functions, zero React dependencies, now testable in isolation.
+getMonthDateRange / getYearDateRange — date range helpers unified here. getYearDateRange eliminates the hardcoded ${year}-12-31 inline in the page.
+ExpenseCategoryTreeRow interface — field renamed from pct (ratio 0–1, misleadingly named) to share. Comment documents the range.
+apps/web/src/features/dashboards/expenses/components/ExpenseMonthlyBreakdown.tsx (new)
+MonthAmountCell, ExpenseMonthRow, ExpenseMonthTotalsRow, ExpenseMonthlyBreakdown extracted here.
+totals reduce simplified — total now comes from data.annualTotal (already computed by the API); the reduce only sums need/want/other, eliminating float drift.
+Uses fmtPct, TH_CLASS, TD_CLASS from @/lib/utils.
+apps/web/src/features/dashboards/expenses/components/ExpenseCategoryBreakdown.tsx (new)
+CategoryLabelCell, cell renderers, ExpenseCategoryBreakdown extracted here.
+CATEGORY_COLUMNS is a module-level constant — was a useMemo(fn, []), which allocates on every component mount. As a static constant it costs nothing after module parse.
+CATEGORY_SKELETON_ROWS = 8 — replaces the magic number.
+hasAnyExpanded replaces isAllExpanded — expanded === true || Object.values(expanded).some(Boolean) correctly drives "Collapse All" in both the all-expanded and partially-expanded states, not just the former.
+useState<SortingState>([]) — fixes the never[] inference that caused a type error on onSortingChange.
+Cell renderers use CellContext<..., unknown> with getValue<number>() — required because the module-level column array uses the default TValue = unknown; this is idiomatic TanStack Table usage.
+apps/web/src/features/dashboards/expenses/ExpensesPage.tsx
+Reduced from 632 lines to 74. Contains only page-level state and layout.
+useState(() => new Date().getFullYear()) — lazy initializer prevents the year from going stale if the app stays open across midnight.
+useCallback for handleYearChange — stable reference; won't defeat a memoized YearSelector.
+getYearDateRange replaces the inline ${year}-12-31 fallback.
