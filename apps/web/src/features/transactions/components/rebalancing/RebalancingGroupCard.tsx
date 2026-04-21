@@ -58,39 +58,34 @@ function TotalsRow({ group }: { readonly group: RebalancingGroup }) {
 }
 
 interface TransactionRowProps {
-  readonly transactionId: string;
   readonly date: string;
   readonly description: string;
   readonly accountName: string;
   readonly categoryName: string | null;
   readonly subcategoryName: string | null;
   readonly amount: string;
-  readonly groupId: string;
   readonly isPending: boolean;
+  readonly onRemove: () => void;
 }
 
 function TransactionRow({
-  transactionId,
   date,
   description,
   accountName,
   categoryName,
   subcategoryName,
   amount,
-  groupId,
   isPending,
+  onRemove,
 }: TransactionRowProps) {
-  const removeMember = useRemoveGroupMember();
-
-let categoryPath: string | null = null;
-if (categoryName && subcategoryName) {
-  categoryPath = `${categoryName} › ${subcategoryName}`;
-} else if (categoryName) {
-  categoryPath = categoryName;
-} else if (subcategoryName) {
-  categoryPath = subcategoryName;
-}
-
+  let categoryPath: string | null = null;
+  if (categoryName && subcategoryName) {
+    categoryPath = `${categoryName} › ${subcategoryName}`;
+  } else if (categoryName) {
+    categoryPath = categoryName;
+  } else if (subcategoryName) {
+    categoryPath = subcategoryName;
+  }
 
   return (
     <div className="group flex items-center gap-3 px-4 py-2.5 border-t border-border-subtle text-sm">
@@ -112,10 +107,8 @@ if (categoryName && subcategoryName) {
       <button
         className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-content-muted hover:text-danger disabled:opacity-30"
         title="Remove from group"
-        disabled={isPending || removeMember.isPending}
-        onClick={() =>
-          removeMember.mutate({ groupId, transactionId })
-        }
+        disabled={isPending}
+        onClick={onRemove}
       >
         ✕
       </button>
@@ -134,6 +127,8 @@ function TransactionSection({
   readonly groupId: string;
   readonly isPending: boolean;
 }) {
+  const removeMember = useRemoveGroupMember();
+
   if (transactions.length === 0) return null;
   return (
     <div>
@@ -143,15 +138,14 @@ function TransactionSection({
       {transactions.map((t) => (
         <TransactionRow
           key={t.transactionId}
-          transactionId={t.transactionId}
           date={t.date}
           description={t.description}
           accountName={t.accountName}
           categoryName={t.categoryName}
           subcategoryName={t.subcategoryName}
           amount={t.amount}
-          groupId={groupId}
-          isPending={isPending}
+          isPending={isPending || removeMember.isPending}
+          onRemove={() => removeMember.mutate({ groupId, transactionId: t.transactionId })}
         />
       ))}
     </div>
@@ -172,8 +166,7 @@ export function RebalancingGroupCard({
   const isDeleting = deleteGroup.isPending;
   const anyPending = isUpdating || isDeleting;
 
-  const resolvedLabel = isResolved ? 'Re-open' : 'Mark Resolved';
-  const toggleLabel = isUpdating ? '…' : resolvedLabel;
+  const toggleLabel = isUpdating ? '…' : isResolved ? 'Re-open' : 'Mark Resolved';
 
   const sources = group.transactions.filter((t) => t.role === 'source');
   const offsets = group.transactions.filter((t) => t.role === 'offset');

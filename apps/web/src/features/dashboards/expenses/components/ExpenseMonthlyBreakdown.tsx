@@ -47,7 +47,7 @@ function ExpenseMonthRow({
       )}
       onClick={onClick}
     >
-      <td className={cn('td-class', 'w-16')}>
+      <td className="td-class w-16">
         {MONTH_LABELS[month.month - 1]}
       </td>
       <td className="px-4 py-3 text-right text-sm font-mono font-medium">
@@ -172,13 +172,13 @@ export function ExpenseMonthlyBreakdown({
             <table className="min-w-full text-left">
               <thead>
                 <tr className="bg-surface-subtle">
-                  <th className={cn('th-class', 'w-16')}>Month</th>
-                  <th className={cn('th-class', 'text-right')}>
+                  <th className="th-class w-16">Month</th>
+                  <th className="th-class text-right">
                     Total Expenses
                   </th>
-                  <th className={cn('th-class', 'text-right')}>Need</th>
-                  <th className={cn('th-class', 'text-right')}>Want</th>
-                  <th className={cn('th-class', 'text-right')}>Other</th>
+                  <th className="th-class text-right">Need</th>
+                  <th className="th-class text-right">Want</th>
+                  <th className="th-class text-right">Other</th>
                 </tr>
               </thead>
               <tbody>

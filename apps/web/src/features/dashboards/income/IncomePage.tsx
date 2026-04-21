@@ -124,9 +124,28 @@ function IncomeTotalsRow({
   );
 }
 
+function IncomeSkeleton() {
+  return (
+    <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
+      <div className="px-4 py-2.5 bg-surface-subtle border-b border-border-subtle" />
+      {Array.from({ length: MONTHS_IN_YEAR }, (_, i) => (
+        <div
+          key={`skeleton-${i}`}
+          className="px-4 py-3 border-t border-border-subtle flex gap-4"
+        >
+          <Skeleton className="h-4 w-8" />
+          <Skeleton className="h-4 w-24 ml-auto" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function IncomePage() {
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(currentYear);
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const { data, isLoading, isError } = useIncomeDashboard(year);
 
   const allocationConfigured = data?.months.some((m) => m.allocation !== null);
@@ -183,23 +202,7 @@ export function IncomePage() {
         {/* Left column: income breakdown table */}
         <div className="flex-none">
           {/* Loading */}
-          {isLoading && (
-            <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
-              <div className="px-4 py-2.5 bg-surface-subtle border-b border-border-subtle" />
-              {Array.from({ length: MONTHS_IN_YEAR }, (_, i) => (
-                <div
-                  key={`skeleton-${i}`}
-                  className="px-4 py-3 border-t border-border-subtle flex gap-4"
-                >
-                  <Skeleton className="h-4 w-8" />
-                  <Skeleton className="h-4 w-24 ml-auto" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              ))}
-            </div>
-          )}
+          {isLoading && <IncomeSkeleton />}
 
           {/* Error */}
           {isError && (

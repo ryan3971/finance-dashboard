@@ -53,6 +53,8 @@ interface TransactionTablePaneProps {
 }
 
 const SKELETON_ROW_COUNT = 6;
+const NOOP_REBALANCING = () => undefined;
+
 
 function PaneSkeleton() {
   return (
@@ -228,7 +230,7 @@ export function TransactionTablePane({
         onCollapse={handleCollapse}
         onDuplicate={handleDuplicate}
         onDelete={handleDeleteRequest}
-        onRebalancing={onRebalancing ?? (() => undefined)}
+        onRebalancing={onRebalancing ?? NOOP_REBALANCING}
         pagination={pagination}
         onPageChange={handlePageChange}
       />

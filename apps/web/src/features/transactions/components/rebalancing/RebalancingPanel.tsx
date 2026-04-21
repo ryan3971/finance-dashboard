@@ -23,13 +23,14 @@ const newGroupSchema = z.object({
 });
 type NewGroupForm = z.infer<typeof newGroupSchema>;
 
-interface RebalancingPanelProps {
+type RebalancingPanelProps = {
   readonly transactionId: string;
   readonly description: string;
-  readonly rebalancingGroupId: string | null;
-  readonly rebalancingRole: RebalancingRole | null;
   readonly onClose: () => void;
-}
+} & (
+  | { readonly rebalancingGroupId: string; readonly rebalancingRole: RebalancingRole }
+  | { readonly rebalancingGroupId: null; readonly rebalancingRole: null }
+);
 
 // ─── Role toggle ──────────────────────────────────────────────────────────────
 
@@ -273,14 +274,12 @@ export function RebalancingPanel({
   rebalancingRole,
   onClose,
 }: RebalancingPanelProps) {
-  const isInGroup = rebalancingGroupId !== null;
-
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-surface border-l border-border-base shadow-xl overflow-y-auto z-40 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-border-subtle">
         <h2 className="text-sm font-medium text-content-primary">
-          {isInGroup ? 'Rebalancing group' : 'Add to group'}
+          {rebalancingGroupId !== null ? 'Rebalancing group' : 'Add to group'}
         </h2>
         <button
           onClick={onClose}
@@ -300,11 +299,11 @@ export function RebalancingPanel({
           {description}
         </p>
 
-        {isInGroup ? (
+        {rebalancingGroupId !== null ? (
           <RemoveFromGroupSection
             transactionId={transactionId}
             groupId={rebalancingGroupId}
-            role={rebalancingRole ?? 'source'}
+            role={rebalancingRole}
             onClose={onClose}
           />
         ) : (

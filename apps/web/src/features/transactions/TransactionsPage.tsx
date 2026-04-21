@@ -13,7 +13,7 @@ import type {
   PaginationInfo,
   Transaction,
 } from '@/features/transactions/hooks/useTransactions';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { PAGINATION } from '@finance/shared/constants';
 
@@ -33,14 +33,24 @@ export function TransactionsPage() {
     setRebalancingTx(tx);
   }, []);
 
-  const filters: FilterState = {
-    accountId: search.accountId ?? '',
-    startDate: search.startDate ?? '',
-    endDate: search.endDate ?? '',
-    categoryId: search.categoryId ?? '',
-    subcategoryId: search.subcategoryId ?? '',
-    flaggedOnly: search.flaggedOnly ?? false,
-  };
+  const filters = useMemo<FilterState>(
+    () => ({
+      accountId: search.accountId ?? '',
+      startDate: search.startDate ?? '',
+      endDate: search.endDate ?? '',
+      categoryId: search.categoryId ?? '',
+      subcategoryId: search.subcategoryId ?? '',
+      flaggedOnly: search.flaggedOnly ?? false,
+    }),
+    [
+      search.accountId,
+      search.startDate,
+      search.endDate,
+      search.categoryId,
+      search.subcategoryId,
+      search.flaggedOnly,
+    ]
+  );
   const page = search.page ?? 1;
 
   function handleFilterChange(newFilters: FilterState) {
@@ -134,7 +144,7 @@ export function TransactionsPage() {
       <Tabs
         value={activeTab}
         onValueChange={(v) => {
-          setActiveTab(v as 'transactions' | 'rebalancing');
+          if (v === 'transactions' || v === 'rebalancing') setActiveTab(v);
           setAddPanelOpen(false);
           setRebalancingTx(null);
         }}
@@ -165,13 +175,23 @@ export function TransactionsPage() {
       )}
 
       {rebalancingTx !== null && (
-        <RebalancingPanel
-          transactionId={rebalancingTx.id}
-          description={rebalancingTx.sourceName ?? rebalancingTx.description}
-          rebalancingGroupId={rebalancingTx.rebalancingGroupId}
-          rebalancingRole={rebalancingTx.rebalancingRole}
-          onClose={() => setRebalancingTx(null)}
-        />
+        rebalancingTx.rebalancingGroupId !== null ? (
+          <RebalancingPanel
+            transactionId={rebalancingTx.id}
+            description={rebalancingTx.sourceName ?? rebalancingTx.description}
+            rebalancingGroupId={rebalancingTx.rebalancingGroupId}
+            rebalancingRole={rebalancingTx.rebalancingRole ?? 'source'}
+            onClose={() => setRebalancingTx(null)}
+          />
+        ) : (
+          <RebalancingPanel
+            transactionId={rebalancingTx.id}
+            description={rebalancingTx.sourceName ?? rebalancingTx.description}
+            rebalancingGroupId={null}
+            rebalancingRole={null}
+            onClose={() => setRebalancingTx(null)}
+          />
+        )
       )}
     </PageLayout>
   );

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { YtdMonth } from '@finance/shared/types/dashboard';
+import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -48,7 +49,7 @@ function YtdAmountCell({
   );
 }
 
-const SKELETON_ROWS = Array.from({ length: 12 }, (_, i) => i);
+const SKELETON_ROWS = Array.from({ length: MONTHS_IN_YEAR }, (_, i) => i);
 
 function YtdSkeleton() {
   return (
