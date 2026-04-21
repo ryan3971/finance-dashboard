@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
+import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -35,6 +36,7 @@ function exportRulesCsv(rules: Rule[]) {
 
 function RuleRow({ rule }: { readonly rule: Rule }) {
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [keyword, setKeyword] = useState(rule.keyword);
   const [priority, setPriority] = useState(String(rule.priority));
   const [needWant, setNeedWant] = useState<NeedWant | ''>(rule.needWant ?? '');
@@ -161,12 +163,20 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
             variant="ghost"
             className="h-7 text-xs text-danger hover:text-danger"
             disabled={remove.isPending}
-            onClick={() => remove.mutate(rule.id)}
+            onClick={() => setConfirmDelete(true)}
           >
             Delete
           </Button>
         </div>
       </td>
+      <DeleteConfirmDialog
+        open={confirmDelete}
+        title="Delete rule?"
+        description={`The rule matching "${rule.keyword}" will be permanently deleted.`}
+        isPending={remove.isPending}
+        onConfirm={() => remove.mutate(rule.id, { onSuccess: () => setConfirmDelete(false) })}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </tr>
   );
 }

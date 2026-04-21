@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { SubcategoryChip } from './SubcategoryChip';
 import { useCreateSubcategory } from '@/hooks/useCategoryMutations';
@@ -60,6 +61,7 @@ function AddSubcategoryForm({
 export function CategoryCard({ cat }: { readonly cat: Category }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [name, setName] = useState(cat.name);
 
   useEffect(() => {
@@ -124,13 +126,21 @@ export function CategoryCard({ cat }: { readonly cat: Category }) {
               aria-label="Delete category"
               className="opacity-0 group-hover:opacity-100 text-content-muted hover:text-danger transition-opacity text-xs"
               disabled={remove.isPending}
-              onClick={() => remove.mutate(cat.id)}
+              onClick={() => setConfirmDelete(true)}
             >
               ×
             </button>
           </>
         )}
       </div>
+      <DeleteConfirmDialog
+        open={confirmDelete}
+        title="Delete category?"
+        description={`"${cat.name}" and all its subcategories will be permanently deleted.`}
+        isPending={remove.isPending}
+        onConfirm={() => remove.mutate(cat.id, { onSuccess: () => setConfirmDelete(false) })}
+        onCancel={() => setConfirmDelete(false)}
+      />
       {cat.subcategories.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1">
           {cat.subcategories.map((sub) => (

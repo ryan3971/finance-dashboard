@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import {
   useDeleteSubcategory,
@@ -10,6 +11,7 @@ import type { Subcategory } from '@finance/shared/types/categories';
 
 export function SubcategoryChip({ sub }: { readonly sub: Subcategory }) {
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [name, setName] = useState(sub.name);
 
   useEffect(() => {
@@ -73,10 +75,18 @@ export function SubcategoryChip({ sub }: { readonly sub: Subcategory }) {
         aria-label="Delete"
         className="opacity-0 group-hover:opacity-100 text-content-muted hover:text-danger transition-opacity"
         disabled={remove.isPending}
-        onClick={() => remove.mutate(sub.id)}
+        onClick={() => setConfirmDelete(true)}
       >
         ×
       </button>
+      <DeleteConfirmDialog
+        open={confirmDelete}
+        title="Delete subcategory?"
+        description={`"${sub.name}" will be permanently deleted.`}
+        isPending={remove.isPending}
+        onConfirm={() => remove.mutate(sub.id, { onSuccess: () => setConfirmDelete(false) })}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </span>
   );
 }
