@@ -1,15 +1,17 @@
 import { useCallback, useState } from 'react';
+import { cn, getMonthDateRange, getYearDateRange } from '@/lib/utils';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
-import { getMonthDateRange, getYearDateRange } from '@/lib/utils';
 import { ExpenseCategoryBreakdown } from './components/ExpenseCategoryBreakdown';
 import { ExpenseMonthlyBreakdown } from './components/ExpenseMonthlyBreakdown';
 
+type ActiveTab = 'transactions' | 'categories';
+
 export function ExpensesPage() {
-  // Lazy initializer so the year is evaluated at first render, not module load.
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [monthFilter, setMonthFilter] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('transactions');
 
   const handleYearChange = useCallback((newYear: number) => {
     setYear(newYear);
@@ -27,8 +29,8 @@ export function ExpensesPage() {
         <YearSelector year={year} onChange={handleYearChange} />
       </div>
 
-      {/* Monthly breakdown and expense transactions side by side */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6">
+        {/* Left: Monthly Breakdown — full height */}
         <div className="flex flex-col">
           <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Monthly Breakdown
@@ -40,33 +42,50 @@ export function ExpensesPage() {
           />
         </div>
 
+        {/* Right: Tabbed card */}
         <div className="flex flex-col min-w-0">
-          <h2 className="mb-4 text-lg font-semibold text-content-primary">
-            Expense Transactions
-          </h2>
-          {/* key forces a full remount when the filter changes, resetting TransactionTablePane's internal state */}
-          <TransactionTablePane
-            key={`${year}-${monthFilter ?? 'all'}`}
-            className="flex-1"
-            presetFilters={{ isIncome: false }}
-            defaultFilters={{
-              startDate: dateRange.start,
-              endDate: dateRange.end,
-            }}
-            onFilterChange={(newFilters) => {
-              if (
-                newFilters.startDate !== dateRange.start ||
-                newFilters.endDate !== dateRange.end
-              ) {
-                setMonthFilter(null);
-              }
-            }}
-          />
+          {/* Tab bar */}
+          <div className="flex border-b border-border-base mb-4">
+            {(['transactions', 'categories'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize',
+                  activeTab === tab
+                    ? 'border-content-primary text-content-primary'
+                    : 'border-transparent text-content-secondary hover:text-content-primary',
+                )}
+              >
+                {tab === 'transactions' ? 'Transactions' : 'Categories'}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          {activeTab === 'transactions' && (
+            <TransactionTablePane
+              key={`${year}-${monthFilter ?? 'all'}`}
+              presetFilters={{ isIncome: false }}
+              defaultFilters={{
+                startDate: dateRange.start,
+                endDate: dateRange.end,
+              }}
+              onFilterChange={(newFilters) => {
+                if (
+                  newFilters.startDate !== dateRange.start ||
+                  newFilters.endDate !== dateRange.end
+                ) {
+                  setMonthFilter(null);
+                }
+              }}
+            />
+          )}
+          {activeTab === 'categories' && (
+            <ExpenseCategoryBreakdown year={year} monthFilter={monthFilter} />
+          )}
         </div>
       </div>
-
-      {/* Category breakdown: full width */}
-      <ExpenseCategoryBreakdown year={year} monthFilter={monthFilter} />
     </PageLayout>
   );
 }
