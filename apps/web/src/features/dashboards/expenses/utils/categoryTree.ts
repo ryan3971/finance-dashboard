@@ -105,20 +105,3 @@ export function buildCategoryTree(
 
   return treeRows;
 }
-
-export function getMonthDateRange(year: number, month: number) {
-  const mm = String(month).padStart(2, '0');
-  // new Date(year, month, 0) gives the last day of `month` (1-indexed).
-  const lastDay = new Date(year, month, 0).getDate();
-  return {
-    start: `${year}-${mm}-01`,
-    end: `${year}-${mm}-${String(lastDay).padStart(2, '0')}`,
-  };
-}
-
-export function getYearDateRange(year: number) {
-  return {
-    start: `${year}-01-01`,
-    end: `${year}-12-31`,
-  };
-}

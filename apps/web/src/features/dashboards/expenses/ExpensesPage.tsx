@@ -2,9 +2,9 @@ import { useCallback, useState } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
+import { getMonthDateRange, getYearDateRange } from '@/lib/utils';
 import { ExpenseCategoryBreakdown } from './components/ExpenseCategoryBreakdown';
 import { ExpenseMonthlyBreakdown } from './components/ExpenseMonthlyBreakdown';
-import { getMonthDateRange, getYearDateRange } from './utils/categoryTree';
 
 export function ExpensesPage() {
   // Lazy initializer so the year is evaluated at first render, not module load.
@@ -28,8 +28,8 @@ export function ExpensesPage() {
       </div>
 
       {/* Monthly breakdown and expense transactions side by side */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start mb-8">
-        <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div className="flex flex-col">
           <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Monthly Breakdown
           </h2>
@@ -40,22 +40,20 @@ export function ExpensesPage() {
           />
         </div>
 
-        <div className="min-w-0">
+        <div className="flex flex-col min-w-0">
           <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Expense Transactions
           </h2>
           {/* key forces a full remount when the filter changes, resetting TransactionTablePane's internal state */}
           <TransactionTablePane
             key={`${year}-${monthFilter ?? 'all'}`}
+            className="flex-1"
             presetFilters={{ isIncome: false }}
             defaultFilters={{
               startDate: dateRange.start,
               endDate: dateRange.end,
             }}
             onFilterChange={(newFilters) => {
-              // If the user manually changes the date range in the filter
-              // panel, clear the month selection so the breakdown table and
-              // transaction list stay in sync.
               if (
                 newFilters.startDate !== dateRange.start ||
                 newFilters.endDate !== dateRange.end
