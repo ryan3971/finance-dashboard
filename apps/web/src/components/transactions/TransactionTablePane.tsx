@@ -182,9 +182,13 @@ export function TransactionTablePane({
     accountId: activeFilters.accountId || undefined,
     startDate: activeFilters.startDate || undefined,
     endDate: activeFilters.endDate || undefined,
+    month: activeFilters.month || undefined,
     categoryId: activeFilters.categoryId || undefined,
     subcategoryId: activeFilters.subcategoryId || undefined,
+    needWant: activeFilters.needWant !== '' ? activeFilters.needWant : undefined,
     flagged: activeFilters.flaggedOnly || undefined,
+    isTransfer: activeFilters.isTransfer || undefined,
+    tagIds: activeFilters.tagIds.length > 0 ? activeFilters.tagIds : undefined,
     // presetFilters always win — spread last so they override user-editable fields
     ...presetFilters,
     page: activePage,

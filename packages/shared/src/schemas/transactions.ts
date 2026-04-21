@@ -42,12 +42,14 @@ export const transactionFiltersSchema = z.object({
   accountId: z.string().uuid().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  month: z.string().optional(), // YYYY-MM; takes precedence over startDate/endDate
   categoryId: z.string().uuid().optional(),
   subcategoryId: z.string().uuid().optional(),
+  needWant: needWantSchema.optional(),
   flagged: z.boolean().optional(),
-  isIncome: z.boolean().optional(), // new
-  isTransfer: z.boolean().optional(), // future
-  tagIds: z.array(z.string()).optional(), // future
+  isIncome: z.boolean().optional(),
+  isTransfer: z.boolean().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;

@@ -31,10 +31,14 @@ export interface TransactionFilters {
   accountId?: string;
   startDate?: string;
   endDate?: string;
+  month?: string; // YYYY-MM; takes precedence over startDate/endDate
   categoryId?: string;
   subcategoryId?: string;
+  needWant?: string;
   flagged?: boolean;
   isIncome?: boolean;
+  isTransfer?: boolean;
+  tagIds?: string[];
 }
 
 export interface PaginationParams {
@@ -86,16 +90,38 @@ export async function listTransactions(
 
   if (filters.accountId)
     conditions.push(eq(transactions.accountId, filters.accountId));
-  if (filters.startDate)
-    conditions.push(gte(transactions.date, filters.startDate));
-  if (filters.endDate) conditions.push(lte(transactions.date, filters.endDate));
+  if (filters.month) {
+    const parts = filters.month.split('-');
+    const year = parseInt(parts[0] ?? '0', 10);
+    const mon = parseInt(parts[1] ?? '0', 10);
+    const monthStr = String(mon).padStart(2, '0');
+    const lastDay = new Date(year, mon, 0).getDate();
+    conditions.push(gte(transactions.date, `${year}-${monthStr}-01`));
+    conditions.push(lte(transactions.date, `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`));
+  } else {
+    if (filters.startDate)
+      conditions.push(gte(transactions.date, filters.startDate));
+    if (filters.endDate)
+      conditions.push(lte(transactions.date, filters.endDate));
+  }
   if (filters.categoryId)
     conditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.flagged) conditions.push(eq(transactions.flaggedForReview, true));
   if (filters.subcategoryId)
     conditions.push(eq(transactions.subcategoryId, filters.subcategoryId));
+  if (filters.needWant)
+    conditions.push(eq(transactions.needWant, filters.needWant));
   if (filters.isIncome !== undefined)
     conditions.push(eq(transactions.isIncome, filters.isIncome));
+  if (filters.isTransfer !== undefined)
+    conditions.push(eq(transactions.isTransfer, filters.isTransfer));
+  if (filters.tagIds && filters.tagIds.length > 0) {
+    const tagSubquery = db
+      .select({ transactionId: transactionTags.transactionId })
+      .from(transactionTags)
+      .where(inArray(transactionTags.tagId, filters.tagIds));
+    conditions.push(inArray(transactions.id, tagSubquery));
+  }
 
   const rows = await db
     .select({

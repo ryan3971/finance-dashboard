@@ -37,9 +37,13 @@ export function TransactionsPage() {
     accountId: search.accountId ?? '',
     startDate: search.startDate ?? '',
     endDate: search.endDate ?? '',
+    month: search.month ?? '',
     categoryId: search.categoryId ?? '',
     subcategoryId: search.subcategoryId ?? '',
+    needWant: search.needWant ?? '',
     flaggedOnly: search.flaggedOnly ?? false,
+    isTransfer: search.isTransfer ?? false,
+    tagIds: search.tagIds ?? [],
   };
   const page = search.page ?? 1;
 
@@ -49,9 +53,13 @@ export function TransactionsPage() {
         accountId: newFilters.accountId || undefined,
         startDate: newFilters.startDate || undefined,
         endDate: newFilters.endDate || undefined,
+        month: newFilters.month || undefined,
         categoryId: newFilters.categoryId || undefined,
         subcategoryId: newFilters.subcategoryId || undefined,
+        needWant: newFilters.needWant || undefined,
         flaggedOnly: newFilters.flaggedOnly || undefined,
+        isTransfer: newFilters.isTransfer || undefined,
+        tagIds: newFilters.tagIds.length > 0 ? newFilters.tagIds : undefined,
         page: undefined,
       },
     });
@@ -79,9 +87,13 @@ export function TransactionsPage() {
             accountId: filters.accountId || undefined,
             startDate: filters.startDate || undefined,
             endDate: filters.endDate || undefined,
+            month: filters.month || undefined,
             categoryId: filters.categoryId || undefined,
             subcategoryId: filters.subcategoryId || undefined,
+            needWant: filters.needWant || undefined,
             flagged: filters.flaggedOnly || undefined,
+            isTransfer: filters.isTransfer || undefined,
+            tagIds: filters.tagIds.length > 0 ? filters.tagIds : undefined,
             limit: PAGINATION.EXPORT_LIMIT,
           },
         }

@@ -19,6 +19,10 @@ const listQuerySchema = transactionFiltersSchema.extend({
   flagged: booleanParam,
   isIncome: booleanParam,
   isTransfer: booleanParam,
+  // tagIds arrives as a repeated param (?tagIds=a&tagIds=b) or a single string
+  tagIds: z
+    .union([z.array(z.string()), z.string().transform((v) => [v])])
+    .optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce
     .number()
@@ -30,19 +34,36 @@ const listQuerySchema = transactionFiltersSchema.extend({
 
 // GET /api/v1/transactions
 router.get('/', async (req: Request, res: Response) => {
-  const { accountId, startDate, endDate, categoryId, subcategoryId, flagged, isIncome, page, limit } =
-    listQuerySchema.parse(req.query);
+  const {
+    accountId,
+    startDate,
+    endDate,
+    month,
+    categoryId,
+    subcategoryId,
+    needWant,
+    flagged,
+    isIncome,
+    isTransfer,
+    tagIds,
+    page,
+    limit,
+  } = listQuerySchema.parse(req.query);
 
   const result = await listTransactions(
     getAuthUser(req).id,
     {
-      accountId: accountId,
-      startDate: startDate,
-      endDate: endDate,
-      categoryId: categoryId,
-      subcategoryId: subcategoryId,
+      accountId,
+      startDate,
+      endDate,
+      month,
+      categoryId,
+      subcategoryId,
+      needWant,
       flagged: flagged ?? false,
       isIncome,
+      isTransfer,
+      tagIds,
     },
     { page, limit }
   );
