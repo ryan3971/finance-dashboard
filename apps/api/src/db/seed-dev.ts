@@ -24,7 +24,14 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-import { accounts, anticipatedBudget, categories, categorizationRules, users } from './schema';
+import {
+  accounts,
+  anticipatedBudget,
+  categories,
+  categorizationRules,
+  rebalancingGroups,
+  users,
+} from './schema';
 import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from './index';
@@ -35,6 +42,8 @@ import { DEV_USER } from '../testing/seeds/users';
 import { assertDefined } from '@/lib/assert';
 import { resetTestSystemData } from '@/testing/seeders/reset-system-data';
 import { seedTestAnticipatedBudget } from '@/testing/seeders/seed-anticipated-budget';
+import { seedTestRebalancingGroups } from '@/testing/seeders/seed-rebalancing-groups';
+import { TEST_REBALANCING_GROUPS } from '@/testing/seeds/rebalancing-groups';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -223,6 +232,24 @@ async function ensureAnticipatedBudget(userId: string): Promise<void> {
   log(`Seeded ${entryIds.size} entries`);
 }
 
+async function ensureRebalancingGroups(userId: string): Promise<void> {
+  section('Rebalancing groups');
+
+  const existing = await db
+    .select({ id: rebalancingGroups.id })
+    .from(rebalancingGroups)
+    .where(eq(rebalancingGroups.userId, userId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    log('Already seeded — skipping');
+    return;
+  }
+
+  await seedTestRebalancingGroups(userId);
+  log(`Seeded ${TEST_REBALANCING_GROUPS.length} groups`);
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -236,6 +263,7 @@ async function main() {
   const accountIds = await ensureAccounts(userId);
   await importFixtures(userId, accountIds);
   await ensureAnticipatedBudget(userId);
+  await ensureRebalancingGroups(userId);
 
   section('Done');
   console.log('\n  Login credentials:');
