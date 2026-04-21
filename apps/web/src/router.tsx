@@ -5,6 +5,7 @@ import {
   createRouter,
   redirect,
 } from '@tanstack/react-router';
+import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
 import { z } from 'zod';
 import { AccountsPage } from '@/features/accounts/AccountsPage';
 import { AnticipatedBudgetPage } from '@/features/anticipated-budget/AnticipatedBudgetPage';
@@ -29,9 +30,13 @@ const transactionsSearchSchema = z.object({
   accountId: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  month: z.string().optional(),
   categoryId: z.string().optional(),
   subcategoryId: z.string().optional(),
+  needWant: z.enum(NEED_WANT_OPTIONS).optional(),
   flaggedOnly: z.boolean().optional(),
+  isTransfer: z.boolean().optional(),
+  tagIds: z.array(z.string()).optional(),
   page: z.number().int().positive().optional(),
 });
 
