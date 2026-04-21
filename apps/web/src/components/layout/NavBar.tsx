@@ -3,22 +3,25 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { useAuth } from '@/features/auth/useAuth';
 
-const NAV_LINKS = [
-  { to: '/' as const, label: 'Transactions' },
-  { to: '/accounts' as const, label: 'Accounts' },
-  { to: '/import' as const, label: 'Import' },
-  { to: '/anticipated-budget' as const, label: 'Budget' },
+const DASHBOARD_LINKS = [
   { to: '/dashboard/snapshot' as const, label: 'Snapshot' },
   { to: '/dashboard/income' as const, label: 'Income' },
   { to: '/dashboard/expenses' as const, label: 'Expenses' },
   { to: '/dashboard/ytd' as const, label: 'YTD' },
+];
+
+const MAIN_LINKS = [
+  { to: '/' as const, label: 'Transactions' },
+  { to: '/accounts' as const, label: 'Accounts' },
+  { to: '/anticipated-budget' as const, label: 'Budget' },
+  { to: '/import' as const, label: 'Import' },
   { to: '/config' as const, label: 'Config' },
 ];
 
 const LINK_BASE =
-  'px-3 py-1.5 rounded text-sm transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-50';
+  'inline-flex items-center px-3 text-sm transition-colors text-content-secondary hover:text-content-primary hover:bg-surface-subtle';
 const LINK_ACTIVE =
-  'px-3 py-1.5 rounded text-sm transition-colors bg-gray-100 text-gray-900 font-medium';
+  'inline-flex items-center px-3 text-sm font-medium text-content-primary border-b-2 border-content-primary';
 
 export function NavBar() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -45,14 +48,32 @@ export function NavBar() {
 
   return (
     <>
-      <nav className="bg-white border-b border-gray-200 px-4 sm:px-6 py-0 flex items-center justify-between h-14">
-        <div className="flex items-center gap-4 sm:gap-6">
-          <span className="font-semibold text-gray-900 text-sm">
+      <nav className="bg-surface border-b border-border-base px-4 sm:px-6 flex items-stretch justify-between h-14">
+        <div className="flex items-stretch">
+          {/* Brand */}
+          <span className="flex items-center pr-4 sm:pr-6 mr-4 sm:mr-2 border-r border-border-base text-base font-semibold text-content-primary whitespace-nowrap">
             Finance Dashboard
           </span>
+
           {/* Desktop nav — hidden below sm */}
-          <div className="hidden sm:flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
+          <div className="hidden sm:flex items-stretch">
+            {DASHBOARD_LINKS.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={LINK_BASE}
+                activeProps={{ className: LINK_ACTIVE }}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            {/* Group separator */}
+            <div className="flex items-center px-2">
+              <div className="w-px h-5 bg-border-base" />
+            </div>
+
+            {MAIN_LINKS.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -69,7 +90,7 @@ export function NavBar() {
         <div className="flex items-center gap-3">
           {/* Mobile hamburger — hidden at sm+ */}
           <button
-            className="sm:hidden p-1.5 rounded text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            className="sm:hidden p-1.5 rounded text-content-secondary hover:text-content-primary hover:bg-surface-subtle transition-colors"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open menu"
           >
@@ -88,14 +109,15 @@ export function NavBar() {
           </button>
 
           {/* Desktop user info — hidden below sm */}
-          <span className="hidden sm:block text-sm text-gray-400">
+          <span className="hidden sm:block text-sm text-content-muted">
             {user?.email}
           </span>
+          <div className="hidden sm:block w-px h-4 bg-border-base" />
           <button
             onClick={() => {
               void handleLogout();
             }}
-            className="hidden sm:block text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            className="hidden sm:block text-sm text-content-secondary hover:text-content-primary transition-colors"
           >
             Sign out
           </button>
@@ -112,13 +134,13 @@ export function NavBar() {
             aria-hidden="true"
           />
           {/* Panel */}
-          <div className="fixed right-0 top-0 bottom-0 w-64 bg-white shadow-xl flex flex-col">
-            <div className="flex items-center justify-between px-4 h-14 border-b border-gray-200 flex-shrink-0">
-              <span className="font-semibold text-gray-900 text-sm">
+          <div className="fixed right-0 top-0 bottom-0 w-64 bg-surface shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-4 h-14 border-b border-border-base flex-shrink-0">
+              <span className="font-semibold text-content-primary text-base">
                 Finance Dashboard
               </span>
               <button
-                className="p-1.5 rounded text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                className="p-1.5 rounded text-content-secondary hover:text-content-primary hover:bg-surface-subtle transition-colors"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close menu"
               >
@@ -138,14 +160,34 @@ export function NavBar() {
             </div>
 
             <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-              {NAV_LINKS.map((link) => (
+              <p className="px-3 pt-1 pb-1.5 text-xs font-semibold text-content-muted uppercase tracking-wider">
+                Dashboard
+              </p>
+              {DASHBOARD_LINKS.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="block px-3 py-2.5 rounded text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                  className="block px-3 py-2.5 rounded text-sm text-content-secondary hover:text-content-primary hover:bg-surface-subtle transition-colors"
                   activeProps={{
                     className:
-                      'block px-3 py-2.5 rounded text-sm bg-gray-100 text-gray-900 font-medium',
+                      'block px-3 py-2.5 rounded text-sm bg-surface-muted text-content-primary font-medium',
+                  }}
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              <div className="my-2 border-t border-border-base" />
+
+              {MAIN_LINKS.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="block px-3 py-2.5 rounded text-sm text-content-secondary hover:text-content-primary hover:bg-surface-subtle transition-colors"
+                  activeProps={{
+                    className:
+                      'block px-3 py-2.5 rounded text-sm bg-surface-muted text-content-primary font-medium',
                   }}
                   activeOptions={link.to === '/' ? { exact: true } : undefined}
                   onClick={() => setDrawerOpen(false)}
@@ -155,13 +197,13 @@ export function NavBar() {
               ))}
             </nav>
 
-            <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 space-y-2">
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+            <div className="flex-shrink-0 px-4 py-4 border-t border-border-base space-y-2">
+              <p className="text-xs text-content-muted truncate">{user?.email}</p>
               <button
                 onClick={() => {
                   void handleLogout();
                 }}
-                className="w-full text-left text-sm text-gray-500 hover:text-gray-900 transition-colors"
+                className="w-full text-left text-sm text-content-secondary hover:text-content-primary transition-colors"
               >
                 Sign out
               </button>
