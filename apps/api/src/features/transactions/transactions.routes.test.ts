@@ -219,6 +219,132 @@ describe('GET /api/v1/transactions', () => {
     }
   });
 
+  it('filters by month', async () => {
+    // amex.csv: all 6 transactions fall within 2026-03
+    const { accessToken } = await setupWithImport();
+
+    const marchRes = await request(app)
+      .get('/api/v1/transactions?month=2026-03')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(marchRes.status).toBe(200);
+    const marchBody = marchRes.body as PaginatedResponse<{ date: string }>;
+    expect(marchBody.pagination.total).toBe(6);
+    for (const tx of marchBody.data) {
+      expect(tx.date).toMatch(/^2026-03-/);
+    }
+
+    const aprilRes = await request(app)
+      .get('/api/v1/transactions?month=2026-04')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(aprilRes.status).toBe(200);
+    expect(
+      (aprilRes.body as PaginatedResponse<Record<string, unknown>>).pagination
+        .total
+    ).toBe(0);
+  });
+
+  it('filters by needWant', async () => {
+    const { accessToken } = await setupWithImport();
+    const txn = await getFirstTransaction(app, accessToken);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    // Assign a category and needWant so the filter has something to match
+    await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId, needWant: 'Need' });
+
+    const needRes = await request(app)
+      .get('/api/v1/transactions?needWant=Need')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(needRes.status).toBe(200);
+    const needBody = needRes.body as PaginatedResponse<{ needWant: string }>;
+    expect(needBody.pagination.total).toBe(1);
+    expect(needBody.data[0]?.needWant).toBe('Need');
+
+    const wantRes = await request(app)
+      .get('/api/v1/transactions?needWant=Want')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(wantRes.status).toBe(200);
+    expect(
+      (wantRes.body as PaginatedResponse<Record<string, unknown>>).pagination
+        .total
+    ).toBe(0);
+  });
+
+  it('filters by isTransfer', async () => {
+    const { accessToken } = await setupWithImport();
+    const txn = await getFirstTransaction(app, accessToken);
+
+    // Mark one transaction as a transfer directly — isTransfer is set by the
+    // import pipeline and has no dedicated patch endpoint.
+    await db
+      .update(transactions)
+      .set({ isTransfer: true })
+      .where(eq(transactions.id, txn.id));
+
+    const transferRes = await request(app)
+      .get('/api/v1/transactions?isTransfer=true')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(transferRes.status).toBe(200);
+    const transferBody = transferRes.body as PaginatedResponse<{
+      isTransfer: boolean;
+    }>;
+    expect(transferBody.pagination.total).toBe(1);
+    expect(transferBody.data[0]?.isTransfer).toBe(true);
+
+    const nonTransferRes = await request(app)
+      .get('/api/v1/transactions?isTransfer=false')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(nonTransferRes.status).toBe(200);
+    expect(
+      (nonTransferRes.body as PaginatedResponse<Record<string, unknown>>)
+        .pagination.total
+    ).toBe(5);
+  });
+
+  it('filters by tagIds', async () => {
+    const { accessToken } = await setupWithImport();
+    const tagId = await createTag(app, accessToken, 'Business');
+    const txn = await getFirstTransaction(app, accessToken);
+
+    await request(app)
+      .post(`/api/v1/transactions/${txn.id}/tags`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ tagId });
+
+    const taggedRes = await request(app)
+      .get('/api/v1/transactions')
+      .query({ tagIds: tagId })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(taggedRes.status).toBe(200);
+    const taggedBody = taggedRes.body as PaginatedResponse<{
+      id: string;
+      tags: { id: string }[];
+    }>;
+    expect(taggedBody.pagination.total).toBe(1);
+    expect(taggedBody.data[0]?.id).toBe(txn.id);
+    expect(taggedBody.data[0]?.tags.some((t) => t.id === tagId)).toBe(true);
+
+    const unknownTagRes = await request(app)
+      .get('/api/v1/transactions')
+      .query({ tagIds: UNKNOWN_ID })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(unknownTagRes.status).toBe(200);
+    expect(
+      (unknownTagRes.body as PaginatedResponse<Record<string, unknown>>)
+        .pagination.total
+    ).toBe(0);
+  });
+
   it('returns 400 for a malformed subcategoryId', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)
