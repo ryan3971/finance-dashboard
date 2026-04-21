@@ -202,7 +202,7 @@ export function useTransactionColumns({
             <Popover>
               <PopoverTrigger asChild>
                 <button
-                  className="flex items-center gap-1 overflow-hidden w-full text-left"
+                  className="group flex items-center gap-1 overflow-hidden w-full text-left"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {tx.tags.length === 0 ? (
@@ -214,17 +214,20 @@ export function useTransactionColumns({
                       {visible.map((tag) => (
                         <span
                           key={tag.id}
-                          className="rounded-full px-2 py-0.5 text-xs font-medium text-white shrink-0"
+                          className="max-w-[4.5rem] truncate rounded-full px-2 py-0.5 text-xs font-medium text-white"
                           style={{ backgroundColor: tag.color ?? '#6B7280' }}
                         >
                           {tag.name}
                         </span>
                       ))}
                       {overflow > 0 && (
-                        <span className="text-xs text-content-muted shrink-0">
+                        <span className="shrink-0 text-xs text-content-muted">
                           +{overflow}
                         </span>
                       )}
+                      <span className="shrink-0 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-xs text-content-muted border border-dashed border-border-strong rounded px-1 py-0.5">
+                        +
+                      </span>
                     </>
                   )}
                 </button>

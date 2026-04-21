@@ -1,11 +1,6 @@
 import { FIELD_LIMITS } from '@finance/shared/constants';
 import { type TagFormInput, tagFormSchema } from '@finance/shared/schemas/tags';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/Tooltip';
-import {
   useAttachTag,
   useCreateTag,
   useDetachTag,
@@ -85,28 +80,22 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
     >
       {/* Attached tags */}
       {attachedTags.map((tag) => (
-        <Tooltip key={tag.id}>
-          <TooltipTrigger asChild>
-            <span
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white max-w-[10ch]"
-              style={{
-                backgroundColor: tag.color ?? '#6B7280',
-              }}
-            >
-              <span className="truncate">{tag.name}</span>
-              <button
-                onClick={() => {
-                  void handleDetach(tag.id);
-                }}
-                className="hover:opacity-75 leading-none shrink-0"
-                title="Remove tag"
-              >
-                ×
-              </button>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{tag.name}</TooltipContent>
-        </Tooltip>
+        <span
+          key={tag.id}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+          style={{ backgroundColor: tag.color ?? '#6B7280' }}
+        >
+          {tag.name}
+          <button
+            onClick={() => {
+              void handleDetach(tag.id);
+            }}
+            className="hover:opacity-75 leading-none shrink-0"
+            title="Remove tag"
+          >
+            ×
+          </button>
+        </span>
       ))}
 
       {/* Add existing tag */}
