@@ -7,6 +7,18 @@ type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 const api = axios.create({
   baseURL: config.apiBaseUrl,
   withCredentials: true,
+  paramsSerializer: (params) => {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value === undefined || value === null) continue;
+      if (Array.isArray(value)) {
+        for (const item of value) searchParams.append(key, String(item));
+      } else {
+        searchParams.append(key, String(value));
+      }
+    }
+    return searchParams.toString();
+  },
 });
 
 // Attach access token to every outgoing request
