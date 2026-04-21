@@ -25,6 +25,7 @@ import { TransactionReviewPanel } from '@/features/transactions/components/panel
 
 const UNKNOWN_PAGE_COUNT = -1;
 
+// matchMedia requires raw strings; mirrors the sm/md breakpoints in tailwind.config.js
 const SM_QUERY = '(min-width: 640px)';
 const MD_QUERY = '(min-width: 768px)';
 
@@ -35,6 +36,7 @@ interface TransactionsTableProps {
   readonly onCollapse: () => void;
   readonly onDuplicate: (tx: Transaction) => void;
   readonly onDelete: (id: string) => void;
+  readonly onRebalancing: (tx: Transaction) => void;
   readonly pagination?: PaginationInfo;
   readonly onPageChange: (page: number) => void;
   readonly maxHeight?: string;
@@ -47,6 +49,7 @@ export function TransactionsTable({
   onCollapse,
   onDuplicate,
   onDelete,
+  onRebalancing,
   pagination,
   onPageChange,
   maxHeight,
@@ -83,6 +86,7 @@ export function TransactionsTable({
     onEdit: (id) => onExpand(id, 'edit'),
     onDuplicate,
     onDelete,
+    onRebalancing,
   });
 
   const table = useReactTable({

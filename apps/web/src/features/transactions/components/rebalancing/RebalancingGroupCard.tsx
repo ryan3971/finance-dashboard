@@ -15,7 +15,7 @@ import {
   useDeleteGroup,
   useRemoveGroupMember,
   useUpdateGroup,
-} from '../hooks/useRebalancingMutations';
+} from '@/features/transactions/hooks/useRebalancingMutations';
 
 function fmtDate(dateStr: string): string {
   const parts = dateStr.split('-');
@@ -82,9 +82,15 @@ function TransactionRow({
 }: TransactionRowProps) {
   const removeMember = useRemoveGroupMember();
 
-  const categoryPath = subcategoryName
-    ? `${categoryName} › ${subcategoryName}`
-    : categoryName;
+let categoryPath: string | null = null;
+if (categoryName && subcategoryName) {
+  categoryPath = `${categoryName} › ${subcategoryName}`;
+} else if (categoryName) {
+  categoryPath = categoryName;
+} else if (subcategoryName) {
+  categoryPath = subcategoryName;
+}
+
 
   return (
     <div className="group flex items-center gap-3 px-4 py-2.5 border-t border-border-subtle text-sm">

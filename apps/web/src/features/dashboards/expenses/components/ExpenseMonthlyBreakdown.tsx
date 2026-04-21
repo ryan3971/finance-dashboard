@@ -56,6 +56,11 @@ function ExpenseMonthRow({
         >
           {fmt(month.total)}
         </span>
+        {month.rebalancingAdjustment > 0 && (
+          <span className="block text-xs font-normal text-content-muted">
+            {fmt(-month.rebalancingAdjustment)} adj
+          </span>
+        )}
       </td>
       <MonthAmountCell
         value={month.need}
@@ -81,6 +86,7 @@ function ExpenseMonthTotalsRow({
   need,
   want,
   other,
+  rebalancingAdjustment,
   isFiltered,
   onClear,
 }: {
@@ -88,6 +94,7 @@ function ExpenseMonthTotalsRow({
   readonly need: number;
   readonly want: number;
   readonly other: number;
+  readonly rebalancingAdjustment: number;
   readonly isFiltered: boolean;
   readonly onClear: () => void;
 }) {
@@ -105,6 +112,11 @@ function ExpenseMonthTotalsRow({
         <span className={total > 0 ? 'text-danger' : 'text-content-muted'}>
           {fmt(total)}
         </span>
+        {rebalancingAdjustment > 0 && (
+          <span className="block text-xs font-normal text-content-muted">
+            {fmt(-rebalancingAdjustment)} adj
+          </span>
+        )}
       </td>
       <td className="px-4 py-3 text-right text-sm font-mono font-medium text-info">
         {fmt(need)}
@@ -130,7 +142,7 @@ export function ExpenseMonthlyBreakdown({
 }) {
   const { data, isLoading, isError } = useExpensesDashboard(year);
 
-  // Only sum need/want/other — total comes from data.annualTotal to avoid float drift.
+  // Only sum need/want/other/rebalancingAdjustment — total comes from data.annualTotal to avoid float drift.
   const subtotals = useMemo(
     () =>
       data?.months.reduce(
@@ -138,8 +150,9 @@ export function ExpenseMonthlyBreakdown({
           need: acc.need + m.need,
           want: acc.want + m.want,
           other: acc.other + m.other,
+          rebalancingAdjustment: acc.rebalancingAdjustment + m.rebalancingAdjustment,
         }),
-        { need: 0, want: 0, other: 0 }
+        { need: 0, want: 0, other: 0, rebalancingAdjustment: 0 }
       ) ?? null,
     [data?.months]
   );
@@ -185,7 +198,10 @@ export function ExpenseMonthlyBreakdown({
                 {subtotals && (
                   <ExpenseMonthTotalsRow
                     total={data.annualTotal}
-                    {...subtotals}
+                    need={subtotals.need}
+                    want={subtotals.want}
+                    other={subtotals.other}
+                    rebalancingAdjustment={subtotals.rebalancingAdjustment}
                     isFiltered={selectedMonth !== null}
                     onClear={() => onMonthSelect(null)}
                   />

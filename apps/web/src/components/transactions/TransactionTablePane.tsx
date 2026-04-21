@@ -48,6 +48,8 @@ interface TransactionTablePaneProps {
     pagination: PaginationInfo | undefined,
     flaggedCount: number
   ) => void;
+  // Fired when the user selects "Add to group" / "Manage group" on a row
+  readonly onRebalancing?: (tx: Transaction) => void;
 }
 
 const SKELETON_ROW_COUNT = 6;
@@ -85,6 +87,7 @@ export function TransactionTablePane({
   page,
   onPageChange,
   onDataLoad,
+  onRebalancing,
 }: TransactionTablePaneProps) {
   const isFilterControlled = filterState !== undefined;
   const isPageControlled = page !== undefined;
@@ -225,6 +228,7 @@ export function TransactionTablePane({
         onCollapse={handleCollapse}
         onDuplicate={handleDuplicate}
         onDelete={handleDeleteRequest}
+        onRebalancing={onRebalancing ?? (() => undefined)}
         pagination={pagination}
         onPageChange={handlePageChange}
       />

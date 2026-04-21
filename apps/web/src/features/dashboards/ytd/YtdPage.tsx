@@ -30,13 +30,20 @@ function amountColorClass(value: number, variant: AmountVariant): string {
 function YtdAmountCell({
   value,
   variant,
+  rebalancingAdjustment,
 }: {
   readonly value: number;
   readonly variant: AmountVariant;
+  readonly rebalancingAdjustment?: number;
 }) {
   return (
     <td className="px-4 py-3 text-sm text-right font-mono font-medium">
       <span className={amountColorClass(value, variant)}>{fmt(value)}</span>
+      {rebalancingAdjustment !== undefined && rebalancingAdjustment > 0 && (
+        <span className="block text-xs font-normal text-content-muted">
+          {fmt(-rebalancingAdjustment)} adj
+        </span>
+      )}
     </td>
   );
 }
@@ -82,13 +89,13 @@ function YtdRow({ month }: { readonly month: YtdMonth }) {
     );
   }
 
-  const { spendingIncome, expenses, netSpendingIncome, wants, needs } = month;
+  const { spendingIncome, expenses, netSpendingIncome, wants, needs, rebalancingAdjustment } = month;
 
   return (
     <tr className="border-t border-border-subtle">
       <td className="px-4 py-3 text-sm text-content-secondary w-16">{label}</td>
       <YtdAmountCell value={spendingIncome} variant="income" />
-      <YtdAmountCell value={expenses} variant="expense" />
+      <YtdAmountCell value={expenses} variant="expense" rebalancingAdjustment={rebalancingAdjustment} />
       <YtdAmountCell value={netSpendingIncome} variant="net" />
       <YtdAmountCell value={wants} variant="want" />
       <YtdAmountCell value={needs} variant="need" />
@@ -101,12 +108,12 @@ function YtdTotalsRow({
 }: {
   readonly totals: Omit<DataMonth, 'month'>;
 }) {
-  const { spendingIncome, expenses, netSpendingIncome, wants, needs } = totals;
+  const { spendingIncome, expenses, netSpendingIncome, wants, needs, rebalancingAdjustment } = totals;
   return (
     <tr className="border-t-2 border-border-base bg-surface-subtle font-semibold">
       <td className="px-4 py-3 text-sm text-content-primary">Total</td>
       <YtdAmountCell value={spendingIncome} variant="income" />
-      <YtdAmountCell value={expenses} variant="expense" />
+      <YtdAmountCell value={expenses} variant="expense" rebalancingAdjustment={rebalancingAdjustment} />
       <YtdAmountCell value={netSpendingIncome} variant="net" />
       <YtdAmountCell value={wants} variant="want" />
       <YtdAmountCell value={needs} variant="need" />

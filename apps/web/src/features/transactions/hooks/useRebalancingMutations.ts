@@ -48,6 +48,7 @@ function useInvalidateGroupsAndDashboards() {
   return () => {
     void queryClient.invalidateQueries({ queryKey: rebalancingKeys.groups() });
     void queryClient.invalidateQueries({ queryKey: dashboardKeys.all() });
+    // TODO: should also invalidate transactions so they are re-fetched with updated rebalancing_group_id values
   };
 }
 

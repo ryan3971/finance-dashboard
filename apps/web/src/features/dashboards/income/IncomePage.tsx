@@ -27,6 +27,11 @@ function IncomeRow({ month }: { readonly month: IncomeMonth }) {
         <span className={hasIncome ? 'text-positive' : 'text-content-muted'}>
           {fmt(month.total)}
         </span>
+        {month.rebalancingAdjustment > 0 && (
+          <span className="block text-xs font-normal text-content-muted">
+            {fmt(-month.rebalancingAdjustment)} adj
+          </span>
+        )}
       </td>
       {month.allocation !== null ? (
         <>
@@ -75,9 +80,11 @@ function IncomeRow({ month }: { readonly month: IncomeMonth }) {
 
 function IncomeTotalsRow({
   total,
+  rebalancingAdjustment,
   allocation,
 }: {
   readonly total: number;
+  readonly rebalancingAdjustment: number;
   readonly allocation: NonNullable<IncomeMonth['allocation']> | null;
 }) {
   return (
@@ -87,6 +94,11 @@ function IncomeTotalsRow({
         <span className={total > 0 ? 'text-positive' : 'text-content-muted'}>
           {fmt(total)}
         </span>
+        {rebalancingAdjustment > 0 && (
+          <span className="block text-xs font-normal text-content-muted">
+            {fmt(-rebalancingAdjustment)} adj
+          </span>
+        )}
       </td>
       {allocation !== null ? (
         <>
@@ -125,6 +137,10 @@ export function IncomePage() {
       (sum, m) => Math.round((sum + m.total) * 100) / 100,
       0,
     );
+    const rebalancingAdjustment = data.months.reduce(
+      (sum, m) => Math.round((sum + m.rebalancingAdjustment) * 100) / 100,
+      0,
+    );
     const allocationMonths = data.months.filter(
       (m): m is IncomeMonth & { allocation: NonNullable<IncomeMonth['allocation']> } =>
         m.allocation !== null,
@@ -141,7 +157,7 @@ export function IncomePage() {
             { needs: 0, wants: 0, investments: 0 },
           )
         : null;
-    return { total, allocation };
+    return { total, rebalancingAdjustment, allocation };
   }, [data]);
 
   return (
@@ -220,6 +236,7 @@ export function IncomePage() {
                   {totals && (
                     <IncomeTotalsRow
                       total={totals.total}
+                      rebalancingAdjustment={totals.rebalancingAdjustment}
                       allocation={totals.allocation}
                     />
                   )}

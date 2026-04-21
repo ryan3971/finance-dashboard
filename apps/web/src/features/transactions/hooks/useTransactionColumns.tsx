@@ -42,6 +42,7 @@ interface UseTransactionColumnsOptions {
   onEdit: (id: string) => void;
   onDuplicate: (tx: Transaction) => void;
   onDelete: (id: string) => void;
+  onRebalancing: (tx: Transaction) => void;
 }
 
 export function useTransactionColumns({
@@ -50,6 +51,7 @@ export function useTransactionColumns({
   onEdit,
   onDuplicate,
   onDelete,
+  onRebalancing,
 }: UseTransactionColumnsOptions): ColumnDef<Transaction>[] {
   return useMemo<ColumnDef<Transaction>[]>(
     () => [
@@ -78,7 +80,7 @@ export function useTransactionColumns({
         accessorKey: 'description',
         meta: {
           label: 'Description',
-          colWidth: 'w-auto',
+          colWidth: 'w-auto min-w-40',
           tdClassName: 'px-4 py-3',
           truncate: true,
         },
@@ -95,17 +97,24 @@ export function useTransactionColumns({
           const tx = row.original;
           return (
             <div>
-              <span
-                className="block truncate text-sm text-content-primary"
-                title={tx.sourceName ?? tx.description}
-              >
-                {tx.sourceName ?? tx.description}
-                {tx.isTransfer && (
-                  <span className="ml-1.5 text-xs text-content-muted">
-                    (transfer)
-                  </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span
+                  className="truncate text-sm text-content-primary"
+                  title={tx.sourceName ?? tx.description}
+                >
+                  {tx.sourceName ?? tx.description}
+                  {tx.isTransfer && (
+                    <span className="ml-1.5 text-xs text-content-muted">
+                      (transfer)
+                    </span>
+                  )}
+                </span>
+                {tx.rebalancingGroupId !== null && (
+                  <Badge variant="neutral" rounded="sm" className="shrink-0">
+                    {tx.rebalancingRole === 'source' ? 'Source' : 'Offset'}
+                  </Badge>
                 )}
-              </span>
+              </div>
               {tx.note && (
                 <span
                   className="block truncate text-xs text-content-muted mt-0.5"
@@ -124,7 +133,7 @@ export function useTransactionColumns({
         accessorKey: 'categoryName',
         meta: {
           label: 'Category',
-          colWidth: 'w-36',
+          colWidth: 'min-w-36 w-48',
           truncate: true,
         },
         header: () => 'Category',
@@ -209,7 +218,7 @@ export function useTransactionColumns({
         accessorKey: 'accountName',
         meta: {
           label: 'Account',
-          colWidth: 'w-32',
+          colWidth: 'min-w-32 w-36',
           thClassName: 'th-cell',
           tdClassName: 'td-cell',
           truncate: true,
@@ -275,43 +284,59 @@ export function useTransactionColumns({
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  {isTransactionReviewable(tx) && (
-                    <>
-                      <DropdownMenuItem onClick={() => onReviewToggle(tx.id)}>
-                        {expandedPanel?.id === tx.id &&
-                        expandedPanel.mode === 'review'
-                          ? 'Close review'
-                          : 'Review'}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  {!isTransactionReviewable(tx) && (
-                    <DropdownMenuItem onClick={() => onEdit(tx.id)}>
+              <DropdownMenuContent
+                align="end"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {isTransactionReviewable(tx) && (
+                  <>
+                    <DropdownMenuItem onClick={() => onReviewToggle(tx.id)}>
                       {expandedPanel?.id === tx.id &&
-                      expandedPanel.mode === 'edit'
-                        ? 'Close edit'
-                        : 'Edit'}
+                      expandedPanel.mode === 'review'
+                        ? 'Close review'
+                        : 'Review'}
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => onDuplicate(tx)}>
-                    Duplicate
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {!isTransactionReviewable(tx) && (
+                  <DropdownMenuItem onClick={() => onEdit(tx.id)}>
+                    {expandedPanel?.id === tx.id &&
+                    expandedPanel.mode === 'edit'
+                      ? 'Close edit'
+                      : 'Edit'}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onDelete(tx.id)}
-                    className="text-danger"
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
+                )}
+                <DropdownMenuItem onClick={() => onDuplicate(tx)}>
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onRebalancing(tx)}>
+                  {tx.rebalancingGroupId === null
+                    ? 'Add to group'
+                    : 'Manage group'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(tx.id)}
+                  className="text-danger"
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
             </DropdownMenu>
           );
         },
         enableSorting: false,
       },
     ],
-    [expandedPanel, onReviewToggle, onEdit, onDuplicate, onDelete]
+    [
+      expandedPanel,
+      onReviewToggle,
+      onEdit,
+      onDuplicate,
+      onDelete,
+      onRebalancing,
+    ]
   );
 }

@@ -7,7 +7,8 @@ import { ManualTransactionPanel } from '@/features/transactions/components/panel
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
-import { RebalancingTab } from '@/features/rebalancing/components/RebalancingTab';
+import { RebalancingPanel } from '@/features/transactions/components/rebalancing/RebalancingPanel';
+import { RebalancingTab } from '@/features/transactions/components/rebalancing/RebalancingTab';
 import type {
   PaginationInfo,
   Transaction,
@@ -26,6 +27,11 @@ export function TransactionsPage() {
   const [activeTab, setActiveTab] = useState<'transactions' | 'rebalancing'>(
     'transactions'
   );
+  const [rebalancingTx, setRebalancingTx] = useState<Transaction | null>(null);
+
+  const handleRebalancing = useCallback((tx: Transaction) => {
+    setRebalancingTx(tx);
+  }, []);
 
   const filters: FilterState = {
     accountId: search.accountId ?? '',
@@ -127,9 +133,11 @@ export function TransactionsPage() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) =>
-          setActiveTab(v as 'transactions' | 'rebalancing')
-        }
+        onValueChange={(v) => {
+          setActiveTab(v as 'transactions' | 'rebalancing');
+          setAddPanelOpen(false);
+          setRebalancingTx(null);
+        }}
       >
         <TabsList>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
@@ -143,6 +151,7 @@ export function TransactionsPage() {
             page={page}
             onPageChange={handlePageChange}
             onDataLoad={handleDataLoad}
+            onRebalancing={handleRebalancing}
           />
         </TabsContent>
 
@@ -153,6 +162,16 @@ export function TransactionsPage() {
 
       {addPanelOpen && (
         <ManualTransactionPanel onClose={() => setAddPanelOpen(false)} />
+      )}
+
+      {rebalancingTx !== null && (
+        <RebalancingPanel
+          transactionId={rebalancingTx.id}
+          description={rebalancingTx.sourceName ?? rebalancingTx.description}
+          rebalancingGroupId={rebalancingTx.rebalancingGroupId}
+          rebalancingRole={rebalancingTx.rebalancingRole}
+          onClose={() => setRebalancingTx(null)}
+        />
       )}
     </PageLayout>
   );

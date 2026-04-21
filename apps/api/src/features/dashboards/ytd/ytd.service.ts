@@ -225,7 +225,7 @@ export function buildYtdResponse(
     months.push({
       month: m,
       spendingIncome: spendingIncome.toNumber(),
-      expenses: bucket.total.toNumber(),
+      expenses: bucket.total.abs().toNumber(),
       netSpendingIncome: netSpendingIncome.toNumber(),
       wants: wants.toNumber(),
       needs: needs.toNumber(),

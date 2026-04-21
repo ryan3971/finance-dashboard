@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
-import { useRebalancingGroups } from '../hooks/useRebalancingGroups';
+import { useRebalancingGroups } from '@/features/transactions/hooks/useRebalancingGroups';
 import { RebalancingGroupCard } from './RebalancingGroupCard';
 
 const SKELETON_COUNT = Array.from({ length: 3 }, (_, i) => `skeleton-${i}`);

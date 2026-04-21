@@ -80,6 +80,17 @@ export function MonthlyIncomeExpensesCard({ monthlyIncome, monthlyExpenses }: Pr
             <AmountCell value={monthlyExpenses.wants} className="text-danger" />
             <AmountCell value={monthlyExpenses.needs} className="text-danger" />
           </tr>
+          {/* Less Rebalancing adj — subordinate, muted; only shown when non-zero */}
+          {monthlyExpenses.rebalancingAdjustment > 0 && (
+            <tr className="border-t border-border-subtle bg-surface-subtle">
+              <td className="px-4 py-2 text-xs text-content-muted pl-8">Less Rebalancing</td>
+              <td className="px-4 py-2 text-xs font-mono text-right text-content-muted">
+                {fmt(-monthlyExpenses.rebalancingAdjustment)}
+              </td>
+              <td className="px-4 py-2 text-xs font-mono text-right text-content-muted">—</td>
+              <td className="px-4 py-2 text-xs font-mono text-right text-content-muted">—</td>
+            </tr>
+          )}
           {/* Net Income — client-derived */}
           <tr className="border-t border-border-subtle">
             <td className="px-4 py-3 text-sm font-medium text-content-primary">Net Income</td>
