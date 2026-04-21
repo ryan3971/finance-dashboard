@@ -36,7 +36,7 @@ function IncomeRow({
     <tr
       className={cn(
         'border-t border-border-subtle cursor-pointer transition-colors',
-        isSelected ? 'bg-surface-muted' : 'hover:bg-surface-subtle',
+        isSelected ? 'bg-surface-muted' : 'hover:bg-info-subtle'
       )}
       onClick={onClick}
     >
@@ -115,7 +115,7 @@ function IncomeTotalsRow({
     <tr
       className={cn(
         'border-t-2 border-border-base bg-surface-subtle font-semibold transition-colors',
-        isFiltered && 'cursor-pointer hover:bg-surface-muted',
+        isFiltered && 'cursor-pointer hover:bg-info-subtle'
       )}
       onClick={isFiltered ? onClear : undefined}
       title={isFiltered ? 'Show all months' : undefined}
