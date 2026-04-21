@@ -82,8 +82,7 @@ export interface SnapshotAnticipated {
 }
 
 export interface SnapshotDashboardResponse {
-  month: number;
-  year: number;
+  lastUploadedAt: string | null;
   accounts: SnapshotAccountRow[];
   emergencyFund: SnapshotEmergencyFund;
   monthlyIncome: SnapshotMonthlyIncome;

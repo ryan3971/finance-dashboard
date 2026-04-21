@@ -1,12 +1,14 @@
-import { and, eq, gte, lt, sql } from 'drizzle-orm';
+import { and, eq, gte, lt, max, sql } from 'drizzle-orm';
 import {
   accounts,
   anticipatedBudget,
   anticipatedBudgetMonths,
+  imports,
   transactions,
 } from '@/db/schema';
 import { db } from '@/db';
 import { MONTHS_IN_YEAR } from '@finance/shared/constants';
+import { IMPORT_STATUS } from '@/lib/constants';
 
 export interface AccountBalanceRow {
   id: string;
@@ -136,6 +138,17 @@ export async function queryCurrentMonthExpenses(
       )
     )
     .groupBy(transactions.needWant);
+}
+
+export async function queryLastUploadedAt(
+  userId: string
+): Promise<string | null> {
+  const [row] = await db
+    .select({ lastUploadedAt: max(imports.createdAt) })
+    .from(imports)
+    .where(and(eq(imports.userId, userId), eq(imports.status, IMPORT_STATUS.COMPLETE)));
+
+  return row?.lastUploadedAt?.toISOString() ?? null;
 }
 
 export async function queryAnticipatedForMonth(

@@ -1,23 +1,21 @@
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { MONTH_LABELS } from '@/lib/utils';
 import { AccountsCard } from './components/AccountsCard';
 import { ExpectedVsActualCard } from './components/ExpectedVsActualCard';
 import { MonthlyIncomeExpensesCard } from './components/MonthlyIncomeExpensesCard';
 import { useSnapshotDashboard } from './hooks/useSnapshotDashboard';
 
-function LiveBadge({
-  month,
-  year,
-}: {
-  readonly month: number;
-  readonly year: number;
-}) {
+function LastUpdatedBadge({ lastUploadedAt }: { readonly lastUploadedAt: string }) {
+  const date = new Date(lastUploadedAt);
+  const formatted = date.toLocaleDateString('en-CA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
   return (
-    <span className="flex items-center gap-1.5 text-xs font-medium text-positive">
-      <span className="w-2 h-2 rounded-full bg-positive animate-pulse" />
-      Live — {MONTH_LABELS[month - 1]} {year}
+    <span className="text-xs font-medium text-content-secondary">
+      Updated {formatted}
     </span>
   );
 }
@@ -53,7 +51,7 @@ export function SnapshotPage() {
     <PageLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-content-primary">Snapshot</h1>
-        {data && <LiveBadge month={data.month} year={data.year} />}
+        {data?.lastUploadedAt && <LastUpdatedBadge lastUploadedAt={data.lastUploadedAt} />}
       </div>
 
       {isLoading && <SnapshotSkeleton />}

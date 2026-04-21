@@ -6,6 +6,7 @@ import {
   queryCurrentMonthIncome,
   queryCurrentMonthExpenses,
   queryAnticipatedForMonth,
+  queryLastUploadedAt,
 } from './snapshot.repository';
 import { buildSnapshotResponse } from './snapshot.service';
 import {
@@ -30,6 +31,7 @@ router.get('/snapshot', async (req: Request, res: Response) => {
     anticipatedRows,
     config,
     resolvedRows,
+    lastUploadedAt,
   ] = await Promise.all([
     queryAccountBalances(userId),
     queryCurrentMonthIncome(userId, year, month),
@@ -37,6 +39,7 @@ router.get('/snapshot', async (req: Request, res: Response) => {
     queryAnticipatedForMonth(userId, year, month),
     queryDashboardUserConfig(userId),
     queryResolvedGroupTransactions(userId),
+    queryLastUploadedAt(userId),
   ]);
 
   const adjustments = computeRebalancingAdjustments(resolvedRows, year);
@@ -49,7 +52,8 @@ router.get('/snapshot', async (req: Request, res: Response) => {
       anticipatedRows,
       config,
       { year, month },
-      adjustments
+      adjustments,
+      lastUploadedAt
     )
   );
 });

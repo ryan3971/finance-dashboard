@@ -166,9 +166,10 @@ export function buildSnapshotResponse(
   anticipatedRows: AnticipatedRow[],
   config: SnapshotConfig,
   date: { year: number; month: number },
-  adjustments: RebalancingAdjustments
+  adjustments: RebalancingAdjustments,
+  lastUploadedAt: string | null
 ): SnapshotDashboardResponse {
-  const { year, month } = date;
+  const { month } = date;
   // ── Accounts ────────────────────────────────────────────────────────────────
   const accountList = accountRows.map((row) => ({
     id: row.id,
@@ -256,8 +257,7 @@ export function buildSnapshotResponse(
   );
 
   return {
-    month,
-    year,
+    lastUploadedAt,
     accounts: accountList,
     emergencyFund: {
       target: emergencyFundTarget,
