@@ -1,25 +1,45 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { IncomeMonth } from '@finance/shared/types/dashboard';
+import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
-import { MONTH_LABELS, fmt } from '@/lib/utils';
+import {
+  cn,
+  fmt,
+  getMonthDateRange,
+  getYearDateRange,
+  MONTH_LABELS,
+} from '@/lib/utils';
 import { useIncomeDashboard } from './hooks/useIncomeDashboard';
-import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 
 function pct(part: number, total: number) {
   if (total === 0) return null;
   return ((part / total) * 100).toFixed(1) + '%';
 }
 
-function IncomeRow({ month }: { readonly month: IncomeMonth }) {
+function IncomeRow({
+  month,
+  isSelected,
+  onClick,
+}: {
+  readonly month: IncomeMonth;
+  readonly isSelected: boolean;
+  readonly onClick: () => void;
+}) {
   const hasIncome = month.total > 0;
   return (
-    <tr className="border-t border-border-subtle">
+    <tr
+      className={cn(
+        'border-t border-border-subtle cursor-pointer transition-colors',
+        isSelected ? 'bg-surface-muted' : 'hover:bg-surface-subtle',
+      )}
+      onClick={onClick}
+    >
       <td className="px-4 py-3 text-sm text-content-secondary w-16">
         {MONTH_LABELS[month.month - 1]}
       </td>
@@ -82,13 +102,24 @@ function IncomeTotalsRow({
   total,
   rebalancingAdjustment,
   allocation,
+  isFiltered,
+  onClear,
 }: {
   readonly total: number;
   readonly rebalancingAdjustment: number;
   readonly allocation: NonNullable<IncomeMonth['allocation']> | null;
+  readonly isFiltered: boolean;
+  readonly onClear: () => void;
 }) {
   return (
-    <tr className="border-t-2 border-border-base bg-surface-subtle font-semibold">
+    <tr
+      className={cn(
+        'border-t-2 border-border-base bg-surface-subtle font-semibold transition-colors',
+        isFiltered && 'cursor-pointer hover:bg-surface-muted',
+      )}
+      onClick={isFiltered ? onClear : undefined}
+      title={isFiltered ? 'Show all months' : undefined}
+    >
       <td className="px-4 py-3 text-sm text-content-primary">Total</td>
       <td className="px-4 py-3 text-sm font-mono font-medium text-right">
         <span className={total > 0 ? 'text-positive' : 'text-content-muted'}>
@@ -146,7 +177,17 @@ function IncomeSkeleton() {
 
 export function IncomePage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
+  const [monthFilter, setMonthFilter] = useState<number | null>(null);
   const { data, isLoading, isError } = useIncomeDashboard(year);
+
+  const handleYearChange = useCallback((newYear: number) => {
+    setYear(newYear);
+    setMonthFilter(null);
+  }, []);
+
+  const dateRange = monthFilter
+    ? getMonthDateRange(year, monthFilter)
+    : getYearDateRange(year);
 
   const allocationConfigured = data?.months.some((m) => m.allocation !== null);
 
@@ -184,7 +225,7 @@ export function IncomePage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-xl font-semibold text-content-primary">Income</h1>
-        <YearSelector year={year} onChange={setYear} />
+        <YearSelector year={year} onChange={handleYearChange} />
       </div>
 
       {/* No-config banner */}
@@ -198,9 +239,13 @@ export function IncomePage() {
         </div>
       )}
 
-      <div className="flex gap-6 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Left column: income breakdown table */}
-        <div className="flex-none">
+        <div className="flex flex-col">
+          <h2 className="mb-4 text-lg font-semibold text-content-primary">
+            Monthly Breakdown
+          </h2>
+
           {/* Loading */}
           {isLoading && <IncomeSkeleton />}
 
@@ -234,13 +279,24 @@ export function IncomePage() {
                 </thead>
                 <tbody>
                   {data.months.map((month) => (
-                    <IncomeRow key={month.month} month={month} />
+                    <IncomeRow
+                      key={month.month}
+                      month={month}
+                      isSelected={monthFilter === month.month}
+                      onClick={() =>
+                        setMonthFilter(
+                          monthFilter === month.month ? null : month.month,
+                        )
+                      }
+                    />
                   ))}
                   {totals && (
                     <IncomeTotalsRow
                       total={totals.total}
                       rebalancingAdjustment={totals.rebalancingAdjustment}
                       allocation={totals.allocation}
+                      isFiltered={monthFilter !== null}
+                      onClear={() => setMonthFilter(null)}
                     />
                   )}
                 </tbody>
@@ -250,16 +306,25 @@ export function IncomePage() {
         </div>
 
         {/* Right column: income transactions */}
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold text-content-primary mb-4">
+        <div className="flex flex-col min-w-0">
+          <h2 className="mb-4 text-lg font-semibold text-content-primary">
             Income Transactions
           </h2>
           <TransactionTablePane
-            key={year}
+            key={`${year}-${monthFilter ?? 'all'}`}
+            className="flex-1"
             presetFilters={{ isIncome: true }}
             defaultFilters={{
-              startDate: `${year}-01-01`,
-              endDate: `${year}-12-31`,
+              startDate: dateRange.start,
+              endDate: dateRange.end,
+            }}
+            onFilterChange={(newFilters) => {
+              if (
+                newFilters.startDate !== dateRange.start ||
+                newFilters.endDate !== dateRange.end
+              ) {
+                setMonthFilter(null);
+              }
             }}
           />
         </div>
