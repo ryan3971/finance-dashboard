@@ -25,7 +25,7 @@ export async function seedTestRebalancingGroups(userId: string): Promise<void> {
   const accountIdByName = new Map(accountRows.map((r) => [r.name, r.id]));
 
   for (const group of TEST_REBALANCING_GROUPS) {
-    const resolvedIds: Array<{ id: string; role: 'source' | 'offset' }> = [];
+    const resolvedIds: { id: string; role: 'source' | 'offset' }[] = [];
 
     for (const txDef of group.transactions) {
       const accountId = accountIdByName.get(txDef.accountName);
