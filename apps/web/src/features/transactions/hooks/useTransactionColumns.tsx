@@ -12,7 +12,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { AmountCell } from '@/features/transactions/components/table/AmountCell';
+import { TransactionTagsPanel } from '@/features/transactions/components/panels/TransactionTagsPanel';
 import { Badge } from '@/components/ui/Badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/Popover';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Transaction } from '@/features/transactions/hooks/useTransactions';
 import { parseAmount } from '@/lib/utils';
@@ -189,26 +195,52 @@ export function useTransactionColumns({
         },
         header: () => 'Tags',
         cell: ({ row }) => {
-          const tags = row.original.tags;
-          const visible = tags.slice(0, 2);
-          const overflow = tags.length - visible.length;
+          const tx = row.original;
+          const visible = tx.tags.slice(0, 2);
+          const overflow = tx.tags.length - visible.length;
           return (
-            <div className="flex items-center gap-1 overflow-hidden">
-              {visible.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="rounded-full px-2 py-0.5 text-xs font-medium text-white shrink-0"
-                  style={{ backgroundColor: tag.color ?? '#6B7280' }}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="flex items-center gap-1 overflow-hidden w-full text-left"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {tag.name}
-                </span>
-              ))}
-              {overflow > 0 && (
-                <span className="text-xs text-content-muted shrink-0">
-                  +{overflow}
-                </span>
-              )}
-            </div>
+                  {tx.tags.length === 0 ? (
+                    <span className="text-xs text-content-muted border border-dashed border-border-strong rounded px-1.5 py-0.5">
+                      + tag
+                    </span>
+                  ) : (
+                    <>
+                      {visible.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="rounded-full px-2 py-0.5 text-xs font-medium text-white shrink-0"
+                          style={{ backgroundColor: tag.color ?? '#6B7280' }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                      {overflow > 0 && (
+                        <span className="text-xs text-content-muted shrink-0">
+                          +{overflow}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-80"
+                align="start"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <TransactionTagsPanel
+                  transactionId={tx.id}
+                  attachedTags={tx.tags}
+                />
+              </PopoverContent>
+            </Popover>
           );
         },
         enableSorting: false,
