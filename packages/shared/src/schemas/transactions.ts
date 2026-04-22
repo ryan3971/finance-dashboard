@@ -53,3 +53,15 @@ export const transactionFiltersSchema = z.object({
 });
 
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;
+
+// ─── Patch Transaction Schema ─────────────────────────────────────────────────
+
+export const patchTransactionSchema = z.object({
+  categoryId: z.string().uuid().nullable().optional(),
+  subcategoryId: z.string().uuid().nullable().optional(),
+  needWant: needWantSchema.nullable().optional(),
+  note: z.string().max(FIELD_LIMITS.NOTE_MAX).optional(),
+  createRule: z.boolean().optional(),
+});
+
+export type PatchTransactionFormValues = z.infer<typeof patchTransactionSchema>;
