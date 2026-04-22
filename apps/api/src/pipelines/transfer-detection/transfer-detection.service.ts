@@ -131,13 +131,26 @@ export async function detectTransfers(
     }
   }
 
-  // Flag all candidates for review
+  // Flag all candidates for review and persist pair suggestions
   if (candidates.length > 0) {
     const idsToFlag = candidates.map((c) => c.transactionId);
     await db
       .update(transactions)
       .set({ flaggedForReview: true })
       .where(inArray(transactions.id, idsToFlag));
+
+    // Write transferMatchId bidirectionally so either side can confirm with the pre-populated pair
+    const paired = candidates.filter((c): c is typeof c & { matchedTransactionId: string } => c.matchedTransactionId !== null);
+    for (const c of paired) {
+      await db
+        .update(transactions)
+        .set({ transferMatchId: c.matchedTransactionId })
+        .where(eq(transactions.id, c.transactionId));
+      await db
+        .update(transactions)
+        .set({ transferMatchId: c.transactionId })
+        .where(eq(transactions.id, c.matchedTransactionId));
+    }
 
     logger.info(
       {
@@ -178,6 +191,7 @@ export async function confirmTransfer(
         .set({
           isTransfer: true,
           transferPairId: pairedTransactionId,
+          transferMatchId: null,
           flaggedForReview: false,
         })
         .where(eq(transactions.id, transactionId));
@@ -187,6 +201,7 @@ export async function confirmTransfer(
         .set({
           isTransfer: true,
           transferPairId: transactionId,
+          transferMatchId: null,
           flaggedForReview: false,
         })
         .where(eq(transactions.id, pairedTransactionId));
@@ -199,7 +214,7 @@ export async function confirmTransfer(
 
     await db
       .update(transactions)
-      .set({ isTransfer: true, flaggedForReview: false })
+      .set({ isTransfer: true, transferMatchId: null, flaggedForReview: false })
       .where(eq(transactions.id, transactionId));
   }
 }
@@ -250,9 +265,16 @@ export async function dismissTransferFlag(
   const txn = await getOwnedTransaction(transactionId, userId);
   if (!txn) throw new TransferError(TransferErrorCode.TRANSACTION_NOT_FOUND);
 
+  if (txn.transferMatchId) {
+    await db
+      .update(transactions)
+      .set({ transferMatchId: null })
+      .where(eq(transactions.id, txn.transferMatchId));
+  }
+
   await db
     .update(transactions)
-    .set({ flaggedForReview: false })
+    .set({ flaggedForReview: false, transferMatchId: null })
     .where(eq(transactions.id, transactionId));
 }
 
@@ -265,7 +287,11 @@ function ownedByUser(userId: string) {
 
 async function getOwnedTransaction(transactionId: string, userId: string) {
   const [txn] = await db
-    .select({ id: transactions.id, isTransfer: transactions.isTransfer })
+    .select({
+      id: transactions.id,
+      isTransfer: transactions.isTransfer,
+      transferMatchId: transactions.transferMatchId,
+    })
     .from(transactions)
     .where(and(eq(transactions.id, transactionId), ownedByUser(userId)))
     .limit(1);

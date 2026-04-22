@@ -89,6 +89,7 @@ TransactionsPage — reads/writes subcategoryId from search params, passes to us
 router.tsx — was missing subcategoryId in transactionsSearchSchema; just added it
 
 ---
+
 Root cause: Expense transactions are stored with negative amounts in the DB (the system convention: amount > 0 = income, amount < 0 = expense). The DB queries were doing SUM(amount) which yielded negative values (e.g. -1500). The component gates rendering on data.annualTotal > 0 — which is never true for negative values — so nothing was shown.
 Changes made:
 
@@ -96,16 +97,16 @@ expenses.service.ts:39 — queryMonthlyExpenses: changed SUM(amount) → -SUM(am
 
 expenses.service.ts:117 — queryExpensesByCategory: same negation so category totals are also positive.
 
-expenses.routes.test.ts — Updated all expense transaction fixture amounts from positive to negative (matching the real sign convention), and replaced unsafe res.body.x member accesses with properly typed res.body as ExpensesBody / res.body as CategoriesBody casts.
----
+## expenses.routes.test.ts — Updated all expense transaction fixture amounts from positive to negative (matching the real sign convention), and replaced unsafe res.body.x member accesses with properly typed res.body as ExpensesBody / res.body as CategoriesBody casts.
+
 snapshot.repository.ts:59-66 — Replaced the four-branch CASE with a simpler two-branch one. Since amounts already carry their sign, non-credit accounts just sum them directly; credit accounts invert the sign so that a negative charge increases the reported balance (debt) and a positive payment reduces it. The old isIncome-based branching was wrong for two of the four combinations.
 
-snapshot.routes.test.ts:110-113 — Fixed the expense fixture from '1200.00' to '-1200.00' to follow the system convention (amount < 0 = expense). The old positive amount was accidentally cancelling the CASE bug so the test stayed green while hiding the defect.
----
+## snapshot.routes.test.ts:110-113 — Fixed the expense fixture from '1200.00' to '-1200.00' to follow the system convention (amount < 0 = expense). The old positive amount was accidentally cancelling the CASE bug so the test stayed green while hiding the defect.
+
 snapshot.repository.ts:122-123 — Changed SUM(${transactions.amount}) to SUM(-${transactions.amount}). Expense amounts are stored as negative values by convention; negating them in the query means the service receives positive totals it can accumulate directly without any sign-flip logic at the service layer.
 
-snapshot.routes.test.ts:215-232 — Fixed the three expense fixtures from '800.00', '300.00', '50.00' to '-800.00', '-300.00', '-50.00'. The test now seeds data the way the real import pipeline does, so it will catch any future regression where the sign-flip is removed.
----
+## snapshot.routes.test.ts:215-232 — Fixed the three expense fixtures from '800.00', '300.00', '50.00' to '-800.00', '-300.00', '-50.00'. The test now seeds data the way the real import pipeline does, so it will catch any future regression where the sign-flip is removed.
+
 Task 1 — DB constraint (done in prior session)
 Migration 0004_lively_sally_floyd.sql: cleans 31 violations, then adds CHECK (is_income = false OR need_want IS NULL).
 
@@ -117,8 +118,10 @@ needWant: isIncome ? null : (input.needWant ?? null) — the isIncome flag is al
 
 Task 4 — Transaction patch (transactions.service.ts:196-198)
 Also added isIncome to the getOwnedTransaction select. Guard: updateData.needWant = txn.isIncome ? null : input.needWant.
+
 ---
- Here's a summary of what was added:
+
+Here's a summary of what was added:
 
 Interface update — SnapshotBody now includes incomeLessInvestment, expectedAvailable, and remainingBudget (typed via a shared ColumnValues interface), and expectedExpenses now exposes wants.
 
@@ -130,14 +133,16 @@ remainingBudget → { total: 4000, needs: 2000, wants: 1200 } (4000 spending inc
 expectedAvailable → { total: 2500, needs: 500, wants: 1200 } (4000 minus 1500 expected rent)
 New tests:
 
-Test	What it covers
-"excludes prior-month expenses from monthlyExpenses"	Symmetric to the existing income exclusion test
-"excludes transfer transactions from monthlyIncome and monthlyExpenses"	Both income and expense transfers are filtered out
-"excludes inactive accounts from the accounts list"	isActive = false accounts don't appear
-"returns emergency fund percentage above 100 when balance exceeds target"	Percentage can exceed 100
-"returns 0 emergency fund percentage when target is set but balance is zero"	Returns 0 (not null) when target is set but no balance
-"uses one chequing account balance (not the sum) for multiple chequing accounts"	emergencyFund.balance reflects a single account's balance, not the aggregate
+Test What it covers
+"excludes prior-month expenses from monthlyExpenses" Symmetric to the existing income exclusion test
+"excludes transfer transactions from monthlyIncome and monthlyExpenses" Both income and expense transfers are filtered out
+"excludes inactive accounts from the accounts list" isActive = false accounts don't appear
+"returns emergency fund percentage above 100 when balance exceeds target" Percentage can exceed 100
+"returns 0 emergency fund percentage when target is set but balance is zero" Returns 0 (not null) when target is set but no balance
+"uses one chequing account balance (not the sum) for multiple chequing accounts" emergencyFund.balance reflects a single account's balance, not the aggregate
+
 ---
+
 Here's a summary of every change made:
 
 test-helpers.ts
@@ -153,31 +158,35 @@ Inline guards: replaced all three assertDefined(account, ...) calls with if (!ac
 Emergency fund helpers: four tests replaced their GET + raw db.update block with await setEmergencyFundTarget(...)
 Parallelized POSTs: the two independent anticipated-budget POSTs in "computes expectedIncome..." now run via Promise.all
 Parallelized GETs: the two final snapshot GETs in "isolates data between users" now run via Promise.all
+
 ---
+
 packages/shared/src/schemas/anticipated-budget.ts
 Extracted the object definition into an internal anticipatedBudgetBaseSchema so .omit() can still be chained on it before applying a refinement.
 Added a .refine() to createAnticipatedBudgetSchema: rejects any payload where isIncome: true and needWant is non-null → 400 { error: 'Validation error' }.
 Added the same .refine() to updateAnticipatedBudgetSchema using loose != null so a PATCH that omits needWant entirely doesn't trip the check.
 apps/api/src/features/anticipated-budget/anticipated-budget.routes.test.ts
-What changed	How
-Nil UUID hardcoded 5×	Replaced with UNKNOWN_ID from @/testing/constants
-Missing MALFORMED_ID tests	Added to PATCH, DELETE /:id, PUT /:id/months/:month, DELETE /:id/months/:month
-toEqual on month objects	Changed to toMatchObject throughout
-Repeated inline type cast	Replaced with file-level ResolvedMonth / AnticipatedBudgetEntry interfaces
-Setup POSTs with no status check	Added expect(create.status).toBe(201) on every setup request
-isIncome: true + needWant not tested	New test in POST: expects 400 + { error: 'Validation error' }
-POST 400 missing error body assertion	Added toMatchObject({ error: 'Validation error' })
-DELETE /:id missing cross-user test	New test: user B gets 404 trying to delete user A's entry
-Year param not validated	Three new GET tests: missing year, abc, 1999, 2101
-Year scoping not tested	New test: two entries for 2024/2025, GET ?year=2025 returns only 2025 entry
-Irregular entry not tested	New test: monthlyAmount: null entry resolves unoverridden months to 0
-Invalid month params not tested	Added month=0 and month=13 tests for both PUT and DELETE months/:month
-DELETE /months status never asserted	Added expect(del.status).toBe(204)
-Missing DELETE /months → 404 when override absent	New test: deleting a non-existent override returns 404
-DELETE /months cross-user isolation missing	New test: user B gets 404 trying to delete user A's month override
-Sequential registerUser in multi-user tests	Parallelised with Promise.all in all three two-user test setups
-Upsert test missing isOverride assertion	toMatchObject({ month: 6, amount: 2500, isOverride: true }) added
+What changed How
+Nil UUID hardcoded 5× Replaced with UNKNOWN_ID from @/testing/constants
+Missing MALFORMED_ID tests Added to PATCH, DELETE /:id, PUT /:id/months/:month, DELETE /:id/months/:month
+toEqual on month objects Changed to toMatchObject throughout
+Repeated inline type cast Replaced with file-level ResolvedMonth / AnticipatedBudgetEntry interfaces
+Setup POSTs with no status check Added expect(create.status).toBe(201) on every setup request
+isIncome: true + needWant not tested New test in POST: expects 400 + { error: 'Validation error' }
+POST 400 missing error body assertion Added toMatchObject({ error: 'Validation error' })
+DELETE /:id missing cross-user test New test: user B gets 404 trying to delete user A's entry
+Year param not validated Three new GET tests: missing year, abc, 1999, 2101
+Year scoping not tested New test: two entries for 2024/2025, GET ?year=2025 returns only 2025 entry
+Irregular entry not tested New test: monthlyAmount: null entry resolves unoverridden months to 0
+Invalid month params not tested Added month=0 and month=13 tests for both PUT and DELETE months/:month
+DELETE /months status never asserted Added expect(del.status).toBe(204)
+Missing DELETE /months → 404 when override absent New test: deleting a non-existent override returns 404
+DELETE /months cross-user isolation missing New test: user B gets 404 trying to delete user A's month override
+Sequential registerUser in multi-user tests Parallelised with Promise.all in all three two-user test setups
+Upsert test missing isOverride assertion toMatchObject({ month: 6, amount: 2500, isOverride: true }) added
+
 ---
+
 test-anticipated-budget.ts — data definitions
 
 Five frozen entries with their month overrides, following the same pattern as test-categories.ts and test-rules.ts. References categories by name so it stays independent of auto-generated UUIDs.
@@ -192,8 +201,8 @@ Prerequisite: resetTestSystemData() must have run first (already guaranteed by s
 
 test-anticipated-budget-seed.md — reference doc
 
-Covers what each entry exercises, the override table, usage patterns (beforeAll vs beforeEach), and a branch coverage summary table.
----
+## Covers what each entry exercises, the override table, usage patterns (beforeAll vs beforeEach), and a branch coverage summary table.
+
 What was done
 apps/web/src/lib/utils.ts
 Added fmtPct — replaces the duplicated pct() function in ExpensesPage and IncomePage. Shared across features.
@@ -221,6 +230,18 @@ Reduced from 632 lines to 74. Contains only page-level state and layout.
 useState(() => new Date().getFullYear()) — lazy initializer prevents the year from going stale if the app stays open across midnight.
 useCallback for handleYearChange — stable reference; won't defeat a memoized YearSelector.
 getYearDateRange replaces the inline ${year}-12-31 fallback.
+
 ---
+
 expenses: 3 cases — bucket subtraction + rebalancingAdjustment, reduced annualTotal, unaffected months
 income: 3 cases — reduced total + rebalancingAdjustment, allocation on adjusted amount, zero-out guard when exclusion wipes the month
+
+---
+
+File Change
+schema.ts:159 Added transferMatchId uuid nullable column
+migrations/0007_giant_maximus.sql Generated migration (applied to dev + test DBs)
+transfer-detection.service.ts detectTransfers: writes transferMatchId bidirectionally on both sides of a detected pair; confirmTransfer: clears transferMatchId on both sides; dismissTransferFlag: clears transferMatchId on the dismissed transaction and its match; getOwnedTransaction helper: now selects transferMatchId
+transactions.service.ts listTransactions: includes transferMatchId in select; deleteTransaction: now selects transferMatchId, resets isTransfer: false on surviving pair (Bug 4), and clears transferMatchId on the matched candidate when deleting a flagged transaction
+useTransactions.ts Added transferMatchId: string | null to Transaction type
+TransactionReviewPanel.tsx isTransferCandidate now checks only flaggedForReview (Bug 1); handleConfirmTransfer passes transaction.transferMatchId as pairedTransactionId (Bug 3); removed unused TRANSFER_KEYWORDS import

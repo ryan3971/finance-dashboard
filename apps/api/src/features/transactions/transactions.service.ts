@@ -11,6 +11,8 @@ import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
 const subcategories = alias(categories, 'subcategories');
+const matchedTransactions = alias(transactions, 'matched_transactions');
+const matchedAccounts = alias(accounts, 'matched_accounts');
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
   AUTO_RULE_PRIORITY,
@@ -133,6 +135,10 @@ export async function listTransactions(
       currency: transactions.currency,
       needWant: transactions.needWant,
       isTransfer: transactions.isTransfer,
+      transferMatchId: transactions.transferMatchId,
+      transferMatchDescription: matchedTransactions.description,
+      transferMatchSourceName: matchedTransactions.sourceName,
+      transferMatchAccountName: matchedAccounts.name,
       isIncome: transactions.isIncome,
       flaggedForReview: transactions.flaggedForReview,
       categorySource: transactions.categorySource,
@@ -152,6 +158,8 @@ export async function listTransactions(
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .leftJoin(subcategories, eq(transactions.subcategoryId, subcategories.id))
+    .leftJoin(matchedTransactions, eq(transactions.transferMatchId, matchedTransactions.id))
+    .leftJoin(matchedAccounts, eq(matchedTransactions.accountId, matchedAccounts.id))
     .leftJoin(
       rebalancingGroupTransactions,
       eq(rebalancingGroupTransactions.transactionId, transactions.id)
@@ -343,6 +351,7 @@ export async function deleteTransaction(
     .select({
       id: transactions.id,
       transferPairId: transactions.transferPairId,
+      transferMatchId: transactions.transferMatchId,
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -360,14 +369,23 @@ export async function deleteTransaction(
     .where(eq(rebalancingGroupTransactions.transactionId, id))
     .limit(1);
 
-  if (txn.transferPairId || membership) {
+  if (txn.transferPairId || txn.transferMatchId || membership) {
     const pairId = txn.transferPairId;
+    const matchId = txn.transferMatchId;
     await db.transaction(async (tx) => {
       if (pairId) {
+        // Reset the surviving pair — it is no longer part of a confirmed transfer
         await tx
           .update(transactions)
-          .set({ transferPairId: null })
+          .set({ isTransfer: false, transferPairId: null })
           .where(eq(transactions.id, pairId));
+      }
+      if (matchId) {
+        // Clear the dangling suggestion on the candidate that pointed to this transaction
+        await tx
+          .update(transactions)
+          .set({ transferMatchId: null })
+          .where(eq(transactions.id, matchId));
       }
       // CASCADE removes the rebalancing_group_transactions row automatically.
       await tx.delete(transactions).where(eq(transactions.id, id));

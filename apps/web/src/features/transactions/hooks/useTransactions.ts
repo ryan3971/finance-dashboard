@@ -19,6 +19,10 @@ export interface Transaction {
   currency: string;
   needWant: NeedWant | null;
   isTransfer: boolean;
+  transferMatchId: string | null;
+  transferMatchDescription: string | null;
+  transferMatchSourceName: string | null;
+  transferMatchAccountName: string | null;
   isIncome: boolean;
   flaggedForReview: boolean;
   categorySource: string | null;

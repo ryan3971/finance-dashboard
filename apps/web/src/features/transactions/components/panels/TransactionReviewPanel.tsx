@@ -2,7 +2,6 @@ import {
   FIELD_LIMITS,
   NEED_WANT_OPTIONS,
   type NeedWant,
-  TRANSFER_KEYWORDS,
 } from '@finance/shared/constants';
 import {
   useConfirmTransfer,
@@ -41,10 +40,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
   const [createRule, setCreateRule] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const isTransferCandidate =
-    mode === 'review' &&
-    transaction.flaggedForReview &&
-    TRANSFER_KEYWORDS.some((k) => transaction.description.includes(k));
+  const isTransferCandidate = mode === 'review' && transaction.flaggedForReview;
 
   async function handleSave() {
     setSaving(true);
@@ -68,7 +64,10 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
   async function handleConfirmTransfer() {
     setSaving(true);
     try {
-      await confirmTransfer.mutateAsync({ transactionId: transaction.id });
+      await confirmTransfer.mutateAsync({
+        transactionId: transaction.id,
+        pairedTransactionId: transaction.transferMatchId ?? undefined,
+      });
       onClose();
     } finally {
       setSaving(false);
@@ -115,6 +114,13 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
           <span className="text-xs text-warning flex-1">
             This looks like an internal transfer. Confirm to exclude it from
             income/expense totals.
+            {transaction.transferMatchId && (
+              <span className="block mt-1 text-content-secondary">
+                Suggested pair:{' '}
+                {transaction.transferMatchSourceName ?? transaction.transferMatchDescription}{' '}
+                &middot; {transaction.transferMatchAccountName}
+              </span>
+            )}
           </span>
           <Button
             variant="warning"

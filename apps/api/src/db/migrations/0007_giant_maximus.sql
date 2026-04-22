@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD COLUMN "transfer_match_id" uuid;
