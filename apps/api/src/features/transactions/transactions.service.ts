@@ -9,10 +9,6 @@ import {
 } from '@/db/schema';
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-
-const subcategories = alias(categories, 'subcategories');
-const matchedTransactions = alias(transactions, 'matched_transactions');
-const matchedAccounts = alias(accounts, 'matched_accounts');
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
   AUTO_RULE_PRIORITY,
@@ -60,6 +56,14 @@ export interface CreateTransactionInput {
   note?: string | null;
   isIncome?: boolean;
 }
+
+// ─── Aliases for joined tables ────────────────────────────────────────────────────────────────────
+
+const subcategories = alias(categories, 'subcategories');
+const matchedTransactions = alias(transactions, 'matched_transactions');
+const matchedAccounts = alias(accounts, 'matched_accounts');
+const pairedTransactions = alias(transactions, 'paired_transactions');
+const pairedAccounts = alias(accounts, 'paired_accounts');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -117,7 +121,7 @@ export async function listTransactions(
     conditions.push(eq(transactions.isIncome, filters.isIncome));
   if (filters.isTransfer !== undefined)
     conditions.push(eq(transactions.isTransfer, filters.isTransfer));
-  if (filters.tagIds && filters.tagIds.length > 0) {
+  if (filters.tagIds?.length) {
     const tagSubquery = db
       .select({ transactionId: transactionTags.transactionId })
       .from(transactionTags)
@@ -139,6 +143,10 @@ export async function listTransactions(
       transferMatchDescription: matchedTransactions.description,
       transferMatchSourceName: matchedTransactions.sourceName,
       transferMatchAccountName: matchedAccounts.name,
+      transferPairId: transactions.transferPairId,
+      transferPairDescription: pairedTransactions.description,
+      transferPairSourceName: pairedTransactions.sourceName,
+      transferPairAccountName: pairedAccounts.name,
       isIncome: transactions.isIncome,
       flaggedForReview: transactions.flaggedForReview,
       categorySource: transactions.categorySource,
@@ -160,6 +168,8 @@ export async function listTransactions(
     .leftJoin(subcategories, eq(transactions.subcategoryId, subcategories.id))
     .leftJoin(matchedTransactions, eq(transactions.transferMatchId, matchedTransactions.id))
     .leftJoin(matchedAccounts, eq(matchedTransactions.accountId, matchedAccounts.id))
+    .leftJoin(pairedTransactions, eq(transactions.transferPairId, pairedTransactions.id))
+    .leftJoin(pairedAccounts, eq(pairedTransactions.accountId, pairedAccounts.id))
     .leftJoin(
       rebalancingGroupTransactions,
       eq(rebalancingGroupTransactions.transactionId, transactions.id)

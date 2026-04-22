@@ -8,7 +8,7 @@ import { ACTIONS_COLUMN_ID } from '@/features/transactions/hooks/useTransactionC
 import { Button } from '@/components/ui/Button';
 import { Columns3 } from 'lucide-react';
 import type { Table } from '@tanstack/react-table';
-import type { Transaction } from '@/features/transactions/hooks/useTransactions';
+import type { Transaction } from '@finance/shared/schemas/transactions';
 
 interface ColumnVisibilityToggleProps {
   readonly table: Table<Transaction>;

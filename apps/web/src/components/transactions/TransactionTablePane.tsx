@@ -12,9 +12,9 @@ import { TransactionsTable } from '@/features/transactions/components/table/Tran
 import type { ExpandedPanel } from '@/features/transactions/types/panels';
 import {
   type PaginationInfo,
-  type Transaction,
   useTransactions,
 } from '@/features/transactions/hooks/useTransactions';
+import type { Transaction } from '@finance/shared/schemas/transactions';
 import { useDeleteTransaction } from '@/features/transactions/hooks/useTransactionMutations';
 import type { TransactionFilters as TransactionFilterParams } from '@finance/shared/schemas/transactions';
 import { EmptyState } from '@/components/common/EmptyState';

@@ -420,6 +420,49 @@ describe('GET /api/v1/transactions', () => {
 
     expect(res.status).toBe(400);
   });
+
+  it('returns transferPair fields when a paired transfer exists', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    const txnA = await transactionFixture(accountA.id, {
+      isTransfer: true,
+      amount: '-100.00',
+      description: 'Transfer Out',
+    });
+    const txnB = await transactionFixture(accountB.id, {
+      isTransfer: true,
+      amount: '100.00',
+      description: 'Transfer In',
+      transferPairId: txnA.id,
+    });
+    await db
+      .update(transactions)
+      .set({ transferPairId: txnB.id })
+      .where(eq(transactions.id, txnA.id));
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+
+    interface TxRow {
+      id: string;
+      transferPairId: string | null;
+      transferPairDescription: string | null;
+      transferPairSourceName: string | null;
+      transferPairAccountName: string | null;
+    }
+    const body = res.body as PaginatedResponse<TxRow>;
+    const txA = body.data.find((t) => t.id === txnA.id);
+    expect(txA).toMatchObject({
+      transferPairId: txnB.id,
+      transferPairDescription: 'Transfer In',
+      transferPairSourceName: null,
+      transferPairAccountName: 'Savings',
+    });
+  });
 });
 
 // ── PATCH /api/v1/transactions/:id ───────────────────────────────────────────

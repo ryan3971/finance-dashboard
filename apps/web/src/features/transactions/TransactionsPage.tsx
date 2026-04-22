@@ -9,10 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { RebalancingPanel } from '@/features/transactions/components/rebalancing/RebalancingPanel';
 import { RebalancingTab } from '@/features/transactions/components/rebalancing/RebalancingTab';
-import type {
-  PaginationInfo,
-  Transaction,
-} from '@/features/transactions/hooks/useTransactions';
+import type { PaginationInfo } from '@/features/transactions/hooks/useTransactions';
+import type { Transaction } from '@finance/shared/schemas/transactions';
 import { useCallback, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { PAGINATION } from '@finance/shared/constants';

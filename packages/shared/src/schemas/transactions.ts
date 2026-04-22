@@ -1,4 +1,5 @@
 import {
+  CATEGORY_SOURCE_OPTIONS,
   DEFAULT_CURRENCY,
   FIELD_LIMITS,
   ISO_DATE_REGEX,
@@ -65,3 +66,50 @@ export const patchTransactionSchema = z.object({
 });
 
 export type PatchTransactionFormValues = z.infer<typeof patchTransactionSchema>;
+
+// ─── Transaction Response Schemas ────────────────────────────────────────────
+
+export const categorySourceSchema = z.enum(CATEGORY_SOURCE_OPTIONS);
+export type CategorySource = z.infer<typeof categorySourceSchema>;
+
+export const tagResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  color: z.string().nullable(),
+});
+export type Tag = z.infer<typeof tagResponseSchema>;
+
+export const transactionResponseSchema = z.object({
+  id: z.string().uuid(),
+  date: z.string(),
+  description: z.string(),
+  sourceName: z.string().nullable(),
+  amount: z.string(),
+  currency: z.string(),
+  needWant: needWantSchema.nullable(),
+  isTransfer: z.boolean(),
+  transferMatchId: z.string().uuid().nullable(),
+  transferMatchDescription: z.string().nullable(),
+  transferMatchSourceName: z.string().nullable(),
+  transferMatchAccountName: z.string().nullable(),
+  transferPairId: z.string().uuid().nullable(),
+  transferPairDescription: z.string().nullable(),
+  transferPairSourceName: z.string().nullable(),
+  transferPairAccountName: z.string().nullable(),
+  isIncome: z.boolean(),
+  flaggedForReview: z.boolean(),
+  categorySource: categorySourceSchema.nullable(),
+  note: z.string().nullable(),
+  accountId: z.string().uuid(),
+  accountName: z.string(),
+  accountInstitution: z.string(),
+  source: z.string(),
+  categoryId: z.string().uuid().nullable(),
+  categoryName: z.string().nullable(),
+  subcategoryId: z.string().uuid().nullable(),
+  subcategoryName: z.string().nullable(),
+  tags: z.array(tagResponseSchema),
+  rebalancingGroupId: z.string().uuid().nullable(),
+  rebalancingRole: z.enum(['source', 'offset']).nullable(),
+});
+export type Transaction = z.infer<typeof transactionResponseSchema>;

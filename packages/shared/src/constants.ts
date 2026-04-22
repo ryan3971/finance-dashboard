@@ -71,3 +71,6 @@ export const PAGINATION = {
 } as const;
 
 export const REBALANCING_GROUP_LABEL_MAX = 100;
+
+export const CATEGORY_SOURCE_OPTIONS = ['rule', 'ai', 'manual', 'default'] as const;
+export type CategorySource = (typeof CATEGORY_SOURCE_OPTIONS)[number];

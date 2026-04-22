@@ -1,5 +1,5 @@
 import type { FilterState } from '@/features/transactions/components/filters/filterState';
-import type { Transaction } from '@/features/transactions/hooks/useTransactions';
+import type { Transaction } from '@finance/shared/schemas/transactions';
 
 const EXPORT_COLUMNS: { header: string; getValue: (t: Transaction) => string | null | undefined }[] = [
   { header: 'date',        getValue: (t) => t.date },

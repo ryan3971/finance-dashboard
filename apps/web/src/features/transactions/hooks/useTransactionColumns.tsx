@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/Popover';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Transaction } from '@/features/transactions/hooks/useTransactions';
+import type { Transaction } from '@finance/shared/schemas/transactions';
 import { parseAmount } from '@/lib/utils';
 import { useMemo } from 'react';
 import type { ExpandedPanel } from '@/features/transactions/types/panels';

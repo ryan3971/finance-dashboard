@@ -6,7 +6,7 @@ import {
   useDetachTag,
   useTags,
 } from '@/features/transactions/hooks/useTags';
-import type { Tag } from '@/features/transactions/hooks/useTransactions';
+import type { Tag } from '@finance/shared/schemas/transactions';
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';

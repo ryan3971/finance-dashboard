@@ -1,7 +1,7 @@
 import { tagKeys, transactionKeys } from '@/lib/queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { Tag } from './useTransactions';
+import type { Tag } from '@finance/shared/schemas/transactions';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
 

@@ -16,10 +16,8 @@ import { ColumnVisibilityToggle } from '@/features/transactions/components/table
 import { flexRender } from '@tanstack/react-table';
 import { DataTable } from '@/components/ui/DataTable';
 import { Pagination } from '@/components/common/Pagination';
-import type {
-  PaginationInfo,
-  Transaction,
-} from '@/features/transactions/hooks/useTransactions';
+import type { PaginationInfo } from '@/features/transactions/hooks/useTransactions';
+import type { Transaction } from '@finance/shared/schemas/transactions';
 import { TransactionDetailPanel } from '@/features/transactions/components/panels/TransactionDetailPanel';
 import { TransactionReviewPanel } from '@/features/transactions/components/panels/TransactionReviewPanel';
 

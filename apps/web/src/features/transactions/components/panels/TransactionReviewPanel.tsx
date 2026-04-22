@@ -18,7 +18,7 @@ import { CategorySelect } from '@/components/common/CategorySelect';
 import { Controller, useController, useForm, useWatch } from 'react-hook-form';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
-import type { Transaction } from '@/features/transactions/hooks/useTransactions';
+import type { Transaction } from '@finance/shared/schemas/transactions';
 import { cn, parseAmount } from '@/lib/utils';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';

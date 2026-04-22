@@ -1,7 +1,7 @@
 import type React from 'react';
 import { AmountCell } from '@/features/transactions/components/table/AmountCell';
 import { Badge } from '@/components/ui/Badge';
-import type { Tag, Transaction } from '@/features/transactions/hooks/useTransactions';
+import type { Tag, Transaction } from '@finance/shared/schemas/transactions';
 
 interface Props {
   readonly transaction: Transaction;
@@ -23,17 +23,23 @@ function CategoryField({ transaction }: { readonly transaction: Transaction }) {
     ? `${transaction.categoryName} › ${transaction.subcategoryName}`
     : transaction.categoryName;
 
-  let badge: React.ReactNode = null;
+  let needWantBadge: React.ReactNode = null;
   if (transaction.needWant === 'Need') {
-    badge = <Badge variant="info" rounded="sm" className="ml-1.5">Need</Badge>;
+    needWantBadge = <Badge variant="info" rounded="sm" className="ml-1.5">Need</Badge>;
   } else if (transaction.needWant === 'Want') {
-    badge = <Badge variant="accent" rounded="sm" className="ml-1.5">Want</Badge>;
+    needWantBadge = <Badge variant="accent" rounded="sm" className="ml-1.5">Want</Badge>;
   }
+
+  const sourceLabelMap: Record<string, string> = { ai: 'AI', rule: 'Rule', manual: 'Manual' };
+  const sourceLabel = transaction.categorySource ? (sourceLabelMap[transaction.categorySource] ?? null) : null;
 
   return (
     <span className="inline-flex items-center flex-wrap gap-y-1">
       {path}
-      {badge}
+      {needWantBadge}
+      {sourceLabel && (
+        <Badge variant="neutral" rounded="sm" className="ml-1.5">{sourceLabel}</Badge>
+      )}
     </span>
   );
 }
@@ -55,15 +61,64 @@ function TagsField({ tags }: { readonly tags: Tag[] }) {
   );
 }
 
+function ExtraDetailsSection({ transaction }: { readonly transaction: Transaction }) {
+  if (!transaction.isTransfer && !transaction.rebalancingGroupId) return null;
+
+  const linkedAccount = transaction.transferMatchAccountName ?? transaction.transferPairAccountName;
+  const linkedName =
+    (transaction.transferMatchSourceName ?? transaction.transferMatchDescription) ??
+    (transaction.transferPairSourceName ?? transaction.transferPairDescription);
+  const isUnmatched = !transaction.transferMatchId && !transaction.transferPairId;
+  const roleLabel = transaction.rebalancingRole === 'source' ? 'Payer' : 'Participant';
+  const roleVariant = transaction.rebalancingRole === 'source' ? 'info' as const : 'neutral' as const;
+
+  return (
+    <div className="pt-3 border-t border-info-border">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+        {transaction.isTransfer && (
+          <>
+            <div>
+              <dt className="text-xs text-content-muted">Linked Account</dt>
+              <dd className="text-sm text-content-primary mt-0.5">
+                {isUnmatched
+                  ? <Badge variant="warning" rounded="sm">Unmatched</Badge>
+                  : (linkedAccount ?? '—')}
+              </dd>
+            </div>
+            {!isUnmatched && linkedName && (
+              <div>
+                <dt className="text-xs text-content-muted">Linked Transaction</dt>
+                <dd className="text-sm text-content-primary mt-0.5">{linkedName}</dd>
+              </div>
+            )}
+          </>
+        )}
+        {transaction.rebalancingGroupId && (
+          <div>
+            <dt className="text-xs text-content-muted">Shared Expense Role</dt>
+            <dd className="text-sm text-content-primary mt-0.5">
+              <Badge variant={roleVariant} rounded="sm">{roleLabel}</Badge>
+            </dd>
+          </div>
+        )}
+      </dl>
+    </div>
+  );
+}
+
 type DetailField =
   | { label: string; value: string | null }
   | { label: string; render: () => React.ReactNode };
 
 export function TransactionDetailPanel({ transaction, onClose }: Props) {
+  const accountDisplay = transaction.accountInstitution
+    ? `${transaction.accountName} · ${transaction.accountInstitution}`
+    : transaction.accountName;
+
   const fields: DetailField[] = [
     { label: 'Date', value: formatDate(transaction.date) },
     { label: 'Amount', render: () => <AmountCell amount={transaction.amount} isTransfer={transaction.isTransfer} /> },
-    { label: 'Account', value: transaction.accountName },
+    { label: 'Account', value: accountDisplay },
     { label: 'Category', render: () => <CategoryField transaction={transaction} /> },
     { label: 'Note', value: transaction.note },
     { label: 'Tags', render: () => <TagsField tags={transaction.tags} /> },
@@ -94,6 +149,8 @@ export function TransactionDetailPanel({ transaction, onClose }: Props) {
           </div>
         ))}
       </dl>
+
+      <ExtraDetailsSection transaction={transaction} />
     </div>
   );
 }
