@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { CATEGORY_SOURCE, CONFIDENCE } from '@/lib/constants';
+import { CONFIDENCE } from '@/lib/constants';
+import { CATEGORY_SOURCE } from '@finance/shared/constants';
 
 import { applyRules } from './rules-engine';
 import type { LoadedRule } from './rules-engine';

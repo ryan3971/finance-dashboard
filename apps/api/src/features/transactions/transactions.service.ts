@@ -12,11 +12,11 @@ import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
   AUTO_RULE_PRIORITY,
-  CATEGORY_SOURCE,
   CONFIDENCE,
   KEYWORD_SLICE_LENGTH,
   TRANSACTION_SOURCE,
 } from '@/lib/constants';
+import { CATEGORY_SOURCE } from '@finance/shared/constants';
 import type { NeedWant } from '@finance/shared/constants';
 import type { PatchTransactionInput } from '@finance/shared/types/transactions';
 import { db } from '@/db';

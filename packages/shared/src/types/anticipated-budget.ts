@@ -1,23 +1,10 @@
-import type { NeedWant } from '../constants';
+import type { z } from 'zod';
+import type {
+  anticipatedBudgetEntrySchema,
+  anticipatedBudgetMonthSchema,
+  anticipatedBudgetResponseSchema,
+} from '../schemas/anticipated-budget';
 
-export interface AnticipatedBudgetMonth {
-  month: number;
-  amount: number;
-  isOverride: boolean;
-}
-
-export interface AnticipatedBudgetEntry {
-  id: string;
-  name: string;
-  categoryId: string | null;
-  categoryName: string | null;
-  categoryIcon: string | null;
-  needWant: NeedWant | null;
-  isIncome: boolean;
-  monthlyAmount: number | null;
-  notes: string | null;
-  effectiveYear: number;
-  months: AnticipatedBudgetMonth[];
-}
-
-export type AnticipatedBudgetResponse = AnticipatedBudgetEntry[];
+export type AnticipatedBudgetMonth = z.infer<typeof anticipatedBudgetMonthSchema>;
+export type AnticipatedBudgetEntry = z.infer<typeof anticipatedBudgetEntrySchema>;
+export type AnticipatedBudgetResponse = z.infer<typeof anticipatedBudgetResponseSchema>;

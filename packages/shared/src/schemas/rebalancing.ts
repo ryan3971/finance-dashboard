@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FIELD_LIMITS, REBALANCING_GROUP_LABEL_MAX } from '../constants';
+import { REBALANCING_GROUP_LABEL_MAX } from '../constants';
 
 export const createRebalancingGroupSchema = z.object({
   label: z
@@ -31,5 +31,3 @@ export const addGroupTransactionSchema = z.object({
   role: z.enum(['source', 'offset']),
 });
 
-// Re-export field limit for consumers that need it
-export { FIELD_LIMITS };

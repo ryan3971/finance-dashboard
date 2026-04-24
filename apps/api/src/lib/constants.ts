@@ -6,15 +6,6 @@ export const IMPORT_STATUS = {
   ERROR: 'error',
 } as const;
 
-// Categorization source
-// TODO: migrate to CATEGORY_SOURCE_OPTIONS from @finance/shared/constants
-export const CATEGORY_SOURCE = {
-  RULE: 'rule',
-  AI: 'ai',
-  MANUAL: 'manual',
-  DEFAULT: 'default',
-} as const;
-
 // Transaction ingestion source
 export const TRANSACTION_SOURCE = {
   CSV: 'csv',

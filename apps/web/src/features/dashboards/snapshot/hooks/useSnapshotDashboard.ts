@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import type { SnapshotDashboardResponse } from '@finance/shared/types/dashboard';
+import { snapshotDashboardResponseSchema } from '@finance/shared/schemas/dashboard';
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 
 export function useSnapshotDashboard() {
-  return useQuery<SnapshotDashboardResponse>({
+  return useQuery({
     queryKey: dashboardKeys.snapshot(),
     queryFn: async () => {
-      const { data } = await api.get<SnapshotDashboardResponse>('/dashboard/snapshot');
-      return data;
+      const { data } = await api.get('/dashboard/snapshot');
+      return snapshotDashboardResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,
   });
