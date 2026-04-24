@@ -3,7 +3,7 @@ import {
   useTransactionColumns,
 } from '@/features/transactions/hooks/useTransactionColumns';
 import type { ExpandedPanel } from '@/features/transactions/types/panels';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   getCoreRowModel,
@@ -99,13 +99,8 @@ export function TransactionsTable({
     pageCount: pagination?.totalPages ?? UNKNOWN_PAGE_COUNT,
   });
 
-  const visibleColumnCount = useMemo(
-    () => table.getAllColumns().filter((col) => col.getIsVisible()).length,
-    // `table` is a new reference every render, so listing it would defeat memoization.
-    // `columnVisibility` is the actual state that drives getIsVisible(), so it's the correct dependency.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [columnVisibility]
-  );
+  // The table has at most ~8 columns, so this filter is negligible; no memo needed.
+  const visibleColumnCount = table.getAllColumns().filter((col) => col.getIsVisible()).length;
 
   const paginationNode =
     pagination && pagination.totalPages > 1 ? (

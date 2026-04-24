@@ -10,7 +10,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-export function useCreateEntry(year: number) {
+export function useCreateEntry() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateAnticipatedBudgetInput) => {
@@ -22,7 +22,7 @@ export function useCreateEntry(year: number) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: anticipatedBudgetKeys.byYear(year),
+        queryKey: anticipatedBudgetKeys.all(),
       });
       toast.success(TOAST.BUDGET_ENTRY_CREATED);
     },
@@ -30,7 +30,7 @@ export function useCreateEntry(year: number) {
   });
 }
 
-export function useUpdateEntry(year: number) {
+export function useUpdateEntry() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -48,7 +48,7 @@ export function useUpdateEntry(year: number) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: anticipatedBudgetKeys.byYear(year),
+        queryKey: anticipatedBudgetKeys.all(),
       });
       toast.success(TOAST.BUDGET_ENTRY_UPDATED);
     },
@@ -56,7 +56,7 @@ export function useUpdateEntry(year: number) {
   });
 }
 
-export function useDeleteEntry(year: number) {
+export function useDeleteEntry() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -64,7 +64,7 @@ export function useDeleteEntry(year: number) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: anticipatedBudgetKeys.byYear(year),
+        queryKey: anticipatedBudgetKeys.all(),
       });
       toast.success(TOAST.BUDGET_ENTRY_DELETED);
     },
@@ -72,7 +72,7 @@ export function useDeleteEntry(year: number) {
   });
 }
 
-export function useUpsertMonthOverride(year: number) {
+export function useUpsertMonthOverride() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -88,7 +88,7 @@ export function useUpsertMonthOverride(year: number) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: anticipatedBudgetKeys.byYear(year),
+        queryKey: anticipatedBudgetKeys.all(),
       });
       toast.success(TOAST.BUDGET_MONTH_OVERRIDE_SAVED);
     },
@@ -96,7 +96,7 @@ export function useUpsertMonthOverride(year: number) {
   });
 }
 
-export function useDeleteMonthOverride(year: number) {
+export function useDeleteMonthOverride() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -110,7 +110,7 @@ export function useDeleteMonthOverride(year: number) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: anticipatedBudgetKeys.byYear(year),
+        queryKey: anticipatedBudgetKeys.all(),
       });
       toast.success(TOAST.BUDGET_MONTH_OVERRIDE_REMOVED);
     },

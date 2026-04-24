@@ -65,7 +65,7 @@ interface TransactionRowProps {
   readonly subcategoryName: string | null;
   readonly amount: string;
   readonly isPending: boolean;
-  readonly onRemove: () => void;
+  readonly onRemove: () => void; // fires useRemoveGroupMember.mutate, hoisted to card level
 }
 
 function TransactionRow({
@@ -119,16 +119,14 @@ function TransactionRow({
 function TransactionSection({
   title,
   transactions,
-  groupId,
   isPending,
+  onRemove,
 }: {
   readonly title: string;
   readonly transactions: RebalancingGroup['transactions'];
-  readonly groupId: string;
   readonly isPending: boolean;
+  readonly onRemove: (transactionId: string) => void;
 }) {
-  const removeMember = useRemoveGroupMember();
-
   if (transactions.length === 0) return null;
   return (
     <div>
@@ -144,8 +142,8 @@ function TransactionSection({
           categoryName={t.categoryName}
           subcategoryName={t.subcategoryName}
           amount={t.amount}
-          isPending={isPending || removeMember.isPending}
-          onRemove={() => removeMember.mutate({ groupId, transactionId: t.transactionId })}
+          isPending={isPending}
+          onRemove={() => onRemove(t.transactionId)}
         />
       ))}
     </div>
@@ -160,11 +158,14 @@ export function RebalancingGroupCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const updateGroup = useUpdateGroup();
   const deleteGroup = useDeleteGroup();
+  const removeMember = useRemoveGroupMember();
 
   const isResolved = group.status === 'resolved';
   const isUpdating = updateGroup.isPending;
   const isDeleting = deleteGroup.isPending;
-  const anyPending = isUpdating || isDeleting;
+  // Include removeMember so both sections are disabled while any removal is in flight,
+  // preventing concurrent mutations across sections.
+  const anyPending = isUpdating || isDeleting || removeMember.isPending;
 
   const toggleLabel = isUpdating ? '…' : isResolved ? 'Re-open' : 'Mark Resolved';
 
@@ -226,14 +227,14 @@ export function RebalancingGroupCard({
         <TransactionSection
           title="Sources"
           transactions={sources}
-          groupId={group.id}
           isPending={anyPending}
+          onRemove={(txId) => removeMember.mutate({ groupId: group.id, transactionId: txId })}
         />
         <TransactionSection
           title="Offsets"
           transactions={offsets}
-          groupId={group.id}
           isPending={anyPending}
+          onRemove={(txId) => removeMember.mutate({ groupId: group.id, transactionId: txId })}
         />
 
         {/* Totals */}

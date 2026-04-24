@@ -71,7 +71,6 @@ export function AuthForm({ mode }: AuthFormProps) {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   // Navigate after render so RouterWrapper has synced the new auth state into
   // the router context before requireAuth runs. Calling navigate() synchronously
@@ -96,21 +95,18 @@ export function AuthForm({ mode }: AuthFormProps) {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(mode === 'login' ? loginSchema : registerSchema),
   });
 
   async function onSubmit(values: FormValues) {
     setServerError('');
-    setLoading(true);
     try {
       const { data } = await api.post<AuthResponse>(endpoint, values);
       login(data.accessToken, data.user);
     } catch (err: unknown) {
       setServerError(getApiErrorMessage(err, fallbackError));
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -154,8 +150,8 @@ export function AuthForm({ mode }: AuthFormProps) {
               <p className="text-sm text-danger">{serverError}</p>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full py-2">
-              {loading ? loadingLabel : submitLabel}
+            <Button type="submit" disabled={isSubmitting} className="w-full py-2">
+              {isSubmitting ? loadingLabel : submitLabel}
             </Button>
           </form>
 

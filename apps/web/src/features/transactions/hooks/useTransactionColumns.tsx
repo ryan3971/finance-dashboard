@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/Popover';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Transaction } from '@finance/shared/schemas/transactions';
+import { DEFAULT_TAG_COLOR } from '@finance/shared/constants';
 import { parseAmount } from '@/lib/utils';
 import { useMemo } from 'react';
 import type { ExpandedPanel } from '@/features/transactions/types/panels';
@@ -215,7 +216,7 @@ export function useTransactionColumns({
                         <span
                           key={tag.id}
                           className="max-w-[4.5rem] truncate rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                          style={{ backgroundColor: tag.color ?? '#6B7280' }}
+                          style={{ backgroundColor: tag.color ?? DEFAULT_TAG_COLOR }}
                         >
                           {tag.name}
                         </span>

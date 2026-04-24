@@ -1,4 +1,4 @@
-import { FIELD_LIMITS } from '@finance/shared/constants';
+import { DEFAULT_TAG_COLOR, FIELD_LIMITS } from '@finance/shared/constants';
 import { type TagFormInput, tagFormSchema } from '@finance/shared/schemas/tags';
 import {
   useAttachTag,
@@ -83,7 +83,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
         <span
           key={tag.id}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
-          style={{ backgroundColor: tag.color ?? '#6B7280' }}
+          style={{ backgroundColor: tag.color ?? DEFAULT_TAG_COLOR }}
         >
           {tag.name}
           <button
@@ -105,7 +105,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
             if (e.target.value) void handleAttach(e.target.value);
             e.target.value = '';
           }}
-          className="text-xs border border-dashed border-gray-300 rounded px-1 py-0.5 text-gray-400 bg-transparent"
+          className="text-xs border border-dashed border-border-strong rounded px-1 py-0.5 text-content-muted bg-transparent"
           defaultValue=""
         >
           <option value="" disabled>
@@ -132,7 +132,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
             type="text"
             placeholder="Tag name"
             maxLength={FIELD_LIMITS.TAG_NAME_MAX}
-            className="text-xs border border-gray-300 rounded px-1.5 py-0.5 w-24"
+            className="text-xs border border-border-strong rounded px-1.5 py-0.5 w-24"
             {...register('name')}
           />
           {errors.name && (
@@ -145,7 +145,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
                 type="button"
                 onClick={() => setNewTagColor(c)}
                 className={`w-3.5 h-3.5 rounded-full border-2 ${
-                  newTagColor === c ? 'border-gray-900' : 'border-transparent'
+                  newTagColor === c ? 'border-content-primary' : 'border-transparent'
                 }`}
                 style={{ backgroundColor: c }}
               />
@@ -153,7 +153,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
           </div>
           <button
             type="submit"
-            className="text-xs text-gray-700 hover:text-gray-900"
+            className="text-xs text-content-secondary hover:text-content-primary"
           >
             ✓
           </button>
@@ -163,7 +163,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
               reset();
               setShowCreate(false);
             }}
-            className="text-xs text-gray-400 hover:text-gray-600"
+            className="text-xs text-content-muted hover:text-content-secondary"
           >
             ✕
           </button>
@@ -171,7 +171,7 @@ export function TransactionTagsPanel({ transactionId, attachedTags }: Props) {
       ) : (
         <button
           onClick={() => setShowCreate(true)}
-          className="text-xs text-gray-400 hover:text-gray-600 border border-dashed border-gray-300 rounded px-1.5 py-0.5"
+          className="text-xs text-content-muted hover:text-content-secondary border border-dashed border-border-strong rounded px-1.5 py-0.5"
         >
           + new
         </button>

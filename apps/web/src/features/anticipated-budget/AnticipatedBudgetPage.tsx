@@ -17,7 +17,7 @@ export function AnticipatedBudgetPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: entries, isLoading } = useAnticipatedBudget(year);
-  const createEntry = useCreateEntry(year);
+  const createEntry = useCreateEntry();
 
   const incomeEntries = entries?.filter((e) => e.isIncome) ?? [];
   const expenseEntries = entries?.filter((e) => !e.isIncome) ?? [];
@@ -89,7 +89,6 @@ export function AnticipatedBudgetPage() {
               <AnticipatedBudgetEntryCard
                 key={entry.id}
                 entry={entry}
-                year={year}
               />
             ))}
           </div>
@@ -111,7 +110,6 @@ export function AnticipatedBudgetPage() {
                     <AnticipatedBudgetEntryCard
                       key={entry.id}
                       entry={entry}
-                      year={year}
                     />
                   ))}
                 </div>
@@ -125,7 +123,6 @@ export function AnticipatedBudgetPage() {
                     <AnticipatedBudgetEntryCard
                       key={entry.id}
                       entry={entry}
-                      year={year}
                     />
                   ))}
                 </div>
@@ -141,7 +138,6 @@ export function AnticipatedBudgetPage() {
                     <AnticipatedBudgetEntryCard
                       key={entry.id}
                       entry={entry}
-                      year={year}
                     />
                   ))}
                 </div>
