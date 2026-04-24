@@ -73,4 +73,12 @@ export const PAGINATION = {
 export const REBALANCING_GROUP_LABEL_MAX = 100;
 
 export const CATEGORY_SOURCE_OPTIONS = ['rule', 'ai', 'manual', 'default'] as const;
-export type CategorySource = (typeof CATEGORY_SOURCE_OPTIONS)[number];
+
+// Object form so API code can use CATEGORY_SOURCE.RULE instead of the raw string.
+// Values are constrained to CATEGORY_SOURCE_OPTIONS — keep them in sync.
+export const CATEGORY_SOURCE = {
+  RULE: 'rule',
+  AI: 'ai',
+  MANUAL: 'manual',
+  DEFAULT: 'default',
+} as const;

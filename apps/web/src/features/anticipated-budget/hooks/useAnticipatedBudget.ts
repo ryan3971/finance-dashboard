@@ -1,17 +1,14 @@
-import type { AnticipatedBudgetResponse } from '@finance/shared/types/anticipated-budget';
+import { anticipatedBudgetResponseSchema } from '@finance/shared/schemas/anticipated-budget';
 import { anticipatedBudgetKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 
 export function useAnticipatedBudget(year: number) {
-  return useQuery<AnticipatedBudgetResponse>({
+  return useQuery({
     queryKey: anticipatedBudgetKeys.byYear(year),
     queryFn: async () => {
-      const { data } = await api.get<AnticipatedBudgetResponse>(
-        '/anticipated-budget',
-        { params: { year } }
-      );
-      return data;
+      const { data } = await api.get('/anticipated-budget', { params: { year } });
+      return anticipatedBudgetResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,
   });

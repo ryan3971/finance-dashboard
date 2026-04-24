@@ -9,20 +9,9 @@ import { transactionFiltersSchema } from '@finance/shared/schemas/transactions';
 const router = Router();
 router.use(requireAuth);
 
-const booleanParam = z
-  .enum(['true', 'false'])
-  .transform((v) => v === 'true')
-  .optional();
-
+// transactionFiltersSchema already handles boolish string/boolean fields and
+// single-vs-array tagIds; extend only to add pagination.
 const listQuerySchema = transactionFiltersSchema.extend({
-  // Query params arrive as strings — override the boolean fields with string→boolean transforms
-  flagged: booleanParam,
-  isIncome: booleanParam,
-  isTransfer: booleanParam,
-  // tagIds arrives as a repeated param (?tagIds=a&tagIds=b) or a single string
-  tagIds: z
-    .union([z.array(z.string()), z.string().transform((v) => [v])])
-    .optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce
     .number()

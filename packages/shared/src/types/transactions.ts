@@ -1,4 +1,5 @@
-import type { NeedWant } from '../constants';
+import type { z } from 'zod';
+import type { patchTransactionSchema } from '../schemas/transactions';
 
 export interface ImportResult {
   importId: string;
@@ -11,10 +12,4 @@ export interface ImportResult {
   transferCandidateCount: number;
 }
 
-export interface PatchTransactionInput {
-  categoryId?: string | null;
-  subcategoryId?: string | null;
-  needWant?: NeedWant | null;
-  note?: string | null;
-  createRule?: boolean;
-}
+export type PatchTransactionInput = z.infer<typeof patchTransactionSchema>;

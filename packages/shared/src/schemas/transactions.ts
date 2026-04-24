@@ -24,6 +24,7 @@ export const createTransactionSchema = z
     subcategoryId: z.string().uuid().nullable().optional(),
     needWant: needWantSchema.nullable().optional(),
     note: z.string().max(FIELD_LIMITS.NOTE_MAX).nullable().optional(),
+    isIncome: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.subcategoryId && !data.categoryId) {
@@ -39,6 +40,12 @@ export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 
 // ─── Transaction Filters Schema ─────────────────────────────────────────────────────────────────
 
+// Accept both JS booleans (web filter state) and 'true'/'false' strings (HTTP
+// query params) so the schema works in both contexts without server-side extension.
+const boolishField = z
+  .union([z.boolean(), z.enum(['true', 'false']).transform((v) => v === 'true')])
+  .optional();
+
 export const transactionFiltersSchema = z.object({
   accountId: z.string().uuid().optional(),
   startDate: z.string().optional(),
@@ -47,10 +54,13 @@ export const transactionFiltersSchema = z.object({
   categoryId: z.string().uuid().optional(),
   subcategoryId: z.string().uuid().optional(),
   needWant: needWantSchema.optional(),
-  flagged: z.boolean().optional(),
-  isIncome: z.boolean().optional(),
-  isTransfer: z.boolean().optional(),
-  tagIds: z.array(z.string()).optional(),
+  flagged: boolishField,
+  isIncome: boolishField,
+  isTransfer: boolishField,
+  // Accepts a repeated query param (?tagIds=a&tagIds=b) or a single string value.
+  tagIds: z
+    .union([z.array(z.string()), z.string().transform((v) => [v])])
+    .optional(),
 });
 
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;
@@ -61,7 +71,7 @@ export const patchTransactionSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   subcategoryId: z.string().uuid().nullable().optional(),
   needWant: needWantSchema.nullable().optional(),
-  note: z.string().max(FIELD_LIMITS.NOTE_MAX).optional(),
+  note: z.string().max(FIELD_LIMITS.NOTE_MAX).nullable().optional(),
   createRule: z.boolean().optional(),
 });
 

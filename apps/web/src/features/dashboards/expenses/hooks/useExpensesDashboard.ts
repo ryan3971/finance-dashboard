@@ -1,17 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ExpenseDashboardResponse } from '@finance/shared/types/dashboard';
+import { expenseDashboardResponseSchema } from '@finance/shared/schemas/dashboard';
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 
 export function useExpensesDashboard(year: number) {
-  return useQuery<ExpenseDashboardResponse>({
+  return useQuery({
     queryKey: dashboardKeys.expenses(year),
     queryFn: async () => {
-      const { data } = await api.get<ExpenseDashboardResponse>(
-        '/dashboard/expenses',
-        { params: { year } }
-      );
-      return data;
+      const { data } = await api.get('/dashboard/expenses', { params: { year } });
+      return expenseDashboardResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,
   });

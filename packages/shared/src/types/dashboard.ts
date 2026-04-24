@@ -1,115 +1,37 @@
-export interface IncomeMonthAllocation {
-  needs: number;
-  wants: number;
-  investments: number;
-}
+import type { z } from 'zod';
+import type {
+  expenseCategoriesResponseSchema,
+  expenseCategoryRowSchema,
+  expenseDashboardResponseSchema,
+  expenseMonthSchema,
+  incomeMonthAllocationSchema,
+  incomeDashboardResponseSchema,
+  incomeMonthSchema,
+  snapshotAccountRowSchema,
+  snapshotAnticipatedSchema,
+  snapshotColumnValuesSchema,
+  snapshotDashboardResponseSchema,
+  snapshotEmergencyFundSchema,
+  snapshotMonthlyIncomeSchema,
+  ytdDashboardResponseSchema,
+  ytdMonthSchema,
+} from '../schemas/dashboard';
 
-export interface IncomeMonth {
-  month: number;
-  total: number;
-  allocation: IncomeMonthAllocation | null;
-  rebalancingAdjustment: number;
-}
+export type IncomeMonthAllocation = z.infer<typeof incomeMonthAllocationSchema>;
+export type IncomeMonth = z.infer<typeof incomeMonthSchema>;
+export type IncomeDashboardResponse = z.infer<typeof incomeDashboardResponseSchema>;
 
-export interface IncomeDashboardResponse {
-  year: number;
-  months: IncomeMonth[];
-}
+export type ExpenseMonth = z.infer<typeof expenseMonthSchema>;
+export type ExpenseDashboardResponse = z.infer<typeof expenseDashboardResponseSchema>;
+export type ExpenseCategoryRow = z.infer<typeof expenseCategoryRowSchema>;
+export type ExpenseCategoriesResponse = z.infer<typeof expenseCategoriesResponseSchema>;
 
-export interface ExpenseMonth {
-  month: number;
-  need: number;
-  want: number;
-  other: number;
-  total: number;
-  rebalancingAdjustment: number;
-}
+export type SnapshotAccountRow = z.infer<typeof snapshotAccountRowSchema>;
+export type SnapshotEmergencyFund = z.infer<typeof snapshotEmergencyFundSchema>;
+export type SnapshotColumnValues = z.infer<typeof snapshotColumnValuesSchema>;
+export type SnapshotMonthlyIncome = z.infer<typeof snapshotMonthlyIncomeSchema>;
+export type SnapshotAnticipated = z.infer<typeof snapshotAnticipatedSchema>;
+export type SnapshotDashboardResponse = z.infer<typeof snapshotDashboardResponseSchema>;
 
-export interface ExpenseDashboardResponse {
-  year: number;
-  months: ExpenseMonth[];
-  annualTotal: number;
-}
-
-export interface ExpenseCategoryRow {
-  month: number;
-  category: string | null;
-  subcategory: string | null;
-  total: number;
-  rebalancingAdjustment: number | null;
-}
-
-export interface ExpenseCategoriesResponse {
-  year: number;
-  rows: ExpenseCategoryRow[];
-}
-
-export interface SnapshotAccountRow {
-  id: string;
-  name: string;
-  type: string;
-  institution: string;
-  currency: string;
-  isCredit: boolean;
-  balance: number;
-}
-
-export interface SnapshotEmergencyFund {
-  target: number | null;
-  balance: number;
-  percentage: number | null;
-}
-
-export interface SnapshotColumnValues {
-  total: number;
-  needs: number;
-  wants: number;
-  rebalancingAdjustment: number;
-}
-
-export interface SnapshotMonthlyIncome {
-  income: number;
-  incomeLessInvestment: SnapshotColumnValues;
-}
-
-export interface SnapshotAnticipated {
-  hasEntries: boolean;
-  expectedIncome: number;
-  expectedSpendingIncome: SnapshotColumnValues;
-  expectedExpenses: SnapshotColumnValues;
-  expectedAvailable: SnapshotColumnValues;
-  remainingBudget: SnapshotColumnValues;
-}
-
-export interface SnapshotDashboardResponse {
-  lastUploadedAt: string | null;
-  accounts: SnapshotAccountRow[];
-  emergencyFund: SnapshotEmergencyFund;
-  monthlyIncome: SnapshotMonthlyIncome;
-  monthlyExpenses: SnapshotColumnValues;
-  anticipated: SnapshotAnticipated;
-}
-
-export type YtdMonth =
-  | {
-      month: number;
-      spendingIncome: null;
-      expenses: null;
-      netSpendingIncome: null;
-      wants: null;
-      needs: null;
-    }
-  | {
-      month: number;
-      spendingIncome: number;
-      expenses: number;
-      netSpendingIncome: number;
-      wants: number;
-      needs: number;
-      rebalancingAdjustment: number;
-    };
-
-export interface YtdDashboardResponse {
-  year: number;
-  months: YtdMonth[];
-}
+export type YtdMonth = z.infer<typeof ytdMonthSchema>;
+export type YtdDashboardResponse = z.infer<typeof ytdDashboardResponseSchema>;

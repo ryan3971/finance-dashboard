@@ -10,3 +10,18 @@ export const accountFormSchema = z.object({
 });
 
 export type AccountFormInput = z.infer<typeof accountFormSchema>;
+
+// ─── Account Response Schema ──────────────────────────────────────────────────
+
+export const accountResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  type: z.enum(ACCOUNT_TYPES),
+  institution: z.enum(INSTITUTIONS),
+  currency: z.string(),
+  isActive: z.boolean(),
+  isCredit: z.boolean(),
+  createdAt: z.string(),
+});
+
+export type Account = z.infer<typeof accountResponseSchema>;

@@ -1,4 +1,5 @@
-import { CATEGORY_SOURCE, CONFIDENCE } from '@/lib/constants';
+import { CONFIDENCE } from '@/lib/constants';
+import { CATEGORY_SOURCE } from '@finance/shared/constants';
 import { desc, eq, isNull } from 'drizzle-orm';
 import type { CategorizationResult } from './pipeline.types';
 import { categorizationRules } from '@/db/schema';

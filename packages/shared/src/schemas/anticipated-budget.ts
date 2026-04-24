@@ -10,7 +10,7 @@ const anticipatedBudgetBaseSchema = z.object({
   isIncome: z.boolean(),
   monthlyAmount: z
     .string()
-    .regex(/^\d+(\.\d{1,2})?$/)
+    .regex(/^(0|[1-9]\d*)(\.\d{1,2})?$/)
     .nullable(),
   notes: z.string().max(FIELD_LIMITS.NOTE_MAX).nullable(),
   effectiveYear: z.number().int().min(2000).max(2100),
@@ -45,7 +45,31 @@ export type UpdateAnticipatedBudgetInput = z.infer<
 >;
 
 export const upsertMonthOverrideSchema = z.object({
-  amount: z.string().regex(/^\d+(\.\d{1,2})?$/),
+  amount: z.string().regex(/^(0|[1-9]\d*)(\.\d{1,2})?$/),
 });
 
 export type UpsertMonthOverrideInput = z.infer<typeof upsertMonthOverrideSchema>;
+
+// ─── Response Schemas ─────────────────────────────────────────────────────────
+
+export const anticipatedBudgetMonthSchema = z.object({
+  month: z.number().int().min(1).max(12),
+  amount: z.number(),
+  isOverride: z.boolean(),
+});
+
+export const anticipatedBudgetEntrySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  categoryId: z.string().uuid().nullable(),
+  categoryName: z.string().nullable(),
+  categoryIcon: z.string().nullable(),
+  needWant: z.enum(NEED_WANT_OPTIONS).nullable(),
+  isIncome: z.boolean(),
+  monthlyAmount: z.number().nullable(),
+  notes: z.string().nullable(),
+  effectiveYear: z.number().int(),
+  months: z.array(anticipatedBudgetMonthSchema),
+});
+
+export const anticipatedBudgetResponseSchema = z.array(anticipatedBudgetEntrySchema);

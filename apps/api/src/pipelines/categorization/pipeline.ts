@@ -4,7 +4,8 @@ import { categories } from '@/db/schema';
 import type { CategorizationResult } from './pipeline.types';
 //import { categorizeWithAnthropic } from './anthropic-provider';
 //import { categorizeWithOpenAI } from './openai-provider';
-import { CATEGORY_SOURCE, CONFIDENCE } from '@/lib/constants';
+import { CONFIDENCE } from '@/lib/constants';
+import { CATEGORY_SOURCE } from '@finance/shared/constants';
 //import { config } from '@/lib/config';
 import { db } from '@/db';
 
