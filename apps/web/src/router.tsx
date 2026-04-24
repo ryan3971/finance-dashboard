@@ -25,7 +25,6 @@ interface RouterContext {
   auth: AuthContextValue | undefined;
 }
 
-// TODO: This schema is duplicated in TransactionsPage — consider centralizing it if we need to reuse it elsewhere.
 const transactionsSearchSchema = z.object({
   accountId: z.string().optional(),
   startDate: z.string().optional(),

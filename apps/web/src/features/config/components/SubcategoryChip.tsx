@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/Input';
 import {
   useDeleteSubcategory,
   useRenameSubcategory,
-} from '../hooks/useCategoryMutations';
+} from '../hooks/useCategoryEditMutations';
 import { FIELD_LIMITS } from '@finance/shared/constants';
 import type { Subcategory } from '@finance/shared/types/categories';
 

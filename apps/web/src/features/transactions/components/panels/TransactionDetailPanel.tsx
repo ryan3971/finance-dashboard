@@ -1,6 +1,7 @@
 import type React from 'react';
 import { AmountCell } from '@/features/transactions/components/table/AmountCell';
 import { Badge } from '@/components/ui/Badge';
+import { DEFAULT_TAG_COLOR } from '@finance/shared/constants';
 import type { Tag, Transaction } from '@finance/shared/schemas/transactions';
 
 interface Props {
@@ -52,7 +53,7 @@ function TagsField({ tags }: { readonly tags: Tag[] }) {
         <span
           key={tag.id}
           className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-          style={{ backgroundColor: tag.color ?? '#6B7280' }}
+          style={{ backgroundColor: tag.color ?? DEFAULT_TAG_COLOR }}
         >
           {tag.name}
         </span>

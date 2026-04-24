@@ -7,7 +7,7 @@ import { useCreateSubcategory } from '@/hooks/useCategoryMutations';
 import {
   useDeleteCategory,
   useRenameCategory,
-} from '../hooks/useCategoryMutations';
+} from '../hooks/useCategoryEditMutations';
 import { FIELD_LIMITS } from '@finance/shared/constants';
 import type { Category } from '@finance/shared/types/categories';
 

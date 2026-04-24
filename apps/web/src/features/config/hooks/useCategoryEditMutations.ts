@@ -72,4 +72,3 @@ export function useDeleteSubcategory() {
       toast.error(getApiErrorMessage(err, TOAST.SUBCATEGORY_DELETE_FAILED)),
   });
 }
-

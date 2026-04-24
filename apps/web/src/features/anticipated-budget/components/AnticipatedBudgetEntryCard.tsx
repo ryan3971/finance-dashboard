@@ -12,16 +12,15 @@ import {
 
 interface Props {
   readonly entry: AnticipatedBudgetEntry;
-  readonly year: number;
 }
 
-export function AnticipatedBudgetEntryCard({ entry, year }: Props) {
+export function AnticipatedBudgetEntryCard({ entry }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const upsertOverride = useUpsertMonthOverride(year);
-  const deleteOverride = useDeleteMonthOverride(year);
-  const deleteEntry = useDeleteEntry(year);
+  const upsertOverride = useUpsertMonthOverride();
+  const deleteOverride = useDeleteMonthOverride();
+  const deleteEntry = useDeleteEntry();
 
   const yearlyTotal = entry.months.reduce((sum, m) => sum + m.amount, 0);
 

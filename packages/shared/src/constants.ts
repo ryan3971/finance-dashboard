@@ -47,10 +47,16 @@ export const TRANSFER_KEYWORDS = [
 
 export const DEFAULT_CURRENCY = 'CAD';
 
+// Fallback background color for tags that have no color stored in the DB.
+// Used as an inline style value — must be a hex string, not a Tailwind class.
+export const DEFAULT_TAG_COLOR = '#6B7280' as const;
+
 export const MONTHS_IN_YEAR = 12;
 
 export const FIELD_LIMITS = {
   NOTE_MAX: 500,
+  // Verify TRANSACTION_DESCRIPTION_MAX matches the DB column constraint if it ever diverges from NOTE_MAX.
+  TRANSACTION_DESCRIPTION_MAX: 500,
   TAG_NAME_MAX: 15,
   ACCOUNT_NAME_MAX: 100,
   SUBCATEGORY_NAME_MAX: 100,

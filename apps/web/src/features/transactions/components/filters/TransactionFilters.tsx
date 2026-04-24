@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useCategories } from '@/hooks/useCategories';
 import { useTags } from '@/features/transactions/hooks/useTags';
+import { DEFAULT_TAG_COLOR } from '@finance/shared/constants';
 import { EMPTY_FILTER_STATE, type FilterState } from './filterState';
 
 // Counts filters that differ from the baseline (reset) state so that
@@ -232,7 +233,7 @@ export function TransactionFilters({ filters, onChange, resetFilters = EMPTY_FIL
                           selected ? 'opacity-100' : 'opacity-40 hover:opacity-70',
                         )}
                         style={{
-                          backgroundColor: tag.color ?? '#6B7280',
+                          backgroundColor: tag.color ?? DEFAULT_TAG_COLOR,
                           color: '#fff',
                         }}
                       >

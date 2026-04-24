@@ -1,4 +1,5 @@
 import {
+  DEFAULT_TAG_COLOR,
   FIELD_LIMITS,
   NEED_WANT_OPTIONS,
   type NeedWant,
@@ -18,9 +19,8 @@ import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useAccounts } from '@/hooks/useAccounts';
+import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-
-const DEFAULT_TAG_COLOR = '#6B7280';
 
 export interface ManualTransactionInitialValues {
   accountId?: string;
@@ -147,7 +147,7 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
           <Input
             type="text"
             placeholder="e.g. Grocery store"
-            maxLength={FIELD_LIMITS.NOTE_MAX}
+            maxLength={FIELD_LIMITS.TRANSACTION_DESCRIPTION_MAX}
             {...register('description')}
           />
         </FormField>
@@ -183,11 +183,16 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
                     key={opt}
                     type="button"
                     onClick={() => field.onChange(opt)}
-                    className={`px-3 py-1 text-xs rounded border transition-colors ${
+                    className={cn(
+                      'px-3 py-1 text-xs rounded border transition-colors',
                       field.value === opt
-                        ? 'bg-content-primary text-white border-content-primary'
-                        : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
-                    }`}
+                        ? opt === 'Need'
+                          ? 'bg-info text-white border-info'
+                          : opt === 'Want'
+                          ? 'bg-accent text-white border-accent'
+                          : 'bg-content-primary text-white border-content-primary'
+                        : 'border-border-strong text-content-secondary hover:bg-surface-subtle',
+                    )}
                   >
                     {opt}
                   </button>

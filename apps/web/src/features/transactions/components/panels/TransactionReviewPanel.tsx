@@ -45,6 +45,12 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
 
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // TODO: Verify this is intentional. CLAUDE.md specifies that the transfer
+  // candidate banner should only appear for transactions that also match
+  // TRANSFER_KEYWORDS (from @finance/shared/constants), not for every
+  // flaggedForReview transaction. If the API pre-filters this upstream (e.g.
+  // only sets flaggedForReview on real transfer candidates), this is fine.
+  // Otherwise the banner will show for ordinary uncategorised transactions too.
   const isTransferCandidate = mode === 'review' && transaction.flaggedForReview;
   const isPending =
     patch.isPending ||

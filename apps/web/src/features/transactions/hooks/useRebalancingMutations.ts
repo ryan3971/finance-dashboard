@@ -4,7 +4,7 @@ import type {
   RebalancingRole,
   RebalancingStatus,
 } from '@finance/shared/types/rebalancing';
-import { rebalancingKeys, dashboardKeys } from '@/lib/queryKeys';
+import { rebalancingKeys, dashboardKeys, transactionKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
@@ -32,23 +32,25 @@ interface AddMemberInput {
 
 // ─── Invalidation helpers ─────────────────────────────────────────────────────
 
-// Invalidates the groups list only (no dashboard impact — group is open/unresolved).
+// Invalidates the groups list and the transaction list (rebalancingGroupId /
+// rebalancingRole on individual rows change when a member is added or removed).
 function useInvalidateGroups() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: rebalancingKeys.groups() });
+    void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
   };
 }
 
-// Invalidates the groups list AND all dashboard queries — used whenever the set
-// of resolved-group adjustments may have changed (status change, member change,
-// myShareOverride change, group deletion).
+// Invalidates the groups list, all dashboard queries, and the transaction list —
+// used whenever resolved-group adjustments may have changed (status change,
+// member change, myShareOverride change, group deletion).
 function useInvalidateGroupsAndDashboards() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: rebalancingKeys.groups() });
     void queryClient.invalidateQueries({ queryKey: dashboardKeys.all() });
-    // TODO: should also invalidate transactions so they are re-fetched with updated rebalancing_group_id values
+    void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
   };
 }
 
