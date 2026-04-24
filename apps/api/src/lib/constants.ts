@@ -7,7 +7,6 @@ export const IMPORT_STATUS = {
 } as const;
 
 // Categorization source
-// TODO: migrate to CATEGORY_SOURCE_OPTIONS from @finance/shared/constants
 export const CATEGORY_SOURCE = {
   RULE: 'rule',
   AI: 'ai',

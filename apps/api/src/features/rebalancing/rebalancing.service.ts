@@ -141,6 +141,18 @@ const groupColumns = {
   createdAt: rebalancingGroups.createdAt,
 };
 
+function narrowStatus(status: string): RebalancingStatus {
+  if (status !== 'open' && status !== 'resolved')
+    throw new Error(`Invalid rebalancing status in DB: ${status}`);
+  return status;
+}
+
+function narrowRole(role: string): RebalancingRole {
+  if (role !== 'source' && role !== 'offset')
+    throw new Error(`Invalid rebalancing role in DB: ${role}`);
+  return role;
+}
+
 /**
  * Fetches group rows for a user, optionally filtered to a single group.
  * The `as unknown as GroupRow[]` cast is safe: the DB CHECK constraint on
@@ -162,7 +174,7 @@ async function queryGroupRows(
         : eq(rebalancingGroups.userId, userId)
     )
     .orderBy(rebalancingGroups.createdAt);
-  return rows as unknown as GroupRow[];
+  return rows.map((r) => ({ ...r, status: narrowStatus(r.status) }));
 }
 
 /**
@@ -199,7 +211,7 @@ async function queryMemberRows(groupIds: string[]): Promise<MemberRow[]> {
       eq(transactions.subcategoryId, subcategoryAlias.id)
     )
     .where(inArray(rebalancingGroupTransactions.groupId, groupIds));
-  return rows as unknown as MemberRow[];
+  return rows.map((r) => ({ ...r, role: narrowRole(r.role) }));
 }
 
 async function verifyTransactionOwnership(

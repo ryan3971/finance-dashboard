@@ -239,7 +239,7 @@ export async function patchTransaction(
   const txn = await getOwnedTransaction(id, userId);
   if (!txn) return null;
 
-  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  const updateData: Partial<typeof transactions.$inferInsert> = { updatedAt: new Date() };
 
   if (input.categoryId !== undefined) {
     updateData.categoryId = input.categoryId;
@@ -254,36 +254,38 @@ export async function patchTransaction(
     updateData.needWant = txn.isIncome ? null : input.needWant;
   if (input.note !== undefined) updateData.note = input.note;
 
-  await db.update(transactions).set(updateData).where(eq(transactions.id, id));
+  await db.transaction(async (tx) => {
+    await tx.update(transactions).set(updateData).where(eq(transactions.id, id));
 
-  if (input.createRule && input.categoryId) {
-    const keyword = txn.description
-      .slice(0, KEYWORD_SLICE_LENGTH)
-      .toLowerCase()
-      .trim();
+    if (input.createRule && input.categoryId) {
+      const keyword = txn.description
+        .slice(0, KEYWORD_SLICE_LENGTH)
+        .toLowerCase()
+        .trim();
 
-    const existing = await db
-      .select({ id: categorizationRules.id })
-      .from(categorizationRules)
-      .where(
-        and(
-          eq(categorizationRules.userId, userId),
-          eq(categorizationRules.keyword, keyword)
+      const existing = await tx
+        .select({ id: categorizationRules.id })
+        .from(categorizationRules)
+        .where(
+          and(
+            eq(categorizationRules.userId, userId),
+            eq(categorizationRules.keyword, keyword)
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (existing.length === 0) {
-      await db.insert(categorizationRules).values({
-        userId,
-        keyword,
-        categoryId: input.categoryId,
-        subcategoryId: input.subcategoryId ?? null,
-        needWant: input.needWant ?? null,
-        priority: AUTO_RULE_PRIORITY,
-      });
+      if (existing.length === 0) {
+        await tx.insert(categorizationRules).values({
+          userId,
+          keyword,
+          categoryId: input.categoryId,
+          subcategoryId: input.subcategoryId ?? null,
+          needWant: input.needWant ?? null,
+          priority: AUTO_RULE_PRIORITY,
+        });
+      }
     }
-  }
+  });
 
   const [updated] = await db
     .select()

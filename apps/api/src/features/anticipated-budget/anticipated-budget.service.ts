@@ -70,7 +70,8 @@ async function requireOwnedEntry(entryId: string, userId: string) {
         eq(anticipatedBudget.id, entryId),
         eq(anticipatedBudget.userId, userId)
       )
-    );
+    )
+    .limit(1);
 
   if (!entry) {
     throw new AnticipatedBudgetError(AnticipatedBudgetErrorCode.NOT_FOUND);

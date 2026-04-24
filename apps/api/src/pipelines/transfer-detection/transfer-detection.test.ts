@@ -32,8 +32,8 @@ describe('negateAmount', () => {
     // Large values that lose precision under parseFloat + toFixed:
     ['123456789.99', '-123456789.99'],
     ['-123456789.99', '123456789.99'],
-    // Zero — prepend/strip the minus prefix without arithmetic:
-    ['0.00', '-0.00'],
+    // Zero — always normalized to positive zero (no negative zero):
+    ['0.00', '0.00'],
     ['-0.00', '0.00'],
   ])('negateAmount("%s") → "%s"', (input, expected) => {
     expect(negateAmount(input)).toBe(expected);

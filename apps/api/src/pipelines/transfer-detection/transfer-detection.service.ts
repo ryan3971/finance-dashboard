@@ -1,4 +1,5 @@
 import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import Decimal from 'decimal.js';
 import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
@@ -134,23 +135,29 @@ export async function detectTransfers(
   // Flag all candidates for review and persist pair suggestions
   if (candidates.length > 0) {
     const idsToFlag = candidates.map((c) => c.transactionId);
-    await db
-      .update(transactions)
-      .set({ flaggedForReview: true })
-      .where(inArray(transactions.id, idsToFlag));
+    const paired = candidates.filter(
+      (c): c is typeof c & { matchedTransactionId: string } =>
+        c.matchedTransactionId !== null
+    );
 
-    // Write transferMatchId bidirectionally so either side can confirm with the pre-populated pair
-    const paired = candidates.filter((c): c is typeof c & { matchedTransactionId: string } => c.matchedTransactionId !== null);
-    for (const c of paired) {
-      await db
+    await db.transaction(async (tx) => {
+      await tx
         .update(transactions)
-        .set({ transferMatchId: c.matchedTransactionId })
-        .where(eq(transactions.id, c.transactionId));
-      await db
-        .update(transactions)
-        .set({ transferMatchId: c.transactionId })
-        .where(eq(transactions.id, c.matchedTransactionId));
-    }
+        .set({ flaggedForReview: true })
+        .where(inArray(transactions.id, idsToFlag));
+
+      // Write transferMatchId bidirectionally so either side can confirm with the pre-populated pair
+      for (const c of paired) {
+        await tx
+          .update(transactions)
+          .set({ transferMatchId: c.matchedTransactionId })
+          .where(eq(transactions.id, c.transactionId));
+        await tx
+          .update(transactions)
+          .set({ transferMatchId: c.transactionId })
+          .where(eq(transactions.id, c.matchedTransactionId));
+      }
+    });
 
     logger.info(
       {
@@ -300,6 +307,7 @@ async function getOwnedTransaction(transactionId: string, userId: string) {
 
 /** Negates a numeric string amount without floating-point conversion. */
 export function negateAmount(amount: string): string {
+  if (new Decimal(amount).isZero()) return amount.replace(/^-/, '');
   return amount.startsWith('-') ? amount.slice(1) : `-${amount}`;
 }
 

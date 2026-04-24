@@ -15,11 +15,37 @@ import { db } from '@/db';
 export { loadRules } from './rules-engine';
 export type { Rule, LoadedRule } from './rules-engine';
 
-// Cache per user — populated on first use for each user
-const uncategorizedIdByUser = new Map<string, string>();
+class LruCache<K, V> {
+  private readonly capacity: number;
+  private readonly map: Map<K, V>;
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.map = new Map();
+  }
+  get(key: K): V | undefined {
+    const value = this.map.get(key);
+    if (value === undefined) return undefined;
+    this.map.delete(key);
+    this.map.set(key, value);
+    return value;
+  }
+  set(key: K, value: V): void {
+    if (this.map.has(key)) {
+      this.map.delete(key);
+    } else if (this.map.size >= this.capacity) {
+      // Map preserves insertion order; first key is the least recently used
+      const lruKey = this.map.keys().next().value as K;
+      this.map.delete(lruKey);
+    }
+    this.map.set(key, value);
+  }
+}
+
+const UNCATEGORIZED_CACHE_SIZE = 10_000;
+const uncategorizedIdCache = new LruCache<string, string>(UNCATEGORIZED_CACHE_SIZE);
 
 async function getUncategorizedId(userId: string): Promise<string> {
-  const cached = uncategorizedIdByUser.get(userId);
+  const cached = uncategorizedIdCache.get(userId);
   if (cached) return cached;
 
   const [cat] = await db
@@ -35,7 +61,7 @@ async function getUncategorizedId(userId: string): Promise<string> {
       `Uncategorized category not found for user ${userId}. Ensure the user was registered with category seeding.`
     );
 
-  uncategorizedIdByUser.set(userId, cat.id);
+  uncategorizedIdCache.set(userId, cat.id);
   return cat.id;
 }
 

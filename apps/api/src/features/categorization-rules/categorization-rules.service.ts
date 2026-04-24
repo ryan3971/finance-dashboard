@@ -27,7 +27,6 @@ function ruleSelect(conn: typeof db | DbTransaction = db) {
     .leftJoin(subcat, eq(categorizationRules.subcategoryId, subcat.id));
 }
 
-// Fix 1: extracted ownership check — eliminates duplication across mutations
 async function fetchOwnedRule(
   id: string,
   userId: string,
@@ -49,9 +48,6 @@ export async function listRules(userId: string) {
     .orderBy(desc(categorizationRules.priority), categorizationRules.createdAt);
 }
 
-// Fix 2: ownership check + update + re-select are now atomic within a transaction
-// Fix 3: accepts optional tx so it can participate in a larger transaction
-// Fix 4: race between ownership check and write resolved — both happen in the same transaction
 export async function updateRule(
   id: string,
   userId: string,
@@ -78,9 +74,6 @@ export async function updateRule(
   return tx ? execute(tx) : db.transaction(execute);
 }
 
-// Fix 2: ownership check + delete are now atomic within a transaction
-// Fix 3: accepts optional tx so it can participate in a larger transaction
-// Fix 4: race between ownership check and write resolved — both happen in the same transaction
 export async function deleteRule(
   id: string,
   userId: string,

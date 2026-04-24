@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { DomainError } from '@/lib/domain-error';
+import { config } from '@/lib/config';
 import { logger } from './logger';
 import multer from 'multer';
 import { ZodError } from 'zod';
@@ -61,7 +62,7 @@ export function errorHandler(
 
   res.status(statusCode).json({
     error: message,
-    ...(process.env.NODE_ENV === 'development' && statusCode >= 500
+    ...(config.nodeEnv === 'development' && statusCode >= 500
       ? { stack: err.stack }
       : {}),
   });
