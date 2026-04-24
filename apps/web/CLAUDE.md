@@ -6,10 +6,11 @@ Guidance specific to `apps/web`.
 
 - `features/` — Domain modules. Each feature is self-contained: no imports across feature boundaries.
 - `components/ui/` — Generic, reusable UI primitives (shadcn components and others). No app-specific or domain logic.
-- `components/common/` — Reusable app-aware components shared across features (e.g. `EmptyState`, `FormField`, `Pagination`, `CategorySelect`).
+- `components/common/` — Reusable app-aware components shared across features (e.g. `EmptyState`, `FormField`, `Pagination`, `CategorySelect`, `DeleteConfirmDialog`, `YearSelector`).
+- `components/transactions/` — Transaction UI components shared across feature boundaries (e.g. `TransactionTablePane`, used from both `TransactionsPage` and dashboard pages).
 - `components/layout/` — Layout and navigation (e.g. `PageLayout`, `NavBar`).
 - `components/error/` — Error boundaries.
-- `hooks/` — Custom React hooks shared across multiple features (e.g. `useCategories`). Feature-specific hooks live inside the feature under `hooks/`.
+- `hooks/` — Custom React hooks shared across multiple features (`useCategories`, `useAccounts`, `useCategoryMutations`, `useMediaQuery`). Feature-specific hooks live inside the feature under `hooks/`.
 - `lib/` — Axios instance (`api.ts`), config, React Query keys (`queryKeys.ts`), localStorage keys (`storageKeys.ts`)
 - `router.tsx` — Route tree, typed router context, `requireAuth` guard, search param schemas
 - `main.tsx` — Entry point; `AuthProvider`, `RouterWrapper` (syncs auth context into router), `ErrorBoundary`
@@ -36,7 +37,7 @@ features/<name>/
 ## Constants
 
 - **localStorage keys** — use `STORAGE_KEYS` from `@/lib/storageKeys` (`ACCESS_TOKEN`, `USER`). Never use the raw strings directly.
-- **React Query keys** — use the key factories in `@/lib/queryKeys` (`transactionKeys`, `accountKeys`, `categoryKeys`, `tagKeys`, `dashboardKeys`, `anticipatedBudgetKeys`). Never use raw arrays like `['tags']`. Add a new key factory to `queryKeys.ts` for every new dashboard endpoint before writing the hook that calls it.
+- **React Query keys** — use the key factories in `@/lib/queryKeys` (`transactionKeys`, `accountKeys`, `categoryKeys`, `tagKeys`, `dashboardKeys`, `anticipatedBudgetKeys`, `ruleKeys`, `userConfigKeys`, `rebalancingKeys`). Never use raw arrays like `['tags']`. Add a new key factory to `queryKeys.ts` for every new endpoint before writing the hook that calls it.
 - **Cross-app constants** (field limits, transfer keywords, default currency) — import from `@finance/shared`.
 
 ## Auth
@@ -72,8 +73,10 @@ features/dashboards/
   expenses/
   snapshot/
   ytd/
-  anticipated-budget/
+  investments/   (placeholder — not yet built)
 ```
+
+`features/anticipated-budget/` is a top-level feature (not under dashboards).
 
 **Data fetching** — each dashboard page has a dedicated query hook (e.g. `useSnapshotData`, `useIncomeData`). Use the query key factories in `@/lib/queryKeys`. Dashboard queries are not paginated — they return complete shaped responses.
 
@@ -273,6 +276,27 @@ Segmented button group (not `<select>`):
 <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">
 ```
 
+### `components/transactions/`
+
+Transaction UI components shared across feature boundaries — e.g. `TransactionTablePane`
+is used from both `TransactionsPage` and dashboard pages.
+
+Differs from `components/common/` (domain-agnostic) and `features/transactions/components/`
+(panels, filters, and column definitions scoped entirely to the transactions feature).
+
+### Component State Conventions
+
+| State               | Convention                                                          |
+| ------------------- | ------------------------------------------------------------------- |
+| Inactive / archived | `opacity-50` on the row                                             |
+| Transfer (neutral)  | `opacity-60` on the row                                             |
+| Flagged for review  | `bg-warning-bg` on the row                                          |
+| Editing (inline)    | Replace display span with `<Input>` + Save/Cancel inline            |
+| Loading / pending   | Disable button with `mutation.isPending`; `<Skeleton>` for lists    |
+| Empty               | `<EmptyState>` centered with `py-12`                                |
+| Field error         | `FormField error` prop → `text-sm text-danger` below input          |
+| Server error        | Separate `useState`, `text-xs text-danger` or `text-sm text-danger` |
+
 ### EmptyState (`components/common/EmptyState`)
 
 ```tsx
@@ -296,6 +320,10 @@ Segmented button group (not `<select>`):
 | `select-base` | `<select>` and date inputs in filter bars                               |
 | `label-sm`    | Standard form label (`text-sm font-medium text-content-secondary mb-1`) |
 | `label-xs`    | Compact label inside panels                                             |
+| `th-cell`     | Transaction/account table headers (`font-medium text-content-secondary text-left`) |
+| `td-cell`     | Transaction/account table data cells                                    |
+| `th-class`    | Dashboard table headers (`font-semibold text-content-muted`, no forced text-left) |
+| `td-class`    | Dashboard table data cells (same styles as `td-cell`)                   |
 
 Use `<FormField label="..." error={...} labelSize="xs|sm">` for all form fields.
 
@@ -328,6 +356,9 @@ these styles manually on a new table.
 
 // With extra classes on the card (e.g. opacity transition)
 <DataTable className="transition-opacity duration-200 ...">
+
+// With a max height (inner scroll container)
+<DataTable maxHeight="400px">
 ```
 
 ### className Organization
@@ -369,19 +400,6 @@ Never mix `cn()` and string interpolation on the same element.
 - Custom utilities live in `@layer components` in `src/index.css`.
 - Semantic color tokens (`content-primary`, `surface-muted`) are always preferred over raw Tailwind palette classes.
 - Column-specific classes for TanStack Table go in `meta.thClassName` / `meta.tdClassName` on the column def.
-
-### Component State Conventions
-
-| State               | Convention                                                          |
-| ------------------- | ------------------------------------------------------------------- |
-| Inactive / archived | `opacity-50` on the row                                             |
-| Transfer (neutral)  | `opacity-60` on the row                                             |
-| Flagged for review  | `bg-warning-bg` on the row                                          |
-| Editing (inline)    | Replace display span with `<Input>` + Save/Cancel inline            |
-| Loading / pending   | Disable button with `mutation.isPending`; `<Skeleton>` for lists    |
-| Empty               | `<EmptyState>` centered with `py-12`                                |
-| Field error         | `FormField error` prop → `text-sm text-danger` below input          |
-| Server error        | Separate `useState`, `text-xs text-danger` or `text-sm text-danger` |
 
 ---
 
