@@ -40,6 +40,7 @@ const envSchema = z
     // Auth
     JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
     JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
+    BCRYPT_ROUNDS: z.coerce.number().int().positive().default(12),
 
     // CORS
     CORS_ORIGIN: z.string().default('http://localhost:5173'),
@@ -104,6 +105,7 @@ export const config = {
   // Auth
   jwtSecret: env.JWT_SECRET,
   jwtRefreshSecret: env.JWT_REFRESH_SECRET,
+  bcryptRounds: env.BCRYPT_ROUNDS,
 
   // CORS
   corsOrigin: env.CORS_ORIGIN,

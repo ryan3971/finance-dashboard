@@ -565,7 +565,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.emergencyFund.percentage).toBe(0);
   });
 
-  it('uses one chequing account balance (not the sum) for emergency fund when multiple exist', async () => {
+  it('sums all chequing account balances for emergency fund when multiple exist', async () => {
     const { accessToken, user } = await registerUser(app);
 
     // Two chequing accounts each with the same balance so the assertion
@@ -604,9 +604,9 @@ describe('GET /api/v1/dashboard/snapshot', () => {
 
     const body = res.body as SnapshotBody;
     expect(res.status).toBe(200);
-    // One chequing account's balance (1000), not the sum of both (2000)
-    expect(body.emergencyFund.balance).toBe(1000);
-    expect(body.emergencyFund.percentage).toBe(25);
+    // Sum of both chequing account balances: 1000 + 1000 = 2000; 2000/4000*100 = 50
+    expect(body.emergencyFund.balance).toBe(2000);
+    expect(body.emergencyFund.percentage).toBe(50);
   });
 
   it('isolates data between users', async () => {

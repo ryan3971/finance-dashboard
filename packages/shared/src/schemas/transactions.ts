@@ -50,7 +50,7 @@ export const transactionFiltersSchema = z.object({
   accountId: z.string().uuid().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  month: z.string().optional(), // YYYY-MM; takes precedence over startDate/endDate
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'month must be YYYY-MM').optional(), // YYYY-MM; takes precedence over startDate/endDate
   categoryId: z.string().uuid().optional(),
   subcategoryId: z.string().uuid().optional(),
   needWant: needWantSchema.optional(),

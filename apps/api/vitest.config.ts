@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/testing/setup.ts'],
     fileParallelism: false,
+    env: { BCRYPT_ROUNDS: '4' },
     alias: [
       {
         find: /^@finance\/shared(\/.*)?$/,

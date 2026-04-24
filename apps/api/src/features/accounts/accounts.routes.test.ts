@@ -286,7 +286,7 @@ describe('GET /api/v1/accounts/:id', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 500 for a malformed (non-UUID) id', async () => {
+  it('returns 400 for a malformed (non-UUID) id', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)
       .get(`/api/v1/accounts/${MALFORMED_ID}`)

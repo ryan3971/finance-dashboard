@@ -19,6 +19,11 @@ function assertObjectPayload(payload: unknown): asserts payload is JwtPayload {
   if (typeof payload !== 'object' || payload === null) {
     throw new Error('Unexpected JWT payload format');
   }
+  // Cast to record is safe: we've confirmed it's a non-null object above.
+  const p = payload as Record<string, unknown>;
+  if (typeof p['sub'] !== 'string' || typeof p['email'] !== 'string') {
+    throw new Error('JWT payload missing required fields');
+  }
 }
 /**
  * Signs a JWT access token with the provided payload. 

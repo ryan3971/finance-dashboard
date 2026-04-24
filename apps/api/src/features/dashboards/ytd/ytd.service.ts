@@ -1,4 +1,4 @@
-import { and, eq, gte, isNull, lt, sql } from 'drizzle-orm';
+import { and, eq, gte, lt, sql } from 'drizzle-orm';
 import type { Column } from 'drizzle-orm';
 import { accounts, investmentTransactions, transactions } from '@/db/schema';
 import { db } from '@/db';
@@ -54,7 +54,6 @@ export async function queryYtdMonthlyIncome(
       and(
         eq(accounts.userId, userId),
         eq(transactions.isIncome, true),
-        isNull(transactions.needWant),
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)
@@ -216,8 +215,7 @@ export function buildYtdResponse(
     const contributions = new Decimal(contributionMap.get(m) ?? '0');
     const spendingIncome = income.minus(contributions); // TODO: may need to change this to add, depending on how contributions are stored (+ or -)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const bucket = expenseBuckets.get(m)!; // always present — pre-initialized for months 1–12 above
+    const bucket = expenseBuckets.get(m) ?? { need: new Decimal(0), want: new Decimal(0), total: new Decimal(0) };
     const netSpendingIncome = spendingIncome.minus(bucket.total.abs());
 
     const { wants, needs } = computeWantsNeeds(spendingIncome, bucket, config);

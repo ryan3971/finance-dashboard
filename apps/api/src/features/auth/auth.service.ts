@@ -5,19 +5,16 @@ import {
   verifyRefreshToken,
 } from '@/lib/jwt';
 import type { LoginInput, RegisterInput } from '@finance/shared/schemas/auth';
+import type { JwtPayload } from '@finance/shared/types/auth';
 import { refreshTokens, users } from '@/db/schema';
 import { AuthError, AuthErrorCode } from '@/features/auth/auth.errors';
 import bcrypt from 'bcryptjs';
+import { config } from '@/lib/config';
 import { createHash } from 'crypto';
 import { db, type DbTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
 import { seedUserCategories, seedUserRules } from '@/db/seed-categories';
 import { assertDefined } from '@/lib/assert';
-
-// Configurable via BCRYPT_ROUNDS env var so tests can set a lower value (e.g. 4)
-// without touching production behaviour. Mirrors the pattern used in db/index.ts
-// for DATABASE_URL — config.ts freezes its snapshot before test setup can override it.
-const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS ?? '12', 10);
 /**
  * Registers a new user by:
  *  1) checking for existing email
@@ -42,7 +39,7 @@ export async function registerUser(input: RegisterInput) {
   }
 
   // Hash the password with bcrypt. The salt is generated automatically and included in the hash string.
-  const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
+  const passwordHash = await bcrypt.hash(input.password, config.bcryptRounds);
 
   // Create user, seed their category tree, and issue tokens atomically.
   // A failed category seed rolls back the user insert — the user is never
@@ -133,12 +130,9 @@ export async function loginUser(input: LoginInput) {
  * @throws {AuthError} `REFRESH_TOKEN_NOT_FOUND` — token not in DB or past its `expiresAt` date.
  */
 export async function refreshAccessToken(incomingRefreshToken: string) {
-  let payload: { sub: string; email: string };
+  let payload: JwtPayload;
   try {
-    payload = verifyRefreshToken(incomingRefreshToken) as {
-      sub: string;
-      email: string;
-    };
+    payload = verifyRefreshToken(incomingRefreshToken);
   } catch {
     throw new AuthError(AuthErrorCode.INVALID_REFRESH_TOKEN);
   }

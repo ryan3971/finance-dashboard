@@ -182,10 +182,10 @@ export function buildSnapshotResponse(
   }));
 
   // ── Emergency fund ──────────────────────────────────────────────────────────
-  const chequingAccount = accountList.find(
-    (a) => a.type === CHEQUING_ACCOUNT_TYPE
-  );
-  const emergencyFundBalance = chequingAccount?.balance ?? 0;
+  const emergencyFundBalance = accountList
+    .filter((a) => a.type === CHEQUING_ACCOUNT_TYPE)
+    .reduce<Decimal>((sum, a) => sum.plus(a.balance), new Decimal(0))
+    .toNumber();
   const emergencyFundTarget =
     config.emergencyFundTarget !== null
       ? new Decimal(config.emergencyFundTarget).toNumber()
