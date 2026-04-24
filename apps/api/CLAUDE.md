@@ -15,10 +15,11 @@ features/auth/
 
 Other top-level directories:
 - `db/` — Drizzle schema, migrations, seeds
-- `middleware/` — Error handler, logger, auth (`requireAuth`)
-- `lib/` — Config loader, JWT helpers, shared API constants (`constants.ts`)
-- `pipelines/` — Cross-feature logic (transfer detection)
-- `testing/` — Vitest setup and shared test helpers
+- `middleware/` — Error handler, logger
+- `lib/` — Config loader, JWT helpers, auth (`requireAuth`, `getAuthUser`), shared API constants (`constants.ts`)
+- `pipelines/` — Cross-feature logic: `categorization/` (AI + rules engine), `rebalancing/` (adjustment hooks), `transfer-detection/`
+- `routes/` — Health check route
+- `testing/` — Vitest setup, shared test helpers, fixtures, seeders, seeds, and sample CSV files
 
 Entry: `server.ts` loads config first, then starts the app defined in `app.ts`.
 
@@ -105,21 +106,12 @@ Dashboard routes live in `features/dashboards/`. Each tab is a separate sub-feat
 ```
 features/dashboards/
   income/
-    income.routes.ts
-    income.service.ts
   expenses/
-    expenses.routes.ts
-    expenses.service.ts
-  snapshot/
-    snapshot.routes.ts
-    snapshot.service.ts
+  snapshot/   (also has snapshot.repository.ts)
   ytd/
-    ytd.routes.ts
-    ytd.service.ts
-  anticipated-budget/
-    anticipated-budget.routes.ts
-    anticipated-budget.service.ts
 ```
+
+`anticipated-budget` is a standalone feature at `features/anticipated-budget/`, not under `features/dashboards/`.
 
 **DB queries** use Drizzle `.groupBy()` and aggregate functions (`sql<number>`). They return summary rows, never raw transaction arrays. Scope every query with `userId` from `req.user`.
 
