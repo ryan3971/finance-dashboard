@@ -38,11 +38,18 @@ coverage/
 .docker/
 
 # Terraform
-infra/.terraform/
-infra/*.tfstate
-infra/*.tfstate.backup
-infra/.terraform.lock.hcl
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # Agent Skills
 .agents/
 .claude/
+
+# Other
+aws.md
