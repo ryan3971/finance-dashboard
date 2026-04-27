@@ -32,3 +32,9 @@ module "s3" {
   frontend_bucket_name = "finance-frontend-187844640945"
   uploads_bucket_name  = "finance-uploads-187844640945"
 }
+
+module "ssm" {
+  source = "../../modules/ssm"
+
+  environment = "staging"
+}
