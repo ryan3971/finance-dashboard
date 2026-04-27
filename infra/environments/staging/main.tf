@@ -23,3 +23,12 @@ module "vpc" {
 
   environment = "staging"
 }
+
+module "s3" {
+  source = "../../modules/s3"
+
+  environment          = "staging"
+  account_id           = "187844640945"
+  frontend_bucket_name = "finance-frontend-187844640945"
+  uploads_bucket_name  = "finance-uploads-187844640945"
+}
