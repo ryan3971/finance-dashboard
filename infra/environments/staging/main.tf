@@ -38,3 +38,15 @@ module "ssm" {
 
   environment = "staging"
 }
+
+module "rds" {
+  source = "../../modules/rds"
+
+  environment        = "staging"
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+  # Initial placeholder — overwrite via CLI before the API connects:
+  # aws rds modify-db-instance --db-instance-identifier staging-finance-db \
+  #   --master-user-password "<new-password>" --apply-immediately
+  db_password           = "PLACEHOLDER"
+}

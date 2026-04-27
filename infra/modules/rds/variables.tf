@@ -13,11 +13,6 @@ variable "private_subnet_ids" {
   type        = list(string)
 }
 
-variable "ecs_security_group_id" {
-  description = "Security group ID of ECS tasks — granted inbound 5432 access"
-  type        = string
-}
-
 variable "db_name" {
   description = "Name of the initial database to create"
   type        = string
