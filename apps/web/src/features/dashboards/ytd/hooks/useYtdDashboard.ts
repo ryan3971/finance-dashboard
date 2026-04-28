@@ -7,7 +7,7 @@ export function useYtdDashboard(year: number) {
   return useQuery({
     queryKey: dashboardKeys.ytd(year),
     queryFn: async () => {
-      const { data } = await api.get('/dashboard/ytd', { params: { year } });
+      const { data } = await api.get<unknown>('/dashboard/ytd', { params: { year } });
       return ytdDashboardResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,

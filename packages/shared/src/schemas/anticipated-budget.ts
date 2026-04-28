@@ -36,7 +36,7 @@ export const updateAnticipatedBudgetSchema = anticipatedBudgetBaseSchema
   .refine(
     // Use loose inequality so undefined (absent field) is treated the same as
     // null — a PATCH that omits needWant cannot violate the constraint alone.
-    (data) => !(data.isIncome && data.needWant != null),
+    (data) => !(data.isIncome && data.needWant !== null && data.needWant !== undefined),
     needWantNullForIncome,
   );
 

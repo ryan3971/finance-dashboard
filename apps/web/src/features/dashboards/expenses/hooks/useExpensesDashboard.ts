@@ -7,7 +7,7 @@ export function useExpensesDashboard(year: number) {
   return useQuery({
     queryKey: dashboardKeys.expenses(year),
     queryFn: async () => {
-      const { data } = await api.get('/dashboard/expenses', { params: { year } });
+      const { data } = await api.get<unknown>('/dashboard/expenses', { params: { year } });
       return expenseDashboardResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,

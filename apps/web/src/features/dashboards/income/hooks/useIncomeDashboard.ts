@@ -7,7 +7,7 @@ export function useIncomeDashboard(year: number) {
   return useQuery({
     queryKey: dashboardKeys.income(year),
     queryFn: async () => {
-      const { data } = await api.get('/dashboard/income', { params: { year } });
+      const { data } = await api.get<unknown>('/dashboard/income', { params: { year } });
       return incomeDashboardResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,

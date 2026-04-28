@@ -16,7 +16,7 @@ const noPercentages = {
   investmentsPercentage: null,
 };
 
-const percentages50_30_20 = {
+const percentages = {
   needsPercentage: 50,
   wantsPercentage: 30,
   investmentsPercentage: 20,
@@ -65,7 +65,7 @@ describe('buildIncomeResponse', () => {
     const result = buildIncomeResponse(
       2025,
       rows,
-      percentages50_30_20,
+      percentages,
       noAdjustments
     );
     const jan = result.months[0];
@@ -81,7 +81,7 @@ describe('buildIncomeResponse', () => {
     const result = buildIncomeResponse(
       2025,
       [],
-      percentages50_30_20,
+      percentages,
       noAdjustments
     );
     const jan = result.months[0];
@@ -104,9 +104,9 @@ describe('buildIncomeResponse', () => {
     const jun = result.months[5];
     assertDefined(jun, 'Expected month at index 5 (June)');
     expect(jun.allocation).not.toBeNull();
-    expect(jun.allocation!.needs).toBe(33);
-    expect(jun.allocation!.wants).toBe(33);
-    expect(jun.allocation!.investments).toBe(34);
+    expect(jun.allocation?.needs).toBe(33);
+    expect(jun.allocation?.wants).toBe(33);
+    expect(jun.allocation?.investments).toBe(34);
   });
 
   it('includes all 12 months in order', () => {
@@ -143,7 +143,7 @@ describe('buildIncomeResponse', () => {
     const result = buildIncomeResponse(
       2025,
       [{ month: 1, total: '1000.00' }],
-      percentages50_30_20,
+      percentages,
       adjustments
     );
     const jan = result.months[0];
@@ -161,7 +161,7 @@ describe('buildIncomeResponse', () => {
     const result = buildIncomeResponse(
       2025,
       [{ month: 1, total: '500.00' }],
-      percentages50_30_20,
+      percentages,
       adjustments
     );
     const jan = result.months[0];

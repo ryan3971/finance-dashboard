@@ -50,16 +50,11 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.year).toBe(2025);
-    expect(res.body.months).toHaveLength(12);
-    expect(
-      (res.body.months as { total: number }[]).every((m) => m.total === 0)
-    ).toBe(true);
-    expect(
-      (res.body.months as { allocation: null }[]).every(
-        (m) => m.allocation === null
-      )
-    ).toBe(true);
+    const body = res.body as { year: number; months: { total: number; allocation: null }[] };
+    expect(body.year).toBe(2025);
+    expect(body.months).toHaveLength(12);
+    expect(body.months.every((m) => m.total === 0)).toBe(true);
+    expect(body.months.every((m) => m.allocation === null)).toBe(true);
   });
 
   it('returns correct total for a month with income', async () => {
@@ -79,14 +74,11 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const mar = (res.body.months as { month: number; total: number }[]).find(
-      (m) => m.month === 3
-    );
+    const months = (res.body as { months: { month: number; total: number }[] }).months;
+    const mar = months.find((m) => m.month === 3);
     expect(mar?.total).toBe(4500);
 
-    const others = (
-      res.body.months as { month: number; total: number }[]
-    ).filter((m) => m.month !== 3);
+    const others = months.filter((m) => m.month !== 3);
     expect(others.every((m) => m.total === 0)).toBe(true);
   });
 
@@ -107,7 +99,7 @@ describe('GET /api/v1/dashboard/income', () => {
 
     expect(res.status).toBe(200);
     expect(
-      (res.body.months as { allocation: null }[]).every(
+      (res.body as { months: { allocation: null }[] }).months.every(
         (m) => m.allocation === null
       )
     ).toBe(true);
@@ -140,12 +132,9 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const mar = (
-      res.body.months as {
-        month: number;
-        allocation: { needs: number; wants: number; investments: number };
-      }[]
-    ).find((m) => m.month === 3);
+    const mar = (res.body as {
+      months: { month: number; allocation: { needs: number; wants: number; investments: number } }[];
+    }).months.find((m) => m.month === 3);
     expect(mar?.allocation).toEqual({
       needs: 2250,
       wants: 1350,
@@ -175,7 +164,7 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const feb = (res.body.months as { month: number; total: number }[]).find(
+    const feb = (res.body as { months: { month: number; total: number }[] }).months.find(
       (m) => m.month === 2
     );
     expect(feb?.total).toBe(3500);
@@ -222,7 +211,7 @@ describe('GET /api/v1/dashboard/income', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const may = (res.body.months as { month: number; total: number }[]).find(
+    const may = (res.body as { months: { month: number; total: number }[] }).months.find(
       (m) => m.month === 5
     );
     expect(may?.total).toBe(0);
@@ -252,7 +241,7 @@ describe('GET /api/v1/dashboard/income', () => {
 
     expect(res.status).toBe(200);
     expect(
-      (res.body.months as { total: number }[]).every((m) => m.total === 0)
+      (res.body as { months: { total: number }[] }).months.every((m) => m.total === 0)
     ).toBe(true);
   });
 });

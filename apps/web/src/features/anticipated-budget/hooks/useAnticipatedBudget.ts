@@ -7,7 +7,7 @@ export function useAnticipatedBudget(year: number) {
   return useQuery({
     queryKey: anticipatedBudgetKeys.byYear(year),
     queryFn: async () => {
-      const { data } = await api.get('/anticipated-budget', { params: { year } });
+      const { data } = await api.get<unknown>('/anticipated-budget', { params: { year } });
       return anticipatedBudgetResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,

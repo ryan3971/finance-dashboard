@@ -7,7 +7,7 @@ export function useSnapshotDashboard() {
   return useQuery({
     queryKey: dashboardKeys.snapshot(),
     queryFn: async () => {
-      const { data } = await api.get('/dashboard/snapshot');
+      const { data } = await api.get<unknown>('/dashboard/snapshot');
       return snapshotDashboardResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,

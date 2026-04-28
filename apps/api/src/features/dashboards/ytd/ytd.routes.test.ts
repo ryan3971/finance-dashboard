@@ -41,8 +41,6 @@ describe('GET /api/v1/dashboard/ytd', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.year).toBe(2020);
-    expect(res.body.months).toHaveLength(12);
 
     interface YtdMonthBody {
       month: number;
@@ -53,7 +51,11 @@ describe('GET /api/v1/dashboard/ytd', () => {
       needs: number | null;
     }
 
-    const months = res.body.months as YtdMonthBody[];
+    const body = res.body as { year: number; months: YtdMonthBody[] };
+    expect(body.year).toBe(2020);
+    expect(body.months).toHaveLength(12);
+
+    const months = body.months;
     for (const m of months) {
       expect(m.spendingIncome).toBe(0);
       expect(m.expenses).toBe(0);
@@ -78,7 +80,7 @@ describe('GET /api/v1/dashboard/ytd', () => {
       month: number;
       spendingIncome: number | null;
     }
-    const months = res.body.months as YtdMonthBody[];
+    const months = (res.body as { months: YtdMonthBody[] }).months;
 
     for (const m of months) {
       if (m.month > currentMonth) {
@@ -111,7 +113,7 @@ describe('GET /api/v1/dashboard/ytd', () => {
     expect(res.status).toBe(200);
 
     interface YtdMonthBody { month: number; spendingIncome: number };
-    const jan = (res.body.months as YtdMonthBody[]).find((m) => m.month === 1);
+    const jan = (res.body as { months: YtdMonthBody[] }).months.find((m) => m.month === 1);
     expect(jan?.spendingIncome).toBe(4000);
   });
 
@@ -159,7 +161,7 @@ describe('GET /api/v1/dashboard/ytd', () => {
       needs: number;
       wants: number;
     }
-    const feb = (res.body.months as YtdMonthBody[]).find((m) => m.month === 2);
+    const feb = (res.body as { months: YtdMonthBody[] }).months.find((m) => m.month === 2);
     expect(feb?.expenses).toBe(1200);
     expect(feb?.needs).toBe(1200);
     expect(feb?.wants).toBe(800);
@@ -195,7 +197,7 @@ describe('GET /api/v1/dashboard/ytd', () => {
       needs: number;
       wants: number;
     }
-    const feb = (res.body.months as YtdMonthBody[]).find((m) => m.month === 2);
+    const feb = (res.body as { months: YtdMonthBody[] }).months.find((m) => m.month === 2);
     expect(feb?.expenses).toBe(1200);
     expect(feb?.needs).toBe(800);
     expect(feb?.wants).toBe(400);
@@ -235,7 +237,7 @@ describe('GET /api/v1/dashboard/ytd', () => {
       expenses: number;
       netSpendingIncome: number;
     };
-    const mar = (res.body.months as YtdMonthBody[]).find((m) => m.month === 3);
+    const mar = (res.body as { months: YtdMonthBody[] }).months.find((m) => m.month === 3);
     expect(mar?.spendingIncome).toBe(2500);
     expect(mar?.expenses).toBe(1800);
     expect(mar?.netSpendingIncome).toBe(700);
@@ -275,7 +277,7 @@ describe('GET /api/v1/dashboard/ytd', () => {
       spendingIncome: number;
       expenses: number;
     };
-    const apr = (res.body.months as YtdMonthBody[]).find((m) => m.month === 4);
+    const apr = (res.body as { months: YtdMonthBody[] }).months.find((m) => m.month === 4);
     expect(apr?.spendingIncome).toBe(2000);
     expect(apr?.expenses).toBe(300);
   });
@@ -297,7 +299,7 @@ describe('GET /api/v1/dashboard/ytd', () => {
 
     expect(res.status).toBe(200);
     interface YtdMonthBody { month: number; spendingIncome: number };
-    const may = (res.body.months as YtdMonthBody[]).find((m) => m.month === 5);
+    const may = (res.body as { months: YtdMonthBody[] }).months.find((m) => m.month === 5);
     expect(may?.spendingIncome).toBe(0);
   });
 });
