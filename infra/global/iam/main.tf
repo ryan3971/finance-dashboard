@@ -102,9 +102,26 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     effect = "Allow"
     actions = [
       "ecs:DescribeServices",
+      "ecs:DescribeTasks",
+      "ecs:RunTask",
       "ecs:UpdateService"
     ]
     resources = ["*"]
+  }
+
+  statement {
+    sid    = "PassRoleToECS"
+    effect = "Allow"
+    actions = ["iam:PassRole"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/staging-finance-task-execution-role",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/staging-finance-task-role"
+    ]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ecs-tasks.amazonaws.com"]
+    }
   }
 
   statement {
