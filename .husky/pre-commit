@@ -1,0 +1,21 @@
+pnpm lint-staged
+
+STAGED=$(git diff --cached --name-only)
+
+check_shared=false
+check_api=false
+check_web=false
+
+echo "$STAGED" | grep -q "^packages/shared/" && check_shared=true
+echo "$STAGED" | grep -q "^apps/api/" && check_api=true
+echo "$STAGED" | grep -q "^apps/web/" && check_web=true
+
+# shared changes affect all consumers
+if $check_shared; then
+  check_api=true
+  check_web=true
+fi
+
+if $check_shared; then pnpm --filter @finance/shared typecheck; fi
+if $check_api; then pnpm --filter api typecheck; fi
+if $check_web; then pnpm --filter web typecheck; fi
