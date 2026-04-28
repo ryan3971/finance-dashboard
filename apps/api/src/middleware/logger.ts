@@ -1,28 +1,35 @@
 import { config } from '@/lib/config';
-import fs from 'node:fs';
 import pino from 'pino';
 import pinoHttp from 'pino-http';
-import pretty from 'pino-pretty';
+import type PinoPretty from 'pino-pretty';
+import type NodeFs from 'node:fs';
 
-const streams: pino.StreamEntry[] = [
-  {
-    stream:
-      config.nodeEnv === 'development'
-        ? pretty({ colorize: true })
-        : process.stdout,
-  },
-  {
-    stream: pretty({
-      colorize: false,
-      destination: fs.createWriteStream('logs/app.log', { flags: 'a' }),
-    }),
-  },
-];
+function createLogger(): pino.Logger {
+  if (config.nodeEnv === 'production') {
+    // JSON to stdout — the container runtime collects it
+    return pino({ level: config.logLevel });
+  }
 
-export const logger = pino(
-  { level: config.logLevel },
-  pino.multistream(streams)
-);
+  // pino-pretty is a devDependency; require() so it isn't loaded in production
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pretty = require('pino-pretty') as typeof PinoPretty;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require('node:fs') as typeof NodeFs;
+
+  const streams: pino.StreamEntry[] = [
+    { stream: pretty({ colorize: true }) },
+    {
+      stream: pretty({
+        colorize: false,
+        destination: fs.createWriteStream('logs/app.log', { flags: 'a' }),
+      }),
+    },
+  ];
+
+  return pino({ level: config.logLevel }, pino.multistream(streams));
+}
+
+export const logger = createLogger();
 
 export const httpLogger = pinoHttp({
   logger,
