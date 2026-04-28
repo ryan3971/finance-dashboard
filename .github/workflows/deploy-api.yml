@@ -77,13 +77,30 @@ jobs:
             --cluster staging-finance \
             --tasks "$TASK_ARN"
 
-          EXIT_CODE=$(aws ecs describe-tasks \
+          TASK_DETAIL=$(aws ecs describe-tasks \
             --cluster staging-finance \
-            --tasks "$TASK_ARN" \
-            --query 'tasks[0].containers[0].exitCode' \
-            --output text)
+            --tasks "$TASK_ARN")
 
-          echo "Migration task exit code: $EXIT_CODE"
+          EXIT_CODE=$(echo "$TASK_DETAIL" | jq -r '.tasks[0].containers[0].exitCode')
+          STOP_REASON=$(echo "$TASK_DETAIL" | jq -r '.tasks[0].stoppedReason // "none"')
+          CONTAINER_REASON=$(echo "$TASK_DETAIL" | jq -r '.tasks[0].containers[0].reason // "none"')
+
+          echo "Migration task exit code:   $EXIT_CODE"
+          echo "Task stopped reason:        $STOP_REASON"
+          echo "Container stopped reason:   $CONTAINER_REASON"
+
+          # Extract the CloudWatch log stream name from the task ARN and fetch logs.
+          # Log group is /ecs/staging-finance-api; stream prefix is ecs/finance-api/<task-id>.
+          TASK_ID="${TASK_ARN##*/}"
+          LOG_STREAM="ecs/finance-api/${TASK_ID}"
+          echo "--- Migration container logs ---"
+          aws logs get-log-events \
+            --log-group-name /ecs/staging-finance-api \
+            --log-stream-name "$LOG_STREAM" \
+            --no-start-from-head \
+            --query 'events[*].message' \
+            --output text 2>/dev/null || echo "(no logs found in stream $LOG_STREAM)"
+          echo "--- End of migration logs ---"
 
           if [ "$EXIT_CODE" != "0" ]; then
             echo "::error::Database migration failed with exit code $EXIT_CODE"

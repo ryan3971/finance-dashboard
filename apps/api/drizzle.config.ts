@@ -28,5 +28,6 @@ export default {
   verbose: true,
   dbCredentials: {
     url: databaseUrl,
+    ssl: { rejectUnauthorized: false },
   },
 } satisfies Config;
