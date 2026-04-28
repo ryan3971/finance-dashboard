@@ -45,7 +45,7 @@ export async function resetTestSystemData(): Promise<void> {
     idByPath.set(cat.name, parent.id);
 
     for (const subName of cat.subcategories) {
-      const [sub] = await db
+      const subRows: { id: string }[] = await db
         .insert(categories)
         .values({
           userId: null,
@@ -55,6 +55,7 @@ export async function resetTestSystemData(): Promise<void> {
           parentId: parent.id,
         })
         .returning({ id: categories.id });
+      const [sub] = subRows;
       assertDefined(sub, 'Expected subcategory insert to return a row');
       idByPath.set(`${cat.name}/${subName}`, sub.id);
     }
