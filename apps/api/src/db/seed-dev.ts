@@ -269,7 +269,7 @@ async function main() {
   console.log('\n  Login credentials:');
   console.log(`    Email:    ${DEV_USER.email}`);
   console.log(`    Password: ${DEV_USER.password}`);
-  console.log('\n  API: POST http://localhost:3001/api/v1/auth/login');
+  console.log('\n  API: POST http://localhost:3000/api/v1/auth/login');
   console.log('  Web: http://localhost:5173\n');
 
   process.exit(0);

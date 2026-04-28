@@ -18,7 +18,8 @@ export default defineConfig({
     alias: [
       {
         find: /^@finance\/shared(\/.*)?$/,
-        replacement: path.resolve(__dirname, '../../packages/shared/src') + '$1',
+        replacement:
+          path.resolve(__dirname, '../../packages/shared/src') + '$1',
       },
       { find: '@', replacement: path.resolve(__dirname, './src') },
     ],
@@ -27,7 +28,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },

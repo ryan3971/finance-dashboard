@@ -94,7 +94,7 @@ features/dashboards/
 
 ## Dev proxy
 
-Vite proxies `/api` to `localhost:3001` in dev.
+Vite proxies `/api` to `localhost:3000` in dev.
 
 ---
 
@@ -314,16 +314,16 @@ Differs from `components/common/` (domain-agnostic) and `features/transactions/c
 
 ### Form Control Utilities (`index.css @layer components`)
 
-| Utility       | Use                                                                     |
-| ------------- | ----------------------------------------------------------------------- |
-| `input-base`  | Full-width text inputs                                                  |
-| `select-base` | `<select>` and date inputs in filter bars                               |
-| `label-sm`    | Standard form label (`text-sm font-medium text-content-secondary mb-1`) |
-| `label-xs`    | Compact label inside panels                                             |
+| Utility       | Use                                                                                |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `input-base`  | Full-width text inputs                                                             |
+| `select-base` | `<select>` and date inputs in filter bars                                          |
+| `label-sm`    | Standard form label (`text-sm font-medium text-content-secondary mb-1`)            |
+| `label-xs`    | Compact label inside panels                                                        |
 | `th-cell`     | Transaction/account table headers (`font-medium text-content-secondary text-left`) |
-| `td-cell`     | Transaction/account table data cells                                    |
-| `th-class`    | Dashboard table headers (`font-semibold text-content-muted`, no forced text-left) |
-| `td-class`    | Dashboard table data cells (same styles as `td-cell`)                   |
+| `td-cell`     | Transaction/account table data cells                                               |
+| `th-class`    | Dashboard table headers (`font-semibold text-content-muted`, no forced text-left)  |
+| `td-class`    | Dashboard table data cells (same styles as `td-cell`)                              |
 
 Use `<FormField label="..." error={...} labelSize="xs|sm">` for all form fields.
 
@@ -385,11 +385,13 @@ enforced by convention — no inline comments needed.
 **Visual utilities:** `bg text border rounded shadow opacity transition`
 
 **Use `cn()` when:**
+
 - Any conditional class is present
 - The component accepts an external `className` prop
 - Two class sources need to be merged
 
 **Use a plain string when:**
+
 - Classes are unconditional and fit on one readable line
 
 Never wrap a single unconditional string in `cn()` — it adds noise with no benefit.

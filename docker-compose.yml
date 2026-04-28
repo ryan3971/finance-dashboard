@@ -4,8 +4,8 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: finance_dev          # primary DB
-      POSTGRES_MULTIPLE_DATABASES: finance_test  # also create this
+      POSTGRES_DB: finance_dev # primary DB
+      POSTGRES_MULTIPLE_DATABASES: finance_test # also create this
     ports:
       - '5434:5432'
     volumes:
@@ -27,7 +27,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/finance_dev
     ports:
-      - '3001:3001'
+      - '3000:3000'
     volumes:
       - .:/app
       - /app/node_modules

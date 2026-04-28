@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 **From the repo root:**
+
 ```bash
 pnpm dev              # Start all apps in watch mode
 pnpm build            # Build all workspaces
@@ -19,6 +20,7 @@ pnpm seed:dev         # Seed categories and sample transactions (finance_dev onl
 ```
 
 **Scoped to the API:**
+
 ```bash
 pnpm --filter api test           # Run full test suite once
 pnpm --filter api test:watch     # Watch mode
@@ -26,6 +28,7 @@ pnpm --filter api db:migrate:test  # Migrate test DB
 ```
 
 **Run a single test file:**
+
 ```bash
 pnpm --filter api vitest run src/features/accounts/accounts.routes.test.ts
 ```
@@ -51,6 +54,7 @@ These rules apply to every dashboard feature (income, expenses, snapshot, YTD, a
 **API discipline** — query parameters (e.g. `?year=YYYY`) filter the same response shape; they do not change it. When the response shape changes, that is a different endpoint. Dashboard endpoints are separate from transaction endpoints — they return pre-shaped aggregates, never filtered transaction lists.
 
 Before writing any dashboard feature, answer these three questions:
+
 1. What does the DB query return?
 2. What does the service layer do with it?
 3. What shape does the API response have?
@@ -84,7 +88,7 @@ DATABASE_URL          # Dev DB connection
 DATABASE_URL_TEST     # Test DB connection
 JWT_SECRET            # 32-byte hex — generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 JWT_REFRESH_SECRET    # Separate 32-byte hex secret
-PORT=3001
+PORT=3000
 CORS_ORIGIN=http://localhost:5173
 ENABLE_AI_CATEGORIZATION=false
 AI_PROVIDER=anthropic  # or openai

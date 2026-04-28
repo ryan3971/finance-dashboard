@@ -34,16 +34,16 @@ cp apps/web/.env.example apps/web/.env
 
 Key API variables:
 
-| Variable | Default | Notes |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5434/finance_dev` | Dev DB |
-| `DATABASE_URL_TEST` | `postgresql://postgres:postgres@localhost:5434/finance_test` | Test DB |
-| `JWT_SECRET` | — | Generate a 32-byte hex value |
-| `JWT_REFRESH_SECRET` | — | Generate a separate 32-byte hex value |
-| `PORT` | `3001` | API port |
-| `CORS_ORIGIN` | `http://localhost:5173` | Web dev server origin |
-| `ENABLE_AI_CATEGORIZATION` | `false` | Set to `true` only if you want to use AI during import |
-| `AI_PROVIDER` | `anthropic` | `anthropic` or `openai` |
+| Variable                   | Default                                                      | Notes                                                  |
+| -------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| `DATABASE_URL`             | `postgresql://postgres:postgres@localhost:5434/finance_dev`  | Dev DB                                                 |
+| `DATABASE_URL_TEST`        | `postgresql://postgres:postgres@localhost:5434/finance_test` | Test DB                                                |
+| `JWT_SECRET`               | —                                                            | Generate a 32-byte hex value                           |
+| `JWT_REFRESH_SECRET`       | —                                                            | Generate a separate 32-byte hex value                  |
+| `PORT`                     | `3000`                                                       | API port                                               |
+| `CORS_ORIGIN`              | `http://localhost:5173`                                      | Web dev server origin                                  |
+| `ENABLE_AI_CATEGORIZATION` | `false`                                                      | Set to `true` only if you want to use AI during import |
+| `AI_PROVIDER`              | `anthropic`                                                  | `anthropic` or `openai`                                |
 
 ## 3. Start the database
 
@@ -68,7 +68,7 @@ pnpm seed:dev                          # seed categories and sample transactions
 pnpm dev
 ```
 
-- API: http://localhost:3001
+- API: http://localhost:3000
 - Web: http://localhost:5173
 
 ## 6. Run tests
