@@ -49,6 +49,23 @@ resource "aws_ssm_parameter" "jwt_secret" {
   }
 }
 
+resource "aws_ssm_parameter" "jwt_refresh_secret" {
+  name  = "${var.parameter_prefix}/jwt-refresh-secret"
+  type  = "SecureString"
+  value = "PLACEHOLDER"
+  tier  = "Standard"
+
+  tags = {
+    Environment = var.environment
+    Name        = "${var.parameter_prefix}/jwt-refresh-secret"
+    Project     = "finance-dashboard"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_ssm_parameter" "anthropic_key" {
   name  = "${var.parameter_prefix}/anthropic-key"
   type  = "SecureString"

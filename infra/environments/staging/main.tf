@@ -76,7 +76,8 @@ module "ecs" {
   ecr_repository_url    = local.ecr_repository_url
   uploads_bucket_arn    = module.s3.uploads_bucket_arn
   ssm_db_url_arn        = module.ssm.db_url_arn
-  ssm_jwt_secret_arn    = module.ssm.jwt_secret_arn
+  ssm_jwt_secret_arn         = module.ssm.jwt_secret_arn
+  ssm_jwt_refresh_secret_arn = module.ssm.jwt_refresh_secret_arn
   ssm_anthropic_key_arn = module.ssm.anthropic_key_arn
   ssm_openai_key_arn    = module.ssm.openai_key_arn
   ssm_sentry_dsn_arn    = module.ssm.sentry_dsn_arn

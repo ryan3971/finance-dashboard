@@ -118,6 +118,7 @@ resource "aws_iam_role_policy" "task_execution_inline" {
         Resource = [
           var.ssm_db_url_arn,
           var.ssm_jwt_secret_arn,
+          var.ssm_jwt_refresh_secret_arn,
           var.ssm_anthropic_key_arn,
           var.ssm_openai_key_arn,
           var.ssm_sentry_dsn_arn,
@@ -212,15 +213,16 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       secrets = [
-        { name = "DATABASE_URL",      valueFrom = var.ssm_db_url_arn },
-        { name = "JWT_SECRET",        valueFrom = var.ssm_jwt_secret_arn },
-        { name = "ANTHROPIC_API_KEY", valueFrom = var.ssm_anthropic_key_arn },
-        { name = "OPENAI_API_KEY",    valueFrom = var.ssm_openai_key_arn },
-        { name = "SENTRY_DSN",        valueFrom = var.ssm_sentry_dsn_arn },
+        { name = "DATABASE_URL",       valueFrom = var.ssm_db_url_arn },
+        { name = "JWT_SECRET",         valueFrom = var.ssm_jwt_secret_arn },
+        { name = "JWT_REFRESH_SECRET", valueFrom = var.ssm_jwt_refresh_secret_arn },
+        { name = "ANTHROPIC_API_KEY",  valueFrom = var.ssm_anthropic_key_arn },
+        { name = "OPENAI_API_KEY",     valueFrom = var.ssm_openai_key_arn },
+        { name = "SENTRY_DSN",         valueFrom = var.ssm_sentry_dsn_arn },
       ]
 
       environment = [
-        { name = "NODE_ENV", value = var.environment },
+        { name = "NODE_ENV", value = var.node_env },
         { name = "PORT",     value = tostring(var.app_port) },
       ]
 

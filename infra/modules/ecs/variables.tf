@@ -3,6 +3,12 @@ variable "environment" {
   type        = string
 }
 
+variable "node_env" {
+  description = "NODE_ENV value for the container — should be 'production' for all deployed environments"
+  type        = string
+  default     = "production"
+}
+
 variable "vpc_id" {
   description = "ID of the VPC in which to place ECS tasks"
   type        = string
@@ -45,6 +51,11 @@ variable "ssm_db_url_arn" {
 
 variable "ssm_jwt_secret_arn" {
   description = "ARN of the SSM parameter holding the JWT secret"
+  type        = string
+}
+
+variable "ssm_jwt_refresh_secret_arn" {
+  description = "ARN of the SSM parameter holding the JWT refresh secret"
   type        = string
 }
 
