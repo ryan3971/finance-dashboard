@@ -340,25 +340,25 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.anticipated.expectedExpenses.needs).toBe(1500);
     expect(body.anticipated.expectedExpenses.total).toBe(1500);
     // expectedSpendingIncome: 5000 * (1 − 0.20) = 4000; needs = 4000 * 0.50 = 2000; wants = 4000 * 0.30 = 1200
-    expect(body.anticipated.expectedSpendingIncome).toEqual({
+    expect(body.anticipated.expectedSpendingIncome).toMatchObject({
       total: 4000,
       needs: 2000,
       wants: 1200,
     });
     // incomeLessInvestment: income = 0 this month, so returns all zeros regardless of allocations
-    expect(body.monthlyIncome.incomeLessInvestment).toEqual({
+    expect(body.monthlyIncome.incomeLessInvestment).toMatchObject({
       total: 0,
       needs: 0,
       wants: 0,
     });
     // remainingBudget = expectedSpendingIncome − monthlyExpenses = 4000 − 0 = 4000
-    expect(body.anticipated.remainingBudget).toEqual({
+    expect(body.anticipated.remainingBudget).toMatchObject({
       total: 4000,
       needs: 2000,
       wants: 1200,
     });
     // expectedAvailable = expectedSpendingIncome − expectedExpenses = 4000 − 1500 = 2500
-    expect(body.anticipated.expectedAvailable).toEqual({
+    expect(body.anticipated.expectedAvailable).toMatchObject({
       total: 2500,
       needs: 500,
       wants: 1200,

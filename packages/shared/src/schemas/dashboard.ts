@@ -89,7 +89,10 @@ export const snapshotAnticipatedSchema = z.object({
   remainingBudget: snapshotColumnValuesSchema,
 });
 
+// TODO: verify year/month belong in the snapshot response shape vs. being derived client-side
 export const snapshotDashboardResponseSchema = z.object({
+  year: z.number().int(),
+  month: z.number().int(),
   lastUploadedAt: z.string().nullable(),
   accounts: z.array(snapshotAccountRowSchema),
   emergencyFund: snapshotEmergencyFundSchema,

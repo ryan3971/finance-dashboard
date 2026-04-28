@@ -257,6 +257,8 @@ export function buildSnapshotResponse(
   );
 
   return {
+    year: date.year,
+    month: date.month,
     lastUploadedAt,
     accounts: accountList,
     emergencyFund: {
