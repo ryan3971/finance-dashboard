@@ -52,12 +52,6 @@ jobs:
 
       - name: Run database migrations
         run: |
-
-          "command": [
-            "sh", "-c", 
-            "echo 'Testing DB connection...' && node -e \"const { Client } = require('pg'); const c = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }); c.connect().then(() => { console.log('Connected OK'); return c.query('SELECT version()'); }).then(r => { console.log(r.rows[0]); c.end(); }).catch(e => { console.error('Connection failed:', e.message); process.exit(1); })\" && echo 'Running migrations...' && node_modules/.bin/drizzle-kit migrate"
-          ]
-
           TASK_ARN=$(aws ecs run-task \
             --cluster staging-finance \
             --task-definition staging-finance-api \
@@ -67,12 +61,7 @@ jobs:
               securityGroups=[sg-06c38e4a6a2e3b3e4],
               assignPublicIp=DISABLED
             }" \
-            --overrides '{
-              "containerOverrides": [{
-                "name": "finance-api",
-                "command": ["node_modules/.bin/drizzle-kit", "migrate"]
-              }]
-            }' \
+            --overrides '{"containerOverrides":[{"name":"finance-api","command":["sh","-c","echo Testing DB connection... && node -e \"const { Client } = require('"'"'pg'"'"'); const c = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }); c.connect().then(() => { console.log('"'"'Connected OK'"'"'); return c.query('"'"'SELECT version()'"'"'); }).then(r => { console.log(r.rows[0]); c.end(); }).catch(e => { console.error('"'"'Connection failed:'"'"', e.message); process.exit(1); })\" && echo Running migrations... && node_modules/.bin/drizzle-kit migrate"]}]}' \
             --query 'tasks[0].taskArn' \
             --output text)
 
