@@ -48,8 +48,8 @@ const boolishField = z
 
 export const transactionFiltersSchema = z.object({
   accountId: z.string().uuid().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().regex(ISO_DATE_REGEX, 'startDate must be YYYY-MM-DD').optional(),
+  endDate: z.string().regex(ISO_DATE_REGEX, 'endDate must be YYYY-MM-DD').optional(),
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'month must be YYYY-MM').optional(), // YYYY-MM; takes precedence over startDate/endDate
   categoryId: z.string().uuid().optional(),
   subcategoryId: z.string().uuid().optional(),
