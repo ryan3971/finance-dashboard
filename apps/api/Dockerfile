@@ -1,6 +1,6 @@
 FROM node:20-alpine AS base
 # Use corepack so the pnpm version matches the one used in development
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # ── Stage 1: install all dependencies ─────────────────────────────────────────
 # Install dev + prod deps here so the content-addressable store is fully
@@ -40,7 +40,7 @@ RUN pnpm --filter api build
 
 # ── Stage 3: production runner ────────────────────────────────────────────────
 FROM node:20-alpine AS runner
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 WORKDIR /app
 ENV NODE_ENV=production
 RUN pnpm config set store-dir /pnpm/store
@@ -56,7 +56,7 @@ COPY apps/api/package.json ./apps/api/
 
 # Recreate node_modules for production only. pnpm reads the store we copied
 # above and sets up the correct symlink structure — no symlinks are broken.
-RUN pnpm install --prod --frozen-lockfile --offline
+RUN pnpm install --prod --frozen-lockfile --offline --ignore-scripts
 
 # Copy compiled @finance/shared output.
 # pnpm symlinks node_modules/@finance/shared → packages/shared. Node.js then

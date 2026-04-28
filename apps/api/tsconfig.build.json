@@ -2,8 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": "./src",
-    "declaration": true,
-    "declarationMap": true
+    "paths": {
+      "@finance/shared/*": ["../../packages/shared/dist/*"],
+      "@/*": ["./src/*"]
+    }
   },
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "vitest.config.ts"]
 }
