@@ -30,6 +30,13 @@ export function createApp() {
 
   // ─── Core middleware ───────────────────────────────────────────────────────
   app.use(httpLogger);
+  // Reflect the pino-http request ID back so clients can cite it in bug reports
+  app.use((_req, res, next) => {
+    const id = _req.id;
+    const requestId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
+    res.setHeader('x-request-id', requestId);
+    next();
+  });
   app.use(express.json());
   app.use(cookieParser());
   app.use(

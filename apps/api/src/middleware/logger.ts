@@ -1,4 +1,5 @@
 import { config } from '@/lib/config';
+import { randomUUID } from 'node:crypto';
 import pino from 'pino';
 import pinoHttp from 'pino-http';
 import type PinoPretty from 'pino-pretty';
@@ -33,6 +34,7 @@ export const logger = createLogger();
 
 export const httpLogger = pinoHttp({
   logger,
+  genReqId: () => randomUUID(),
   redact: ['req.headers.authorization', 'req.headers.cookie'],
   // Don't log health checks — they're noisy
   autoLogging: {

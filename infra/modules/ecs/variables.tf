@@ -102,3 +102,9 @@ variable "app_port" {
   type        = number
   default     = 3000
 }
+
+variable "log_level" {
+  description = "Pino log level for the API container (trace, debug, info, warn, error)"
+  type        = string
+  default     = "info"
+}
