@@ -21,13 +21,15 @@ try {
   console.log('[drizzle] DATABASE_URL is set (could not parse for logging)');
 }
 
+const urlWithSsl = databaseUrl.includes('?')
+  ? `${databaseUrl}&sslmode=no-verify`
+  : `${databaseUrl}?sslmode=no-verify`;
+
 export default {
   schema: './src/db/schema.ts',
   out: './src/db/migrations',
   dialect: 'postgresql',
-  verbose: true,
   dbCredentials: {
-    url: databaseUrl,
-    ssl: { rejectUnauthorized: false },
+    url: urlWithSsl,
   },
 } satisfies Config;
