@@ -14,7 +14,14 @@ let _db: NodePgDatabase<typeof schema> | undefined;
 
 export function getDb(): NodePgDatabase<typeof schema> {
   if (!_db) {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL ?? config.databaseUrl });
+    const connectionString = process.env.DATABASE_URL ?? config.databaseUrl;
+    const isLocal =
+      connectionString.includes('localhost') ||
+      connectionString.includes('127.0.0.1');
+    const pool = new Pool({
+      connectionString,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+    });
     _db = drizzle(pool, { schema });
   }
   return _db;
