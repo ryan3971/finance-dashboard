@@ -15,10 +15,9 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx src/db/seeds/index.ts",
     "db:seed:test": "tsx src/db/seed-test.ts",
     "seed:dev": "tsx --env-file=.env src/db/seed-dev.ts",
-    "seed:rules": "tsx --env-file=.env src/db/seed-rules.ts"
+    "seed:system": "tsx --env-file=.env src/db/seed-system.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
