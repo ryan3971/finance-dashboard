@@ -5,7 +5,7 @@ const envSchema = z.object({
   VITE_ENV: z
     .enum(['development', 'staging', 'production'])
     .default('development'),
-  VITE_API_BASE_URL: z.string().default('http://localhost:3000/api/v1'),
+  VITE_API_URL: z.string().default('http://localhost:3000'),
 });
 
 const parsed = envSchema.safeParse(import.meta.env);
@@ -22,5 +22,5 @@ const env = parsed.data;
 export const config = {
   sentryDsn: env.VITE_SENTRY_DSN,
   env: env.VITE_ENV,
-  apiBaseUrl: env.VITE_API_BASE_URL,
+  apiBaseUrl: `${env.VITE_API_URL}/api/v1`,
 } as const;
