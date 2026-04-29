@@ -22,6 +22,37 @@ provider "aws" {
   region = "ca-central-1"
 }
 
+# ACM certificates for CloudFront must be issued in us-east-1 regardless of
+# where the rest of the infrastructure lives.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
+# ── ACM — ca-central-1 (ALB HTTPS listener) ────────────────────────────────────
+module "acm_ca_central_1" {
+  source = "../../modules/acm"
+
+  environment               = "staging"
+  domain_name               = "ryantyrrell.ca"
+  subject_alternative_names = ["*.ryantyrrell.ca"]
+  hosted_zone_id            = "Z012128821UVHFAOVK3KP"
+}
+
+# ── ACM — us-east-1 (CloudFront — must be in this region) ─────────────────────
+module "acm_us_east_1" {
+  source = "../../modules/acm"
+
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  environment               = "staging"
+  domain_name               = "ryantyrrell.ca"
+  subject_alternative_names = ["*.ryantyrrell.ca"]
+  hosted_zone_id            = "Z012128821UVHFAOVK3KP"
+}
+
 module "vpc" {
   source = "../../modules/vpc"
 
@@ -49,7 +80,7 @@ module "alb" {
   environment       = "staging"
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
-  certificate_arn   = ""
+  certificate_arn   = module.acm_ca_central_1.certificate_arn
 }
 
 module "rds" {
@@ -68,7 +99,7 @@ module "ecs" {
   source = "../../modules/ecs"
 
   environment           = "staging"
-  cors_origin           = "https://${module.alb.alb_dns_name}"
+  cors_origin           = "https://app.ryantyrrell.ca"
   vpc_id                = module.vpc.vpc_id
   private_subnet_ids    = module.vpc.private_subnet_ids
   target_group_arn      = module.alb.target_group_arn
@@ -82,4 +113,60 @@ module "ecs" {
   ssm_anthropic_key_arn = module.ssm.anthropic_key_arn
   ssm_openai_key_arn    = module.ssm.openai_key_arn
   ssm_sentry_dsn_arn    = module.ssm.sentry_dsn_arn
+}
+
+# ── CloudFront ─────────────────────────────────────────────────────────────────
+module "cloudfront" {
+  source = "../../modules/cloudfront"
+
+  providers = {
+    aws = aws.us_east_1
+  }
+
+  environment          = "staging"
+  frontend_bucket_name = module.s3.frontend_bucket_name
+  frontend_bucket_arn  = module.s3.frontend_bucket_arn
+  certificate_arn      = module.acm_us_east_1.certificate_arn
+  domain_name          = "app.ryantyrrell.ca"
+}
+
+
+# ── S3 Bucket Policy ───────────────────────────────────────────────────────────
+# Grants CloudFront OAC read access to the frontend bucket. The condition scopes
+# the grant to this specific distribution — other CloudFront distributions cannot
+# read from the bucket even if they use an OAC.
+resource "aws_s3_bucket_policy" "frontend_oac" {
+  bucket = module.s3.frontend_bucket_name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontOAC"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${module.s3.frontend_bucket_arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = module.cloudfront.cloudfront_distribution_arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+# ── Route 53 ───────────────────────────────────────────────────────────────────
+module "route53" {
+  source = "../../modules/route53"
+
+  environment               = "staging"
+  hosted_zone_id            = "Z012128821UVHFAOVK3KP"
+  domain_name               = "ryantyrrell.ca"
+  cloudfront_domain_name    = module.cloudfront.cloudfront_domain_name
+  cloudfront_hosted_zone_id = module.cloudfront.cloudfront_hosted_zone_id
+  alb_dns_name              = module.alb.alb_dns_name
+  alb_zone_id               = module.alb.alb_zone_id
 }
