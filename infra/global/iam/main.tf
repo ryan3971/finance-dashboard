@@ -134,6 +134,16 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "arn:aws:ssm:ca-central-1:${data.aws_caller_identity.current.account_id}:parameter/finance/*"
     ]
   }
+  statement {
+    sid    = "CloudFrontInvalidation"
+    effect = "Allow"
+    actions = [
+      "cloudfront:CreateInvalidation"
+      ]
+    resources = [
+      "arn:aws:cloudfront::187844640945:distribution/*"
+      ]
+  }
 }
 
 resource "aws_iam_role_policy" "github_actions_finance" {
