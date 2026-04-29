@@ -61,7 +61,7 @@ resource "aws_lb_target_group" "this" {
   deregistration_delay = 30
 
   health_check {
-    path                = "/health"
+    path                = "/api/v1/health"
     protocol            = "HTTP"
     healthy_threshold   = 2
     unhealthy_threshold = 3

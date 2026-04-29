@@ -68,6 +68,7 @@ module "ecs" {
   source = "../../modules/ecs"
 
   environment           = "staging"
+  cors_origin           = "https://${module.alb.alb_dns_name}"
   vpc_id                = module.vpc.vpc_id
   private_subnet_ids    = module.vpc.private_subnet_ids
   target_group_arn      = module.alb.target_group_arn

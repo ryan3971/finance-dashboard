@@ -222,8 +222,9 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       environment = [
-        { name = "NODE_ENV", value = var.node_env },
-        { name = "PORT",     value = tostring(var.app_port) },
+        { name = "NODE_ENV",     value = var.node_env },
+        { name = "PORT",         value = tostring(var.app_port) },
+        { name = "CORS_ORIGIN",  value = var.cors_origin },
       ]
 
       logConfiguration = {

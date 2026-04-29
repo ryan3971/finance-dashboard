@@ -9,6 +9,11 @@ variable "node_env" {
   default     = "production"
 }
 
+variable "cors_origin" {
+  description = "Allowed CORS origin for the API (the URL the frontend is served from)"
+  type        = string
+}
+
 variable "vpc_id" {
   description = "ID of the VPC in which to place ECS tasks"
   type        = string
