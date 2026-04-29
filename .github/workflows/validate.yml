@@ -11,12 +11,40 @@ jobs:
     name: Typecheck, lint, and test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: finance_test
+        ports:
+          - 5432:5432
+        # Health check ensures PostgreSQL is fully ready before any step runs.
+        # Without this, the migration step can race against pg startup and fail.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_test
+      # Tests switch to DATABASE_URL_TEST automatically via testing/setup.ts.
+      # Point it at the same CI database — there is only one service container.
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/finance_test
+      NODE_ENV: test
+      JWT_SECRET: test-secret
+      JWT_REFRESH_SECRET: test-refresh-secret
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
+        with:
+          version: 9
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
@@ -38,3 +66,11 @@ jobs:
 
       - name: Lint web
         run: pnpm --filter web lint
+
+      - name: Run database migrations
+        run: pnpm --filter api db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_test
+
+      - name: Test API
+        run: pnpm --filter api test

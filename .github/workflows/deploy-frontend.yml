@@ -43,6 +43,7 @@ jobs:
         run: pnpm --filter web build
         env:
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_API_URL: https://api.ryantyrrell.ca
 
       - name: Sync to S3
         run: |
