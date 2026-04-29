@@ -174,6 +174,18 @@ resource "aws_iam_role_policy" "task_inline" {
           "s3:DeleteObject",
         ]
         Resource = "${var.uploads_bucket_arn}/*"
+      },
+      {
+        Sid    = "ECSExec"
+        Effect = "Allow"
+        Action = [
+          "ssm:StartSession",
+          "ssm:TerminateSession",
+          "ssm:ResumeSession",
+          "ssm:DescribeSessions",
+          "ssm:GetConnectionStatus",
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -252,6 +264,7 @@ resource "aws_ecs_service" "this" {
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = var.desired_count
   launch_type     = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets         = var.private_subnet_ids
