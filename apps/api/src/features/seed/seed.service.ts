@@ -6,17 +6,11 @@ import { accounts } from '@/db/schema';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import { processImport } from '@/features/imports/import.service';
-import { seedTestAnticipatedBudget } from '@/testing/seeders/seed-anticipated-budget';
-import { seedTestRebalancingGroups } from '@/testing/seeders/seed-rebalancing-groups';
-import { DEV_ACCOUNTS } from '@/testing/seeds/accounts';
+import { seedStagingAnticipatedBudget } from '@/db/staging/seed-anticipated-budget';
+import { seedStagingRebalancingGroups } from '@/db/staging/seed-rebalancing-groups';
+import { STAGING_ACCOUNTS } from '@/db/staging/data/accounts';
 
-const FIXTURE_CSV_DIR = path.join(__dirname, '../../testing/csv');
-
-// Questrade is an investment account (routes to investment_transactions, not
-// transactions) so it does not populate any dashboard tab — exclude it.
-const FIXTURE_ACCOUNTS = DEV_ACCOUNTS.filter(
-  (a) => a.institution !== 'questrade'
-);
+const FIXTURE_CSV_DIR = path.join(__dirname, '../../../db/staging/csv');
 
 async function importFixtureCsv(
   userId: string,
@@ -39,7 +33,7 @@ export async function loadSampleData(userId: string): Promise<void> {
   }
 
   try {
-    for (const entry of FIXTURE_ACCOUNTS) {
+    for (const entry of STAGING_ACCOUNTS) {
       const [account] = await db
         .insert(accounts)
         .values({
@@ -58,8 +52,8 @@ export async function loadSampleData(userId: string): Promise<void> {
       await importFixtureCsv(userId, account.id, entry.fixture.file);
     }
 
-    await seedTestAnticipatedBudget(userId);
-    await seedTestRebalancingGroups(userId);
+    await seedStagingAnticipatedBudget(userId);
+    await seedStagingRebalancingGroups(userId);
   } catch (err) {
     // Compensating rollback — FK cascades clean up transactions and imports.
     await db.delete(accounts).where(eq(accounts.userId, userId));
