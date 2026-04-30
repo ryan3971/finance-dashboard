@@ -44,6 +44,11 @@ variable "ecr_repository_url" {
   type        = string
 }
 
+variable "image_tag" {
+  description = "Image tag to deploy (e.g. staging-latest, prod-latest, or a specific SHA tag)"
+  type        = string
+}
+
 variable "uploads_bucket_arn" {
   description = "ARN of the S3 uploads bucket — granted to the ECS task role for presigned URL operations"
   type        = string

@@ -1,11 +1,21 @@
+# Production environment — not yet applied. Apply manually after purchasing domain
+# and right-sizing ECS task count.
+#
+# IMPORTANT: Production and staging share the same hosted zone (ryantyrrell.ca) and
+# currently the same subdomains (app.ryantyrrell.ca, api.ryantyrrell.ca). Before
+# applying production, update staging to use different subdomains (e.g.
+# staging.ryantyrrell.ca / api-staging.ryantyrrell.ca) so the Route 53 records do
+# not conflict. See README.md for the full pre-apply checklist.
+
 locals {
+  # Both environments share the same ECR repository — only the image tag differs.
   ecr_repository_url = "187844640945.dkr.ecr.ca-central-1.amazonaws.com/finance-api"
 }
 
 terraform {
   backend "s3" {
     bucket         = "finance-tf-state-187844640945"
-    key            = "environments/staging/terraform.tfstate"
+    key            = "environments/production/terraform.tfstate"
     region         = "ca-central-1"
     dynamodb_table = "terraform-state-lock"
   }
@@ -33,7 +43,7 @@ provider "aws" {
 module "acm_ca_central_1" {
   source = "../../modules/acm"
 
-  environment               = "staging"
+  environment               = "production"
   domain_name               = "ryantyrrell.ca"
   subject_alternative_names = ["*.ryantyrrell.ca"]
   hosted_zone_id            = "Z012128821UVHFAOVK3KP"
@@ -47,59 +57,71 @@ module "acm_us_east_1" {
     aws = aws.us_east_1
   }
 
-  environment               = "staging"
+  environment               = "production"
   domain_name               = "ryantyrrell.ca"
   subject_alternative_names = ["*.ryantyrrell.ca"]
   hosted_zone_id            = "Z012128821UVHFAOVK3KP"
 }
 
+# ── VPC ────────────────────────────────────────────────────────────────────────
 module "vpc" {
   source = "../../modules/vpc"
 
-  environment = "staging"
+  environment          = "production"
+  vpc_cidr             = "10.1.0.0/16"
+  public_subnet_cidrs  = ["10.1.1.0/24", "10.1.2.0/24"]
+  private_subnet_cidrs = ["10.1.3.0/24", "10.1.4.0/24"]
 }
 
+# ── S3 ─────────────────────────────────────────────────────────────────────────
 module "s3" {
   source = "../../modules/s3"
 
-  environment          = "staging"
+  environment          = "production"
   account_id           = "187844640945"
-  frontend_bucket_name = "finance-frontend-187844640945"
-  uploads_bucket_name  = "finance-uploads-187844640945"
+  frontend_bucket_name = "finance-frontend-prod-187844640945"
+  uploads_bucket_name  = "finance-uploads-prod-187844640945"
 }
 
+# ── SSM ────────────────────────────────────────────────────────────────────────
+# Production secrets are stored under a separate prefix to avoid colliding with
+# staging parameters at /finance/*. After the first apply, populate each
+# parameter via the AWS console or CLI — same pattern as staging. See README.md.
 module "ssm" {
   source = "../../modules/ssm"
 
-  environment = "staging"
+  environment      = "production"
+  parameter_prefix = "/finance/production"
 }
 
+# ── ALB ────────────────────────────────────────────────────────────────────────
 module "alb" {
   source = "../../modules/alb"
 
-  environment       = "staging"
+  environment       = "production"
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
   certificate_arn   = module.acm_ca_central_1.certificate_arn
 }
 
+# ── RDS ────────────────────────────────────────────────────────────────────────
 module "rds" {
   source = "../../modules/rds"
 
-  environment        = "staging"
+  environment        = "production"
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
   # Initial placeholder — overwrite via CLI before the API connects:
-  # aws rds modify-db-instance --db-instance-identifier staging-finance-db \
+  # aws rds modify-db-instance --db-instance-identifier production-finance-db \
   #   --master-user-password "<new-password>" --apply-immediately
   db_password = "PLACEHOLDER"
 }
 
+# ── ECS ────────────────────────────────────────────────────────────────────────
 module "ecs" {
   source = "../../modules/ecs"
 
-  environment           = "staging"
-  log_level             = "debug"
+  environment           = "production"
   cors_origin           = "https://app.ryantyrrell.ca"
   vpc_id                = module.vpc.vpc_id
   private_subnet_ids    = module.vpc.private_subnet_ids
@@ -107,14 +129,16 @@ module "ecs" {
   alb_security_group_id = module.alb.alb_security_group_id
   rds_security_group_id = module.rds.rds_security_group_id
   ecr_repository_url    = local.ecr_repository_url
-  image_tag             = "staging-latest"
+  image_tag             = "prod-latest"
   uploads_bucket_arn    = module.s3.uploads_bucket_arn
-  ssm_db_url_arn        = module.ssm.db_url_arn
+  ssm_db_url_arn             = module.ssm.db_url_arn
   ssm_jwt_secret_arn         = module.ssm.jwt_secret_arn
   ssm_jwt_refresh_secret_arn = module.ssm.jwt_refresh_secret_arn
-  ssm_anthropic_key_arn = module.ssm.anthropic_key_arn
-  ssm_openai_key_arn    = module.ssm.openai_key_arn
-  ssm_sentry_dsn_arn    = module.ssm.sentry_dsn_arn
+  ssm_anthropic_key_arn      = module.ssm.anthropic_key_arn
+  ssm_openai_key_arn         = module.ssm.openai_key_arn
+  ssm_sentry_dsn_arn         = module.ssm.sentry_dsn_arn
+  # TODO: right-size at launch based on observed staging utilization
+  desired_count = 1
 }
 
 # ── CloudFront ─────────────────────────────────────────────────────────────────
@@ -125,13 +149,12 @@ module "cloudfront" {
     aws = aws.us_east_1
   }
 
-  environment          = "staging"
+  environment          = "production"
   frontend_bucket_name = module.s3.frontend_bucket_name
   frontend_bucket_arn  = module.s3.frontend_bucket_arn
   certificate_arn      = module.acm_us_east_1.certificate_arn
   domain_name          = "app.ryantyrrell.ca"
 }
-
 
 # ── S3 Bucket Policy ───────────────────────────────────────────────────────────
 # Grants CloudFront OAC read access to the frontend bucket. The condition scopes
@@ -164,7 +187,7 @@ resource "aws_s3_bucket_policy" "frontend_oac" {
 module "route53" {
   source = "../../modules/route53"
 
-  environment               = "staging"
+  environment               = "production"
   hosted_zone_id            = "Z012128821UVHFAOVK3KP"
   domain_name               = "ryantyrrell.ca"
   cloudfront_domain_name    = module.cloudfront.cloudfront_domain_name
