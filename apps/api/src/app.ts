@@ -22,6 +22,7 @@ import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
 import transactionsRouter from './features/transactions/transactions.routes';
 import rebalancingRouter from './features/rebalancing/rebalancing.routes';
+import seedRouter from './features/seed/seed.routes';
 import transfersRouter from '@/features/transfers/transfers.routes';
 import userConfigRouter from './features/user-config/user-config.routes';
 
@@ -62,6 +63,7 @@ export function createApp() {
   app.use('/api/v1/transfers', transfersRouter);
   app.use('/api/v1/tags', tagsRouter);
   app.use('/api/v1/user-config', userConfigRouter);
+  app.use('/api/v1/seed', seedRouter);
   app.use(
     '/api/v1/anticipated-budget',
     anticipatedBudgetRouter,
