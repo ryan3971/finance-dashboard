@@ -63,6 +63,13 @@ export const TOAST = {
   REBALANCING_MEMBER_ADD_FAILED: 'Failed to add transaction to group',
   REBALANCING_MEMBER_REMOVED: 'Transaction removed from group',
   REBALANCING_MEMBER_REMOVE_FAILED: 'Failed to remove transaction from group',
+  // Sample data
+  SAMPLE_DATA_LOADED: 'Sample data loaded',
+  SAMPLE_DATA_CONFLICT: 'Reset your account before loading sample data',
+  SAMPLE_DATA_FAILED: 'Something went wrong. Please try again.',
+  // Account reset
+  ACCOUNT_RESET: 'Account reset',
+  ACCOUNT_RESET_FAILED: 'Failed to reset account. Please try again.',
   // Tags
   TRANSACTION_TAG_ATTACH_FAILED:
     'Transaction saved, but some tags could not be attached.',

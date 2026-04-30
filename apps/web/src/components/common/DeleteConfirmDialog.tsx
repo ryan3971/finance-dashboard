@@ -13,6 +13,7 @@ interface Props {
   readonly title: string;
   readonly description: string;
   readonly isPending: boolean;
+  readonly confirmLabel?: string;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }
@@ -22,6 +23,7 @@ export function DeleteConfirmDialog({
   title,
   description,
   isPending,
+  confirmLabel = 'Delete',
   onConfirm,
   onCancel,
 }: Props) {
@@ -47,7 +49,7 @@ export function DeleteConfirmDialog({
             disabled={isPending}
             onClick={onConfirm}
           >
-            Delete
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

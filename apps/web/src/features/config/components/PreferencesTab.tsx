@@ -1,13 +1,18 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateUserConfigSchema } from '@finance/shared/schemas/user-config';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import { useUserConfig } from '../hooks/useUserConfig';
 import { useUpdateUserConfig } from '../hooks/useUpdateUserConfig';
+import { useResetAccount } from '../hooks/useResetAccount';
+import { TOAST } from '@/lib/toastMessages';
 
 // Flat form schema with coercion for HTML inputs. The sum-to-100 refine is
 // delegated to the shared schema so the constraint stays in one place.
@@ -28,9 +33,12 @@ const allocationFormSchema = z
 type AllocationFormValues = z.infer<typeof allocationFormSchema>;
 
 export function PreferencesTab() {
+  const navigate = useNavigate();
   const { data: config } = useUserConfig();
   const updateConfig = useUpdateUserConfig();
+  const resetAccount = useResetAccount();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const {
     register,
@@ -70,6 +78,20 @@ export function PreferencesTab() {
         },
       }
     );
+  }
+
+  function handleResetConfirm() {
+    resetAccount.mutate(undefined, {
+      onSuccess: () => {
+        setResetDialogOpen(false);
+        toast.success(TOAST.ACCOUNT_RESET);
+        void navigate({ to: '/dashboard/snapshot' });
+      },
+      onError: () => {
+        setResetDialogOpen(false);
+        toast.error(TOAST.ACCOUNT_RESET_FAILED);
+      },
+    });
   }
 
   return (
@@ -135,6 +157,34 @@ export function PreferencesTab() {
           </Button>
         </form>
       </div>
+
+      <div className="bg-surface rounded-lg border border-border-base p-6">
+        <h2 className="text-sm font-semibold text-content-primary mb-1">
+          Reset Account
+        </h2>
+        <p className="text-sm text-content-secondary mb-4">
+          Permanently delete all your accounts, transactions, categories, rules,
+          and budget entries. Default categories and rules will be restored.
+          This cannot be undone.
+        </p>
+        <Button
+          variant="warning"
+          size="md"
+          onClick={() => setResetDialogOpen(true)}
+        >
+          Reset account
+        </Button>
+      </div>
+
+      <DeleteConfirmDialog
+        open={resetDialogOpen}
+        title="Reset account"
+        description="This will permanently delete all your accounts, transactions, categories, rules, and budget entries. Default categories and rules will be restored. This cannot be undone."
+        confirmLabel="Reset account"
+        isPending={resetAccount.isPending}
+        onConfirm={handleResetConfirm}
+        onCancel={() => setResetDialogOpen(false)}
+      />
     </div>
   );
 }

@@ -1,7 +1,12 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import api from '@/lib/api';
 import { useAuth } from '@/features/auth/useAuth';
+import { useAccounts } from '@/hooks/useAccounts';
+import { useSeedLoad } from '@/features/seed/hooks/useSeedLoad';
+import { toast } from 'sonner';
+import { TOAST } from '@/lib/toastMessages';
 
 const DASHBOARD_LINKS = [
   { to: '/dashboard/snapshot' as const, label: 'Snapshot' },
@@ -27,6 +32,10 @@ export function NavBar() {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { data: accounts } = useAccounts();
+  const seedLoad = useSeedLoad();
+
+  const hasNoAccounts = accounts !== undefined && accounts.length === 0;
 
   // Navigate after render so RouterWrapper has synced the cleared auth state into
   // the router context. Calling navigate() synchronously after logout() would race
@@ -44,6 +53,22 @@ export function NavBar() {
       // swallow — clear local state regardless
     }
     logout();
+  }
+
+  function handleSeedLoad() {
+    seedLoad.mutate(undefined, {
+      onSuccess: () => {
+        toast.success(TOAST.SAMPLE_DATA_LOADED);
+        void navigate({ to: '/dashboard/snapshot' });
+      },
+      onError: (err) => {
+        if (axios.isAxiosError(err) && err.response?.status === 409) {
+          toast.error(TOAST.SAMPLE_DATA_CONFLICT);
+        } else {
+          toast.error(TOAST.SAMPLE_DATA_FAILED);
+        }
+      },
+    });
   }
 
   return (
@@ -107,6 +132,17 @@ export function NavBar() {
               />
             </svg>
           </button>
+
+          {/* Load sample data — shown only when user has no accounts */}
+          {hasNoAccounts && (
+            <button
+              onClick={handleSeedLoad}
+              disabled={seedLoad.isPending}
+              className="hidden sm:flex items-center px-2.5 py-1 text-sm text-content-secondary border border-border-strong rounded hover:text-content-primary hover:bg-surface-subtle transition-colors disabled:opacity-50"
+            >
+              {seedLoad.isPending ? 'Loading…' : 'Load sample data'}
+            </button>
+          )}
 
           {/* Desktop user info — hidden below sm */}
           <span className="hidden sm:block text-sm text-content-muted">
@@ -198,6 +234,18 @@ export function NavBar() {
             </nav>
 
             <div className="flex-shrink-0 px-4 py-4 border-t border-border-base space-y-2">
+              {hasNoAccounts && (
+                <button
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    handleSeedLoad();
+                  }}
+                  disabled={seedLoad.isPending}
+                  className="w-full px-2.5 py-1.5 text-left text-sm text-content-secondary border border-border-strong rounded hover:text-content-primary hover:bg-surface-subtle transition-colors disabled:opacity-50"
+                >
+                  {seedLoad.isPending ? 'Loading…' : 'Load sample data'}
+                </button>
+              )}
               <p className="text-xs text-content-muted truncate">{user?.email}</p>
               <button
                 onClick={() => {

@@ -1,5 +1,10 @@
 import { isNull } from 'drizzle-orm';
-import { categories, categorizationRules } from '@/db/schema';
+import {
+  anticipatedBudget,
+  anticipatedBudgetMonths,
+  categories,
+  categorizationRules,
+} from '@/db/schema';
 import { assertDefined } from '@/lib/assert';
 import { db } from '@/db';
 import { TEST_CATEGORIES } from '@/testing/seeds/categories';
@@ -21,6 +26,11 @@ import { TEST_RULES } from '@/testing/seeds/rules';
  *   2. Insert categories before rules — rules need the IDs that seeding produces.
  */
 export async function resetTestSystemData(): Promise<void> {
+  // anticipated_budget rows can reference system category IDs (userId IS NULL).
+  // Delete them before the system category delete to avoid FK violations when
+  // the test DB has leftover data from a previous run.
+  await db.delete(anticipatedBudgetMonths);
+  await db.delete(anticipatedBudget);
   await db
     .delete(categorizationRules)
     .where(isNull(categorizationRules.userId));

@@ -1,4 +1,8 @@
-import { cleanDatabase, registerUser } from '@/testing/test-helpers';
+import {
+  cleanDatabase,
+  createAccount,
+  registerUser,
+} from '@/testing/test-helpers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '@/app';
 import request from 'supertest';
@@ -330,5 +334,102 @@ describe('PATCH /api/v1/user-config', () => {
       expect(body.wantsPercentage).toBe(0);
       expect(body.investmentsPercentage).toBe(0);
     });
+  });
+});
+
+describe('POST /api/v1/user-config/reset', () => {
+  describe('auth', () => {
+    it('returns 401 when Authorization header is absent', async () => {
+      const res = await request(app).post('/api/v1/user-config/reset');
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 401 for a malformed Bearer token', async () => {
+      const res = await request(app)
+        .post('/api/v1/user-config/reset')
+        .set('Authorization', 'Bearer not.a.valid.jwt');
+      expect(res.status).toBe(401);
+    });
+  });
+
+  it('returns 200 on success', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const res = await request(app)
+      .post('/api/v1/user-config/reset')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ message: 'Account reset' });
+  });
+
+  it('deletes user accounts and transactions', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await createAccount(app, accessToken, {
+      name: 'My Chequing',
+      type: 'chequing',
+      institution: 'td',
+      isCredit: false,
+      currency: 'CAD',
+    });
+
+    await request(app)
+      .post('/api/v1/user-config/reset')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const accountsRes = await request(app)
+      .get('/api/v1/accounts')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect((accountsRes.body as unknown[]).length).toBe(0);
+  });
+
+  it('re-seeds default categories after reset', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await request(app)
+      .post('/api/v1/user-config/reset')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const catRes = await request(app)
+      .get('/api/v1/categories')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(catRes.status).toBe(200);
+    expect((catRes.body as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it('is idempotent — calling reset twice leaves account in the same state', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await request(app)
+      .post('/api/v1/user-config/reset')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const res = await request(app)
+      .post('/api/v1/user-config/reset')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+
+    const catRes = await request(app)
+      .get('/api/v1/categories')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect((catRes.body as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it('does not delete the user row — user remains authenticated', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await request(app)
+      .post('/api/v1/user-config/reset')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    // Token remains valid: user-config endpoint returns 200, not 401
+    const configRes = await request(app)
+      .get('/api/v1/user-config')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(configRes.status).toBe(200);
   });
 });
