@@ -2,7 +2,8 @@
 import { and, eq, isNull, isNotNull } from 'drizzle-orm';
 import { categories, categorizationRules, users } from './schema';
 import { db } from './index';
-import { seedSystemCategories, seedUserRules } from './seed-categories';
+import { seedSystemCategories } from './seed-categories';
+import { seedUserRules } from './seed-rules';
 import { RULES } from './seeds/rules';
 import { assertDefined } from '@/lib/assert';
 
