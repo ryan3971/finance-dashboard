@@ -179,11 +179,10 @@ resource "aws_iam_role_policy" "task_inline" {
         Sid    = "ECSExec"
         Effect = "Allow"
         Action = [
-          "ssm:StartSession",
-          "ssm:TerminateSession",
-          "ssm:ResumeSession",
-          "ssm:DescribeSessions",
-          "ssm:GetConnectionStatus",
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
         ]
         Resource = "*"
       }
@@ -215,7 +214,7 @@ resource "aws_ecs_task_definition" "this" {
   container_definitions = jsonencode([
     {
       name  = "finance-api"
-      image = "${var.ecr_repository_url}:staging-latest"
+      image = "${var.ecr_repository_url}:${var.image_tag}"
 
       portMappings = [
         {
@@ -239,6 +238,10 @@ resource "aws_ecs_task_definition" "this" {
         { name = "CORS_ORIGIN",  value = var.cors_origin },
         { name = "LOG_LEVEL", value = var.log_level }
       ]
+
+      linuxParameters = {
+        initProcessEnabled = true
+      }
 
       logConfiguration = {
         logDriver = "awslogs"
