@@ -13,8 +13,8 @@ import {
 } from '@/db/schema';
 import { db } from '@/db';
 import type { DbTransaction } from '@/db';
-import { seedUserCategories } from '@/db/seed-categories';
-import { seedUserRules } from '@/db/seed-rules';
+import { seedUserCategories } from '@/db/seeders/user-categories';
+import { seedUserRules } from '@/db/seeders/user-rules';
 import type { UpdateUserConfigInput } from '@finance/shared/schemas/user-config';
 
 const configColumns = {

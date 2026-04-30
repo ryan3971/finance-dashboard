@@ -1,62 +1,32 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import type { AccountType, Institution } from '@finance/shared/constants';
+import { eq } from 'drizzle-orm';
 import { SeedError, SeedErrorCode } from './seed.errors';
 import { accounts } from '@/db/schema';
 import { db } from '@/db';
-import { eq } from 'drizzle-orm';
-import { processImport } from '@/features/imports/import.service';
-import { seedStagingAnticipatedBudget } from '@/db/staging/seed-anticipated-budget';
-import { seedStagingRebalancingGroups } from '@/db/staging/seed-rebalancing-groups';
-import { STAGING_ACCOUNTS } from '@/db/seeds/staging/accounts';
+import { seedSampleAccounts } from '@/db/seeders/sample-accounts';
+import { seedSampleTransactions } from '@/db/seeders/sample-transactions';
+import { seedSampleAnticipatedBudget } from '@/db/seeders/sample-anticipated-budget';
+import { seedSampleRebalancingGroups } from '@/db/seeders/sample-rebalancing-groups';
 
-const FIXTURE_CSV_DIR = path.join(__dirname, '../../../db/staging/csv');
-
-async function importFixtureCsv(
-  userId: string,
-  accountId: string,
-  filename: string
-): Promise<void> {
-  const buffer = fs.readFileSync(path.join(FIXTURE_CSV_DIR, filename));
-  await processImport(userId, accountId, filename, buffer);
-}
+// Necessary so the data seeded is the staging data. Not the best approach but lets me re-use
+// the seeding scripts. Also, would be better to check the environment and load that way
+const ENV = "staging"
 
 export async function loadSampleData(userId: string): Promise<void> {
-  const existing = await db
+  const [existing] = await db
     .select({ id: accounts.id })
     .from(accounts)
     .where(eq(accounts.userId, userId))
     .limit(1);
 
-  if (existing.length > 0) {
+  if (existing) {
     throw new SeedError(SeedErrorCode.ACCOUNTS_EXIST);
   }
 
-  try {
-    for (const entry of STAGING_ACCOUNTS) {
-      const [account] = await db
-        .insert(accounts)
-        .values({
-          userId,
-          name: entry.name,
-          // Fixture data defines known-valid enum literals — cast is safe here.
-          type: entry.type as AccountType,
-          institution: entry.institution as Institution,
-          currency: 'CAD',
-          isCredit: entry.isCredit,
-        })
-        .returning({ id: accounts.id });
+await db.transaction(async (tx) => {
+  const accountIds = await seedSampleAccounts(userId, ENV, tx);
+  await seedSampleTransactions(userId, ENV, accountIds, tx);
+  await seedSampleAnticipatedBudget(userId, ENV, tx);
+  await seedSampleRebalancingGroups(userId, ENV, tx);
+});
 
-      if (!account) throw new Error(`Failed to insert account: ${entry.name}`);
-
-      await importFixtureCsv(userId, account.id, entry.fixture.file);
-    }
-
-    await seedStagingAnticipatedBudget(userId);
-    await seedStagingRebalancingGroups(userId);
-  } catch (err) {
-    // Compensating rollback — FK cascades clean up transactions and imports.
-    await db.delete(accounts).where(eq(accounts.userId, userId));
-    throw err;
-  }
 }

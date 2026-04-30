@@ -13,8 +13,8 @@ import { config } from '@/lib/config';
 import { createHash } from 'crypto';
 import { db, type DbTransaction } from '@/db';
 import { eq } from 'drizzle-orm';
-import { seedUserCategories } from '@/db/seed-categories';
-import { seedUserRules } from '@/db/seed-rules';
+import { seedUserCategories } from '@/db/seeders/user-categories';
+import { seedUserRules } from '@/db/seeders/user-rules';
 import { assertDefined } from '@/lib/assert';
 /**
  * Registers a new user by:
