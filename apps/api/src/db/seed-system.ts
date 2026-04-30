@@ -4,7 +4,7 @@ import { categories, categorizationRules, users } from './schema';
 import { db } from './index';
 import { seedSystemCategories } from './seed-categories';
 import { seedUserRules } from './seed-rules';
-import { RULES } from './seeds/rules';
+import { RULES } from './seeds/system/rules';
 import { assertDefined } from '@/lib/assert';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

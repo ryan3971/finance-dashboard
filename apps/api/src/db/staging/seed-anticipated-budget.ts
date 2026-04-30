@@ -9,7 +9,7 @@ import {
 import {
   STAGING_ANTICIPATED_BUDGET,
   STAGING_ANTICIPATED_BUDGET_MONTHS,
-} from './data/anticipated-budget';
+} from '../seeds/staging/anticipated-budget';
 
 export async function seedStagingAnticipatedBudget(
   userId: string

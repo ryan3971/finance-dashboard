@@ -7,7 +7,7 @@ import {
   rebalancingGroups,
   transactions,
 } from '@/db/schema';
-import { STAGING_REBALANCING_GROUPS } from './data/rebalancing-groups';
+import { STAGING_REBALANCING_GROUPS } from '../seeds/staging/rebalancing-groups';
 
 export async function seedStagingRebalancingGroups(
   userId: string

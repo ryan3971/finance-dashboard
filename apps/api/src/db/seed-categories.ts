@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { categories } from './schema';
 import { db } from './index';
 import type { DbTransaction } from './index';
-import { SYSTEM_CATEGORIES } from './seeds/categories';
+import { SYSTEM_CATEGORIES } from './seeds/system/categories';
 import { assertDefined } from '@/lib/assert';
 
 export async function seedSystemCategories(): Promise<void> {
@@ -134,4 +134,3 @@ export async function seedUserCategories(
     );
   }
 }
-

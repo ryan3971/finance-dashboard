@@ -9,8 +9,8 @@ import { assertDefined } from '@/lib/assert';
 import { db } from '@/db';
 import { categories, categorizationRules } from '@/db/schema';
 import { seedUserRules } from '@/db/seed-rules';
-import { STAGING_CATEGORIES } from './data/categories';
-import { STAGING_RULES } from './data/rules';
+import { STAGING_CATEGORIES } from '../seeds/staging/categories';
+import { STAGING_RULES } from '../seeds/staging/rules';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,7 +49,9 @@ async function getCategoryId(
       .limit(1);
 
     if (!sub) {
-      console.warn(`  ⚠ Subcategory not found: "${name}" under "${parentName}"`);
+      console.warn(
+        `  ⚠ Subcategory not found: "${name}" under "${parentName}"`
+      );
       return null;
     }
 
@@ -146,9 +148,7 @@ export async function seedStagingSystemData(): Promise<void> {
     }
   }
 
-  console.log(
-    `Categories — inserted: ${catInserted}, skipped: ${catSkipped}`
-  );
+  console.log(`Categories — inserted: ${catInserted}, skipped: ${catSkipped}`);
 
   console.log('Seeding staging rules...');
   let ruleInserted = 0;
@@ -193,9 +193,7 @@ export async function seedStagingSystemData(): Promise<void> {
     ruleInserted++;
   }
 
-  console.log(
-    `Rules — inserted: ${ruleInserted}, skipped: ${ruleSkipped}`
-  );
+  console.log(`Rules — inserted: ${ruleInserted}, skipped: ${ruleSkipped}`);
 }
 
 async function main() {

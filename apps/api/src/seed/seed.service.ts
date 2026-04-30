@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { processImport } from '@/features/imports/import.service';
 import { seedStagingAnticipatedBudget } from '@/db/staging/seed-anticipated-budget';
 import { seedStagingRebalancingGroups } from '@/db/staging/seed-rebalancing-groups';
-import { STAGING_ACCOUNTS } from '@/db/staging/data/accounts';
+import { STAGING_ACCOUNTS } from '@/db/seeds/staging/accounts';
 
 const FIXTURE_CSV_DIR = path.join(__dirname, '../../../db/staging/csv');
 

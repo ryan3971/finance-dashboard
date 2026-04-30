@@ -31,24 +31,24 @@ import {
   categorizationRules,
   rebalancingGroups,
   users,
-} from './schema';
+} from '../schema';
 import { and, eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { db } from './index';
-import { processImport } from '../features/imports/import.service';
-import { seedUserCategories } from './seed-categories';
-import { seedUserRules } from './seed-rules';
-import { STAGING_ACCOUNTS } from './seeds/staging/accounts';
-import { STAGING_REBALANCING_GROUPS } from './seeds/staging/rebalancing-groups';
-import { DEV_USER } from './seeds/test/users';
+import { db } from '../index';
+// eslint-disable-next-line import/no-restricted-paths
+import { processImport } from '../../features/imports/import.service';
+import { seedUserCategories, seedUserRules } from '../copy-user-data';
+import { STAGING_ACCOUNTS } from '../seeds/staging/accounts';
+import { STAGING_REBALANCING_GROUPS } from '../seeds/staging/rebalancing-groups';
+import { DEV_USER } from '../seeds/test/users';
 import { assertDefined } from '@/lib/assert';
-import { seedStagingSystemData } from './staging/seed-system-data';
-import { seedStagingAnticipatedBudget } from './staging/seed-anticipated-budget';
-import { seedStagingRebalancingGroups } from './staging/seed-rebalancing-groups';
+import { seedStagingSystemData } from '../staging/seed-system-data';
+import { seedStagingAnticipatedBudget } from '../staging/seed-anticipated-budget';
+import { seedStagingRebalancingGroups } from '../staging/seed-rebalancing-groups';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const FIXTURES_DIR = path.resolve(__dirname, './staging/csv');
+const FIXTURES_DIR = path.resolve(__dirname, '../staging/csv');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

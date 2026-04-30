@@ -1,8 +1,8 @@
 import { categories, categorizationRules } from '@/db/schema';
 import { assertDefined } from '@/lib/assert';
 import { db } from '@/db';
-import { TEST_CATEGORIES } from '@/testing/seeds/categories';
-import { TEST_RULES } from '@/testing/seeds/rules';
+import { TEST_CATEGORIES } from '@/db/seeds/test/categories';
+import { TEST_RULES } from '@/db/seeds/test/rules';
 
 export async function seedTestSystemData(): Promise<void> {
   const idByPath = new Map<string, string>();

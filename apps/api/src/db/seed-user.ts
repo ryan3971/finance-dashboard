@@ -14,7 +14,7 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-import { loadSampleData } from '@/features/seed/seed.service';
+import { loadSampleData } from '@/seed/seed.service';
 
 const arg = process.argv.find((a) => a.startsWith('--userId='));
 const userId = arg?.split('=')[1];

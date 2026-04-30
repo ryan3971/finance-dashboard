@@ -7,7 +7,7 @@ import {
   rebalancingGroups,
   transactions,
 } from '@/db/schema';
-import { TEST_REBALANCING_GROUPS } from '@/testing/seeds/rebalancing-groups';
+import { TEST_REBALANCING_GROUPS } from '@/db/seeds/test/rebalancing-groups';
 
 /**
  * Insert the test rebalancing groups and their member transactions for the

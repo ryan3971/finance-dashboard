@@ -22,7 +22,7 @@ import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
 import transactionsRouter from './features/transactions/transactions.routes';
 import rebalancingRouter from './features/rebalancing/rebalancing.routes';
-import seedRouter from './features/seed/seed.routes';
+import seedRouter from './seed/seed.routes';
 import transfersRouter from '@/features/transfers/transfers.routes';
 import userConfigRouter from './features/user-config/user-config.routes';
 
@@ -34,7 +34,8 @@ export function createApp() {
   // Reflect the pino-http request ID back so clients can cite it in bug reports
   app.use((_req, res, next) => {
     const id = _req.id;
-    const requestId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
+    const requestId =
+      typeof id === 'string' || typeof id === 'number' ? String(id) : '';
     res.setHeader('x-request-id', requestId);
     next();
   });
@@ -69,7 +70,13 @@ export function createApp() {
     anticipatedBudgetRouter,
     anticipatedBudgetItemRouter
   );
-  app.use('/api/v1/dashboard', incomeDashboardRouter, expensesDashboardRouter, ytdDashboardRouter, snapshotDashboardRouter);
+  app.use(
+    '/api/v1/dashboard',
+    incomeDashboardRouter,
+    expensesDashboardRouter,
+    ytdDashboardRouter,
+    snapshotDashboardRouter
+  );
 
   // The error handler must be registered before any other error middleware and after all controllers
   Sentry.setupExpressErrorHandler(app);
