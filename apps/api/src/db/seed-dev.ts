@@ -41,7 +41,7 @@ import { seedUserRules } from './seed-rules';
 import { DEV_ACCOUNTS } from '../testing/seeds/accounts';
 import { DEV_USER } from '../testing/seeds/users';
 import { assertDefined } from '@/lib/assert';
-import { resetTestSystemData } from '@/testing/seeders/reset-system-data';
+import { resetTestSystemData } from '@/testing/seeders/reset-test-system-data';
 import { seedTestAnticipatedBudget } from '@/testing/seeders/seed-anticipated-budget';
 import { seedTestRebalancingGroups } from '@/testing/seeders/seed-rebalancing-groups';
 import { TEST_REBALANCING_GROUPS } from '@/testing/seeds/rebalancing-groups';

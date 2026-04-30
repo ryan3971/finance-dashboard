@@ -67,7 +67,7 @@ Run a one-off seed or backfill script:
 ```bash
 cd /app/apps/api
 node dist/db/seed.js
-node dist/db/seed-rules.js
+node dist/db/seed-system.js
 ```
 
 Connect to RDS via psql (if psql is available in the image):

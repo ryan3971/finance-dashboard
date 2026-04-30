@@ -1,7 +1,7 @@
 import '@/lib/config'; // ensures dotenv runs before tests
 
 import { beforeAll, vi } from 'vitest';
-import { resetTestSystemData } from './seeders/reset-system-data';
+import { resetTestSystemData } from './seeders/reset-test-system-data';
 
 // Override DATABASE_URL for the test environment.
 // Tests run against finance_test, never finance_dev.
