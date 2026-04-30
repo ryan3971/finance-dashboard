@@ -18,7 +18,9 @@
     "db:seed:test": "tsx src/db/seed-test.ts",
     "seed:dev": "tsx --env-file=.env src/db/seed-dev.ts",
     "seed:system": "tsx --env-file=.env src/db/seed-system.ts",
-    "seed:user": "tsx --env-file=.env src/db/seed-user.ts"
+    "seed:user": "tsx --env-file=.env src/db/seed-user.ts",
+    "seed:staging": "tsx --env-file=.env src/db/staging/seed-system-data.ts",
+    "clear:staging": "tsx --env-file=.env src/db/staging/clear-system-data.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

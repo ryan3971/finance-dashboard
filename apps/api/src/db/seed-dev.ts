@@ -38,17 +38,17 @@ import { db } from './index';
 import { processImport } from '../features/imports/import.service';
 import { seedUserCategories } from './seed-categories';
 import { seedUserRules } from './seed-rules';
-import { DEV_ACCOUNTS } from '../testing/seeds/accounts';
+import { STAGING_ACCOUNTS } from './staging/data/accounts';
+import { STAGING_REBALANCING_GROUPS } from './staging/data/rebalancing-groups';
 import { DEV_USER } from '../testing/seeds/users';
 import { assertDefined } from '@/lib/assert';
-import { resetTestSystemData } from '@/testing/seeders/reset-system-data';
-import { seedTestAnticipatedBudget } from '@/testing/seeders/seed-anticipated-budget';
-import { seedTestRebalancingGroups } from '@/testing/seeders/seed-rebalancing-groups';
-import { TEST_REBALANCING_GROUPS } from '@/testing/seeds/rebalancing-groups';
+import { seedStagingSystemData } from './staging/seed-system-data';
+import { seedStagingAnticipatedBudget } from './staging/seed-anticipated-budget';
+import { seedStagingRebalancingGroups } from './staging/seed-rebalancing-groups';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const FIXTURES_DIR = path.resolve(__dirname, '../testing/csv');
+const FIXTURES_DIR = path.resolve(__dirname, './staging/csv');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -127,7 +127,7 @@ async function ensureAccounts(userId: string): Promise<Record<string, string>> {
   section('Accounts');
   const accountIds: Record<string, string> = {};
 
-  for (const def of DEV_ACCOUNTS) {
+  for (const def of STAGING_ACCOUNTS) {
     const existing = await db
       .select({ id: accounts.id })
       .from(accounts)
@@ -168,7 +168,7 @@ async function importFixtures(
 ): Promise<void> {
   section('Fixture imports');
 
-  for (const def of DEV_ACCOUNTS) {
+  for (const def of STAGING_ACCOUNTS) {
     const accountId = accountIds[def.name];
     assertDefined(
       accountId,
@@ -229,7 +229,7 @@ async function ensureAnticipatedBudget(userId: string): Promise<void> {
     return;
   }
 
-  const entryIds = await seedTestAnticipatedBudget(userId);
+  const entryIds = await seedStagingAnticipatedBudget(userId);
   log(`Seeded ${entryIds.size} entries`);
 }
 
@@ -247,8 +247,8 @@ async function ensureRebalancingGroups(userId: string): Promise<void> {
     return;
   }
 
-  await seedTestRebalancingGroups(userId);
-  log(`Seeded ${TEST_REBALANCING_GROUPS.length} groups`);
+  await seedStagingRebalancingGroups(userId);
+  log(`Seeded ${STAGING_REBALANCING_GROUPS.length} groups`);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ async function main() {
     `Database: ${process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@')}`
   );
 
-  await resetTestSystemData();
+  await seedStagingSystemData();
   const userId = await ensureUser();
   const accountIds = await ensureAccounts(userId);
   await importFixtures(userId, accountIds);
