@@ -22,11 +22,14 @@ export async function loadSampleData(userId: string): Promise<void> {
     throw new SeedError(SeedErrorCode.ACCOUNTS_EXIST);
   }
 
-await db.transaction(async (tx) => {
-  const accountIds = await seedSampleAccounts(userId, ENV, tx);
-  await seedSampleTransactions(userId, ENV, accountIds, tx);
-  await seedSampleAnticipatedBudget(userId, ENV, tx);
-  await seedSampleRebalancingGroups(userId, ENV, tx);
-});
-
+  try {
+    const accountIds = await seedSampleAccounts(userId, ENV, db);
+    await seedSampleTransactions(userId, ENV, accountIds, db);
+    await seedSampleAnticipatedBudget(userId, ENV, db);
+    await seedSampleRebalancingGroups(userId, ENV, db);
+  } catch (err) {
+    // Compensating rollback — FK cascades clean up transactions and imports.
+    await db.delete(accounts).where(eq(accounts.userId, userId));
+    throw err;
+  }
 }

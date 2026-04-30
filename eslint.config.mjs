@@ -433,7 +433,10 @@ export default defineConfig(
   // ── API: seed scripts may import from features (they are dev-only orchestrators) ──
   {
     name: 'api/seed-scripts-feature-access',
-    files: ['apps/api/src/db/seed-*.ts'],
+    files: [
+      'apps/api/src/db/seeders/**/*.ts',
+      'apps/api/src/scripts/**/*.ts',
+    ],
     plugins: { import: importPlugin },
     rules: {
       'import/no-restricted-paths': 'off',

@@ -15,13 +15,13 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "db:seed:test": "tsx src/db/seed-test.ts",
-    "seed:dev": "tsx --env-file=.env src/db/seed-dev.ts",
-    "seed:system": "tsx --env-file=.env src/db/seed-system.ts",
-    "seed:test-system": "tsx src/db/seed-test-system.ts",
-    "seed:user": "tsx --env-file=.env src/db/seed-user.ts",
-    "seed:staging": "tsx --env-file=.env src/db/staging/seed-system-data.ts",
-    "clear:staging": "tsx --env-file=.env src/db/staging/clear-system-data.ts"
+    "seed:dev": "tsx --env-file=.env src/scripts/dev.ts",
+    "seed:staging": "tsx --env-file=.env src/scripts/staging.ts",
+    "seed:production": "tsx --env-file=.env src/scripts/production.ts",
+    "seed:system": "tsx --env-file=.env src/scripts/seed-system.ts",
+    "seed:user": "tsx --env-file=.env src/scripts/seed-user.ts",
+    "backfill:categories": "tsx --env-file=.env src/scripts/backfill.ts --entity=categories",
+    "backfill:rules": "tsx --env-file=.env src/scripts/backfill.ts --entity=rules"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

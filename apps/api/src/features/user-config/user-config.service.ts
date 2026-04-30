@@ -92,7 +92,7 @@ async function deleteAllUserData(
       .delete(transactions)
       .where(inArray(transactions.accountId, accountIds));
   }
-
+  // Delete in FK dependency order: children before parents
   await tx.delete(imports).where(eq(imports.userId, userId));
   await tx.delete(accounts).where(eq(accounts.userId, userId));
   await tx
@@ -100,9 +100,7 @@ async function deleteAllUserData(
     .where(eq(categorizationRules.userId, userId));
   await tx
     .delete(categories)
-    .where(
-      and(isNotNull(categories.userId), eq(categories.userId, userId))
-    );
+    .where(and(isNotNull(categories.userId), eq(categories.userId, userId)));
   await tx.delete(tags).where(eq(tags.userId, userId));
 
   if (budgetIds.length > 0) {
@@ -111,10 +109,14 @@ async function deleteAllUserData(
       .where(inArray(anticipatedBudgetMonths.anticipatedBudgetId, budgetIds));
   }
 
-  await tx.delete(anticipatedBudget).where(eq(anticipatedBudget.userId, userId));
+  await tx
+    .delete(anticipatedBudget)
+    .where(eq(anticipatedBudget.userId, userId));
   await tx.delete(userConfig).where(eq(userConfig.userId, userId));
   // rebalancingGroupTransactions rows cascade-delete when the group is deleted.
-  await tx.delete(rebalancingGroups).where(eq(rebalancingGroups.userId, userId));
+  await tx
+    .delete(rebalancingGroups)
+    .where(eq(rebalancingGroups.userId, userId));
 }
 
 export async function resetAccount(userId: string): Promise<void> {
