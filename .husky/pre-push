@@ -1,3 +1,4 @@
+#!/bin/sh
 output=$(pnpm test 2>&1)
 exit_code=$?
 
