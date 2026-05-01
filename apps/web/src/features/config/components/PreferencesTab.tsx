@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateUserConfigSchema } from '@finance/shared/schemas/user-config';
 import { toast } from 'sonner';
+import { parseAmount } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { FormField } from '@/components/common/FormField';
@@ -32,12 +33,25 @@ const allocationFormSchema = z
 
 type AllocationFormValues = z.infer<typeof allocationFormSchema>;
 
+const efTargetValidator = updateUserConfigSchema.shape.emergencyFundTarget.unwrap().unwrap();
+
+const emergencyFundFormSchema = z.object({
+  emergencyFundTarget: z.coerce
+    .number()
+    .refine((v) => efTargetValidator.safeParse(v).success, {
+      message: 'Must be 0 or greater',
+    }),
+});
+
+type EmergencyFundFormValues = z.infer<typeof emergencyFundFormSchema>;
+
 export function PreferencesTab() {
   const navigate = useNavigate();
   const { data: config } = useUserConfig();
   const updateConfig = useUpdateUserConfig();
   const resetAccount = useResetAccount();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [efServerError, setEfServerError] = useState<string | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const {
@@ -51,6 +65,17 @@ export function PreferencesTab() {
       needsPercentage: config?.needsPercentage ?? 0,
       wantsPercentage: config?.wantsPercentage ?? 0,
       investmentsPercentage: config?.investmentsPercentage ?? 0,
+    },
+  });
+
+  const {
+    register: registerEf,
+    handleSubmit: handleSubmitEf,
+    formState: { errors: efErrors },
+  } = useForm<EmergencyFundFormValues>({
+    resolver: zodResolver(emergencyFundFormSchema),
+    values: {
+      emergencyFundTarget: parseAmount(config?.emergencyFundTarget),
     },
   });
 
@@ -73,8 +98,26 @@ export function PreferencesTab() {
         },
       },
       {
+        onSuccess: () => {
+          toast.success(TOAST.CONFIG_ALLOCATIONS_SAVED);
+        },
         onError: () => {
-          setServerError('Failed to save preferences. Please try again.');
+          setServerError(TOAST.CONFIG_ALLOCATIONS_SAVE_FAILED);
+        },
+      }
+    );
+  }
+
+  function onSubmitEmergencyFund(values: EmergencyFundFormValues) {
+    setEfServerError(null);
+    updateConfig.mutate(
+      { emergencyFundTarget: values.emergencyFundTarget },
+      {
+        onSuccess: () => {
+          toast.success(TOAST.CONFIG_EMERGENCY_FUND_SAVED);
+        },
+        onError: () => {
+          setEfServerError(TOAST.CONFIG_EMERGENCY_FUND_SAVE_FAILED);
         },
       }
     );
@@ -152,6 +195,50 @@ export function PreferencesTab() {
             variant="primary"
             size="md"
             disabled={updateConfig.isPending || !sumValid}
+          >
+            {updateConfig.isPending ? 'Saving…' : 'Save'}
+          </Button>
+        </form>
+      </div>
+
+      <div className="bg-surface rounded-lg border border-border-base p-6">
+        <h2 className="text-sm font-semibold text-content-primary mb-1">
+          Emergency Fund
+        </h2>
+        <p className="text-sm text-content-secondary mb-4">
+          Set a savings target for your emergency fund. This is measured against
+          the total balance of your chequing accounts.
+        </p>
+        <form
+          onSubmit={(e) => {
+            void handleSubmitEf(onSubmitEmergencyFund)(e);
+          }}
+          className="space-y-4"
+        >
+          <div className="max-w-xs">
+            <FormField
+              label="Target amount"
+              error={efErrors.emergencyFundTarget?.message}
+            >
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="e.g. 10000"
+                {...registerEf('emergencyFundTarget')}
+              />
+            </FormField>
+          </div>
+
+          {efServerError && (
+            <p className="text-sm text-danger">{efServerError}</p>
+          )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            disabled={updateConfig.isPending}
           >
             {updateConfig.isPending ? 'Saving…' : 'Save'}
           </Button>

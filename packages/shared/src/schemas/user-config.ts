@@ -13,6 +13,7 @@ export const updateUserConfigSchema = z.object({
       { message: 'Allocation percentages must sum to 100' }
     )
     .optional(),
+  emergencyFundTarget: z.number().min(0).nullable().optional(),
 });
 
 export type UpdateUserConfigInput = z.infer<typeof updateUserConfigSchema>;
