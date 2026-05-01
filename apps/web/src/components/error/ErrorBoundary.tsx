@@ -39,7 +39,12 @@ export class ErrorBoundary extends Component<Props, State> {
               Something went wrong
             </p>
             <p className="text-xs text-content-muted">
-              {this.state.error?.message ?? 'An unexpected error occurred.'}
+              {/* In production, hide the raw exception message — it can contain
+                  internal field names or state that should not be user-visible.
+                  Sentry captures the full error at componentDidCatch. */}
+              {import.meta.env.PROD
+                ? 'An unexpected error occurred.'
+                : (this.state.error?.message ?? 'An unexpected error occurred.')}
             </p>
           </div>
         </div>

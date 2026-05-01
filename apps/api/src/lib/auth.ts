@@ -27,10 +27,13 @@ export function requireAuth(
   next: NextFunction
 ): void {
   const authHeader = req.headers.authorization;
+  const id = req.id;
+  const requestId = typeof id === 'string' || typeof id === 'number' ? String(id) : '';
 
   if (!authHeader?.startsWith('Bearer ')) {
     res.status(401).json({
       error: 'Missing or malformed Authorization header',
+      requestId,
     });
     return;
   }
@@ -42,6 +45,6 @@ export function requireAuth(
     req.user = { id: payload.sub, email: payload.email };
     next();
   } catch {
-    res.status(401).json({ error: 'Invalid or expired access token' });
+    res.status(401).json({ error: 'Invalid or expired access token', requestId });
   }
 }

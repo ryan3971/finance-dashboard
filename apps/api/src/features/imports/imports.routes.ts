@@ -44,11 +44,16 @@ router.post(
     }
     const { accountId } = body.data;
 
+    const { id: userId } = getAuthUser(req);
+    // Child logger binds requestId (from pino-http) and userId so all log lines
+    // emitted during import processing can be correlated to this HTTP request.
+    const log = req.log.child({ userId });
     const result = await processImport(
-      getAuthUser(req).id,
+      userId,
       accountId,
       req.file.originalname,
-      req.file.buffer
+      req.file.buffer,
+      log
     );
 
     res.status(201).json(result);

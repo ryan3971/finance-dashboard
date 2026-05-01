@@ -57,6 +57,33 @@ export interface CreateTransactionInput {
   isIncome?: boolean;
 }
 
+// Columns returned by the PATCH response. Mirrors the fields the client cares
+// about from the transactions table itself (without joined account/category
+// names). Internal columns — compositeKey, rawDescription, categoryConfidence,
+// importId — are excluded and must never appear in API responses.
+const patchTransactionColumns = {
+  id: transactions.id,
+  date: transactions.date,
+  description: transactions.description,
+  sourceName: transactions.sourceName,
+  amount: transactions.amount,
+  currency: transactions.currency,
+  categoryId: transactions.categoryId,
+  subcategoryId: transactions.subcategoryId,
+  needWant: transactions.needWant,
+  isTransfer: transactions.isTransfer,
+  transferMatchId: transactions.transferMatchId,
+  transferPairId: transactions.transferPairId,
+  isIncome: transactions.isIncome,
+  flaggedForReview: transactions.flaggedForReview,
+  categorySource: transactions.categorySource,
+  note: transactions.note,
+  accountId: transactions.accountId,
+  source: transactions.source,
+  createdAt: transactions.createdAt,
+  updatedAt: transactions.updatedAt,
+} as const;
+
 // ─── Aliases for joined tables ────────────────────────────────────────────────────────────────────
 
 const subcategories = alias(categories, 'subcategories');
@@ -290,12 +317,12 @@ export async function patchTransaction(
   });
 
   const [updated] = await db
-    .select()
+    .select(patchTransactionColumns)
     .from(transactions)
     .where(eq(transactions.id, id))
     .limit(1);
 
-  return updated;
+  return updated ?? null;
 }
 
 // ─── Create (manual entry) ────────────────────────────────────────────────────
