@@ -51,7 +51,7 @@ export const transactionFiltersSchema = z.object({
   startDate: z.string().regex(ISO_DATE_REGEX, 'startDate must be YYYY-MM-DD').optional(),
   endDate: z.string().regex(ISO_DATE_REGEX, 'endDate must be YYYY-MM-DD').optional(),
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'month must be YYYY-MM').optional(), // YYYY-MM; takes precedence over startDate/endDate
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.union([z.string().uuid(), z.literal('none')]).optional(),
   subcategoryId: z.string().uuid().optional(),
   needWant: needWantSchema.optional(),
   flagged: boolishField,

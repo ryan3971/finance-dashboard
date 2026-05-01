@@ -138,24 +138,18 @@ describe('GET /api/v1/transactions', () => {
     }
   });
 
-  it('filters by categoryId and verifies all returned rows match', async () => {
+  it('filters by categoryId=none and returns only uncategorized transactions', async () => {
     const { accessToken } = await setupWithImport();
 
-    const uncategorizedId = await getCategoryId(
-      app,
-      accessToken,
-      'Uncategorized'
-    );
-
     const res = await request(app)
-      .get(`/api/v1/transactions?categoryId=${uncategorizedId}`)
+      .get('/api/v1/transactions?categoryId=none')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(200);
-    const body = res.body as PaginatedResponse<{ categoryId: string }>;
+    const body = res.body as PaginatedResponse<{ categoryId: string | null }>;
     expect(body.pagination.total).toBeGreaterThan(0);
     for (const tx of body.data) {
-      expect(tx.categoryId).toBe(uncategorizedId);
+      expect(tx.categoryId).toBeNull();
     }
   });
 

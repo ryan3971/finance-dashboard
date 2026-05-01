@@ -7,7 +7,7 @@ import {
   transactions,
   transactionTags,
 } from '@/db/schema';
-import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
@@ -110,7 +110,9 @@ export async function listTransactions(
     if (filters.endDate)
       conditions.push(lte(transactions.date, filters.endDate));
   }
-  if (filters.categoryId)
+  if (filters.categoryId === 'none')
+    conditions.push(isNull(transactions.categoryId));
+  else if (filters.categoryId)
     conditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.flagged) conditions.push(eq(transactions.flaggedForReview, true));
   if (filters.subcategoryId)

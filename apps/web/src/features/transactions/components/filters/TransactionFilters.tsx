@@ -185,6 +185,7 @@ export function TransactionFilters({ filters, onChange, resetFilters = EMPTY_FIL
                 className="mt-1 w-full"
               >
                 <option value="">All categories</option>
+                <option value="none">Uncategorized</option>
                 {categories?.map((cat) => (
                   <optgroup key={cat.id} label={cat.name}>
                     <option value={cat.id}>{cat.name}</option>

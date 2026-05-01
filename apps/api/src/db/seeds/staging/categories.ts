@@ -54,10 +54,4 @@ export const STAGING_CATEGORIES: StagingCategory[] = [
     icon: '↔️',
     subcategories: ['Credit Card Payment'],
   },
-  {
-    name: 'Uncategorized',
-    isIncome: false,
-    icon: '❓',
-    subcategories: [],
-  },
 ];

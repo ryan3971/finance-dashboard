@@ -69,10 +69,4 @@ export const TEST_CATEGORIES: TestCategory[] = [
     icon: '↔️',
     subcategories: ['Credit Card Payment'],
   },
-  {
-    name: 'Uncategorized',
-    isIncome: false,
-    icon: '❓',
-    subcategories: [],
-  },
 ];

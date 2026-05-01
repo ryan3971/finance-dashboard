@@ -17,7 +17,7 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 }
 
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
 import {
@@ -61,15 +61,13 @@ async function ensureUser(): Promise<string> {
     log(`Already exists: ${existing.email} (id: ${existing.id})`);
     const userId = existing.id;
 
-    const [uncategorized] = await db
+    const [anyCategory] = await db
       .select({ id: categories.id })
       .from(categories)
-      .where(
-        and(eq(categories.userId, userId), eq(categories.name, 'Uncategorized'))
-      )
+      .where(eq(categories.userId, userId))
       .limit(1);
 
-    if (!uncategorized) {
+    if (!anyCategory) {
       log('Categories missing — seeding now...');
       await seedUserCategories(userId, db);
     }

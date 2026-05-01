@@ -92,12 +92,6 @@ export const SYSTEM_CATEGORIES = [
     subcategories: ['Other'],
   },
   {
-    name: 'Uncategorized',
-    isIncome: false,
-    icon: '❓',
-    subcategories: [],
-  },
-  {
     name: 'Salary',
     isIncome: true,
     icon: '💰',
