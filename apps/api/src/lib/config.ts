@@ -38,8 +38,10 @@ const envSchema = z
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
     // Auth
-    JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
-    JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
+    // 32-character minimum ensures the HMAC-SHA256 key has adequate entropy.
+    // Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+    JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters (use randomBytes(32).toString("hex"))'),
+    JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters (use randomBytes(32).toString("hex"))'),
     BCRYPT_ROUNDS: z.coerce.number().int().positive().default(12),
 
     // CORS
