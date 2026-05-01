@@ -1,5 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import api from '@/lib/api';
 import { useAuth } from '@/features/auth/useAuth';
@@ -31,6 +32,7 @@ const LINK_ACTIVE =
 export function NavBar() {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { data: accounts } = useAccounts();
   const seedLoad = useSeedLoad();
@@ -52,6 +54,7 @@ export function NavBar() {
     } catch {
       // swallow — clear local state regardless
     }
+    queryClient.clear();
     logout();
   }
 
