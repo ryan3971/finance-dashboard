@@ -22,7 +22,7 @@ import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
 import transactionsRouter from './features/transactions/transactions.routes';
 import rebalancingRouter from './features/rebalancing/rebalancing.routes';
-import seedRouter from './seed/seed.routes';
+import seedRouter from './features/seed/seed.routes';
 import transfersRouter from '@/features/transfers/transfers.routes';
 import userConfigRouter from './features/user-config/user-config.routes';
 
