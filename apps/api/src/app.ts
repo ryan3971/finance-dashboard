@@ -52,7 +52,7 @@ export function createApp() {
     limit: 15,                  // max 15 auth attempts per window per IP
     standardHeaders: 'draft-8', // RateLimit-* headers per IETF draft
     legacyHeaders: false,       // suppress deprecated X-RateLimit-* headers
-    skip: () => config.nodeEnv === 'test',
+    skip: () => config.nodeEnv !== 'production',
     message: { error: 'Too many requests, please try again later' },
   });
 
@@ -61,7 +61,7 @@ export function createApp() {
     limit: 300,                 // max 300 requests per window per IP
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    skip: () => config.nodeEnv === 'test',
+    skip: () => config.nodeEnv !== 'production',
     message: { error: 'Too many requests, please try again later' },
   });
 
