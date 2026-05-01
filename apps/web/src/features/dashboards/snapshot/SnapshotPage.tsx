@@ -1,6 +1,7 @@
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { AccountsCard } from './components/AccountsCard';
 import { ExpectedVsActualCard } from './components/ExpectedVsActualCard';
 import { MonthlyIncomeExpensesCard } from './components/MonthlyIncomeExpensesCard';
@@ -46,6 +47,7 @@ function SnapshotSkeleton() {
 
 export function SnapshotPage() {
   const { data, isPending, isError } = useSnapshotDashboard();
+  const showSkeleton = useDelayedPending(isPending);
 
   return (
     <PageLayout>
@@ -54,7 +56,7 @@ export function SnapshotPage() {
         {data?.lastUploadedAt && <LastUpdatedBadge lastUploadedAt={data.lastUploadedAt} />}
       </div>
 
-      {isPending && <SnapshotSkeleton />}
+      {showSkeleton && <SnapshotSkeleton />}
 
       {isError && (
         <EmptyState

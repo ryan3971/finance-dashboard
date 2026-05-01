@@ -12,6 +12,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { DeactivateAccountDialog } from './components/DeactivateAccountDialog';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useAllAccounts } from '@/hooks/useAccounts';
 
 // Matches the number of Account fields displayed as table columns
@@ -19,6 +20,7 @@ const ACCOUNT_SKELETON_ROW_COUNT = 5;
 
 export function AccountsPage() {
   const { data: accounts, isPending, isError } = useAllAccounts();
+  const showSkeleton = useDelayedPending(isPending);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmDeactivateAccount, setConfirmDeactivateAccount] =
     useState<Account | null>(null);
@@ -39,7 +41,7 @@ export function AccountsPage() {
   }, []);
 
   let tableBody: ReactNode;
-  if (isPending) {
+  if (showSkeleton) {
     tableBody = Array.from({ length: ACCOUNT_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map(
       (id) => (
         <tr key={id}>
@@ -64,7 +66,7 @@ export function AccountsPage() {
         </tr>
       ),
     );
-  } else if (sorted.length === 0) {
+  } else if (!isPending && sorted.length === 0) {
     tableBody = (
       <tr>
         <td
@@ -75,7 +77,7 @@ export function AccountsPage() {
         </td>
       </tr>
     );
-  } else {
+  } else if (!isPending) {
     tableBody = sorted.map((account) => (
       <AccountRow
         key={account.id}

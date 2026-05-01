@@ -1,5 +1,6 @@
 import { EmptyState } from '@/components/common/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useCategories } from '@/hooks/useCategories';
 import { CategorySection } from './CategorySection';
 
@@ -7,8 +8,9 @@ const CATEGORY_SKELETON_ROW_COUNT = 6;
 
 export function CategoriesTab() {
   const { data: categories, isPending, isError } = useCategories();
+  const showSkeleton = useDelayedPending(isPending);
 
-  if (isPending) {
+  if (showSkeleton) {
     return (
       <div className="space-y-3 mt-4">
         {Array.from({ length: CATEGORY_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map((id) => (
@@ -17,6 +19,8 @@ export function CategoriesTab() {
       </div>
     );
   }
+
+  if (isPending) return null;
 
   if (isError)
     return <EmptyState message="Failed to load categories." variant="error" />;

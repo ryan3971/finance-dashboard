@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SummaryCards } from './components/SummaryCards';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useAnticipatedBudget } from './hooks/useAnticipatedBudget';
 import { useCreateEntry } from './hooks/useAnticipatedBudgetMutations';
 
@@ -17,6 +18,7 @@ export function AnticipatedBudgetPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: entries, isPending } = useAnticipatedBudget(year);
+  const showSkeleton = useDelayedPending(isPending);
   const createEntry = useCreateEntry();
 
   const incomeEntries = entries?.filter((e) => e.isIncome) ?? [];
@@ -62,7 +64,7 @@ export function AnticipatedBudgetPage() {
       </div>
 
       {/* Loading */}
-      {isPending && (
+      {showSkeleton && (
         <div className="space-y-2">
           {Array.from({ length: 4 }, (_, i) => `skeleton-${i}`).map((key) => (
             <Skeleton key={key} className="h-14 w-full rounded-lg" />

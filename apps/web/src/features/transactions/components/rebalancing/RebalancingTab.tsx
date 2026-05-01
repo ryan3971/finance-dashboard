@@ -1,5 +1,6 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useRebalancingGroups } from '@/features/transactions/hooks/useRebalancingGroups';
 import { RebalancingGroupCard } from './RebalancingGroupCard';
 
@@ -34,8 +35,9 @@ function GroupSkeleton() {
 
 export function RebalancingTab() {
   const { data, isPending, isError } = useRebalancingGroups();
+  const showSkeleton = useDelayedPending(isPending);
 
-  if (isPending) {
+  if (showSkeleton) {
     return (
       <div className="space-y-3 mt-4">
         {SKELETON_COUNT.map((id) => (
@@ -44,6 +46,8 @@ export function RebalancingTab() {
       </div>
     );
   }
+
+  if (isPending) return null;
 
   if (isError) {
     return (
