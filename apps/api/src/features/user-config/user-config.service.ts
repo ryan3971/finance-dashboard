@@ -58,6 +58,13 @@ export async function updateUserConfig(
     patch.investmentsPercentage = input.allocations.investmentsPercentage;
   }
 
+  if (input.emergencyFundTarget !== undefined) {
+    patch.emergencyFundTarget =
+      input.emergencyFundTarget === null || input.emergencyFundTarget === 0
+        ? null
+        : String(input.emergencyFundTarget);
+  }
+
   if (Object.keys(patch).length === 0) return existing;
 
   const [updated] = await db
