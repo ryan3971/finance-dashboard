@@ -148,12 +148,12 @@ The name will be something like `finance-dashbard_default`. Use it in the next s
 
 ```bash
 docker run --rm \
-  --network <network> \
+  --network financedashbard_default \
   -p 3000:3000 \
   -e NODE_ENV=production \
   -e DATABASE_URL=postgresql://postgres:postgres@postgres:5432/finance_dev \
-  -e JWT_SECRET=<secret> \
-  -e JWT_REFRESH_SECRET=<secret> \
+  -e JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))") \
+  -e JWT_REFRESH_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))") \
   -e PORT=3000 \
   -e CORS_ORIGIN=http://localhost:5173 \
   finance-api:test
@@ -170,7 +170,17 @@ curl http://localhost:3000/api/v1/health
 # Expected: {"status":"ok","timestamp":"..."}
 ```
 
-### 5. Stop the container
+### 5. Enter the running container
+
+To open a shell inside the container for inspection or debugging:
+
+```bash
+docker exec -it <container-name> sh
+```
+
+Get the container name from `docker ps` if you don't have it. The image uses a minimal Node image, so `sh` is available but `bash` may not be.
+
+### 6. Stop the container
 
 Find the container name:
 
@@ -192,7 +202,7 @@ This replicates the ECS migration task that runs before each deploy:
 
 ```bash
 docker run --rm \
-  --network <network> \
+  --network financedashbard_default \
   -e DATABASE_URL=postgresql://postgres:postgres@postgres:5432/finance_dev \
   --workdir /app/apps/api \
   finance-api:test \
@@ -210,6 +220,6 @@ docker compose down -v
 docker compose up -d postgres
 pnpm db:migrate
 pnpm --filter api db:migrate:test
-pnpm seed:rules
-pnpm seed:dev
+pnpm --filter api seed:system --action=add --env=test
+pnpm --filter api seed:dev
 ```

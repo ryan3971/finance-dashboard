@@ -1,21 +1,5 @@
 # Categories — Deferred Issues
 
-## Bug
-
-### "Uncategorized" category is deletable by the user
-**Files:** `apps/api/src/features/categories/categories.service.ts`, `apps/api/src/pipelines/categorization/pipeline.ts`
-
-`deleteCategory` has no guard against deleting the user's "Uncategorized" category. The pipeline caches each user's uncategorized ID in `uncategorizedIdByUser` (a module-level Map). If the user deletes that category:
-
-1. The next categorization run throws `"Uncategorized category not found for user..."`.
-2. The stale cache entry persists until the server restarts, meaning the error repeats on every subsequent run for that user.
-
-**Options:**
-- Block deletion in `deleteCategory` when `category.name === 'Uncategorized'` and `category.parentId === null`.
-- Or drop the in-process cache and re-query on each pipeline run (the query is cheap).
-
----
-
 ## Design
 
 ### Misleading error code when `isIncome` is missing on top-level category create
