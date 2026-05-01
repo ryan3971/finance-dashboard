@@ -40,6 +40,9 @@ class LruCache<K, V> {
     }
     this.map.set(key, value);
   }
+  delete(key: K): void {
+    this.map.delete(key);
+  }
 }
 
 const UNCATEGORIZED_CACHE_SIZE = 10_000;
@@ -64,6 +67,10 @@ async function getUncategorizedId(userId: string): Promise<string> {
 
   uncategorizedIdCache.set(userId, cat.id);
   return cat.id;
+}
+
+export function invalidateUncategorizedIdCache(userId: string): void {
+  uncategorizedIdCache.delete(userId);
 }
 
 // const AI_ENABLED = () => config.aiEnabled;

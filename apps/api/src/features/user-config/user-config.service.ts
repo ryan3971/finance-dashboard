@@ -15,6 +15,7 @@ import { db } from '@/db';
 import type { DbTransaction } from '@/db';
 import { seedUserCategories } from '@/db/seeders/user-categories';
 import { seedUserRules } from '@/db/seeders/user-rules';
+import { invalidateUncategorizedIdCache } from '@/pipelines/categorization/pipeline';
 import type { UpdateUserConfigInput } from '@finance/shared/schemas/user-config';
 
 const configColumns = {
@@ -122,6 +123,7 @@ async function deleteAllUserData(
 export async function resetAccount(userId: string): Promise<void> {
   await db.transaction(async (tx) => {
     await deleteAllUserData(userId, tx);
+    invalidateUncategorizedIdCache(userId);
     await seedUserCategories(userId, tx);
     await seedUserRules(userId, tx);
     // Restore a clean default userConfig row.

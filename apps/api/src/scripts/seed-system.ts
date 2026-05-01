@@ -1,4 +1,11 @@
 /* eslint-disable no-console */
+/**
+ * Seeds or removes system categories and rules.
+ *
+ * Usage (from repo root):
+ *   pnpm seed:system --action=add --env=<system|staging|test>
+ *   pnpm seed:system --action=remove
+ */
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 

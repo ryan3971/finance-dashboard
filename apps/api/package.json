@@ -15,11 +15,15 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
+    
     "seed:dev": "tsx --env-file=.env src/scripts/dev.ts",
     "seed:staging": "tsx --env-file=.env src/scripts/staging.ts",
     "seed:production": "tsx --env-file=.env src/scripts/production.ts",
+
     "seed:system": "tsx --env-file=.env src/scripts/seed-system.ts",
+
     "seed:user": "tsx --env-file=.env src/scripts/seed-user.ts",
+    
     "backfill:categories": "tsx --env-file=.env src/scripts/backfill.ts --entity=categories",
     "backfill:rules": "tsx --env-file=.env src/scripts/backfill.ts --entity=rules"
   },

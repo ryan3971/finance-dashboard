@@ -10,6 +10,7 @@ export const IMPORT_STATUS = {
 export const TRANSACTION_SOURCE = {
   CSV: 'csv',
   MANUAL: 'manual',
+  SEED: 'seed',
 } as const;
 
 // AI provider shared parameters
