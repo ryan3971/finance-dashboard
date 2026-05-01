@@ -111,9 +111,15 @@ const expenseDashboardRoute = createRoute({
   component: ExpensesPage,
 });
 
+const snapshotSearchSchema = z.object({
+  year: z.coerce.number().int().positive().optional(),
+  month: z.coerce.number().int().min(1).max(12).optional(),
+});
+
 const snapshotDashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dashboard/snapshot',
+  validateSearch: snapshotSearchSchema,
   beforeLoad: requireAuth,
   component: SnapshotPage,
 });

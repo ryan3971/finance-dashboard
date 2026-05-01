@@ -15,8 +15,6 @@ function balanceColor(balance: number, isCredit: boolean): string {
 }
 
 export function AccountsCard({ accounts, emergencyFund }: Props) {
-  const chequingIndex = accounts.findIndex((a) => a.type === 'chequing');
-
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
       <div className="px-6 py-4 border-b border-border-base">
@@ -28,7 +26,7 @@ export function AccountsCard({ accounts, emergencyFund }: Props) {
             No active accounts.
           </li>
         )}
-        {accounts.map((account, i) => (
+        {accounts.map((account) => (
           <li key={account.id}>
             <div className="flex items-center justify-between px-6 py-4">
               <div>
@@ -43,26 +41,24 @@ export function AccountsCard({ accounts, emergencyFund }: Props) {
                 {fmt(account.balance)}
               </span>
             </div>
-            {i === chequingIndex && (
-              <EmergencyFundSection emergencyFund={emergencyFund} balance={account.balance} />
-            )}
           </li>
         ))}
       </ul>
+      {/* Emergency fund is a dedicated bottom section summing all chequing
+          accounts — not anchored to any individual account row. */}
+      <EmergencyFundSection emergencyFund={emergencyFund} />
     </div>
   );
 }
 
 function EmergencyFundSection({
   emergencyFund,
-  balance,
 }: {
   readonly emergencyFund: SnapshotEmergencyFund;
-  readonly balance: number;
 }) {
   if (emergencyFund.target === null) {
     return (
-      <div className="mx-6 mb-4 px-4 py-3 bg-surface-subtle rounded-md text-xs text-content-muted">
+      <div className="mx-6 mb-4 mt-3 px-4 py-3 bg-surface-subtle rounded-md text-xs text-content-muted">
         Emergency fund target not set.{' '}
         <Link to="/config" className="text-info underline">
           Configure in Settings
@@ -77,7 +73,7 @@ function EmergencyFundSection({
   const isFunded = pct >= 100;
 
   return (
-    <div className="mx-6 mb-4 px-4 py-3 bg-surface-subtle rounded-md space-y-2">
+    <div className="mx-6 mb-4 mt-3 px-4 py-3 bg-surface-subtle rounded-md space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-content-secondary">
           Emergency Fund
@@ -94,8 +90,10 @@ function EmergencyFundSection({
           style={{ width: `${fillPct}%` }}
         />
       </div>
+      {/* Uses emergencyFund.balance — the sum of all chequing accounts —
+          not the balance of any individual account row. */}
       <p className="text-xs text-content-muted">
-        {fmt(balance)} of {fmt(emergencyFund.target)} target
+        {fmt(emergencyFund.balance)} of {fmt(emergencyFund.target)} target
       </p>
     </div>
   );

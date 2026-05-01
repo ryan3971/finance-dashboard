@@ -3,11 +3,13 @@ import { snapshotDashboardResponseSchema } from '@finance/shared/schemas/dashboa
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 
-export function useSnapshotDashboard() {
+export function useSnapshotDashboard(year: number, month: number) {
   return useQuery({
-    queryKey: dashboardKeys.snapshot(),
+    queryKey: dashboardKeys.snapshot(year, month),
     queryFn: async () => {
-      const { data } = await api.get<unknown>('/dashboard/snapshot');
+      const { data } = await api.get<unknown>('/dashboard/snapshot', {
+        params: { year, month },
+      });
       return snapshotDashboardResponseSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,

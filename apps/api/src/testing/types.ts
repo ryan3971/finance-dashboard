@@ -146,7 +146,13 @@ export interface SnapshotBody {
     balance: number;
     percentage: number | null;
   };
-  monthlyIncome: { income: number; incomeLessInvestment: ColumnValues };
+  monthlyIncome: {
+    income: number;
+    actualInvestments: number;
+    spendingIncome: number;
+    needs: number;
+    wants: number;
+  };
   monthlyExpenses: { needs: number; wants: number; total: number };
   anticipated: {
     hasEntries: boolean;

@@ -3,6 +3,7 @@ import { NEED_WANT_OPTIONS, type AccountType } from '@finance/shared/constants';
 import type {
   SnapshotColumnValues,
   SnapshotDashboardResponse,
+  SnapshotMonthlyIncome,
 } from '@finance/shared/types/dashboard';
 import type {
   AccountBalanceRow,
@@ -67,32 +68,42 @@ function buildExpensesColumns(
   };
 }
 
-function buildIncomeLessInvestment(
-  income: Decimal,
+// Investment tracking is deferred — actual investment transactions are not yet
+// queried. actualInvestments is always zero until the feature ships, at which
+// point only the repository query needs to be added; the response shape and
+// downstream callers are already stable.
+function buildMonthlyIncome(
+  grossIncome: Decimal,
   percentages: Percentages | null
-): SnapshotColumnValues {
-  // percentages null: no config set.
-  // income.isZero(): config is set but no income this month — show zero
-  // allocation rather than collapsing to the same state as "no config".
-  // TODO: this should use the amount invested to compute the Income less Investment, than apply the
-  // config valeus to that.
-  if (income.isZero()) {
-    return zeroColumns();
-  } else if (percentages === null) {
+): SnapshotMonthlyIncome {
+  const actualInvestments = new Decimal(0);
+  const spendingIncome = grossIncome.minus(actualInvestments);
+
+  if (spendingIncome.isZero() || percentages === null) {
     return {
+      income: grossIncome.toNumber(),
+      actualInvestments: actualInvestments.toNumber(),
+      spendingIncome: spendingIncome.toNumber(),
       needs: 0,
       wants: 0,
-      total: income.toNumber(),
-      rebalancingAdjustment: 0,
     };
   }
-  const needs = income.mul(percentages.needs).div(100).toDecimalPlaces(2);
-  const wants = income.mul(percentages.wants).div(100).toDecimalPlaces(2);
+
+  const needs = spendingIncome
+    .mul(percentages.needs)
+    .div(100)
+    .toDecimalPlaces(2);
+  const wants = spendingIncome
+    .mul(percentages.wants)
+    .div(100)
+    .toDecimalPlaces(2);
+
   return {
+    income: grossIncome.toNumber(),
+    actualInvestments: actualInvestments.toNumber(),
+    spendingIncome: spendingIncome.toNumber(),
     needs: needs.toNumber(),
     wants: wants.toNumber(),
-    total: needs.plus(wants).toNumber(),
-    rebalancingAdjustment: 0,
   };
 }
 
@@ -218,8 +229,8 @@ export function buildSnapshotResponse(
   // Offset transactions from resolved rebalancing groups are excluded from income.
   const incomeExclusion =
     adjustments.incomeByMonth.get(month) ?? new Decimal(0);
-  const income = new Decimal(incomeTotal).minus(incomeExclusion);
-  const incomeLessInvestment = buildIncomeLessInvestment(income, percentages);
+  const grossIncome = new Decimal(incomeTotal).minus(incomeExclusion);
+  const monthlyIncome = buildMonthlyIncome(grossIncome, percentages);
 
   // ── Monthly expenses ────────────────────────────────────────────────────────
   const baseExpenses = buildExpensesColumns(expenseRows);
@@ -266,10 +277,7 @@ export function buildSnapshotResponse(
       balance: emergencyFundBalance,
       percentage: emergencyFundPercentage,
     },
-    monthlyIncome: {
-      income: income.toNumber(),
-      incomeLessInvestment,
-    },
+    monthlyIncome,
     monthlyExpenses,
     anticipated: {
       hasEntries,

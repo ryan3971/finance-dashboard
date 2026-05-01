@@ -77,7 +77,13 @@ export const snapshotColumnValuesSchema = z.object({
 
 export const snapshotMonthlyIncomeSchema = z.object({
   income: z.number(),
-  incomeLessInvestment: snapshotColumnValuesSchema,
+  // Actual investment transactions for the month. Returns zero until the
+  // investment-tracking feature ships — the field is present now so the
+  // response shape is stable and only the repository query needs adding later.
+  actualInvestments: z.number(),
+  spendingIncome: z.number(),
+  needs: z.number(),
+  wants: z.number(),
 });
 
 export const snapshotAnticipatedSchema = z.object({
