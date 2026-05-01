@@ -67,6 +67,11 @@ export const TOAST = {
   SAMPLE_DATA_LOADED: 'Sample data loaded',
   SAMPLE_DATA_CONFLICT: 'Reset your account before loading sample data',
   SAMPLE_DATA_FAILED: 'Something went wrong. Please try again.',
+  // User config
+  CONFIG_ALLOCATIONS_SAVED: 'Preferences saved',
+  CONFIG_ALLOCATIONS_SAVE_FAILED: 'Failed to save preferences. Please try again.',
+  CONFIG_EMERGENCY_FUND_SAVED: 'Emergency fund target saved',
+  CONFIG_EMERGENCY_FUND_SAVE_FAILED: 'Failed to save emergency fund target. Please try again.',
   // Account reset
   ACCOUNT_RESET: 'Account reset',
   ACCOUNT_RESET_FAILED: 'Failed to reset account. Please try again.',

@@ -228,6 +228,85 @@ describe('PATCH /api/v1/user-config', () => {
     expect(bodyB.investmentsPercentage).toBe(20);
   });
 
+  describe('emergencyFundTarget', () => {
+    it('sets a positive target and returns it as a string', async () => {
+      const { accessToken } = await registerUser(app);
+
+      const res = await request(app)
+        .patch('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ emergencyFundTarget: 10000 });
+
+      const body = res.body as UserConfigResponse;
+      expect(res.status).toBe(200);
+      expect(body.emergencyFundTarget).toBe('10000.00');
+    });
+
+    it('treats 0 as clearing the target — returns null', async () => {
+      const { accessToken } = await registerUser(app);
+
+      await request(app)
+        .patch('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ emergencyFundTarget: 5000 });
+
+      const res = await request(app)
+        .patch('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ emergencyFundTarget: 0 });
+
+      const body = res.body as UserConfigResponse;
+      expect(res.status).toBe(200);
+      expect(body.emergencyFundTarget).toBeNull();
+    });
+
+    it('clears the target when null is sent', async () => {
+      const { accessToken } = await registerUser(app);
+
+      await request(app)
+        .patch('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ emergencyFundTarget: 8000 });
+
+      const res = await request(app)
+        .patch('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ emergencyFundTarget: null });
+
+      const body = res.body as UserConfigResponse;
+      expect(res.status).toBe(200);
+      expect(body.emergencyFundTarget).toBeNull();
+    });
+
+    it('returns 400 when a negative value is sent', async () => {
+      const { accessToken } = await registerUser(app);
+
+      const res = await request(app)
+        .patch('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ emergencyFundTarget: -100 });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('persists the target — subsequent GET reflects the new value', async () => {
+      const { accessToken } = await registerUser(app);
+
+      await request(app)
+        .patch('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ emergencyFundTarget: 15000.50 });
+
+      const res = await request(app)
+        .get('/api/v1/user-config')
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      const body = res.body as UserConfigResponse;
+      expect(res.status).toBe(200);
+      expect(body.emergencyFundTarget).toBe('15000.50');
+    });
+  });
+
   describe('allocation validation', () => {
     it('returns 400 when percentages do not sum to 100', async () => {
       const { accessToken } = await registerUser(app);

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateUserConfigSchema } from '@finance/shared/schemas/user-config';
 import { toast } from 'sonner';
+import { parseAmount } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { FormField } from '@/components/common/FormField';
@@ -32,8 +33,14 @@ const allocationFormSchema = z
 
 type AllocationFormValues = z.infer<typeof allocationFormSchema>;
 
+const efTargetValidator = updateUserConfigSchema.shape.emergencyFundTarget.unwrap().unwrap();
+
 const emergencyFundFormSchema = z.object({
-  emergencyFundTarget: z.coerce.number().min(0, 'Must be 0 or greater'),
+  emergencyFundTarget: z.coerce
+    .number()
+    .refine((v) => efTargetValidator.safeParse(v).success, {
+      message: 'Must be 0 or greater',
+    }),
 });
 
 type EmergencyFundFormValues = z.infer<typeof emergencyFundFormSchema>;
@@ -68,7 +75,7 @@ export function PreferencesTab() {
   } = useForm<EmergencyFundFormValues>({
     resolver: zodResolver(emergencyFundFormSchema),
     values: {
-      emergencyFundTarget: Number(config?.emergencyFundTarget ?? 0),
+      emergencyFundTarget: parseAmount(config?.emergencyFundTarget),
     },
   });
 
@@ -91,20 +98,26 @@ export function PreferencesTab() {
         },
       },
       {
+        onSuccess: () => {
+          toast.success(TOAST.CONFIG_ALLOCATIONS_SAVED);
+        },
         onError: () => {
-          setServerError('Failed to save preferences. Please try again.');
+          setServerError(TOAST.CONFIG_ALLOCATIONS_SAVE_FAILED);
         },
       }
     );
   }
 
-  const onSubmitEmergencyFund: SubmitHandler<EmergencyFundFormValues> = (values) => {
+  function onSubmitEmergencyFund(values: EmergencyFundFormValues) {
     setEfServerError(null);
     updateConfig.mutate(
-      { emergencyFundTarget: values.emergencyFundTarget === 0 ? null : values.emergencyFundTarget },
+      { emergencyFundTarget: values.emergencyFundTarget },
       {
+        onSuccess: () => {
+          toast.success(TOAST.CONFIG_EMERGENCY_FUND_SAVED);
+        },
         onError: () => {
-          setEfServerError('Failed to save emergency fund target. Please try again.');
+          setEfServerError(TOAST.CONFIG_EMERGENCY_FUND_SAVE_FAILED);
         },
       }
     );
