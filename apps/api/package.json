@@ -39,6 +39,8 @@
     "drizzle-kit": "^0.31.0",
     "drizzle-orm": "^0.45.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.4.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.0",
     "multer": "^1.4.5-lts.1",
     "openai": "^6.33.0",
@@ -60,8 +62,8 @@
     "@types/supertest": "^6.0.0",
     "@types/uuid": "^9.0.0",
     "pino-pretty": "^11.0.0",
-    "tsc-alias": "^1.8.0",
     "supertest": "^6.3.0",
+    "tsc-alias": "^1.8.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0",
     "vitest": "^1.4.0"

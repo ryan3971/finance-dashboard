@@ -16,6 +16,13 @@ import { eq } from 'drizzle-orm';
 import { seedUserCategories } from '@/db/seeders/user-categories';
 import { seedUserRules } from '@/db/seeders/user-rules';
 import { assertDefined } from '@/lib/assert';
+
+// Pre-computed at module load using the configured bcrypt rounds so that the
+// dummy comparison in loginUser() takes the same time as a real one — preventing
+// user enumeration via timing. hashSync is intentional: it runs exactly once at
+// startup, not in the request hot path.
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', config.bcryptRounds);
+
 /**
  * Registers a new user by:
  *  1) checking for existing email
@@ -90,8 +97,10 @@ export async function loginUser(input: LoginInput) {
     .limit(1);
 
   if (!user) {
-    // Constant-time comparison to prevent user enumeration
-    await bcrypt.compare(input.password, '$2b$12$invalidhashforuserenum');
+    // Constant-time comparison against a pre-computed hash (using the same
+    // bcrypt rounds as real hashes) so the response time is indistinguishable
+    // from a failed password check, preventing user enumeration via timing.
+    await bcrypt.compare(input.password, DUMMY_HASH);
     throw new AuthError(AuthErrorCode.INVALID_CREDENTIALS);
   }
 

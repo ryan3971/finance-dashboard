@@ -64,6 +64,28 @@ const envSchema = z
     S3_BUCKET_NAME: z.string().default(''),
   })
   .superRefine((env, ctx) => {
+    // JWT secrets must have adequate entropy in production.
+    // Short secrets are permitted in development/test so the test suite can
+    // use lightweight values without generating real keys.
+    // Generate a production secret with:
+    //   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+    if (env.NODE_ENV === 'production') {
+      if (env.JWT_SECRET.length < 32) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['JWT_SECRET'],
+          message: 'JWT_SECRET must be at least 32 characters in production (use randomBytes(32).toString("hex"))',
+        });
+      }
+      if (env.JWT_REFRESH_SECRET.length < 32) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['JWT_REFRESH_SECRET'],
+          message: 'JWT_REFRESH_SECRET must be at least 32 characters in production (use randomBytes(32).toString("hex"))',
+        });
+      }
+    }
+
     if (env.ENABLE_AI_CATEGORIZATION === 'true') {
       if (env.AI_PROVIDER === 'anthropic' && !env.ANTHROPIC_API_KEY) {
         ctx.addIssue({
