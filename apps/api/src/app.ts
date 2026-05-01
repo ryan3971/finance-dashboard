@@ -15,9 +15,11 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { errorHandler } from './middleware/error-handler';
 import express from 'express';
+import helmet from 'helmet';
 import healthRouter from './routes/health.routes';
 import { httpLogger } from './middleware/logger';
 import importsRouter from './features/imports/imports.routes';
+import rateLimit from 'express-rate-limit';
 import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
 import transactionsRouter from './features/transactions/transactions.routes';
@@ -29,6 +31,44 @@ import userConfigRouter from './features/user-config/user-config.routes';
 export function createApp() {
   const app = express();
 
+  // ─── Security headers ─────────────────────────────────────────────────────
+  // Helmet sets safe response-header defaults on every reply:
+  //   • Strict-Transport-Security   — browsers will only connect over HTTPS
+  //   • X-Content-Type-Options      — prevents MIME-type sniffing
+  //   • X-Frame-Options             — blocks clickjacking via iframe embeds
+  //   • Content-Security-Policy     — restrictive default policy
+  //   • Referrer-Policy             — limits referrer leakage
+  //   • X-DNS-Prefetch-Control      — disables speculative DNS lookups
+  // Registered first so every response — including 4xx/5xx — carries these headers.
+  app.use(helmet());
+
+  // ─── Rate limiting ────────────────────────────────────────────────────────
+  // authLimiter: tight cap on credential endpoints to deter brute-forcing.
+  // apiLimiter:  generous cap on all other routes to block abusive clients
+  //              while leaving normal usage unaffected.
+  // Both are no-ops in the test environment so integration tests are unaffected.
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15-minute sliding window
+    limit: 15,                  // max 15 auth attempts per window per IP
+    standardHeaders: 'draft-8', // RateLimit-* headers per IETF draft
+    legacyHeaders: false,       // suppress deprecated X-RateLimit-* headers
+    skip: () => config.nodeEnv === 'test',
+    message: { error: 'Too many requests, please try again later' },
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15-minute sliding window
+    limit: 300,                 // max 300 requests per window per IP
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    skip: () => config.nodeEnv === 'test',
+    message: { error: 'Too many requests, please try again later' },
+  });
+
+  // Apply the general API limiter to all /api/v1 routes up-front.
+  // Auth routes additionally pass through authLimiter below.
+  app.use('/api/v1', apiLimiter);
+
   // ─── Core middleware ───────────────────────────────────────────────────────
   app.use(httpLogger);
   // Reflect the pino-http request ID back so clients can cite it in bug reports
@@ -39,7 +79,8 @@ export function createApp() {
     res.setHeader('x-request-id', requestId);
     next();
   });
-  app.use(express.json());
+  // 1 MB cap prevents a single oversized payload from exhausting container memory
+  app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
   app.use(
     cors({
@@ -50,7 +91,8 @@ export function createApp() {
 
   // ─── Routes ───────────────────────────────────────────────────────────────
   app.use('/api/v1', healthRouter);
-  app.use('/api/v1/auth', authRouter);
+  // Auth routes are subject to both the general API limit and the tighter auth limit
+  app.use('/api/v1/auth', authLimiter, authRouter);
   app.use('/api/v1/accounts', accountsRouter, accountsMutationRouter);
   app.use('/api/v1/imports', importsRouter);
   app.use(
