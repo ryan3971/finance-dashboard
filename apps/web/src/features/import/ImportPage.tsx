@@ -7,7 +7,7 @@ import { ImportResultCard } from './components/ImportResultCard';
 import { useImportUpload } from './hooks/useImportUpload';
 
 export function ImportPage() {
-  const { data: accounts, isLoading: accountsLoading } = useAccounts();
+  const { data: accounts, isPending: accountsPending } = useAccounts();
   const {
     accountId,
     setAccountId,
@@ -36,7 +36,7 @@ export function ImportPage() {
             className="space-y-4"
           >
             <FormField label="Account">
-              {accountsLoading ? (
+              {accountsPending ? (
                 <p className="text-sm text-content-muted">
                   Loading accounts...
                 </p>

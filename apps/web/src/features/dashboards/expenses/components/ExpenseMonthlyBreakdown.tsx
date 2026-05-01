@@ -5,6 +5,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { cn, fmt, fmtPct, MONTH_LABELS } from '@/lib/utils';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useExpensesDashboard } from '../hooks/useExpensesDashboard';
 
 function MonthAmountCell({
@@ -140,7 +141,8 @@ export function ExpenseMonthlyBreakdown({
   readonly selectedMonth: number | null;
   readonly onMonthSelect: (month: number | null) => void;
 }) {
-  const { data, isLoading, isError } = useExpensesDashboard(year);
+  const { data, isPending, isError } = useExpensesDashboard(year);
+  const showSkeleton = useDelayedPending(isPending);
 
   // Only sum need/want/other/rebalancingAdjustment — total comes from data.annualTotal to avoid float drift.
   const subtotals = useMemo(
@@ -159,7 +161,7 @@ export function ExpenseMonthlyBreakdown({
 
   return (
     <>
-      {isLoading && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
+      {showSkeleton && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
       {isError && (
         <EmptyState variant="error" message="Failed to load expense data." />
       )}

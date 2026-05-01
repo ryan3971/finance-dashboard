@@ -7,6 +7,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { YearSelector } from '@/components/common/YearSelector';
 import { MONTH_LABELS, fmt } from '@/lib/utils';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useYtdDashboard } from './hooks/useYtdDashboard';
 
 type DataMonth = Extract<YtdMonth, { spendingIncome: number }>;
@@ -124,7 +125,8 @@ function YtdTotalsRow({
 
 export function YtdPage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
-  const { data, isLoading, isFetching, isError } = useYtdDashboard(year);
+  const { data, isPending, isFetching, isError } = useYtdDashboard(year);
+  const showSkeleton = useDelayedPending(isPending);
 
   const dataMonths = useMemo(
     () =>
@@ -170,7 +172,7 @@ export function YtdPage() {
       </div>
 
       {/* Loading */}
-      {isLoading && <YtdSkeleton />}
+      {showSkeleton && <YtdSkeleton />}
 
       {/* Error */}
       {isError && (

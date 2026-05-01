@@ -5,6 +5,7 @@ import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useDeleteRule, useRules, useUpdateRule } from '../hooks/useRules';
 import { FIELD_LIMITS, NEED_WANT_OPTIONS, type NeedWant } from '@finance/shared/constants';
 import type { Rule } from '@finance/shared/types/rules';
@@ -184,9 +185,10 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
 const RULE_SKELETON_ROW_COUNT = 5;
 
 export function RulesTab() {
-  const { data: rules, isLoading, isError } = useRules();
+  const { data: rules, isPending, isError } = useRules();
+  const showSkeleton = useDelayedPending(isPending);
 
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <div className="space-y-3 mt-4">
         {Array.from({ length: RULE_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map((id) => (
@@ -195,6 +197,8 @@ export function RulesTab() {
       </div>
     );
   }
+
+  if (isPending) return null;
 
   if (isError)
     return <EmptyState message="Failed to load rules." variant="error" />;

@@ -14,9 +14,8 @@ import {
   type PaginationInfo,
   useTransactions,
 } from '@/features/transactions/hooks/useTransactions';
-import type { Transaction } from '@finance/shared/schemas/transactions';
 import { useDeleteTransaction } from '@/features/transactions/hooks/useTransactionMutations';
-import type { TransactionFilters as TransactionFilterParams } from '@finance/shared/schemas/transactions';
+import type { Transaction, TransactionFilters as TransactionFilterParams } from '@finance/shared/schemas/transactions';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Button } from '@/components/ui/Button';
 import {
@@ -30,6 +29,7 @@ import {
 import { Skeleton } from '@/components/ui/Skeleton';
 import { parseAmount } from '@/lib/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 
 interface TransactionTablePaneProps {
   // Server-side filters always applied, not exposed in the filter UI
@@ -180,7 +180,7 @@ export function TransactionTablePane({
     setExpandedPanel(null);
   }
 
-  const { data, isLoading, isError } = useTransactions({
+  const { data, isPending, isError } = useTransactions({
     accountId: activeFilters.accountId || undefined,
     startDate: activeFilters.startDate || undefined,
     endDate: activeFilters.endDate || undefined,
@@ -212,24 +212,25 @@ export function TransactionTablePane({
     onDataLoadRef.current?.(data?.pagination, flaggedCount);
   }, [data]);
 
+  const showSkeleton = useDelayedPending(isPending);
   const transactions = data?.data ?? [];
   const pagination = data?.pagination;
 
   let tableContent: React.ReactNode;
-  if (isLoading) {
+  if (showSkeleton) {
     tableContent = <PaneSkeleton />;
   } else if (isError) {
     tableContent = (
       <EmptyState message="Failed to load transactions." variant="error" />
     );
-  } else if (transactions.length === 0) {
+  } else if (!isPending && transactions.length === 0) {
     tableContent = (
       <EmptyState
         message="No transactions found."
         hint="Try adjusting your filters."
       />
     );
-  } else {
+  } else if (!isPending) {
     tableContent = (
       <TransactionsTable
         transactions={transactions}

@@ -15,6 +15,7 @@ import {
   getYearDateRange,
   MONTH_LABELS,
 } from '@/lib/utils';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useIncomeDashboard } from './hooks/useIncomeDashboard';
 
 function pct(part: number, total: number) {
@@ -178,7 +179,8 @@ function IncomeSkeleton() {
 export function IncomePage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [monthFilter, setMonthFilter] = useState<number | null>(null);
-  const { data, isLoading, isError } = useIncomeDashboard(year);
+  const { data, isPending, isError } = useIncomeDashboard(year);
+  const showSkeleton = useDelayedPending(isPending);
 
   const handleYearChange = useCallback((newYear: number) => {
     setYear(newYear);
@@ -247,7 +249,7 @@ export function IncomePage() {
           </h2>
 
           {/* Loading */}
-          {isLoading && <IncomeSkeleton />}
+          {showSkeleton && <IncomeSkeleton />}
 
           {/* Error */}
           {isError && (

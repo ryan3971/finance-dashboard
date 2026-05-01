@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SummaryCards } from './components/SummaryCards';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useAnticipatedBudget } from './hooks/useAnticipatedBudget';
 import { useCreateEntry } from './hooks/useAnticipatedBudgetMutations';
 
@@ -16,7 +17,8 @@ export function AnticipatedBudgetPage() {
   const [year, setYear] = useState(currentYear);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data: entries, isLoading } = useAnticipatedBudget(year);
+  const { data: entries, isPending } = useAnticipatedBudget(year);
+  const showSkeleton = useDelayedPending(isPending);
   const createEntry = useCreateEntry();
 
   const incomeEntries = entries?.filter((e) => e.isIncome) ?? [];
@@ -28,7 +30,7 @@ export function AnticipatedBudgetPage() {
     (e) => e.needWant !== 'Need' && e.needWant !== 'Want'
   );
 
-  const isEmpty = !isLoading && entries?.length === 0;
+  const isEmpty = !isPending && entries?.length === 0;
 
   return (
     <PageLayout>
@@ -62,7 +64,7 @@ export function AnticipatedBudgetPage() {
       </div>
 
       {/* Loading */}
-      {isLoading && (
+      {showSkeleton && (
         <div className="space-y-2">
           {Array.from({ length: 4 }, (_, i) => `skeleton-${i}`).map((key) => (
             <Skeleton key={key} className="h-14 w-full rounded-lg" />
@@ -79,7 +81,7 @@ export function AnticipatedBudgetPage() {
       )}
 
       {/* Income section */}
-      {!isLoading && incomeEntries.length > 0 && (
+      {!isPending && incomeEntries.length > 0 && (
         <section className="mb-6">
           <h2 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">
             Income
@@ -96,7 +98,7 @@ export function AnticipatedBudgetPage() {
       )}
 
       {/* Expenses section */}
-      {!isLoading && expenseEntries.length > 0 && (
+      {!isPending && expenseEntries.length > 0 && (
         <section className="mb-6">
           <h2 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">
             Expenses
@@ -148,7 +150,7 @@ export function AnticipatedBudgetPage() {
       )}
 
       {/* Summary cards */}
-      {!isLoading && entries && entries.length > 0 && (
+      {!isPending && entries && entries.length > 0 && (
         <SummaryCards entries={entries} month={currentMonth} />
       )}
 

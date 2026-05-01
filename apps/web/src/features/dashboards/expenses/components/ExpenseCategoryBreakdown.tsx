@@ -14,6 +14,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { cn, fmt, sortIndicator } from '@/lib/utils';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useExpenseCategories } from '../hooks/useExpenseCategories';
 import {
   buildCategoryTree,
@@ -138,7 +139,8 @@ export function ExpenseCategoryBreakdown({
   readonly year: number;
   readonly monthFilter: number | null;
 }) {
-  const { data, isLoading, isError } = useExpenseCategories(year);
+  const { data, isPending, isError } = useExpenseCategories(year);
+  const showSkeleton = useDelayedPending(isPending);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [expanded, setExpanded] = useState<ExpandedState>(true);
 
@@ -185,7 +187,7 @@ export function ExpenseCategoryBreakdown({
         )}
       </div>
 
-      {isLoading && <SkeletonTable columns={3} rows={CATEGORY_SKELETON_ROWS} />}
+      {showSkeleton && <SkeletonTable columns={3} rows={CATEGORY_SKELETON_ROWS} />}
       {isError && (
         <EmptyState variant="error" message="Failed to load category data." />
       )}
