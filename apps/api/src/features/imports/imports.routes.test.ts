@@ -192,7 +192,7 @@ describe('POST /api/v1/imports/upload', () => {
 
   // ── Categorization ────────────────────────────────────────────────────────
 
-  it('assigns Uncategorized and flags for review when no rule matches', async () => {
+  it('assigns null and flags for review when no rule matches', async () => {
     const { accessToken } = await registerUser(app);
     const accountId = await createAccount(app, accessToken, AMEX_ACCOUNT);
     await uploadAmex(app, accessToken, accountId);
@@ -205,6 +205,6 @@ describe('POST /api/v1/imports/upload', () => {
     expect(txBody.data.length).toBeGreaterThan(0);
     const firstTx = txBody.data[0];
     assertDefined(firstTx, 'Expected at least one flagged transaction');
-    expect(firstTx.categoryName).toBe('Uncategorized');
+    expect(firstTx.categoryName).toBe(null);
   });
 });

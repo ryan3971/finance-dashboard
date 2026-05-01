@@ -58,7 +58,7 @@ describe('GET /api/v1/categories', () => {
 
     const body = res.body as CategoryItem[];
     expect(Array.isArray(body)).toBe(true);
-    expect(body).toHaveLength(9); // Groceries, Dining, Income, Transfer, Uncategorized
+    expect(body).toHaveLength(8); // Groceries, Dining, Income, Transfer
 
     const food = body.find((c) => c.name === 'Food');
     expect(food).toMatchObject({
