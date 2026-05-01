@@ -2,7 +2,9 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+}
 
 import { backfillCategoriesToAllUsers } from '@/db/seeders/backfill-categories';
 import { backfillRulesToAllUsers } from '@/db/seeders/backfill-rules';

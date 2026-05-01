@@ -9,7 +9,9 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+}
 
 import { addSystemCategories } from '@/db/seeders/system-categories';
 import { addSystemRules } from '@/db/seeders/system-rules';
