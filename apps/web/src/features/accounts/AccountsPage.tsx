@@ -18,7 +18,7 @@ import { useAllAccounts } from '@/hooks/useAccounts';
 const ACCOUNT_SKELETON_ROW_COUNT = 5;
 
 export function AccountsPage() {
-  const { data: accounts, isLoading, isError } = useAllAccounts();
+  const { data: accounts, isPending, isError } = useAllAccounts();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmDeactivateAccount, setConfirmDeactivateAccount] =
     useState<Account | null>(null);
@@ -39,7 +39,7 @@ export function AccountsPage() {
   }, []);
 
   let tableBody: ReactNode;
-  if (isLoading) {
+  if (isPending) {
     tableBody = Array.from({ length: ACCOUNT_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map(
       (id) => (
         <tr key={id}>

@@ -140,7 +140,7 @@ export function ExpenseMonthlyBreakdown({
   readonly selectedMonth: number | null;
   readonly onMonthSelect: (month: number | null) => void;
 }) {
-  const { data, isLoading, isError } = useExpensesDashboard(year);
+  const { data, isPending, isError } = useExpensesDashboard(year);
 
   // Only sum need/want/other/rebalancingAdjustment — total comes from data.annualTotal to avoid float drift.
   const subtotals = useMemo(
@@ -159,7 +159,7 @@ export function ExpenseMonthlyBreakdown({
 
   return (
     <>
-      {isLoading && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
+      {isPending && <SkeletonTable columns={5} rows={MONTHS_IN_YEAR} />}
       {isError && (
         <EmptyState variant="error" message="Failed to load expense data." />
       )}

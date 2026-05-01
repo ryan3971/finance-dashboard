@@ -178,7 +178,7 @@ function IncomeSkeleton() {
 export function IncomePage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [monthFilter, setMonthFilter] = useState<number | null>(null);
-  const { data, isLoading, isError } = useIncomeDashboard(year);
+  const { data, isPending, isError } = useIncomeDashboard(year);
 
   const handleYearChange = useCallback((newYear: number) => {
     setYear(newYear);
@@ -247,7 +247,7 @@ export function IncomePage() {
           </h2>
 
           {/* Loading */}
-          {isLoading && <IncomeSkeleton />}
+          {isPending && <IncomeSkeleton />}
 
           {/* Error */}
           {isError && (

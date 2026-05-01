@@ -180,7 +180,7 @@ export function TransactionTablePane({
     setExpandedPanel(null);
   }
 
-  const { data, isLoading, isError } = useTransactions({
+  const { data, isPending, isError } = useTransactions({
     accountId: activeFilters.accountId || undefined,
     startDate: activeFilters.startDate || undefined,
     endDate: activeFilters.endDate || undefined,
@@ -216,7 +216,7 @@ export function TransactionTablePane({
   const pagination = data?.pagination;
 
   let tableContent: React.ReactNode;
-  if (isLoading) {
+  if (isPending) {
     tableContent = <PaneSkeleton />;
   } else if (isError) {
     tableContent = (

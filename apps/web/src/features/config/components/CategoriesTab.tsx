@@ -6,9 +6,9 @@ import { CategorySection } from './CategorySection';
 const CATEGORY_SKELETON_ROW_COUNT = 6;
 
 export function CategoriesTab() {
-  const { data: categories, isLoading, isError } = useCategories();
+  const { data: categories, isPending, isError } = useCategories();
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="space-y-3 mt-4">
         {Array.from({ length: CATEGORY_SKELETON_ROW_COUNT }, (_, i) => `skeleton-${i}`).map((id) => (

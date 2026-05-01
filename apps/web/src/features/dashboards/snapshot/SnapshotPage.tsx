@@ -45,7 +45,7 @@ function SnapshotSkeleton() {
 }
 
 export function SnapshotPage() {
-  const { data, isLoading, isError } = useSnapshotDashboard();
+  const { data, isPending, isError } = useSnapshotDashboard();
 
   return (
     <PageLayout>
@@ -54,7 +54,7 @@ export function SnapshotPage() {
         {data?.lastUploadedAt && <LastUpdatedBadge lastUploadedAt={data.lastUploadedAt} />}
       </div>
 
-      {isLoading && <SnapshotSkeleton />}
+      {isPending && <SnapshotSkeleton />}
 
       {isError && (
         <EmptyState

@@ -33,9 +33,9 @@ function GroupSkeleton() {
 }
 
 export function RebalancingTab() {
-  const { data, isLoading, isError } = useRebalancingGroups();
+  const { data, isPending, isError } = useRebalancingGroups();
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="space-y-3 mt-4">
         {SKELETON_COUNT.map((id) => (

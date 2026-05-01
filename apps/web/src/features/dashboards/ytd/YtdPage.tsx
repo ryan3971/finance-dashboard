@@ -124,7 +124,7 @@ function YtdTotalsRow({
 
 export function YtdPage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
-  const { data, isLoading, isFetching, isError } = useYtdDashboard(year);
+  const { data, isPending, isFetching, isError } = useYtdDashboard(year);
 
   const dataMonths = useMemo(
     () =>
@@ -170,7 +170,7 @@ export function YtdPage() {
       </div>
 
       {/* Loading */}
-      {isLoading && <YtdSkeleton />}
+      {isPending && <YtdSkeleton />}
 
       {/* Error */}
       {isError && (
