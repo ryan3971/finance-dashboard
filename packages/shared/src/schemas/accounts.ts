@@ -5,7 +5,7 @@ export const accountFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(FIELD_LIMITS.ACCOUNT_NAME_MAX),
   type: z.enum(ACCOUNT_TYPES),
   institution: z.enum(INSTITUTIONS),
-  currency: z.string().length(3, 'Must be a 3-letter currency code'),
+  currency: z.literal('CAD'),
   isCredit: z.boolean(),
 });
 
@@ -18,7 +18,7 @@ export const accountResponseSchema = z.object({
   name: z.string(),
   type: z.enum(ACCOUNT_TYPES),
   institution: z.enum(INSTITUTIONS),
-  currency: z.string(),
+  currency: z.literal('CAD'),
   isActive: z.boolean(),
   isCredit: z.boolean(),
   createdAt: z.string(),

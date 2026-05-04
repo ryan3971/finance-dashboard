@@ -8,7 +8,7 @@ export interface Account {
   name: string;
   type: AccountType;
   institution: Institution;
-  currency: string;
+  currency: 'CAD';
   isCredit: boolean;
   isActive: boolean;
 }
