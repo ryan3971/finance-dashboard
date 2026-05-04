@@ -84,6 +84,7 @@ export const snapshotMonthlyIncomeSchema = z.object({
   spendingIncome: z.number(),
   needs: z.number(),
   wants: z.number(),
+  allocationConfigured: z.boolean(),
 });
 
 export const snapshotAnticipatedSchema = z.object({

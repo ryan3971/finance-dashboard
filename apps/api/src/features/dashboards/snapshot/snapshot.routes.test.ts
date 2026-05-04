@@ -350,6 +350,8 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.monthlyIncome.spendingIncome).toBe(0);
     expect(body.monthlyIncome.needs).toBe(0);
     expect(body.monthlyIncome.wants).toBe(0);
+    // allocation IS configured even though income is zero this month
+    expect(body.monthlyIncome.allocationConfigured).toBe(true);
     // remainingBudget = expectedSpendingIncome − monthlyExpenses = 4000 − 0 = 4000
     expect(body.anticipated.remainingBudget).toMatchObject({
       total: 4000,
@@ -681,6 +683,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.monthlyIncome.actualInvestments).toBe(0);
     // spendingIncome = income − actualInvestments = 5000 − 0 = 5000
     expect(body.monthlyIncome.spendingIncome).toBe(5000);
+    expect(body.monthlyIncome.allocationConfigured).toBe(false);
   });
 
   it('applies allocation percentages to spendingIncome for needs and wants', async () => {
@@ -716,6 +719,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     // needs = 5000 * 50% = 2500; wants = 5000 * 30% = 1500
     expect(body.monthlyIncome.needs).toBe(2500);
     expect(body.monthlyIncome.wants).toBe(1500);
+    expect(body.monthlyIncome.allocationConfigured).toBe(true);
   });
 
   it('returns zero needs and wants when allocation percentages are not configured', async () => {
@@ -745,6 +749,7 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     expect(body.monthlyIncome.spendingIncome).toBe(5000);
     expect(body.monthlyIncome.needs).toBe(0);
     expect(body.monthlyIncome.wants).toBe(0);
+    expect(body.monthlyIncome.allocationConfigured).toBe(false);
   });
 
   // ── Month navigation ────────────────────────────────────────────────────────

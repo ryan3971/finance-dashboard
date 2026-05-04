@@ -86,6 +86,7 @@ function buildMonthlyIncome(
       spendingIncome: spendingIncome.toNumber(),
       needs: 0,
       wants: 0,
+      allocationConfigured: percentages !== null,
     };
   }
 
@@ -104,6 +105,7 @@ function buildMonthlyIncome(
     spendingIncome: spendingIncome.toNumber(),
     needs: needs.toNumber(),
     wants: wants.toNumber(),
+    allocationConfigured: true,
   };
 }
 

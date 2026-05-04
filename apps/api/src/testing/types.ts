@@ -152,6 +152,7 @@ export interface SnapshotBody {
     spendingIncome: number;
     needs: number;
     wants: number;
+    allocationConfigured: boolean;
   };
   monthlyExpenses: { needs: number; wants: number; total: number };
   anticipated: {

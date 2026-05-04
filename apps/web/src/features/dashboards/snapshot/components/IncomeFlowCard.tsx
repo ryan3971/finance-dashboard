@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { SnapshotAnticipated, SnapshotMonthlyIncome } from '@finance/shared/types/dashboard';
-import { fmt } from '@/lib/utils';
+import { cn, fmt } from '@/lib/utils';
 
 interface Props {
   readonly monthlyIncome: SnapshotMonthlyIncome;
@@ -24,19 +24,17 @@ function FlowRow({
 }) {
   return (
     <tr
-      className={
-        separator
-          ? 'border-t-2 border-border-base'
-          : 'border-t border-border-subtle'
-      }
+      className={cn(
+        separator ? 'border-t-2 border-border-base' : 'border-t border-border-subtle'
+      )}
     >
       <td
-        className={`px-4 py-3 text-sm text-content-secondary ${indent ? 'pl-8' : ''}`}
+        className={cn('px-4 py-3 text-sm text-content-secondary', indent && 'pl-8')}
       >
         {label}
       </td>
       <td
-        className={`px-4 py-3 text-sm font-mono font-medium text-right ${actualClass ?? 'text-content-primary'}`}
+        className={cn('px-4 py-3 text-sm font-mono font-medium text-right', actualClass ?? 'text-content-primary')}
       >
         {fmt(actual)}
       </td>
@@ -48,18 +46,20 @@ function FlowRow({
 }
 
 export function IncomeFlowCard({ monthlyIncome, anticipated }: Props) {
-  const { income, actualInvestments, spendingIncome, needs, wants } =
+  const { income, actualInvestments, spendingIncome, needs, wants, allocationConfigured } =
     monthlyIncome;
   const hasExpected = anticipated.hasEntries;
 
   // expectedInvestments is derived: expected income minus expected spending income.
-  const expectedInvestments = hasExpected
-    ? anticipated.expectedIncome - anticipated.expectedSpendingIncome.total
-    : null;
+  // Only meaningful when allocation percentages are configured — without them,
+  // expectedSpendingIncome.total is zero (not a real value) and the derivation
+  // would incorrectly show all expected income as investments.
+  const expectedInvestments =
+    hasExpected && allocationConfigured
+      ? anticipated.expectedIncome - anticipated.expectedSpendingIncome.total
+      : null;
 
-  // Allocation is not configured when income is flowing but needs/wants are
-  // both zero (the service sets them to zero when percentages are null).
-  const allocationNotConfigured = spendingIncome > 0 && needs === 0 && wants === 0;
+  const allocationNotConfigured = !allocationConfigured;
 
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
@@ -98,7 +98,9 @@ export function IncomeFlowCard({ monthlyIncome, anticipated }: Props) {
               label="Spending Income"
               actual={spendingIncome}
               expected={
-                hasExpected ? anticipated.expectedSpendingIncome.total : null
+                hasExpected && allocationConfigured
+                  ? anticipated.expectedSpendingIncome.total
+                  : null
               }
               separator
             />
