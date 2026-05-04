@@ -26,6 +26,7 @@ import { detectTransfers } from '@/pipelines/transfer-detection/transfer-detecti
 import { assertDefined } from '@/lib/assert';
 import { IMPORT_STATUS, TRANSACTION_SOURCE } from '@/lib/constants';
 import { logger } from '@/middleware/logger';
+import type { Logger } from 'pino';
 import { parseCsv } from './pipeline/parser';
 
 // --- Helpers ---
@@ -54,7 +55,8 @@ async function processAllRows(
   importId: string,
   userId: string,
   rules: LoadedRule[],
-  result: ImportResult
+  result: ImportResult,
+  log: Logger
 ): Promise<string[]> {
   const importedTransactionIds: string[] = [];
 
@@ -74,7 +76,7 @@ async function processAllRows(
         if (insertedId) importedTransactionIds.push(insertedId);
       }
     } catch (err: unknown) {
-      logger.error({ err }, 'Unexpected error processing import row');
+      log.error({ err }, 'Unexpected error processing import row');
       result.errorCount++;
       result.errors.push('Failed to process row — see server logs for details');
     }
@@ -99,7 +101,11 @@ export async function processImport(
   userId: string,
   accountId: string,
   filename: string,
-  fileBuffer: Buffer
+  fileBuffer: Buffer,
+  // Accept a request-scoped child logger so import errors are correlated with
+  // the originating HTTP request's requestId in the log stream. Defaults to the
+  // module logger when called from scripts or tests (no request context).
+  log: Logger = logger
 ): Promise<ImportResult> {
   const [account] = await db
     .select({ institution: accounts.institution })
@@ -158,7 +164,8 @@ export async function processImport(
       importRecord.id,
       userId,
       rules,
-      result
+      result,
+      log
     );
 
     result.transferCandidateCount = (

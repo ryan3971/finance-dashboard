@@ -12,16 +12,24 @@ if (process.env.DATABASE_URL_TEST) {
 
 // Silence Pino during tests — log output from services is noise in test runs.
 // Individual tests can restore specific log methods if they need to assert on them.
-vi.mock('@/middleware/logger', () => ({
-  logger: {
+vi.mock('@/middleware/logger', () => {
+  const mockLogger = {
     error: vi.fn(),
     warn: vi.fn(),
     info: vi.fn(),
     debug: vi.fn(),
     child: vi.fn().mockReturnThis(),
-  },
-  httpLogger: vi.fn((req: unknown, res: unknown, next: () => void) => next()),
-}));
+  };
+  return {
+    logger: mockLogger,
+    // Mirrors what pino-http does: attaches a request-scoped logger to req.log.
+    // Without this, routes that call req.log.child() crash in tests.
+    httpLogger: vi.fn((req: Record<string, unknown>, _res: unknown, next: () => void) => {
+      req.log = mockLogger;
+      next();
+    }),
+  };
+});
 
 // Seed the test category/rule set once per file before any test runs.
 // System rows (userId IS NULL) survive cleanDatabase() between tests, so the

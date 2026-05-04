@@ -5,13 +5,8 @@ import { logger } from './logger';
 import multer from 'multer';
 import { ZodError } from 'zod';
 
-export interface AppError extends Error {
-  statusCode?: number;
-  isOperational?: boolean;
-}
-
 export function errorHandler(
-  err: AppError | ZodError | DomainError,
+  err: Error | ZodError | DomainError,
   req: Request,
   res: Response,
   _next: NextFunction
@@ -51,24 +46,17 @@ export function errorHandler(
     return;
   }
 
-  const appError = err;
-  const statusCode = appError.statusCode ?? 500;
-  const message = appError.isOperational
-    ? appError.message
-    : 'Internal server error';
+  // All other errors are programmer errors or unexpected failures. Log the full
+  // error internally for observability and return a generic message — never
+  // surface stack traces, DB details, or internal state to the client.
+  logger.error(
+    { err, req: { method: req.method, url: req.url }, requestId },
+    'Unhandled error'
+  );
 
-  if (statusCode >= 500) {
-    logger.error(
-      { err, req: { method: req.method, url: req.url }, requestId },
-      'Unhandled error'
-    );
-  }
-
-  res.status(statusCode).json({
-    error: message,
+  res.status(500).json({
+    error: 'Internal server error',
     requestId,
-    ...(config.nodeEnv === 'development' && statusCode >= 500
-      ? { stack: err.stack }
-      : {}),
+    ...(config.nodeEnv === 'development' ? { stack: err.stack } : {}),
   });
 }

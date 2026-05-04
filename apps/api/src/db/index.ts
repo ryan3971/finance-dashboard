@@ -10,6 +10,7 @@ import { Pool } from 'pg';
 // vitest's setup file swaps DATABASE_URL to DATABASE_URL_TEST at runtime, after
 // config.ts has already frozen its snapshot of process.env. Reading the env var
 // here ensures tests always connect to finance_test, not finance_dev.
+let _pool: Pool | undefined;
 let _db: NodePgDatabase<typeof schema> | undefined;
 
 export function getDb(): NodePgDatabase<typeof schema> {
@@ -18,13 +19,22 @@ export function getDb(): NodePgDatabase<typeof schema> {
     const isLocal =
       connectionString.includes('localhost') ||
       connectionString.includes('127.0.0.1');
-    const pool = new Pool({
+    _pool = new Pool({
       connectionString,
       ssl: isLocal ? false : { rejectUnauthorized: false },
     });
-    _db = drizzle(pool, { schema });
+    _db = drizzle(_pool, { schema });
   }
   return _db;
+}
+
+/** Drains the connection pool. Call on SIGTERM before process.exit(). */
+export async function closeDb(): Promise<void> {
+  if (_pool) {
+    await _pool.end();
+    _pool = undefined;
+    _db = undefined;
+  }
 }
 
 // Convenience re-export so call sites can write `db.select(...)` unchanged.
