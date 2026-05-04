@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
 import {
   type CreateAnticipatedBudgetInput,
@@ -26,6 +27,18 @@ interface Props {
   readonly effectiveYear: number;
 }
 
+function freshValues(effectiveYear: number): CreateAnticipatedBudgetInput {
+  return {
+    name: '',
+    categoryId: null,
+    needWant: 'Need',
+    isIncome: false,
+    monthlyAmount: null,
+    notes: null,
+    effectiveYear,
+  };
+}
+
 export function AddEntryDialog({
   open,
   onOpenChange,
@@ -41,25 +54,26 @@ export function AddEntryDialog({
     watch,
     control,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<CreateAnticipatedBudgetInput>({
     resolver: zodResolver(createAnticipatedBudgetSchema),
-    defaultValues: {
-      name: '',
-      categoryId: null,
-      needWant: 'Need',
-      isIncome: false,
-      monthlyAmount: null,
-      notes: null,
-      effectiveYear,
-    },
+    defaultValues: freshValues(effectiveYear),
   });
+
+  // Reset to fresh state (with the current year) each time the dialog opens.
+  // This also prevents effectiveYear from going stale when the user changes
+  // the year selector while the dialog is already mounted.
+  useEffect(() => {
+    if (open) reset(freshValues(effectiveYear));
+  }, [open, effectiveYear, reset]);
 
   const isIncome = watch('isIncome');
 
   function handleFormSubmit(data: CreateAnticipatedBudgetInput) {
     onSubmit(data);
-    reset();
+    // Do not reset here — if the mutation fails the dialog stays open and the
+    // user's input is preserved. The useEffect above resets on next open.
   }
 
   return (
@@ -79,7 +93,11 @@ export function AddEntryDialog({
           </FormField>
 
           <FormField label="Category" error={errors.categoryId?.message}>
-            <Select {...register('categoryId')}>
+            <Select
+              {...register('categoryId', {
+                setValueAs: (v: string) => (v === '' ? null : v),
+              })}
+            >
               <option value="">No category</option>
               {categories?.map((cat) => (
                 <option key={cat.id} value={cat.id}>
@@ -99,7 +117,10 @@ export function AddEntryDialog({
                     type="checkbox"
                     className="rounded"
                     checked={field.value}
-                    onChange={(e) => field.onChange(e.target.checked)}
+                    onChange={(e) => {
+                      field.onChange(e.target.checked);
+                      if (e.target.checked) setValue('needWant', null);
+                    }}
                   />
                 )}
               />

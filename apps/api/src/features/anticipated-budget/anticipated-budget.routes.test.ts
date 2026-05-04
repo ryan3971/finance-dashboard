@@ -245,6 +245,16 @@ describe('POST /api/v1/anticipated-budget', () => {
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({ error: 'Validation error' });
   });
+
+  it('returns 400 when categoryId is an empty string', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...baseEntry, categoryId: '' });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
 });
 
 describe('PATCH /api/v1/anticipated-budget/:id', () => {
