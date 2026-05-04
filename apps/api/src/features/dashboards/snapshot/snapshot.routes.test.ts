@@ -345,12 +345,13 @@ describe('GET /api/v1/dashboard/snapshot', () => {
       needs: 2000,
       wants: 1200,
     });
-    // incomeLessInvestment: income = 0 this month, so returns all zeros regardless of allocations
-    expect(body.monthlyIncome.incomeLessInvestment).toMatchObject({
-      total: 0,
-      needs: 0,
-      wants: 0,
-    });
+    // income = 0 this month, so all income fields return zero regardless of config
+    expect(body.monthlyIncome.actualInvestments).toBe(0);
+    expect(body.monthlyIncome.spendingIncome).toBe(0);
+    expect(body.monthlyIncome.needs).toBe(0);
+    expect(body.monthlyIncome.wants).toBe(0);
+    // allocation IS configured even though income is zero this month
+    expect(body.monthlyIncome.allocationConfigured).toBe(true);
     // remainingBudget = expectedSpendingIncome − monthlyExpenses = 4000 − 0 = 4000
     expect(body.anticipated.remainingBudget).toMatchObject({
       total: 4000,
@@ -651,5 +652,174 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     const bodyA = resA.body as SnapshotBody;
     expect(bodyA.accounts).toHaveLength(1);
     expect(bodyA.monthlyIncome.income).toBe(8000);
+  });
+
+  // ── Monthly income shape ────────────────────────────────────────────────────
+
+  it('returns actualInvestments as zero and spendingIncome matching income', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(15),
+      amount: '5000.00',
+      isIncome: true,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.monthlyIncome.income).toBe(5000);
+    // Investment tracking is deferred — actualInvestments is always zero for now.
+    expect(body.monthlyIncome.actualInvestments).toBe(0);
+    // spendingIncome = income − actualInvestments = 5000 − 0 = 5000
+    expect(body.monthlyIncome.spendingIncome).toBe(5000);
+    expect(body.monthlyIncome.allocationConfigured).toBe(false);
+  });
+
+  it('applies allocation percentages to spendingIncome for needs and wants', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(15),
+      amount: '5000.00',
+      isIncome: true,
+    });
+
+    await setAllocations(app, accessToken, {
+      needsPercentage: 50,
+      wantsPercentage: 30,
+      investmentsPercentage: 20,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    // actualInvestments is zero (deferred), so spendingIncome equals full income.
+    expect(body.monthlyIncome.spendingIncome).toBe(5000);
+    // needs = 5000 * 50% = 2500; wants = 5000 * 30% = 1500
+    expect(body.monthlyIncome.needs).toBe(2500);
+    expect(body.monthlyIncome.wants).toBe(1500);
+    expect(body.monthlyIncome.allocationConfigured).toBe(true);
+  });
+
+  it('returns zero needs and wants when allocation percentages are not configured', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(15),
+      amount: '5000.00',
+      isIncome: true,
+    });
+
+    // No setAllocations call — percentages remain null in user_config.
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.monthlyIncome.income).toBe(5000);
+    expect(body.monthlyIncome.spendingIncome).toBe(5000);
+    expect(body.monthlyIncome.needs).toBe(0);
+    expect(body.monthlyIncome.wants).toBe(0);
+    expect(body.monthlyIncome.allocationConfigured).toBe(false);
+  });
+
+  // ── Month navigation ────────────────────────────────────────────────────────
+
+  it('returns data for a specified prior month', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    // Income in the prior month — should appear in that month's snapshot.
+    await transactionFixture(accountId, {
+      date: priorMonthDateStr(15),
+      amount: '3000.00',
+      isIncome: true,
+    });
+    // Income in the current month — should not appear in prior month query.
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(15),
+      amount: '9999.00',
+      isIncome: true,
+    });
+
+    const now = new Date();
+    const priorDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const priorYear = priorDate.getFullYear();
+    const priorMonth = priorDate.getMonth() + 1;
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .query({ year: priorYear, month: priorMonth })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.year).toBe(priorYear);
+    expect(body.month).toBe(priorMonth);
+    expect(body.monthlyIncome.income).toBe(3000);
+  });
+
+  it('returns 400 for an out-of-range month param', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const [resAbove, resBelow] = await Promise.all([
+      request(app)
+        .get('/api/v1/dashboard/snapshot')
+        .query({ month: 13 })
+        .set('Authorization', `Bearer ${accessToken}`),
+      request(app)
+        .get('/api/v1/dashboard/snapshot')
+        .query({ month: 0 })
+        .set('Authorization', `Bearer ${accessToken}`),
+    ]);
+
+    expect(resAbove.status).toBe(400);
+    expect(resBelow.status).toBe(400);
+  });
+
+  it('returns 400 for an out-of-range year param', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .query({ year: 999 })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(400);
   });
 });
