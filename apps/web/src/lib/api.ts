@@ -7,6 +7,7 @@ type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 const api = axios.create({
   baseURL: config.apiBaseUrl,
   withCredentials: true,
+  timeout: 10000,
   paramsSerializer: (params) => {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
