@@ -122,8 +122,7 @@ export function SpendingSummaryCard({
   const benchmarkNeeds = effectiveMode === 'budget' ? expectedExpenses.needs : incomeNeeds;
   const benchmarkWants = effectiveMode === 'budget' ? expectedExpenses.wants : incomeWants;
 
-  // "Budget/Income" column values — null renders as a dash in SummaryRow.
-  const colTotal = benchmarkTotal;
+  // Needs/Wants are null (renders as a dash) when breakdown is not shown.
   const colNeeds = showAllocationBreakdown ? benchmarkNeeds : null;
   const colWants = showAllocationBreakdown ? benchmarkWants : null;
 
@@ -206,7 +205,7 @@ export function SpendingSummaryCard({
               )}
               <SummaryRow
                 label="Total"
-                budget={colTotal}
+                budget={benchmarkTotal}
                 actual={monthlyExpenses.total}
                 remaining={remainingTotal}
                 isTotal={showAllocationBreakdown}

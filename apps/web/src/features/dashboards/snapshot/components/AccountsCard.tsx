@@ -44,8 +44,6 @@ export function AccountsCard({ accounts, emergencyFund }: Props) {
           </li>
         ))}
       </ul>
-      {/* Emergency fund is a dedicated bottom section summing all chequing
-          accounts — not anchored to any individual account row. */}
       <EmergencyFundSection emergencyFund={emergencyFund} />
     </div>
   );

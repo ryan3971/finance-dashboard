@@ -59,8 +59,6 @@ export function IncomeFlowCard({ monthlyIncome, anticipated }: Props) {
       ? anticipated.expectedIncome - anticipated.expectedSpendingIncome.total
       : null;
 
-  const allocationNotConfigured = !allocationConfigured;
-
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
       <div className="px-6 py-4 border-b border-border-base">
@@ -104,7 +102,7 @@ export function IncomeFlowCard({ monthlyIncome, anticipated }: Props) {
               }
               separator
             />
-            {!allocationNotConfigured && (
+            {allocationConfigured && (
               <>
                 <FlowRow
                   label="Needs"
@@ -131,7 +129,7 @@ export function IncomeFlowCard({ monthlyIncome, anticipated }: Props) {
           </tbody>
         </table>
       </div>
-      {allocationNotConfigured && (
+      {!allocationConfigured && (
         <p className="px-6 py-3 text-xs text-content-muted border-t border-border-subtle">
           Allocation percentages not configured.{' '}
           <Link to="/config" className="text-info underline">
