@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import type { SnapshotAnticipated, SnapshotColumnValues } from '@finance/shared/types/dashboard';
-import { fmt } from '@/lib/utils';
+import type { SnapshotAnticipated, SnapshotColumnValues, SnapshotMonthlyIncome } from '@finance/shared/types/dashboard';
+import { cn, fmt } from '@/lib/utils';
+
+type ViewMode = 'budget' | 'income';
 
 interface Props {
   readonly anticipated: SnapshotAnticipated;
   readonly monthlyExpenses: SnapshotColumnValues;
-  readonly spendingIncome: number;
+  readonly monthlyIncome: SnapshotMonthlyIncome;
 }
 
 // ── Summary table row ────────────────────────────────────────────────────────
@@ -96,35 +99,75 @@ function overAmount(actual: number, benchmark: number): number {
 export function SpendingSummaryCard({
   anticipated,
   monthlyExpenses,
-  spendingIncome,
+  monthlyIncome,
 }: Props) {
-  const { hasEntries, expectedExpenses: ee, expectedSpendingIncome: esi } =
-    anticipated;
+  const [mode, setMode] = useState<ViewMode>('budget');
 
-  // Progress bar benchmark: planned expenses when a budget exists, spending
-  // income as a fallback so the bars are always meaningful.
-  const benchmark = hasEntries ? ee : esi;
+  const { hasEntries, expectedExpenses, expectedSpendingIncome } = anticipated;
+  const { spendingIncome, needs: incomeNeeds, wants: incomeWants, allocationConfigured } = monthlyIncome;
 
-  // Budget column shows planned expenses; null renders as a dash.
-  const budgetNeeds = hasEntries ? ee.needs : null;
-  const budgetWants = hasEntries ? ee.wants : null;
-  const budgetTotal = hasEntries ? ee.total : null;
+  // No budget → always income mode; toggle is hidden.
+  const effectiveMode: ViewMode = hasEntries ? mode : 'income';
 
-  // Remaining = budget (or spending income fallback) minus actual.
-  const remainingNeeds = (budgetNeeds ?? esi.needs) - monthlyExpenses.needs;
-  const remainingWants = (budgetWants ?? esi.wants) - monthlyExpenses.wants;
-  const remainingTotal = (budgetTotal ?? esi.total) - monthlyExpenses.total;
+  // In income mode, needs/wants rows and bars only render when allocation is configured.
+  const showAllocationBreakdown = effectiveMode === 'budget' || allocationConfigured;
 
-  const overTotal = overAmount(monthlyExpenses.total, benchmark.total);
-  const overNeeds = overAmount(monthlyExpenses.needs, benchmark.needs);
-  const overWants = overAmount(monthlyExpenses.wants, benchmark.wants);
+  // ── Derived values by mode ──────────────────────────────────────────────────
+
+  const colLabel = effectiveMode === 'budget' ? 'Budget' : 'Income';
+  const overLabel = effectiveMode === 'budget' ? 'budget' : 'spending income';
+
+  // Benchmarks drive progress bars, column display, and remaining calculations.
+  const benchmarkTotal = effectiveMode === 'budget' ? expectedExpenses.total : spendingIncome;
+  const benchmarkNeeds = effectiveMode === 'budget' ? expectedExpenses.needs : incomeNeeds;
+  const benchmarkWants = effectiveMode === 'budget' ? expectedExpenses.wants : incomeWants;
+
+  // "Budget/Income" column values — null renders as a dash in SummaryRow.
+  const colTotal = benchmarkTotal;
+  const colNeeds = showAllocationBreakdown ? benchmarkNeeds : null;
+  const colWants = showAllocationBreakdown ? benchmarkWants : null;
+
+  // Remaining = benchmark − actual for each category.
+  const remainingNeeds = benchmarkNeeds - monthlyExpenses.needs;
+  const remainingWants = benchmarkWants - monthlyExpenses.wants;
+  const remainingTotal = benchmarkTotal - monthlyExpenses.total;
+
+  const overTotal = overAmount(monthlyExpenses.total, benchmarkTotal);
+  const overNeeds = overAmount(monthlyExpenses.needs, benchmarkNeeds);
+  const overWants = overAmount(monthlyExpenses.wants, benchmarkWants);
 
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
-      <div className="px-6 py-4 border-b border-border-base">
+      <div className="px-6 py-4 border-b border-border-base flex items-center justify-between">
         <h2 className="text-lg font-semibold text-content-primary">
           Spending Summary
         </h2>
+        {hasEntries && (
+          <div className="flex rounded border border-border-strong overflow-hidden">
+            <button
+              onClick={() => setMode('budget')}
+              className={cn(
+                'px-3 py-1 text-xs transition-colors',
+                mode === 'budget'
+                  ? 'bg-content-primary text-white'
+                  : 'text-content-secondary hover:bg-surface-subtle'
+              )}
+            >
+              Budget
+            </button>
+            <button
+              onClick={() => setMode('income')}
+              className={cn(
+                'px-3 py-1 text-xs transition-colors border-l border-border-strong',
+                mode === 'income'
+                  ? 'bg-content-primary text-white'
+                  : 'text-content-secondary hover:bg-surface-subtle'
+              )}
+            >
+              Income
+            </button>
+          </div>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
         {/* Left: table */}
@@ -134,7 +177,7 @@ export function SpendingSummaryCard({
               <tr className="bg-surface-subtle">
                 <th className="px-4 py-2.5 text-left text-xs font-medium text-content-secondary uppercase tracking-wider w-2/5" />
                 <th className="px-4 py-2.5 text-right text-xs font-medium text-content-secondary uppercase tracking-wider">
-                  Budget
+                  {colLabel}
                 </th>
                 <th className="px-4 py-2.5 text-right text-xs font-medium text-content-secondary uppercase tracking-wider">
                   Actual
@@ -145,24 +188,28 @@ export function SpendingSummaryCard({
               </tr>
             </thead>
             <tbody>
-              <SummaryRow
-                label="Needs"
-                budget={budgetNeeds}
-                actual={monthlyExpenses.needs}
-                remaining={remainingNeeds}
-              />
-              <SummaryRow
-                label="Wants"
-                budget={budgetWants}
-                actual={monthlyExpenses.wants}
-                remaining={remainingWants}
-              />
+              {showAllocationBreakdown && (
+                <>
+                  <SummaryRow
+                    label="Needs"
+                    budget={colNeeds}
+                    actual={monthlyExpenses.needs}
+                    remaining={remainingNeeds}
+                  />
+                  <SummaryRow
+                    label="Wants"
+                    budget={colWants}
+                    actual={monthlyExpenses.wants}
+                    remaining={remainingWants}
+                  />
+                </>
+              )}
               <SummaryRow
                 label="Total"
-                budget={budgetTotal}
+                budget={colTotal}
                 actual={monthlyExpenses.total}
                 remaining={remainingTotal}
-                isTotal
+                isTotal={showAllocationBreakdown}
               />
               {monthlyExpenses.rebalancingAdjustment > 0 && (
                 <tr className="border-t border-border-subtle bg-surface-subtle">
@@ -183,15 +230,14 @@ export function SpendingSummaryCard({
             </tbody>
           </table>
 
-          {/* Reference line */}
-          <div className="px-4 py-2 border-t border-border-subtle">
-            <p className="text-xs text-content-muted">
-              Spending income: {fmt(spendingIncome)}
-              {hasEntries && (
-                <> &middot; Expected: {fmt(esi.total)}</>
-              )}
-            </p>
-          </div>
+          {/* Reference line — only shown in budget mode to avoid redundancy */}
+          {effectiveMode === 'budget' && (
+            <div className="px-4 py-2 border-t border-border-subtle">
+              <p className="text-xs text-content-muted">
+                Spending income: {fmt(spendingIncome)} &middot; Expected: {fmt(expectedSpendingIncome.total)}
+              </p>
+            </div>
+          )}
 
           {!hasEntries && (
             <p className="px-4 pb-3 text-xs text-content-muted">
@@ -209,43 +255,55 @@ export function SpendingSummaryCard({
           <BudgetProgress
             label="Total"
             actual={monthlyExpenses.total}
-            expected={benchmark.total}
+            expected={benchmarkTotal}
             barClass="bg-info"
             overBarClass="bg-danger"
           />
-          <BudgetProgress
-            label="Wants"
-            actual={monthlyExpenses.wants}
-            expected={benchmark.wants}
-            barClass="bg-accent"
-            overBarClass="bg-danger"
-          />
-          <BudgetProgress
-            label="Needs"
-            actual={monthlyExpenses.needs}
-            expected={benchmark.needs}
-            barClass="bg-info"
-            overBarClass="bg-danger"
-          />
+          {showAllocationBreakdown && (
+            <>
+              <BudgetProgress
+                label="Wants"
+                actual={monthlyExpenses.wants}
+                expected={benchmarkWants}
+                barClass="bg-accent"
+                overBarClass="bg-danger"
+              />
+              <BudgetProgress
+                label="Needs"
+                actual={monthlyExpenses.needs}
+                expected={benchmarkNeeds}
+                barClass="bg-info"
+                overBarClass="bg-danger"
+              />
+            </>
+          )}
+
+          {/* Allocation not configured note — income mode only */}
+          {effectiveMode === 'income' && !allocationConfigured && (
+            <p className="text-xs text-content-muted">
+              Allocation percentages not configured.{' '}
+              <Link to="/config" className="text-info underline">
+                Set them in Settings
+              </Link>{' '}
+              to see Needs/Wants breakdown.
+            </p>
+          )}
 
           {/* Over-budget callouts */}
           <div className="space-y-1.5 pt-1">
             {overTotal > 0 && (
               <p className="text-xs text-danger">
-                Total is over {hasEntries ? 'budget' : 'expected spending'} —{' '}
-                {fmt(overTotal)} over.
+                Total is over {overLabel} — {fmt(overTotal)} over.
               </p>
             )}
-            {overWants > 0 && (
+            {showAllocationBreakdown && overWants > 0 && (
               <p className="text-xs text-danger">
-                Wants is over {hasEntries ? 'budget' : 'expected spending'} —{' '}
-                {fmt(overWants)} over.
+                Wants is over {overLabel} — {fmt(overWants)} over.
               </p>
             )}
-            {overNeeds > 0 && (
+            {showAllocationBreakdown && overNeeds > 0 && (
               <p className="text-xs text-danger">
-                Needs is over {hasEntries ? 'budget' : 'expected spending'} —{' '}
-                {fmt(overNeeds)} over.
+                Needs is over {overLabel} — {fmt(overNeeds)} over.
               </p>
             )}
           </div>

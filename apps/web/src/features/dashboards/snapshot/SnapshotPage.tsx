@@ -187,7 +187,7 @@ export function SnapshotPage() {
           <SpendingSummaryCard
             anticipated={data.anticipated}
             monthlyExpenses={data.monthlyExpenses}
-            spendingIncome={data.monthlyIncome.spendingIncome}
+            monthlyIncome={data.monthlyIncome}
           />
         </div>
       )}
