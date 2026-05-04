@@ -5,6 +5,9 @@ import pinoHttp from 'pino-http';
 import type PinoPretty from 'pino-pretty';
 import type NodeFs from 'node:fs';
 
+// Held so shutdown can drain pending writes before process.exit
+let _fileWriteStream: NodeFs.WriteStream | null = null;
+
 function createLogger(): pino.Logger {
   if (config.nodeEnv === 'production') {
     // JSON to stdout — the container runtime collects it
@@ -17,12 +20,14 @@ function createLogger(): pino.Logger {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('node:fs') as typeof NodeFs;
 
+  _fileWriteStream = fs.createWriteStream('logs/app.log', { flags: 'a' });
+
   const streams: pino.StreamEntry[] = [
     { stream: pretty({ colorize: true }) },
     {
       stream: pretty({
         colorize: false,
-        destination: fs.createWriteStream('logs/app.log', { flags: 'a' }),
+        destination: _fileWriteStream,
       }),
     },
   ];
@@ -31,6 +36,16 @@ function createLogger(): pino.Logger {
 }
 
 export const logger = createLogger();
+
+export function closeFileLog(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (!_fileWriteStream || _fileWriteStream.writableFinished) {
+      resolve();
+      return;
+    }
+    _fileWriteStream.end(resolve);
+  });
+}
 
 export const httpLogger = pinoHttp({
   logger,

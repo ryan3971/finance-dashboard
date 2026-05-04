@@ -2,7 +2,7 @@ import { config } from './lib/config';
 import './instrument';
 import { createApp } from './app';
 import { closeDb } from './db';
-import { logger } from './middleware/logger';
+import { closeFileLog, logger } from './middleware/logger';
 
 const app = createApp();
 
@@ -33,6 +33,7 @@ async function shutdown(signal: string): Promise<void> {
   }
 
   clearTimeout(forceExit);
+  await closeFileLog();
   process.exit(0);
 }
 
