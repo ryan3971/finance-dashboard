@@ -23,10 +23,13 @@ function SummaryRow({
   readonly label: string;
   readonly budget: number | null;
   readonly actual: number;
-  readonly remaining: number;
+  readonly remaining: number | null;
   readonly isTotal?: boolean;
 }) {
-  const remainingClass = remaining >= 0 ? 'text-positive' : 'text-danger';
+  let remainingClass = 'text-content-muted';
+  if (remaining !== null) {
+    remainingClass = remaining >= 0 ? 'text-positive' : 'text-danger';
+  }
   const rowClass = isTotal
     ? 'border-t-2 border-border-base'
     : 'border-t border-border-subtle';
@@ -40,10 +43,8 @@ function SummaryRow({
       <td className="px-4 py-3 text-sm font-mono font-medium text-right text-danger">
         {fmt(actual)}
       </td>
-      <td
-        className={`px-4 py-3 text-sm font-mono font-medium text-right ${remainingClass}`}
-      >
-        {fmt(remaining)}
+      <td className={cn('px-4 py-3 text-sm font-mono font-medium text-right', remainingClass)}>
+        {remaining !== null ? fmt(remaining) : '—'}
       </td>
     </tr>
   );
@@ -126,10 +127,11 @@ export function SpendingSummaryCard({
   const colNeeds = showAllocationBreakdown ? benchmarkNeeds : null;
   const colWants = showAllocationBreakdown ? benchmarkWants : null;
 
-  // Remaining = benchmark − actual for each category.
-  const remainingNeeds = benchmarkNeeds - monthlyExpenses.needs;
-  const remainingWants = benchmarkWants - monthlyExpenses.wants;
-  const remainingTotal = benchmarkTotal - monthlyExpenses.total;
+  // Remaining = benchmark − actual. null when benchmark is zero — consistent
+  // with overAmount() which also treats a zero benchmark as "no comparison".
+  const remainingNeeds = benchmarkNeeds > 0 ? benchmarkNeeds - monthlyExpenses.needs : null;
+  const remainingWants = benchmarkWants > 0 ? benchmarkWants - monthlyExpenses.wants : null;
+  const remainingTotal = benchmarkTotal > 0 ? benchmarkTotal - monthlyExpenses.total : null;
 
   const overTotal = overAmount(monthlyExpenses.total, benchmarkTotal);
   const overNeeds = overAmount(monthlyExpenses.needs, benchmarkNeeds);
