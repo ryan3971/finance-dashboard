@@ -1,13 +1,16 @@
 import { Link } from '@tanstack/react-router';
 import type { SnapshotAccountRow, SnapshotEmergencyFund } from '@finance/shared/types/dashboard';
-import { fmt } from '@/lib/utils';
+import { cn, fmt } from '@/lib/utils';
 
 interface Props {
   readonly accounts: SnapshotAccountRow[];
   readonly emergencyFund: SnapshotEmergencyFund;
 }
 
-function balanceColor(balance: number, isCredit: boolean): string {
+function balanceColor(
+  balance: number,
+  isCredit: boolean,
+): 'text-content-muted' | 'text-positive' | 'text-danger' {
   if (balance === 0) return 'text-content-muted';
   const positiveColor = isCredit ? 'text-danger' : 'text-positive';
   const negativeColor = isCredit ? 'text-positive' : 'text-danger';
@@ -36,7 +39,7 @@ export function AccountsCard({ accounts, emergencyFund }: Props) {
                 </p>
               </div>
               <span
-                className={`font-mono text-sm font-medium ${balanceColor(account.balance, account.isCredit)}`}
+                className={cn('font-mono text-sm font-medium', balanceColor(account.balance, account.isCredit))}
               >
                 {fmt(account.balance)}
               </span>

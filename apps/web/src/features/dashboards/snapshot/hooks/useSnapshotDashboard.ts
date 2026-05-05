@@ -3,6 +3,8 @@ import { snapshotDashboardResponseSchema } from '@finance/shared/schemas/dashboa
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 
+const SNAPSHOT_STALE_TIME_MS = 5 * 60 * 1000;
+
 export function useSnapshotDashboard(year: number, month: number) {
   return useQuery({
     queryKey: dashboardKeys.snapshot(year, month),
@@ -12,6 +14,6 @@ export function useSnapshotDashboard(year: number, month: number) {
       });
       return snapshotDashboardResponseSchema.parse(data);
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: SNAPSHOT_STALE_TIME_MS,
   });
 }
