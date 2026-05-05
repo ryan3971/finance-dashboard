@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { SnapshotAnticipated, SnapshotMonthlyIncome } from '@finance/shared/types/dashboard';
 import { cn, fmt } from '@/lib/utils';
+import { SectionHelp } from '@/components/common/SectionHelp';
 
 interface Props {
   readonly monthlyIncome: SnapshotMonthlyIncome;
@@ -61,10 +62,11 @@ export function IncomeFlowCard({ monthlyIncome, anticipated }: Props) {
 
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
-      <div className="px-6 py-4 border-b border-border-base">
+      <div className="px-6 py-4 border-b border-border-base flex items-center gap-2">
         <h2 className="text-lg font-semibold text-content-primary">
           Income Flow
         </h2>
+        <SectionHelp contentKey="snapshot.incomeFlow" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-left">

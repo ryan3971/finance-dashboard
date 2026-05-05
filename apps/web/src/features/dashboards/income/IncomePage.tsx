@@ -16,6 +16,7 @@ import {
   MONTH_LABELS,
 } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { useIncomeDashboard } from './hooks/useIncomeDashboard';
 
 function pct(part: number, total: number) {
@@ -244,9 +245,12 @@ export function IncomePage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Left column: income breakdown table */}
         <div className="flex flex-col">
-          <h2 className="mb-4 text-lg font-semibold text-content-primary">
-            Monthly Breakdown
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-semibold text-content-primary">
+              Monthly Breakdown
+            </h2>
+            <SectionHelp contentKey="income.monthlyBreakdown" />
+          </div>
 
           {/* Loading */}
           {showSkeleton && <IncomeSkeleton />}
@@ -309,9 +313,12 @@ export function IncomePage() {
 
         {/* Right column: income transactions */}
         <div className="flex flex-col min-w-0">
-          <h2 className="mb-4 text-lg font-semibold text-content-primary">
-            Income Transactions
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-semibold text-content-primary">
+              Income Transactions
+            </h2>
+            <SectionHelp contentKey="income.incomeTransactions" />
+          </div>
           <TransactionTablePane
             resetKey={`${year}-${monthFilter ?? 'all'}`}
             className="flex-1"

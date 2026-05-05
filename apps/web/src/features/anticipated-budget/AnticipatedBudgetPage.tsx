@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { AddEntryDialog } from './components/AddEntryDialog';
 import { AnticipatedBudgetEntryCard } from './components/AnticipatedBudgetEntryCard';
 import { Button } from '@/components/ui/Button';
@@ -41,6 +42,7 @@ export function AnticipatedBudgetPage() {
           <h1 className="text-xl font-semibold text-content-primary">
             Anticipated Budget
           </h1>
+          <SectionHelp contentKey="anticipatedBudget.entryList" />
           <div className="flex items-center gap-1">
             <button
               className="text-content-muted hover:text-content-primary transition-colors px-1"
