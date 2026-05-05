@@ -18,6 +18,7 @@ export function AboutDialog({ triggerClassName }: Props) {
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
         className={cn(
           'inline-flex items-center px-3 text-sm transition-colors text-content-secondary hover:text-content-primary hover:bg-surface-subtle',

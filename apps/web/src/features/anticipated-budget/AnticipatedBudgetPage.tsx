@@ -39,10 +39,12 @@ export function AnticipatedBudgetPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-content-primary">
-            Anticipated Budget
-          </h1>
-          <SectionHelp contentKey="anticipatedBudget.entryList" />
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold text-content-primary">
+              Anticipated Budget
+            </h1>
+            <SectionHelp contentKey="anticipatedBudget.entryList" />
+          </div>
           <div className="flex items-center gap-1">
             <button
               className="text-content-muted hover:text-content-primary transition-colors px-1"

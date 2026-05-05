@@ -7,26 +7,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import { helpContent } from '@/lib/helpContent';
+import { helpContent, type HelpEntry } from '@/lib/helpContent';
 
 interface Props {
-  readonly contentKey: string;
+  readonly contentKey: keyof typeof helpContent;
 }
 
 export function SectionHelp({ contentKey }: Props) {
   const [open, setOpen] = useState(false);
-  const entry = helpContent[contentKey];
-
-  if (!entry) return null;
+  const entry: HelpEntry = helpContent[contentKey];
 
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
         className="h-5 w-5 flex items-center justify-center rounded text-content-secondary hover:text-content-primary hover:bg-surface-subtle transition-colors"
         aria-label={`Help: ${entry.title}`}
       >
-        <CircleHelp className="h-4 w-4" />
+        <CircleHelp className="h-4 w-4" aria-hidden="true" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

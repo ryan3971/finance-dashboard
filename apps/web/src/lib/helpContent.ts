@@ -9,7 +9,7 @@ export interface HelpEntry {
   sections?: HelpSection[];
 }
 
-export const helpContent: Record<string, HelpEntry> = {
+export const helpContent = {
   // Snapshot
   'snapshot.accounts': {
     title: 'Accounts',
@@ -95,4 +95,4 @@ export const helpContent: Record<string, HelpEntry> = {
     title: 'Preferences',
     body: 'Help content coming soon.',
   },
-};
+} satisfies Record<string, HelpEntry>;
