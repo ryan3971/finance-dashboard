@@ -134,6 +134,9 @@ export function TransactionTablePane({
     setExpandedPanel(null);
     // defaultFilters is intentionally read from the closure at the moment resetKey
     // fires — tracking it as a dep would cause spurious resets on every render.
+    // isFilterControlled and isPageControlled are also omitted: they're derived
+    // from stable props and won't change without a remount; adding them would
+    // trigger the lint rule without fixing a real bug.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 

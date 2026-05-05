@@ -28,5 +28,9 @@ export function useTransactions({
       return data;
     },
     placeholderData: keepPreviousData,
+    // No staleTime — defaults to 0ms so every mount/focus triggers a background
+    // refetch. Transactions are user-editable and need to stay fresh, so this is
+    // intentional. The opacity-50 dim from isFetching will fire more frequently
+    // than on dashboard hooks as a result.
   });
 }
