@@ -1,4 +1,5 @@
 import { useSearch } from '@tanstack/react-router';
+import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
@@ -18,7 +19,7 @@ export function SnapshotPage() {
   const year = yearParam ?? now.getFullYear();
   const month = monthParam ?? now.getMonth() + 1;
 
-  const { data, isPending, isError } = useSnapshotDashboard(year, month);
+  const { data, isPending, isFetching, isError } = useSnapshotDashboard(year, month);
   const showSkeleton = useDelayedPending(isPending);
 
   return (
@@ -46,7 +47,7 @@ export function SnapshotPage() {
       )}
 
       {data && (
-        <div className="space-y-6">
+        <div className={cn('space-y-6 transition-opacity duration-200', isFetching && 'opacity-50')}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <IncomeFlowCard
               monthlyIncome={data.monthlyIncome}

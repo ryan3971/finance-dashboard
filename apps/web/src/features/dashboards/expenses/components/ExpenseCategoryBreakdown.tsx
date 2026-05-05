@@ -139,7 +139,7 @@ export function ExpenseCategoryBreakdown({
   readonly year: number;
   readonly monthFilter: number | null;
 }) {
-  const { data, isPending, isError } = useExpenseCategories(year);
+  const { data, isPending, isFetching, isError } = useExpenseCategories(year);
   const showSkeleton = useDelayedPending(isPending);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [expanded, setExpanded] = useState<ExpandedState>(true);
@@ -195,7 +195,7 @@ export function ExpenseCategoryBreakdown({
         <EmptyState message="No expense categories for this year." />
       )}
       {data && treeData.length > 0 && (
-        <DataTable>
+        <DataTable className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}>
           <table className="min-w-full divide-y divide-border-subtle">
             <thead className="bg-surface-subtle">
               {table.getHeaderGroups().map((hg) => (

@@ -13,6 +13,8 @@ export interface Account {
   isActive: boolean;
 }
 
+const STALE_TIME_MS = 10 * 60 * 1000;
+
 export function useAccounts() {
   return useQuery<Account[]>({
     queryKey: accountKeys.all(),
@@ -20,7 +22,7 @@ export function useAccounts() {
       const { data } = await api.get<Account[]>('/accounts');
       return data;
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: STALE_TIME_MS,
   });
 }
 
@@ -33,6 +35,6 @@ export function useAllAccounts() {
       });
       return data;
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: STALE_TIME_MS,
   });
 }

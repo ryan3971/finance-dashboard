@@ -1,7 +1,9 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { anticipatedBudgetResponseSchema } from '@finance/shared/schemas/anticipated-budget';
 import { anticipatedBudgetKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
+
+const STALE_TIME_MS = 5 * 60 * 1000;
 
 export function useAnticipatedBudget(year: number) {
   return useQuery({
@@ -10,6 +12,7 @@ export function useAnticipatedBudget(year: number) {
       const { data } = await api.get<unknown>('/anticipated-budget', { params: { year } });
       return anticipatedBudgetResponseSchema.parse(data);
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: STALE_TIME_MS,
+    placeholderData: keepPreviousData,
   });
 }

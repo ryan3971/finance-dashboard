@@ -6,7 +6,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { YearSelector } from '@/components/common/YearSelector';
-import { MONTH_LABELS, fmt } from '@/lib/utils';
+import { cn, MONTH_LABELS, fmt } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useYtdDashboard } from './hooks/useYtdDashboard';
 
@@ -181,7 +181,7 @@ export function YtdPage() {
 
       {/* Table */}
       {data && (
-        <DataTable className={`transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
+        <DataTable className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}>
           <table className="min-w-full text-left">
             <thead>
               <tr className="bg-surface-subtle">

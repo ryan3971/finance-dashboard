@@ -3,6 +3,8 @@ import api from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import type { UserConfig } from '@finance/shared/types/user-config';
 
+const STALE_TIME_MS = 5 * 60 * 1000;
+
 export function useUserConfig() {
   return useQuery<UserConfig>({
     queryKey: userConfigKeys.all(),
@@ -10,6 +12,6 @@ export function useUserConfig() {
       const { data } = await api.get<UserConfig>('/user-config');
       return data;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: STALE_TIME_MS,
   });
 }
