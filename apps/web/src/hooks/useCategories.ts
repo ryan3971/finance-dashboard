@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 
 export type { Category, Subcategory } from '@finance/shared/types/categories';
 
+const STALE_TIME_MS = 30 * 60 * 1000;
+
 export function useCategories() {
   return useQuery<Category[]>({
     queryKey: categoryKeys.all(),
@@ -12,6 +14,6 @@ export function useCategories() {
       const { data } = await api.get<Category[]>('/categories');
       return data;
     },
-    staleTime: 1000 * 60 * 30,
+    staleTime: STALE_TIME_MS,
   });
 }

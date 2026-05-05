@@ -3,6 +3,8 @@ import { expenseCategoriesResponseSchema } from '@finance/shared/schemas/dashboa
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 
+const STALE_TIME_MS = 5 * 60 * 1000;
+
 export function useExpenseCategories(year: number) {
   return useQuery({
     queryKey: dashboardKeys.expensesCategories(year),
@@ -10,6 +12,6 @@ export function useExpenseCategories(year: number) {
       const { data } = await api.get<unknown>('/dashboard/expenses/categories', { params: { year } });
       return expenseCategoriesResponseSchema.parse(data);
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: STALE_TIME_MS,
   });
 }

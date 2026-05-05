@@ -3,6 +3,8 @@ import type { RebalancingGroupsResponse } from '@finance/shared/types/rebalancin
 import { rebalancingKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 
+const STALE_TIME_MS = 2 * 60 * 1000;
+
 export function useRebalancingGroups() {
   return useQuery<RebalancingGroupsResponse>({
     queryKey: rebalancingKeys.groups(),
@@ -12,6 +14,6 @@ export function useRebalancingGroups() {
       );
       return data;
     },
-    staleTime: 1000 * 60 * 2,
+    staleTime: STALE_TIME_MS,
   });
 }
