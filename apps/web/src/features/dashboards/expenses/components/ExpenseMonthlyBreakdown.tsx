@@ -141,7 +141,7 @@ export function ExpenseMonthlyBreakdown({
   readonly selectedMonth: number | null;
   readonly onMonthSelect: (month: number | null) => void;
 }) {
-  const { data, isPending, isError } = useExpensesDashboard(year);
+  const { data, isPending, isFetching, isError } = useExpensesDashboard(year);
   const showSkeleton = useDelayedPending(isPending);
 
   // Only sum need/want/other/rebalancingAdjustment — total comes from data.annualTotal to avoid float drift.
@@ -170,7 +170,7 @@ export function ExpenseMonthlyBreakdown({
         (data.annualTotal === 0 ? (
           <EmptyState message="No expenses for this year." />
         ) : (
-          <DataTable className="mb-6">
+          <DataTable className={cn('mb-6 transition-opacity duration-200', isFetching && 'opacity-50')}>
             <table className="min-w-full text-left">
               <thead>
                 <tr className="bg-surface-subtle">

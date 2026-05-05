@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { expenseDashboardResponseSchema } from '@finance/shared/schemas/dashboard';
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
@@ -13,5 +13,6 @@ export function useExpensesDashboard(year: number) {
       return expenseDashboardResponseSchema.parse(data);
     },
     staleTime: STALE_TIME_MS,
+    placeholderData: keepPreviousData,
   });
 }
