@@ -161,7 +161,7 @@ export const helpContent = {
 
   'anticipatedBudget.entryList': {
     title: 'Anticipated Budget',
-    body: 'Define your expected income and expenses for the year. These entries power the Expected columns in the Income Flow card and the Budget benchmark in the Spending Summary.',
+    body: 'Define your expected income and expenses for the year. These entries power the Expected column in the Income Flow card and the Budget benchmark in the Spending Summary.',
     sections: [
       {
         heading: 'Default vs monthly overrides',
@@ -185,12 +185,12 @@ export const helpContent = {
       {
         heading: 'Flagged for review',
         description:
-          'A transaction is flagged on import if it is uncategorized, or if it matches the pattern of an internal transfer. Open a flagged row to assign a category and clear the flag, or to confirm or dismiss the transfer suggestion. Dashboard totals may not be fully accurate while flagged transactions remain unresolved.',
+          'A transaction is flagged on import for one of two reasons: it has no matching categorization rule and needs a category assigned, or its description matches a known transfer pattern and needs to be confirmed or dismissed. Unresolved flags can cause dashboard totals to be incomplete or inaccurate.',
       },
       {
         heading: 'Editing and duplicating',
         description:
-          'Open any transaction to edit its category, Need/Want classification, or note. Use Duplicate to quickly create a copy — useful for recurring manual entries. Transfers can be marked or unmarked from the edit panel.',
+          'Open any transaction to edit its category, Need/Want classification, note, or transfer status. Use Duplicate to quickly create a copy — useful for recurring manual entries.',
       },
       {
         heading: 'Transfers',
