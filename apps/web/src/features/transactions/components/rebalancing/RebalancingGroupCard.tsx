@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import type { RebalancingGroup } from '@finance/shared/types/rebalancing';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -24,9 +25,31 @@ function fmtDate(dateStr: string): string {
   return `${MONTH_LABELS[month - 1] ?? parts[1]} ${day}`;
 }
 
-function TotalsRow({ group }: { readonly group: RebalancingGroup }) {
+interface TotalsRowProps {
+  readonly group: RebalancingGroup;
+  readonly isEditingOverride: boolean;
+  readonly overrideInput: string;
+  readonly isUpdating: boolean;
+  readonly onOverrideInputChange: (val: string) => void;
+  readonly onEditOverride: () => void;
+  readonly onSaveOverride: () => void;
+  readonly onClearOverride: () => void;
+  readonly onCancelOverride: () => void;
+}
+
+function TotalsRow({
+  group,
+  isEditingOverride,
+  overrideInput,
+  isUpdating,
+  onOverrideInputChange,
+  onEditOverride,
+  onSaveOverride,
+  onClearOverride,
+  onCancelOverride,
+}: TotalsRowProps) {
   return (
-    <div className="flex flex-wrap gap-x-6 gap-y-1 px-4 py-3 border-t border-border-subtle bg-surface-subtle text-sm">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 border-t border-border-subtle bg-surface-subtle text-sm">
       <span className="text-content-secondary">
         Source total:{' '}
         <span className="font-mono font-medium text-content-primary">
@@ -39,18 +62,80 @@ function TotalsRow({ group }: { readonly group: RebalancingGroup }) {
           {fmt(group.offsetTotal)}
         </span>
       </span>
-      <span className="text-content-secondary">
+      <span className="flex items-center gap-1.5 text-content-secondary">
         My share:{' '}
-        <span
-          className={cn(
-            'font-mono font-medium',
-            group.myShare > 0 ? 'text-danger' : 'text-content-primary'
-          )}
-        >
-          {fmt(group.myShare)}
-        </span>
-        {group.myShareOverride !== null && (
-          <span className="ml-1 text-xs text-content-muted">(override)</span>
+        {isEditingOverride ? (
+          <>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={overrideInput}
+              onChange={(e) => onOverrideInputChange(e.target.value)}
+              autoFocus
+              className="w-24 rounded border border-border-strong bg-surface px-2 py-0.5 text-sm font-mono text-content-primary focus:outline-none focus:ring-1 focus:ring-border-strong"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSaveOverride();
+                if (e.key === 'Escape') onCancelOverride();
+              }}
+            />
+            <button
+              type="button"
+              className="text-xs font-medium text-content-primary hover:text-positive disabled:opacity-50"
+              disabled={isUpdating}
+              onClick={onSaveOverride}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="text-xs text-content-muted hover:text-content-secondary"
+              onClick={onCancelOverride}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <span className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                'font-mono font-medium',
+                group.myShare > 0 ? 'text-danger' : 'text-content-primary'
+              )}
+            >
+              {fmt(group.myShare)}
+            </span>
+            {group.myShareOverride !== null ? (
+              <>
+                <span className="text-xs text-content-muted">
+                  (originally {fmt(Math.max(0, group.sourceTotal - group.offsetTotal))})
+                </span>
+                <button
+                  type="button"
+                  className="text-xs text-content-muted hover:text-content-primary transition-colors"
+                  onClick={onEditOverride}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-content-muted hover:text-danger transition-colors disabled:opacity-50"
+                  disabled={isUpdating}
+                  onClick={onClearOverride}
+                >
+                  Reset
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="text-xs text-content-muted hover:text-content-primary transition-colors"
+                onClick={onEditOverride}
+              >
+                Override
+              </button>
+            )}
+          </span>
         )}
       </span>
     </div>
@@ -156,6 +241,8 @@ export function RebalancingGroupCard({
   readonly group: RebalancingGroup;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isEditingOverride, setIsEditingOverride] = useState(false);
+  const [overrideInput, setOverrideInput] = useState('');
   const updateGroup = useUpdateGroup();
   const deleteGroup = useDeleteGroup();
   const removeMember = useRemoveGroupMember();
@@ -167,7 +254,8 @@ export function RebalancingGroupCard({
   // preventing concurrent mutations across sections.
   const anyPending = isUpdating || isDeleting || removeMember.isPending;
 
-  const toggleLabel = isUpdating ? '…' : isResolved ? 'Re-open' : 'Mark Resolved';
+  const resolvedToggleLabel = isResolved ? 'Re-open' : 'Mark Resolved';
+  const toggleLabel = isUpdating ? '…' : resolvedToggleLabel;
 
   const sources = group.transactions.filter((t) => t.role === 'source');
   const offsets = group.transactions.filter((t) => t.role === 'offset');
@@ -183,6 +271,30 @@ export function RebalancingGroupCard({
     deleteGroup.mutate(group.id, {
       onSuccess: () => setConfirmDelete(false),
     });
+  }
+
+  function handleEditOverride() {
+    const initial = group.myShareOverride !== null ? String(group.myShareOverride) : '';
+    setOverrideInput(initial);
+    setIsEditingOverride(true);
+  }
+
+  function handleSaveOverride() {
+    const val = parseFloat(overrideInput);
+    if (!overrideInput || isNaN(val) || val <= 0) return;
+    updateGroup.mutate(
+      { id: group.id, input: { myShareOverride: val } },
+      { onSuccess: () => setIsEditingOverride(false) }
+    );
+  }
+
+  function handleClearOverride() {
+    updateGroup.mutate({ id: group.id, input: { myShareOverride: null } });
+  }
+
+  function handleCancelOverride() {
+    setIsEditingOverride(false);
+    setOverrideInput('');
   }
 
   return (
@@ -238,7 +350,17 @@ export function RebalancingGroupCard({
         />
 
         {/* Totals */}
-        <TotalsRow group={group} />
+        <TotalsRow
+          group={group}
+          isEditingOverride={isEditingOverride}
+          overrideInput={overrideInput}
+          isUpdating={anyPending}
+          onOverrideInputChange={setOverrideInput}
+          onEditOverride={handleEditOverride}
+          onSaveOverride={handleSaveOverride}
+          onClearOverride={handleClearOverride}
+          onCancelOverride={handleCancelOverride}
+        />
       </div>
 
       {/* Delete confirmation dialog */}
