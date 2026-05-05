@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import type { RebalancingGroup } from '@finance/shared/types/rebalancing';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -68,7 +69,7 @@ function TotalsRow({
             <input
               type="number"
               step="0.01"
-              min="0"
+              min="0.01"
               value={overrideInput}
               onChange={(e) => onOverrideInputChange(e.target.value)}
               autoFocus
@@ -79,6 +80,7 @@ function TotalsRow({
               }}
             />
             <button
+              type="button"
               className="text-xs font-medium text-content-primary hover:text-positive disabled:opacity-50"
               disabled={isUpdating}
               onClick={onSaveOverride}
@@ -86,6 +88,7 @@ function TotalsRow({
               Save
             </button>
             <button
+              type="button"
               className="text-xs text-content-muted hover:text-content-secondary"
               onClick={onCancelOverride}
             >
@@ -102,25 +105,36 @@ function TotalsRow({
             >
               {fmt(group.myShare)}
             </span>
-            {group.myShareOverride !== null && (
-              <span className="flex items-center gap-0.5 text-xs text-content-muted">
-                <span>(override)</span>
+            {group.myShareOverride !== null ? (
+              <>
+                <span className="text-xs text-content-muted">
+                  (originally {fmt(Math.max(0, group.sourceTotal - group.offsetTotal))})
+                </span>
                 <button
-                  className="hover:text-danger transition-colors disabled:opacity-50"
-                  title="Clear override"
+                  type="button"
+                  className="text-xs text-content-muted hover:text-content-primary transition-colors"
+                  onClick={onEditOverride}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-content-muted hover:text-danger transition-colors disabled:opacity-50"
                   disabled={isUpdating}
                   onClick={onClearOverride}
                 >
-                  ✕
+                  Reset
                 </button>
-              </span>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="text-xs text-content-muted hover:text-content-primary transition-colors"
+                onClick={onEditOverride}
+              >
+                Override
+              </button>
             )}
-            <button
-              className="text-xs text-content-muted hover:text-content-primary transition-colors"
-              onClick={onEditOverride}
-            >
-              {group.myShareOverride !== null ? 'Edit override' : 'Override'}
-            </button>
           </span>
         )}
       </span>
@@ -340,7 +354,7 @@ export function RebalancingGroupCard({
           group={group}
           isEditingOverride={isEditingOverride}
           overrideInput={overrideInput}
-          isUpdating={isUpdating}
+          isUpdating={anyPending}
           onOverrideInputChange={setOverrideInput}
           onEditOverride={handleEditOverride}
           onSaveOverride={handleSaveOverride}
