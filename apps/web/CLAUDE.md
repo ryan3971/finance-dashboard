@@ -92,6 +92,13 @@ features/dashboards/
 
 **Snapshot tab** — no month selector, always reflects current state. Live badge in header. Two-column top grid (Accounts | Monthly Income & Expenses), full-width Expected vs Actual card below (see `snapshot_dashboard.html` in the project root for the reference mockup).
 
+**Year/month navigation — no-flash loading pattern** — all dashboard query hooks use `placeholderData: keepPreviousData` (imported from `@tanstack/react-query`). This keeps the previous period's data visible while the new fetch runs instead of tearing down to a blank state. The consuming page/component must:
+1. Destructure `isFetching` (not `isPending`) from the hook to detect background refetches.
+2. Apply `className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}` to the content wrapper or `DataTable` so the stale data is visibly dimmed during the load.
+3. Keep the `useDelayedPending(isPending)` skeleton — it still fires on true first load when there is no placeholder data.
+
+Never add a new dashboard query hook without `placeholderData: keepPreviousData`.
+
 ## Dev proxy
 
 Vite proxies `/api` to `localhost:3000` in dev.

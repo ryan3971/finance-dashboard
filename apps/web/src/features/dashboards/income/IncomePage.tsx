@@ -179,7 +179,7 @@ function IncomeSkeleton() {
 export function IncomePage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [monthFilter, setMonthFilter] = useState<number | null>(null);
-  const { data, isPending, isError } = useIncomeDashboard(year);
+  const { data, isPending, isFetching, isError } = useIncomeDashboard(year);
   const showSkeleton = useDelayedPending(isPending);
 
   const handleYearChange = useCallback((newYear: number) => {
@@ -258,7 +258,7 @@ export function IncomePage() {
 
           {/* Table */}
           {data && (
-            <DataTable>
+            <DataTable className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}>
               <table className="min-w-full text-left">
                 <thead>
                   <tr className="bg-surface-subtle">
@@ -313,7 +313,7 @@ export function IncomePage() {
             Income Transactions
           </h2>
           <TransactionTablePane
-            key={`${year}-${monthFilter ?? 'all'}`}
+            resetKey={`${year}-${monthFilter ?? 'all'}`}
             className="flex-1"
             presetFilters={{ isIncome: true }}
             defaultFilters={{
