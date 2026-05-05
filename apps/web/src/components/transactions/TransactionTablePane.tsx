@@ -27,11 +27,13 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { parseAmount } from '@/lib/utils';
+import { cn, parseAmount } from '@/lib/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 
 interface TransactionTablePaneProps {
+  // Changing this value resets internal filter/page state without unmounting the component.
+  readonly resetKey?: string;
   // Server-side filters always applied, not exposed in the filter UI
   readonly presetFilters?: Partial<TransactionFilterParams>;
   // Initial values for user-editable filters (uncontrolled mode only)
@@ -81,6 +83,7 @@ function PaneSkeleton() {
 }
 
 export function TransactionTablePane({
+  resetKey,
   presetFilters,
   defaultFilters,
   className,
@@ -97,7 +100,7 @@ export function TransactionTablePane({
   // Captured once at mount — this is what "Clear all" in the filter panel
   // resets to, preserving any baseline values set by defaultFilters (e.g.
   // a year's date range from ExpensesPage).
-  const [resetFilters] = useState<FilterState>({
+  const [resetFilters, setResetFilters] = useState<FilterState>({
     ...EMPTY_FILTER_STATE,
     ...defaultFilters,
   });
@@ -114,6 +117,25 @@ export function TransactionTablePane({
 
   const activeFilters = isFilterControlled ? filterState : localFilters;
   const activePage = isPageControlled ? page : localPage;
+
+  // Resets internal state when the parent signals a context change (e.g. year/month
+  // navigation) without unmounting the component, so keepPreviousData can hold the
+  // previous results visible while the new fetch runs.
+  const prevResetKeyRef = useRef(resetKey);
+  useEffect(() => {
+    if (prevResetKeyRef.current === resetKey) return;
+    prevResetKeyRef.current = resetKey;
+    if (!isFilterControlled) {
+      const next = { ...EMPTY_FILTER_STATE, ...defaultFilters };
+      setResetFilters(next);
+      setLocalFilters(next);
+      if (!isPageControlled) setLocalPage(1);
+    }
+    setExpandedPanel(null);
+    // defaultFilters is intentionally read from the closure at the moment resetKey
+    // fires — tracking it as a dep would cause spurious resets on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
 
   const deleteTransaction = useDeleteTransaction();
 
@@ -180,7 +202,7 @@ export function TransactionTablePane({
     setExpandedPanel(null);
   }
 
-  const { data, isPending, isError } = useTransactions({
+  const { data, isPending, isFetching, isError } = useTransactions({
     accountId: activeFilters.accountId || undefined,
     startDate: activeFilters.startDate || undefined,
     endDate: activeFilters.endDate || undefined,
@@ -256,7 +278,9 @@ export function TransactionTablePane({
         />
       </div>
 
-      {tableContent}
+      <div className={cn('transition-opacity duration-200', isFetching && data && 'opacity-50')}>
+        {tableContent}
+      </div>
 
       {panelOpen && (
         <ManualTransactionPanel

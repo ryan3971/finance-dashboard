@@ -1,7 +1,7 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { Transaction, TransactionFilters } from '@finance/shared/schemas/transactions';
 import { transactionKeys } from '@/lib/queryKeys';
-import { useQuery } from '@tanstack/react-query';
 
 export interface PaginationInfo {
   page: number;
@@ -27,5 +27,6 @@ export function useTransactions({
       });
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 }
