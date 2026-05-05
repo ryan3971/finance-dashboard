@@ -8,6 +8,7 @@ import { useAccounts } from '@/hooks/useAccounts';
 import { useSeedLoad } from '@/features/seed/hooks/useSeedLoad';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
+import { AboutDialog } from '@/components/common/AboutDialog';
 
 const DASHBOARD_LINKS = [
   { to: '/dashboard/snapshot' as const, label: 'Snapshot' },
@@ -136,6 +137,9 @@ export function NavBar() {
             </svg>
           </button>
 
+          {/* About */}
+          <AboutDialog />
+
           {/* Load sample data — shown only when user has no accounts */}
           {hasNoAccounts && (
             <button
@@ -234,6 +238,10 @@ export function NavBar() {
                   {link.label}
                 </Link>
               ))}
+
+              <div className="my-2 border-t border-border-base" />
+
+              <AboutDialog triggerClassName="block w-full text-left rounded py-2.5" />
             </nav>
 
             <div className="flex-shrink-0 px-4 py-4 border-t border-border-base space-y-2">

@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { YearSelector } from '@/components/common/YearSelector';
 import { cn, MONTH_LABELS, fmt } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { useYtdDashboard } from './hooks/useYtdDashboard';
 
 type DataMonth = Extract<YtdMonth, { spendingIncome: number }>;
@@ -168,6 +169,7 @@ export function YtdPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-xl font-semibold text-content-primary">YTD</h1>
+        <SectionHelp contentKey="ytd.summary" />
         <YearSelector year={year} onChange={setYear} />
       </div>
 

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { cn, getMonthDateRange, getYearDateRange } from '@/lib/utils';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { TransactionTablePane } from '@/components/transactions/TransactionTablePane';
 import { YearSelector } from '@/components/common/YearSelector';
 import { ExpenseCategoryBreakdown } from './components/ExpenseCategoryBreakdown';
@@ -32,9 +33,12 @@ export function ExpensesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6">
         {/* Left: Monthly Breakdown — full height */}
         <div className="flex flex-col">
-          <h2 className="mb-4 text-lg font-semibold text-content-primary">
-            Monthly Breakdown
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-semibold text-content-primary">
+              Monthly Breakdown
+            </h2>
+            <SectionHelp contentKey="expenses.monthlyBreakdown" />
+          </div>
           <ExpenseMonthlyBreakdown
             year={year}
             selectedMonth={monthFilter}
@@ -64,22 +68,30 @@ export function ExpensesPage() {
 
           {/* Tab content */}
           {activeTab === 'transactions' && (
-            <TransactionTablePane
-              key={`${year}-${monthFilter ?? 'all'}`}
-              presetFilters={{ isIncome: false }}
-              defaultFilters={{
-                startDate: dateRange.start,
-                endDate: dateRange.end,
-              }}
-              onFilterChange={(newFilters) => {
-                if (
-                  newFilters.startDate !== dateRange.start ||
-                  newFilters.endDate !== dateRange.end
-                ) {
-                  setMonthFilter(null);
-                }
-              }}
-            />
+            <>
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-lg font-semibold text-content-primary">
+                  Expense Transactions
+                </h2>
+                <SectionHelp contentKey="expenses.transactions" />
+              </div>
+              <TransactionTablePane
+                key={`${year}-${monthFilter ?? 'all'}`}
+                presetFilters={{ isIncome: false }}
+                defaultFilters={{
+                  startDate: dateRange.start,
+                  endDate: dateRange.end,
+                }}
+                onFilterChange={(newFilters) => {
+                  if (
+                    newFilters.startDate !== dateRange.start ||
+                    newFilters.endDate !== dateRange.end
+                  ) {
+                    setMonthFilter(null);
+                  }
+                }}
+              />
+            </>
           )}
           {activeTab === 'categories' && (
             <ExpenseCategoryBreakdown year={year} monthFilter={monthFilter} />

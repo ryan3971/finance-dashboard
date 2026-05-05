@@ -14,6 +14,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useAllAccounts } from '@/hooks/useAccounts';
+import { SectionHelp } from '@/components/common/SectionHelp';
 
 // Matches the number of Account fields displayed as table columns
 const ACCOUNT_SKELETON_ROW_COUNT = 5;
@@ -102,7 +103,10 @@ export function AccountsPage() {
   return (
     <PageLayout>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-semibold text-content-primary">Accounts</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-semibold text-content-primary">Accounts</h1>
+          <SectionHelp contentKey="accounts.page" />
+        </div>
         <Button
           size="sm"
           onClick={() =>

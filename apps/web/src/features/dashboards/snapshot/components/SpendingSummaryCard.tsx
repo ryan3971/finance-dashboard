@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import type { SnapshotAnticipated, SnapshotColumnValues, SnapshotMonthlyIncome } from '@finance/shared/types/dashboard';
 import { cn, fmt } from '@/lib/utils';
+import { SectionHelp } from '@/components/common/SectionHelp';
 
 type ViewMode = 'budget' | 'income';
 
@@ -140,9 +141,12 @@ export function SpendingSummaryCard({
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
       <div className="px-6 py-4 border-b border-border-base flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-content-primary">
-          Spending Summary
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-content-primary">
+            Spending Summary
+          </h2>
+          <SectionHelp contentKey="snapshot.spendingSummary" />
+        </div>
         {hasEntries && (
           <div className="flex rounded border border-border-strong overflow-hidden">
             <button

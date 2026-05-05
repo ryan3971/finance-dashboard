@@ -1,6 +1,7 @@
 import { type FilterState } from '@/features/transactions/components/filters/filterState';
 import { triggerCsvDownload } from '@/features/transactions/utils/exportCsv';
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ManualTransactionPanel } from '@/features/transactions/components/panels/ManualTransactionPanel';
@@ -120,9 +121,18 @@ export function TransactionsPage() {
     <PageLayout>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
-          <h1 className="text-xl font-semibold text-content-primary">
-            Transactions
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold text-content-primary">
+              Transactions
+            </h1>
+            <SectionHelp
+              contentKey={
+                activeTab === 'transactions'
+                  ? 'transactions.list'
+                  : 'transactions.rebalancing'
+              }
+            />
+          </div>
           {activeTab === 'transactions' && pagination && (
             <p className="text-sm text-content-muted mt-0.5">
               {pagination.total} total

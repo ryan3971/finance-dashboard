@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { SnapshotAccountRow, SnapshotEmergencyFund } from '@finance/shared/types/dashboard';
 import { cn, fmt } from '@/lib/utils';
+import { SectionHelp } from '@/components/common/SectionHelp';
 
 interface Props {
   readonly accounts: SnapshotAccountRow[];
@@ -20,8 +21,9 @@ function balanceColor(
 export function AccountsCard({ accounts, emergencyFund }: Props) {
   return (
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
-      <div className="px-6 py-4 border-b border-border-base">
+      <div className="px-6 py-4 border-b border-border-base flex items-center gap-2">
         <h2 className="text-lg font-semibold text-content-primary">Accounts</h2>
+        <SectionHelp contentKey="snapshot.accounts" />
       </div>
       <ul className="divide-y divide-border-subtle">
         {accounts.length === 0 && (

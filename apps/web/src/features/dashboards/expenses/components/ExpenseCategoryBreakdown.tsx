@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
 import { cn, fmt, sortIndicator } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { useExpenseCategories } from '../hooks/useExpenseCategories';
 import {
   buildCategoryTree,
@@ -174,9 +175,12 @@ export function ExpenseCategoryBreakdown({
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-content-primary">
-          Category Breakdown
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-content-primary">
+            Category Breakdown
+          </h2>
+          <SectionHelp contentKey="expenses.categoryBreakdown" />
+        </div>
         {treeData.length > 0 && (
           <button
             onClick={() => setExpanded(hasAnyExpanded ? {} : true)}

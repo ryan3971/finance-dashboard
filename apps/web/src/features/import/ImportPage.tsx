@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/common/FormField';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { Select } from '@/components/ui/Select';
 import { useAccounts } from '@/hooks/useAccounts';
 import { ImportResultCard } from './components/ImportResultCard';
@@ -24,9 +25,12 @@ export function ImportPage() {
   return (
     <PageLayout>
       <div className="max-w-lg">
-        <h1 className="text-xl font-semibold text-content-primary mb-6">
-          Import transactions
-        </h1>
+        <div className="flex items-center gap-2 mb-6">
+          <h1 className="text-xl font-semibold text-content-primary">
+            Import transactions
+          </h1>
+          <SectionHelp contentKey="import.page" />
+        </div>
 
         <div className="bg-surface rounded-lg border border-border-base p-6">
           <form
