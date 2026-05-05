@@ -30,6 +30,7 @@ export function AccountForm({
 }: AccountFormProps) {
   const {
     register,
+    watch,
     handleSubmit,
     formState: { errors },
   } = useForm<AccountFormState>({
@@ -66,6 +67,11 @@ export function AccountForm({
               </option>
             ))}
           </Select>
+          {watch('institution') === 'manual' && (
+            <p className="text-xs text-content-muted mt-1">
+              For accounts with no supported CSV format — transactions are entered by hand.
+            </p>
+          )}
         </FormField>
         {showType && (
           <FormField label="Type" labelSize="xs" error={errors.type?.message}>
@@ -78,18 +84,11 @@ export function AccountForm({
             </Select>
           </FormField>
         )}
-        <FormField
-          label="Currency"
-          labelSize="xs"
-          error={errors.currency?.message}
-        >
-          <Input
-            maxLength={3}
-            placeholder="CAD"
-            {...register('currency', {
-              setValueAs: (v: string) => v.toUpperCase(),
-            })}
-          />
+        <FormField label="Currency" labelSize="xs">
+          <Input disabled value="CAD" readOnly />
+          <p className="text-xs text-content-muted mt-1">
+            Multi-currency is not currently supported.
+          </p>
         </FormField>
       </div>
       {!showType && (

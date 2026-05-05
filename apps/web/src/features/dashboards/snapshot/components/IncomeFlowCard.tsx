@@ -11,7 +11,7 @@ function FlowRow({
   label,
   actual,
   expected,
-  actualClass,
+  actualClass = 'text-content-primary',
   indent,
   separator,
 }: {
@@ -34,7 +34,7 @@ function FlowRow({
         {label}
       </td>
       <td
-        className={cn('px-4 py-3 text-sm font-mono font-medium text-right', actualClass ?? 'text-content-primary')}
+        className={cn('px-4 py-3 text-sm font-mono font-medium text-right', actualClass)}
       >
         {fmt(actual)}
       </td>
