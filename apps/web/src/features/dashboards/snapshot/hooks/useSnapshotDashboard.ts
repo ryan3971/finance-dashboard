@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { snapshotDashboardResponseSchema } from '@finance/shared/schemas/dashboard';
 import { dashboardKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
@@ -15,5 +15,6 @@ export function useSnapshotDashboard(year: number, month: number) {
       return snapshotDashboardResponseSchema.parse(data);
     },
     staleTime: SNAPSHOT_STALE_TIME_MS,
+    placeholderData: keepPreviousData,
   });
 }
