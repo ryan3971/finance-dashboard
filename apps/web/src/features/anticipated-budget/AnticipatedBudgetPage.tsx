@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { AddEntryDialog } from './components/AddEntryDialog';
 import { AnticipatedBudgetEntryCard } from './components/AnticipatedBudgetEntryCard';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +18,7 @@ export function AnticipatedBudgetPage() {
   const [year, setYear] = useState(currentYear);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data: entries, isPending } = useAnticipatedBudget(year);
+  const { data: entries, isPending, isFetching } = useAnticipatedBudget(year);
   const showSkeleton = useDelayedPending(isPending);
   const createEntry = useCreateEntry();
 
@@ -80,78 +81,82 @@ export function AnticipatedBudgetPage() {
         />
       )}
 
-      {/* Income section */}
-      {!isPending && incomeEntries.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">
-            Income
-          </h2>
-          <div className="space-y-2">
-            {incomeEntries.map((entry) => (
-              <AnticipatedBudgetEntryCard
-                key={entry.id}
-                entry={entry}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      {entries && (
+        <div className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}>
+          {/* Income section */}
+          {incomeEntries.length > 0 && (
+            <section className="mb-6">
+              <h2 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">
+                Income
+              </h2>
+              <div className="space-y-2">
+                {incomeEntries.map((entry) => (
+                  <AnticipatedBudgetEntryCard
+                    key={entry.id}
+                    entry={entry}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* Expenses section */}
-      {!isPending && expenseEntries.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">
-            Expenses
-          </h2>
-          <div className="space-y-4">
-            {needEntries.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-info mb-1.5">Needs</p>
-                <div className="space-y-2">
-                  {needEntries.map((entry) => (
-                    <AnticipatedBudgetEntryCard
-                      key={entry.id}
-                      entry={entry}
-                    />
-                  ))}
-                </div>
+          {/* Expenses section */}
+          {expenseEntries.length > 0 && (
+            <section className="mb-6">
+              <h2 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-2">
+                Expenses
+              </h2>
+              <div className="space-y-4">
+                {needEntries.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-info mb-1.5">Needs</p>
+                    <div className="space-y-2">
+                      {needEntries.map((entry) => (
+                        <AnticipatedBudgetEntryCard
+                          key={entry.id}
+                          entry={entry}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {wantEntries.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-accent mb-1.5">Wants</p>
+                    <div className="space-y-2">
+                      {wantEntries.map((entry) => (
+                        <AnticipatedBudgetEntryCard
+                          key={entry.id}
+                          entry={entry}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {otherEntries.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-content-muted mb-1.5">
+                      Other
+                    </p>
+                    <div className="space-y-2">
+                      {otherEntries.map((entry) => (
+                        <AnticipatedBudgetEntryCard
+                          key={entry.id}
+                          entry={entry}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            {wantEntries.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-accent mb-1.5">Wants</p>
-                <div className="space-y-2">
-                  {wantEntries.map((entry) => (
-                    <AnticipatedBudgetEntryCard
-                      key={entry.id}
-                      entry={entry}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {otherEntries.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-content-muted mb-1.5">
-                  Other
-                </p>
-                <div className="space-y-2">
-                  {otherEntries.map((entry) => (
-                    <AnticipatedBudgetEntryCard
-                      key={entry.id}
-                      entry={entry}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+            </section>
+          )}
 
-      {/* Summary cards */}
-      {!isPending && entries && entries.length > 0 && (
-        <SummaryCards entries={entries} month={currentMonth} />
+          {/* Summary cards */}
+          {entries.length > 0 && (
+            <SummaryCards entries={entries} month={currentMonth} />
+          )}
+        </div>
       )}
 
       {/* Add entry dialog */}
