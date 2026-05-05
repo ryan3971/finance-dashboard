@@ -47,6 +47,7 @@ jobs:
       - name: Build frontend
         run: pnpm --filter web build
         env:
+          VITE_ENV: staging
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_API_URL: https://api.ryantyrrell.ca
 
