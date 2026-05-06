@@ -1,0 +1,27 @@
+info:
+  name: patch_rebalancing_groups_by_id
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{localhost}}/api/v1/rebalancing/groups/:id"
+  params:
+    - name: id
+      value: c471f185-4668-4660-bcaf-2efce2cf7fcf
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "myShareOverride": 45.00
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,28 @@
+info:
+  name: post_rebalancing_groups_id_transaction
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/rebalancing/groups/:id/transactions"
+  params:
+    - name: id
+      value: c471f185-4668-4660-bcaf-2efce2cf7fcf
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "transactionId": "ed6f5c96-7d4f-4a69-8504-7ba12d77301c",
+        "role": "offset"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

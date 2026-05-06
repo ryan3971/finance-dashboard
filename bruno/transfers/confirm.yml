@@ -1,0 +1,28 @@
+info:
+  name: confirm
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/transfers/confirm"
+  body:
+    type: json
+    data: |-
+      {
+        "transactionId": "6d776d82-eec7-4f5d-b2b1-7a846e75d4b4"
+      }
+
+      // {
+      //   "transactionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      //   "pairedTransactionId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+      // }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

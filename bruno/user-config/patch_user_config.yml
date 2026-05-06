@@ -1,0 +1,63 @@
+info:
+  name: patch_user_config
+  type: http
+  seq: 7
+
+http:
+  method: PATCH
+  url: "{{localhost}}/api/v1/user-config"
+  body:
+    type: json
+    data: |-
+      // Request body
+      {
+        "allocations": {
+          "needsPercentage": 50,
+          "wantsPercentage": 30,
+          "investmentsPercentage": 20
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Auth: Authorization: Bearer <token>
+
+  Valid update
+
+  // Request body
+  {
+    "allocations": {
+      "needsPercentage": 50,
+      "wantsPercentage": 30,
+      "investmentsPercentage": 20
+    }
+  }
+  Expected: 200 with the full user config object including the new fields:
+
+
+  {
+    "id": "...",
+    "userId": "...",
+    "emergencyFundTarget": null,
+    "needsPercentage": 50,
+    "wantsPercentage": 30,
+    "investmentsPercentage": 20,
+    "updatedAt": "..."
+  }
+  Percentages don't sum to 100
+
+  { "allocations": { "needsPercentage": 50, "wantsPercentage": 30, "investmentsPercentage": 30 } }
+  Expected: 400
+
+  Empty body (no-op)
+
+  {}
+  Expected: 200 — returns existing config unchanged

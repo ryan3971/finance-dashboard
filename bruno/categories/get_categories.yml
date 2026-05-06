@@ -1,0 +1,17 @@
+info:
+  name: get_categories
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{localhost}}/api/v1/categories"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,39 @@
+info:
+  name: patch_budget
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: "{{localhost}}/api/v1/anticipated-budget/:id"
+  params:
+    - name: id
+      value: cfd8b469-6aae-4679-9abb-6bf7712489d5
+      type: path
+  body:
+    type: json
+    data: |-
+      { 
+        "name": "Updated Rent", 
+        "monthlyAmount": "1600.00" 
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Happy path
+
+  Body: { "name": "Updated Rent", "monthlyAmount": "1600.00" } (all fields optional)
+  Expected: 200, updated entry with recalculated months
+  Error cases
+
+  Non-existent or another user's ID: 404
+  Invalid UUID for :id: 400
+  No auth token: 401

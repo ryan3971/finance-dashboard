@@ -1,0 +1,73 @@
+info:
+  name: get_dashboard_expenses_categories
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{localhost}}/api/v1/dashboard/expenses/categories?year=2026"
+  params:
+    - name: year
+      value: "2026"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  1. Missing / invalid year — same 400 cases as above.
+
+  2. No transactions
+
+  Expected 200:
+
+
+  { "year": 2025, "rows": [] }
+  3. Uncategorized expense (categoryId = null, subcategoryId = null)
+
+  Expected — one row:
+
+
+  {
+    "year": 2025,
+    "rows": [
+      { "month": 3, "category": null, "subcategory": null, "total": 100 }
+    ]
+  }
+  4. Categorized expense (transaction linked to a parent category "Food" and subcategory "Groceries", amount = 75.00, May 2025)
+
+  Expected:
+
+
+  {
+    "year": 2025,
+    "rows": [
+      { "month": 5, "category": "Food", "subcategory": "Groceries", "total": 75 }
+    ]
+  }
+  5. Multiple months → separate rows
+
+  Seed: two expenses in different months with no category.
+
+  Expected: rows has 2 entries, one per month.
+
+  6. Same category + same month → summed into one row
+
+  Seed: two expenses in June, same category/subcategory, amounts 40.00 and 35.00.
+
+  Expected: one row with total: 75.
+
+  7. Excluded transactions — these should produce no rows:
+
+  Seed	Why excluded
+  isIncome = true	Not an expense
+  isTransfer = true	Transfer
+  8. User isolation
+
+  Seed expenses under User A. Query with User B's token → rows: [] (categories) or all-zero months (need/want).

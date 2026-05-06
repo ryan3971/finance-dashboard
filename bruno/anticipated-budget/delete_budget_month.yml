@@ -1,0 +1,35 @@
+info:
+  name: delete_budget_month
+  type: http
+  seq: 6
+
+http:
+  method: DELETE
+  url: "{{localhost}}/api/v1/anticipated-budget/:id/months/:month"
+  params:
+    - name: id
+      value: a6e5ae43-7584-4024-ba41-96d9fc3bf776
+      type: path
+    - name: month
+      value: "1"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Happy path
+
+  Expected: 204, no body
+  Verify: subsequent GET shows that month reverts to monthlyAmount with isOverride: false
+  Error cases
+
+  Entry not owned by user: 404
+  :month outside 1–12: 400
+  No auth token: 401

@@ -1,0 +1,42 @@
+info:
+  name: get_transactions
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{localhost}}/api/v1/transactions"
+  params:
+    - name: flagged
+      value: "true"
+      type: query
+      disabled: true
+    - name: account_id
+      value: b0fb0ea3-9e0e-4cd4-814f-e57f27fd90e1
+      type: query
+      disabled: true
+    - name: start_date
+      value: 2025-06-01
+      type: query
+      disabled: true
+    - name: end_date
+      value: 2025-06-14
+      type: query
+      disabled: true
+    - name: page
+      value: "1"
+      type: query
+      disabled: true
+    - name: limit
+      value: "2"
+      type: query
+      disabled: true
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

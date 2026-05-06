@@ -1,0 +1,96 @@
+info:
+  name: post_budget
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/anticipated-budget"
+  body:
+    type: json
+    data: |-
+      // {
+      //   "name": "Rent",
+      //   "categoryId": null,
+      //   "needWant": "Need",
+      //   "isIncome": false,
+      //   "monthlyAmount": "1500.00",
+      //   "notes": "Due on the 1st",
+      //   "effectiveYear": 2025
+      // }
+
+      // {
+      //   "name": "Salary",
+      //   "categoryId": null,
+      //   "needWant": null,
+      //   "isIncome": true,
+      //   "monthlyAmount": "4500.00",
+      //   "notes": null,
+      //   "effectiveYear": 2025
+      // }
+
+      {
+        "name": "Car Insurance",
+        "categoryId": null,
+        "needWant": "Need",
+        "isIncome": false,
+        "monthlyAmount": null,
+        "notes": null,
+        "effectiveYear": 2025
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Happy path — expense entry
+
+
+  {
+    "name": "Rent",
+    "categoryId": null,
+    "needWant": "Need",
+    "isIncome": false,
+    "monthlyAmount": "1500.00",
+    "notes": "Due on the 1st",
+    "effectiveYear": 2025
+  }
+  Expected: 201, entry object with months array (12 months all showing "1500.00", isOverride: false)
+  Happy path — income entry
+
+
+  {
+    "name": "Salary",
+    "categoryId": null,
+    "needWant": null,
+    "isIncome": true,
+    "monthlyAmount": "4500.00",
+    "notes": null,
+    "effectiveYear": 2025
+  }
+  Expected: 201, entry with isIncome: true, needWant: null
+  Happy path — irregular entry (no default amount)
+
+
+  {
+    "name": "Car Insurance",
+    "categoryId": null,
+    "needWant": "Need",
+    "isIncome": false,
+    "monthlyAmount": null,
+    "notes": null,
+    "effectiveYear": 2025
+  }
+  Expected: 201, all 12 months show amount: "0.00", isOverride: false
+  Error cases
+
+  Empty name (""): 400
+  Missing isIncome: 400
+  Missing effectiveYear: 400
+  No auth token: 401

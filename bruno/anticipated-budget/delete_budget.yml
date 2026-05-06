@@ -1,0 +1,31 @@
+info:
+  name: delete_budget
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: "{{localhost}}/api/v1/anticipated-budget/:id"
+  params:
+    - name: id
+      value: 9cafcbf4-4e1a-4969-bbc9-6dd21c8dd69f
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Happy path
+
+  Expected: 204, no body
+  Verify: subsequent GET no longer includes this entry
+  Error cases
+
+  Non-existent or another user's ID: 404
+  No auth token: 401

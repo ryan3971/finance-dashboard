@@ -1,0 +1,27 @@
+info:
+  name: post_transaction_tag
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/transactions/:id/tags"
+  params:
+    - name: id
+      value: ""
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "tagId": "d4e5f6a7-b8c9-0123-defa-234567890123"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

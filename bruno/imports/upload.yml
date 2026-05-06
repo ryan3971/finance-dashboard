@@ -1,0 +1,29 @@
+info:
+  name: upload
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/imports/upload"
+  body:
+    type: multipart-form
+    data:
+      - name: accountId
+        type: text
+        value: "{{tdAccountId}}"
+        contentType: Text
+      - name: file
+        type: file
+        value:
+          - C:\Users\rbt7r\OneDrive\Documents\VSCode Workspace\Finance Dashbard\apps\api\src\services\imports\adapters\__fixtures__\td.csv
+        contentType: File
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

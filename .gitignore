@@ -51,5 +51,9 @@ override.tf.json
 .agents/
 .claude/
 
+# Bruno
+bruno/environments/dev.yml
+bruno/*.html
+
 # Other
 aws.md

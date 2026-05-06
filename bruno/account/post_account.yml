@@ -1,0 +1,26 @@
+info:
+  name: post_account
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/accounts"
+  body:
+    type: json
+    data: |2
+        {
+          "name": "CIBC Mastercard",
+          "type": "credit",
+          "institution": "cibc",
+          "isCredit": true
+        }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

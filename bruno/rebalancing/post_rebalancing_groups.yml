@@ -1,0 +1,25 @@
+info:
+  name: post_rebalancing_groups
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/rebalancing/groups"
+  body:
+    type: json
+    data: |-
+      {
+        "label": "Dinner split with Alex",
+        "initialTransactionId": "49a8a128-e961-41af-8b6a-e918d819ccec",
+        "role": "source"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

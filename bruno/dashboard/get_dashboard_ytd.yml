@@ -1,0 +1,75 @@
+info:
+  name: get_dashboard_ytd
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{localhost}}/api/v1/dashboard/ytd?year=2026"
+  params:
+    - name: year
+      value: "2026"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Test 1 — No auth
+  Input: GET /api/v1/dashboard/ytd?year=2025 (no token)
+  Expected: 401
+
+  Test 2 — Missing year
+  Input: GET /api/v1/dashboard/ytd (authenticated)
+  Expected: 400
+
+  Test 3 — Out-of-range year
+  Input: GET /api/v1/dashboard/ytd?year=1999
+  Expected: 400
+
+  Test 4 — Past year with no data
+  Input: GET /api/v1/dashboard/ytd?year=2020
+  Expected: 200, all 12 months have all fields as 0 (not null)
+
+
+  {
+    "year": 2020,
+    "months": [
+      { "month": 1, "spendingIncome": 0, "expenses": 0, "netSpendingIncome": 0, "wants": 0, "needs": 0 },
+      ...
+    ]
+  }
+  Test 5 — Current year
+  Input: GET /api/v1/dashboard/ytd?year=2026
+  Expected: 200, months 1–4 have numeric values (0 if no data), months 5–12 have null for all fields (today is April 2026)
+
+
+  {
+    "year": 2026,
+    "months": [
+      { "month": 1, "spendingIncome": 0, ... },
+      { "month": 4, "spendingIncome": 0, ... },
+      { "month": 5, "spendingIncome": null, "expenses": null, "netSpendingIncome": null, "wants": null, "needs": null },
+      ...
+    ]
+  }
+  Test 6 — Spending income calculation
+  Setup: Insert a January 2025 income transaction of $5,000 and an investment contribution of $1,000 for that same month.
+  Input: GET /api/v1/dashboard/ytd?year=2025
+  Expected: January has spendingIncome: 4000 (5000 − 1000), expenses: 0, netSpendingIncome: 4000
+
+  Test 7 — Expense breakdown
+  Setup: Insert expenses in March 2025: $800 Need, $400 Want, $200 uncategorized (needWant null).
+  Input: GET /api/v1/dashboard/ytd?year=2025
+  Expected: March has expenses: 1400, needs: 800, wants: 400
+
+  Test 8 — Net spending income
+  Setup: Income $3,000 + contributions $500 in May 2025 → spendingIncome $2,500. Expenses $1,800.
+  Input: GET /api/v1/dashboard/ytd?year=2025
+  Expected: May has spendingIncome: 2500, expenses: 1800, netSpendingIncome: 700

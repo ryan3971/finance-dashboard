@@ -1,0 +1,49 @@
+info:
+  name: post_budget_month
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/anticipated-budget/:id/months/:month"
+  params:
+    - name: id
+      value: a6e5ae43-7584-4024-ba41-96d9fc3bf776
+      type: path
+    - name: month
+      value: "1"
+      type: path
+  body:
+    type: json
+    data: |
+      { 
+        "amount": "2000.00" 
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Happy path
+
+
+  { "amount": "1800.00" }
+  :month = integer 1–12
+  Expected: 204, no body
+  Verify: subsequent GET shows that month with amount: "1800.00", isOverride: true; all other months unchanged
+  Upsert (posting twice to same month)
+
+  Post "1800.00", then post "2000.00" to same month
+  Expected: second call is 204, GET shows "2000.00" (not duplicate rows)
+  Error cases
+
+  Entry not owned by user: 404
+  :month outside 1–12 (e.g. 0 or 13): 400
+  Missing or invalid amount in body: 400
+  No auth token: 401

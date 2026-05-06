@@ -1,0 +1,128 @@
+info:
+  name: get_dashboard_snapshot
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{localhost}}/api/v1/dashboard/snapshot"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  No query parameters — always returns current state.
+
+  Scenario 1 — No auth
+  Request: No Authorization header
+  Expected: 401
+
+  Scenario 2 — Empty account (baseline)
+  Setup: Authenticated user, no accounts, no transactions, no config
+  Expected: 200
+
+
+  {
+    "month": <current month 1–12>,
+    "year": <current year>,
+    "accounts": [],
+    "emergencyFund": {
+      "target": null,
+      "balance": 0,
+      "percentage": null
+    },
+    "monthlyIncome": {
+      "income": 0,
+      "incomeLessInvestment": { "total": 0, "needs": 0, "wants": 0 }
+    },
+    "monthlyExpenses": { "total": 0, "needs": 0, "wants": 0 },
+    "anticipated": {
+      "hasEntries": false,
+      "expectedIncome": 0,
+      "expectedSpendingIncome": { "total": 0, "needs": 0, "wants": 0 },
+      "expectedExpenses": { "total": 0, "needs": 0, "wants": 0 },
+      "expectedAvailable": { "total": 0, "needs": 0, "wants": 0 },
+      "remainingBudget": { "total": 0, "needs": 0, "wants": 0 }
+    }
+  }
+  Scenario 3 — Account running balance
+  Setup: A chequing account with a $4,500 income transaction and a $1,200 expense transaction (both any date, not scoped to month)
+  Expected: accounts[0].balance = 3300
+
+  Credit account with $500 charge and $200 payment:
+  Expected: balance = 300 (charges add, payments subtract)
+
+  Scenario 4 — Emergency fund
+  Setup: Chequing account with $10,000 balance; emergencyFundTarget set to 20000 in user config
+  Expected:
+
+
+  "emergencyFund": {
+    "target": 20000,
+    "balance": 10000,
+    "percentage": 50.0
+  }
+  At 100%+ funded (balance >= target): percentage >= 100
+
+  No target set: "target": null, "percentage": null
+
+  Scenario 5 — Monthly income (current month only)
+  Setup: Income transaction in the current calendar month for $5,000; another income transaction from last month for $9,999
+  Expected: monthlyIncome.income = 5000 (prior month excluded)
+
+  With allocation config set (e.g. 50% needs / 30% wants / 20% investments):
+
+
+  "monthlyIncome": {
+    "income": 5000,
+    "incomeLessInvestment": { "total": 4000, "needs": 2500, "wants": 1500 }
+  }
+  Without allocation config set:
+
+
+  "incomeLessInvestment": { "total": 0, "needs": 0, "wants": 0 }
+  Scenario 6 — Monthly expenses (current month, bucketed by Need/Want)
+  Setup: Three expenses this month — $800 Need, $300 Want, $50 uncategorized
+  Expected:
+
+
+  "monthlyExpenses": { "total": 1150, "needs": 800, "wants": 300 }
+  Note: uncategorized $50 adds to total only, not to needs or wants.
+
+  Scenario 7 — Anticipated budget (no entries)
+  Setup: No anticipated budget entries for the current year
+  Expected: anticipated.hasEntries = false
+
+  Scenario 8 — Anticipated budget (with entries, allocation config set)
+  Setup:
+
+  Anticipated income entry: monthlyAmount = 5000, isIncome = true, current year
+  Anticipated expense entry: monthlyAmount = 1500, isIncome = false, needWant = "Need", current year
+  Allocation config: 50% needs / 30% wants / 20% investments
+  Expected:
+
+
+  "anticipated": {
+    "hasEntries": true,
+    "expectedIncome": 5000,
+    "expectedSpendingIncome": { "total": 4000, "needs": 2000, "wants": 1200 },
+    "expectedExpenses":       { "total": 1500, "needs": 1500, "wants": 0 },
+    "expectedAvailable":      { "total": 2500, "needs": 500,  "wants": 1200 },
+    "remainingBudget":        { "total": 4000, "needs": 2000, "wants": 1200 }
+  }
+  (remainingBudget = expectedSpendingIncome − actual expenses; with no actual expenses this month, it equals expectedSpendingIncome)
+
+  Scenario 9 — Month override takes precedence
+  Setup: Anticipated entry with monthlyAmount = 100; month override for the current month set to 350
+  Expected: anticipated.expectedExpenses uses 350, not 100
+
+  Scenario 10 — Data isolation
+  Setup: User A has accounts and transactions; User B has none
+  Request: as User B
+  Expected: accounts = [], monthlyIncome.income = 0, anticipated.hasEntries = false

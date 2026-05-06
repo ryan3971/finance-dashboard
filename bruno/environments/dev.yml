@@ -1,0 +1,16 @@
+name: dev
+variables:
+  - name: localhost
+    value: http://localhost:3000
+  - name: amexAccountId
+    value: 8586e1bf-4e69-427e-a50b-a1dbee2395f4
+  - name: cibcAccountId
+    value: 7d2180b6-407f-4d30-9c9c-9bd65bb67758
+  - name: questTsfaAccountId
+    value: 296d58b7-1b88-4861-a649-c7fcff79703c
+  - name: questFhsaAccountId
+    value: e76f1808-6ddd-4632-b906-27791c3c8cfc
+  - name: questRrspAccountId
+    value: 2dcdd518-c908-48a3-8656-64c5027ae566
+  - name: tdAccountId
+    value: ea12383f-55a6-4025-bed4-c5956b2e4c31
