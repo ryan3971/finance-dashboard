@@ -3,7 +3,7 @@ import {
   deactivateAccount,
   reactivateAccount,
   updateAccount,
-} from './accounts.services';
+} from './accounts.service';
 import { accountFormSchema } from '@finance/shared/schemas/accounts';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';

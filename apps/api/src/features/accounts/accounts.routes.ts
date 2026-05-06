@@ -4,7 +4,7 @@ import {
   createAccount,
   getAccountById,
   listAccounts,
-} from './accounts.services';
+} from './accounts.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { type Request, type Response, Router } from 'express';
 import { idParamsSchema } from '@/lib/common-schemas';
