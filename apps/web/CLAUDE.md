@@ -11,9 +11,9 @@ Guidance specific to `apps/web`.
 - `components/layout/` — Layout and navigation (e.g. `PageLayout`, `NavBar`).
 - `components/error/` — Error boundaries.
 - `hooks/` — Custom React hooks shared across multiple features (`useCategories`, `useAccounts`, `useCategoryMutations`, `useMediaQuery`). Feature-specific hooks live inside the feature under `hooks/`.
-- `lib/` — Axios instance (`api.ts`), config, React Query keys (`queryKeys.ts`), localStorage keys (`storageKeys.ts`)
+- `lib/` — Axios instance (`api.ts`), config, React Query keys (`queryKeys.ts`), localStorage keys (`storageKeys.ts`), shared utilities (`utils.ts`: `cn`, `fmt`, `parseAmount`, date helpers), toast strings (`toastMessages.ts`: `TOAST` constant), API error helper (`errors.ts`: `getApiErrorMessage`), help content data (`helpContent.ts`)
 - `router.tsx` — Route tree, typed router context, `requireAuth` guard, search param schemas
-- `main.tsx` — Entry point; `AuthProvider`, `RouterWrapper` (syncs auth context into router), `ErrorBoundary`
+- `main.tsx` — App entry point and provider tree. Sentry is instrumented via `instrument.ts` (imported first).
 
 ### Feature folder structure
 
@@ -44,6 +44,20 @@ features/<name>/
 
 Auth state (access token) lives in React Context (`AuthProvider`), not localStorage. The refresh token cookie is sent automatically by the browser.
 
+## Toasts
+
+Call `toast()` directly from `sonner`. Import message strings from the `TOAST` constant in `@/lib/toastMessages` — never write inline toast strings.
+
+```ts
+import { toast } from 'sonner';
+import { TOAST } from '@/lib/toastMessages';
+
+toast.success(TOAST.ACCOUNT_CREATED);
+toast.error(TOAST.ACCOUNT_CREATE_FAILED);
+```
+
+`<Toaster>` is mounted once in `main.tsx`.
+
 ## React conventions
 
 When mapping over a list that renders multiple sibling elements per item, use `<Fragment key={...}>` (named import from `react`) instead of `<>`. The shorthand `<>` does not accept a `key` prop.
@@ -52,7 +66,7 @@ When mapping over a list that renders multiple sibling elements per item, use `<
 
 All forms use **React Hook Form** with a **Zod resolver**. The pattern:
 
-1. Define the schema in `packages/shared/src/schemas/` and export it from the shared index — this lets the API and web share the same schema with no duplication.
+1. Define the schema in `packages/shared/src/schemas/` — this lets the API and web share the same schema. Import it via sub-path: `@finance/shared/schemas/<name>` (never the bare `@finance/shared` root).
 2. `useForm<T>({ resolver: zodResolver(schema), defaultValues: { ... } })`
 3. Spread `register('field')` directly onto `<Input>` and `<Select>` — both forward refs and accept all HTML attributes, so no wrapper needed.
 4. Use `Controller` only for non-native inputs (custom pickers, third-party components).
@@ -88,14 +102,15 @@ features/dashboards/
 
 **Progress bars and over-budget indicators** — compute `actual / expected` client-side from the values in the API response. Apply a red/error state when the ratio exceeds 1.0. Never hardcode thresholds.
 
-**Anticipated budget entry pattern** — collapsed cards, expandable to 12 month chips, default vs override chips visually distinct (see `anticipated_budget_entry_design.html` in the project root for the reference mockup). Yearly total computed client-side by summing resolved monthly amounts.
+**Anticipated budget entry pattern** — collapsed cards, expandable to 12 month chips, default vs override chips visually distinct. Yearly total computed client-side by summing resolved monthly amounts.
 
-**Snapshot tab** — no month selector, always reflects current state. Live badge in header. Two-column top grid (Accounts | Monthly Income & Expenses), full-width Expected vs Actual card below (see `snapshot_dashboard.html` in the project root for the reference mockup).
+**Snapshot tab** — defaults to the current month; navigable backward/forward one month at a time via URL search params (cannot navigate to a future month). Live badge in header shows last data upload time. Two-column top grid (Income Flow | Accounts), full-width spending summary card below.
 
-**Year/month navigation — no-flash loading pattern** — all dashboard query hooks use `placeholderData: keepPreviousData` (imported from `@tanstack/react-query`). This keeps the previous period's data visible while the new fetch runs instead of tearing down to a blank state. The consuming page/component must:
-1. Destructure `isFetching` (not `isPending`) from the hook to detect background refetches.
-2. Apply `className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}` to the content wrapper or `DataTable` so the stale data is visibly dimmed during the load.
-3. Keep the `useDelayedPending(isPending)` skeleton — it still fires on true first load when there is no placeholder data.
+**Stale-data loading pattern** — dashboard query hooks use `placeholderData: keepPreviousData` and a `staleTime` of 5 minutes. When the query key changes (e.g. year navigation), React Query keeps the previous result visible rather than dropping to a blank state. Pages wire this up as follows:
+
+- `isPending` — true only on the very first fetch (no cached or placeholder data yet). Pass to `useDelayedPending(isPending)` and conditionally render the skeleton. `useDelayedPending` gates the skeleton behind a 200 ms delay to prevent a flash on fast loads.
+- `isFetching` — true on any background refetch, including key changes. Apply `opacity-50` to the data wrapper so stale data is visibly dimmed: `className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}`.
+- `data` — render content whenever truthy; on key-change refetches it will be the previous period's placeholder data.
 
 Never add a new dashboard query hook without `placeholderData: keepPreviousData`.
 
@@ -390,6 +405,8 @@ enforced by convention — no inline comments needed.
 
 **Layout utilities:** `flex grid gap p m w h items-* justify-* col-span-*`
 **Visual utilities:** `bg text border rounded shadow opacity transition`
+
+Always import `cn` from `@/lib/utils`, never directly from `clsx`.
 
 **Use `cn()` when:**
 

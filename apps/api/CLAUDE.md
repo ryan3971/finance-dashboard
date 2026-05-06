@@ -4,24 +4,28 @@ Guidance specific to `apps/api`.
 
 ## Structure (`src/`)
 
-Feature-based modules under `features/`. Each feature owns its routes, service, and tests:
+Feature-based modules under `features/`. Features with separate read and write concerns split into two route files (if there are enough endpoints to warrant this separation):
 ```
-features/auth/
-  auth.routes.ts      # Express router
-  auth.service.ts     # DB queries and business logic
-  auth.errors.ts      # Domain error codes, messages, HTTP status mapping
-  auth.routes.test.ts
+features/transactions/
+  transactions.routes.ts           # GET routes (Express router)
+  transactions-mutation.routes.ts  # POST/PATCH/DELETE routes
+  transactions.service.ts          # DB queries and business logic
+  transactions.errors.ts           # Domain error codes, messages, HTTP status mapping
+  transactions.routes.test.ts
 ```
+
+Features include: `accounts`, `transactions`, `categories`, `categorization-rules`, `imports`, `rebalancing`, `tags`, `transfers`, `user-config`, `seed` (admin data seeding), and `dashboards/` (see below).
 
 Other top-level directories:
-- `db/` — Drizzle schema, migrations, seeds
-- `middleware/` — Error handler, logger
-- `lib/` — Config loader, JWT helpers, auth (`requireAuth`, `getAuthUser`), shared API constants (`constants.ts`)
-- `pipelines/` — Cross-feature logic: `categorization/` (AI + rules engine), `rebalancing/` (adjustment hooks), `transfer-detection/`
+- `db/` — Drizzle schema, migrations. `db/seeders/` contains the seeding scripts; `db/seeds/` holds the seed data organized by environment (`staging/`, `system/`, `test/`)
+- `middleware/` — Global error handler (catches `DomainError`, `ZodError`, and `multer` errors) and Pino logger (`httpLogger` request middleware, `closeFileLog()` for graceful shutdown drain)
+- `lib/` — Config loader, JWT helpers, `requireAuth` middleware and `getAuthUser` helper (`auth.ts`), API-only constants (`constants.ts`), reusable Zod schemas (`common-schemas.ts`)
+- `pipelines/` — Cross-feature logic: `categorization/` (AI + rules engine), `rebalancing/` (adjustment computation for dashboard services), `transfer-detection/`
 - `routes/` — Health check route
+- `scripts/` — Environment scripts: `dev.ts`, `staging.ts`, `production.ts`, and seed/backfill utilities
 - `testing/` — Vitest setup, shared test helpers, fixtures, seeders, seeds, and sample CSV files
 
-Entry: `server.ts` loads config first, then starts the app defined in `app.ts`.
+Entry: `server.ts` loads config, initialises Sentry (`instrument.ts`), then starts the app defined in `app.ts`.
 
 Config is loaded once at startup via `src/lib/config.ts` — the single source of truth for all env vars in the API.
 
@@ -49,7 +53,7 @@ Pluggable provider (Anthropic or OpenAI) configured via `AI_PROVIDER` env var. D
 
 ## Constants
 
-API-only literals that appear in 2+ files belong in `src/lib/constants.ts` — import with `@/lib/constants`. This includes import pipeline statuses (`IMPORT_STATUS`), categorization sources (`CATEGORY_SOURCE`), transaction sources (`TRANSACTION_SOURCE`), the ISO date regex (`ISO_DATE_REGEX`), AI provider parameters (`AI_MAX_TOKENS`, `AI_TEMPERATURE`), and other magic values. Values needed by the web app too belong in `packages/shared/src/constants.ts` instead.
+Before adding a constant, decide where it belongs: if it's needed by the web app too, it goes in `packages/shared/src/constants.ts` — import with `@finance/shared/constants`. If it's API-only and appears in 2+ files, it goes in `src/lib/constants.ts` — import with `@/lib/constants`.
 
 ## Code conventions
 
@@ -60,7 +64,7 @@ API-only literals that appear in 2+ files belong in `src/lib/constants.ts` — i
 
 ## Error handling
 
-Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles all `DomainError` instances generically.
+Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles `DomainError` instances generically, and also catches `ZodError` (→ 400) and `multer.MulterError`. Route handlers do not need to catch these.
 
 
 ## Integration Test Guidelines
@@ -107,7 +111,7 @@ Dashboard routes live in `features/dashboards/`. Each tab is a separate sub-feat
 features/dashboards/
   income/
   expenses/
-  snapshot/   (also has snapshot.repository.ts)
+  snapshot/   (also has snapshot.repository.ts — a repository layer for queries too complex to inline in the service)
   ytd/
 ```
 
@@ -119,6 +123,7 @@ features/dashboards/
 - Apply `user_config` percentage fields (`needs_percentage`, `wants_percentage`, `investments_percentage`) to derive target splits
 - Compute spending income (income minus investment contributions)
 - Compute net income per column (total, wants, needs)
+- Apply rebalancing group offsets via `pipelines/rebalancing/rebalancing-adjustments.ts`
 
 **Service functions do not** query the DB themselves — they receive pre-aggregated data as parameters. This keeps DB logic and business logic testable in isolation.
 
