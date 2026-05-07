@@ -14,9 +14,8 @@ http:
         value: "{{tdAccountId}}"
         contentType: Text
       - name: file
-        type: file
-        value:
-          - C:\Users\rbt7r\OneDrive\Documents\VSCode Workspace\Finance Dashbard\apps\api\src\services\imports\adapters\__fixtures__\td.csv
+        type: text
+        value: ""
         contentType: File
   auth:
     type: bearer

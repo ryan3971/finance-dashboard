@@ -1,0 +1,7 @@
+info:
+  name: categorization-rules
+  type: folder
+  seq: 14
+
+request:
+  auth: inherit

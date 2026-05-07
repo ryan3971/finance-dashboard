@@ -1,10 +1,10 @@
 info:
-  name: post_account
+  name: patch_account
   type: http
-  seq: 2
+  seq: 3
 
 http:
-  method: POST
+  method: PATCH
   url: "{{localhost}}/api/v1/accounts/:id"
   params:
     - name: id

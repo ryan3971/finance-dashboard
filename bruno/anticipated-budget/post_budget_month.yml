@@ -4,7 +4,7 @@ info:
   seq: 5
 
 http:
-  method: POST
+  method: PUT
   url: "{{localhost}}/api/v1/anticipated-budget/:id/months/:month"
   params:
     - name: id

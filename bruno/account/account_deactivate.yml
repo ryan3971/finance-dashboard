@@ -1,11 +1,11 @@
 info:
-  name: post_account
+  name: account_deactivate
   type: http
-  seq: 2
+  seq: 4
 
 http:
   method: POST
-  url: "{{localhost}}/api/v1/accounts/:id"
+  url: "{{localhost}}/api/v1/accounts/:id/deactivate"
   params:
     - name: id
       value: ""
