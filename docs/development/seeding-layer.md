@@ -156,15 +156,36 @@ updating the system data set in production.
 
 ---
 
-## `seed/seed.service.ts` — HTTP endpoint
+## HTTP endpoints
 
-`POST /api/v1/seed/load` calls `loadSampleData(userId)`, which:
+### `POST /api/v1/seed/load` — Load sample data
 
-1. Checks the user has no accounts (throws `SeedError.ACCOUNTS_EXIST` if they do)
+Calls `loadSampleData(userId)`, which:
+
+1. Checks the user has no accounts (throws `SeedError.ACCOUNTS_EXIST` → 409 if they do)
 2. Calls the four sample seeders with `env = 'staging'`
-3. On any error — compensating delete of all the user's accounts (FK cascades clean up the rest)
+3. On any error after accounts are inserted — compensating delete of all the user's accounts (FK cascades clean up transactions and imports)
 
-This endpoint is the mechanism for users to self-serve staging data from the UI.
+The import pipeline (`processImport`) issues its own DB writes and cannot join a caller-supplied transaction, so the load cannot be made atomic. The compensating delete is the rollback mechanism. The 409 guard ensures this path is only entered for a user with no prior accounts, so the compensating delete cannot remove real user data.
+
+### `POST /api/v1/user-config/reset` — Reset account
+
+Calls `deleteAllUserData(userId)` in a single transaction, then re-seeds default categories and rules and inserts a fresh `userConfig` row. The user remains authenticated — no token invalidation.
+
+Deletion order (required by foreign key constraints):
+
+1. `transactions` (via account IDs — no direct `userId` column)
+2. `imports`
+3. `accounts`
+4. `categorizationRules`
+5. `categories` (user-owned rows only — `userId IS NOT NULL`)
+6. `tags`
+7. `anticipatedBudgetMonths` (via budget IDs — no direct `userId` column)
+8. `anticipatedBudget`
+9. `userConfig`
+10. `rebalancingGroups` (`rebalancingGroupTransactions` cascades automatically)
+
+Every delete is scoped to the calling user's ID. Tables without a direct `userId` column (`transactions`, `anticipatedBudgetMonths`) require a preliminary select to collect the relevant parent IDs before the scoped `inArray` delete.
 
 ---
 
@@ -192,24 +213,3 @@ The transaction guarantees atomicity — a failed seed rolls back the user inser
 3. Add a branch in each seeder's data-resolution function (`getCategoriesData`, etc.).
 4. Add a script entry point in `scripts/` if needed.
 
----
-
-## File map (before → after)
-
-| Removed | Replaced by |
-|---------|-------------|
-| `db/seed-categories.ts` | `db/seeders/system-categories.ts` + `db/seeders/user-categories.ts` |
-| `db/seed-rules.ts` | `db/seeders/system-rules.ts` + `db/seeders/user-rules.ts` |
-| `db/seed-system.ts` | `db/seeders/system-categories.ts` + `db/seeders/system-rules.ts` |
-| `db/seed.ts` | `scripts/` entry points + `db/seeders/backfill-*.ts` |
-| `db/seed-dev.ts` | `scripts/dev.ts` |
-| `db/seed-user.ts` | `scripts/seed-user.ts` |
-| `db/seed-test.ts` | Vitest setup handles test DB bootstrap |
-| `db/seed-test-system.ts` | `testing/seeders/reset-test-system-data.ts` (unchanged) |
-| `db/copy-user-data.ts` | `db/seeders/user-categories.ts` + `db/seeders/user-rules.ts` |
-| `db/staging/seed-system-data.ts` | `db/seeders/system-categories.ts` + `db/seeders/system-rules.ts` |
-| `db/staging/seed-anticipated-budget.ts` | `db/seeders/sample-anticipated-budget.ts` |
-| `db/staging/seed-rebalancing-groups.ts` | `db/seeders/sample-rebalancing-groups.ts` |
-| `db/staging/clear-system-data.ts` | `removeSystemCategories` / `removeSystemRules` |
-| `db/staging/data/` | `db/seeds/staging/` |
-| `db/dev/seed.ts` | `scripts/dev.ts` |

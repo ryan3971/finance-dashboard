@@ -202,7 +202,7 @@ The deploy workflows only trigger after this workflow completes successfully on 
 
 1. Assume AWS role via OIDC.
 2. Install dependencies.
-3. Run `vite build` with `VITE_API_URL` and `VITE_SENTRY_DSN` injected from repository secrets/variables.
+3. Run `vite build` with `VITE_API_URL` and `VITE_SENTRY_DSN` injected from repository secrets/variables, and `VITE_ENV=staging` hardcoded in the workflow.
 4. Sync `apps/web/dist` to the S3 frontend bucket using `aws s3 sync --delete` (removes stale files).
 5. Invalidate the CloudFront distribution with path `/*` so CDN edge caches are flushed immediately.
 
@@ -431,7 +431,7 @@ The most complex module — creates the full ECS cluster, task definition, servi
 | `NODE_ENV` | `production` |
 | `PORT` | `3000` |
 | `CORS_ORIGIN` | set by variable |
-| `LOG_LEVEL` | `info` |
+| `LOG_LEVEL` | `debug` |
 
 **IAM roles:**
 

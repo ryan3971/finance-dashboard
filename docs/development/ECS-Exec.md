@@ -66,8 +66,10 @@ Run a one-off seed or backfill script:
 
 ```bash
 cd /app/apps/api
-node dist/db/seed.js
-node dist/db/seed-system.js
+node dist/scripts/production.js                        # system categories + rules + backfill all users
+node dist/scripts/seed-system.js --env=system          # system categories and rules only
+node dist/scripts/backfill.js --entity=categories      # backfill categories for users who have none
+node dist/scripts/backfill.js --entity=rules           # backfill rules for users who have none
 ```
 
 Connect to RDS via psql (if psql is available in the image):

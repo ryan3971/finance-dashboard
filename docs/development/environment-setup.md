@@ -67,8 +67,7 @@ Both `finance_dev` and `finance_test` databases are created automatically on fir
 ```bash
 pnpm db:migrate                        # apply schema to finance_dev
 pnpm --filter api db:migrate:test      # apply schema to finance_test
-pnpm seed:rules                        # seed categorization rules (finance_dev only)
-pnpm seed:dev                          # seed categories and sample transactions (finance_dev only)
+pnpm seed:dev                          # seed categories, rules, transactions, anticipated budget, and rebalancing groups (finance_dev only)
 ```
 
 ## 5. Start the dev servers
@@ -220,6 +219,5 @@ docker compose down -v
 docker compose up -d postgres
 pnpm db:migrate
 pnpm --filter api db:migrate:test
-pnpm --filter api seed:system --action=add --env=test
-pnpm --filter api seed:dev
+pnpm seed:dev
 ```
