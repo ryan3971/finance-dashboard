@@ -52,8 +52,7 @@ override.tf.json
 .claude/
 
 # Bruno
-bruno/environments/dev.yml
-bruno/*.html
+
 
 # Other
 aws.md

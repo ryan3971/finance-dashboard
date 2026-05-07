@@ -1,8 +1,10 @@
 # Web — CLAUDE.md
 
-Guidance specific to `apps/web`.
+Guidance specific to `apps/web`. See the root [`CLAUDE.md`](../../CLAUDE.md) for monorepo-wide conventions.
 
-## Structure (`src/`)
+## Architecture
+
+### Directory structure (`src/`)
 
 - `features/` — Domain modules. Each feature is self-contained: no imports across feature boundaries.
 - `components/ui/` — Generic, reusable UI primitives (shadcn components and others). No app-specific or domain logic.
@@ -34,33 +36,41 @@ features/<name>/
 
 **No barrel files** — do not create `index.ts` re-export files inside feature folders. Import directly from the source file. This keeps Vite's tree-shaking effective and avoids circular dependency risk.
 
-## Constants
+### Dev proxy
+
+Vite proxies `/api` to `localhost:3000` in dev.
+
+## Key Conventions
+
+### Constants
 
 - **localStorage keys** — use `STORAGE_KEYS` from `@/lib/storageKeys` (`ACCESS_TOKEN`, `USER`). Never use the raw strings directly.
 - **React Query keys** — use the key factories in `@/lib/queryKeys` (`transactionKeys`, `accountKeys`, `categoryKeys`, `tagKeys`, `dashboardKeys`, `anticipatedBudgetKeys`, `ruleKeys`, `userConfigKeys`, `rebalancingKeys`). Never use raw arrays like `['tags']`. Add a new key factory to `queryKeys.ts` for every new endpoint before writing the hook that calls it.
 - **Cross-app constants** (field limits, transfer keywords, default currency) — import from `@finance/shared`.
 
-## Auth
+### Auth
 
 Auth state (access token) lives in React Context (`AuthProvider`), not localStorage. The refresh token cookie is sent automatically by the browser.
 
-## Toasts
-
-Call `toast()` directly from `sonner`. Import message strings from the `TOAST` constant in `@/lib/toastMessages` — never write inline toast strings.
-
-```ts
-import { toast } from 'sonner';
-import { TOAST } from '@/lib/toastMessages';
-
-toast.success(TOAST.ACCOUNT_CREATED);
-toast.error(TOAST.ACCOUNT_CREATE_FAILED);
-```
-
-`<Toaster>` is mounted once in `main.tsx`.
-
-## React conventions
+### React conventions
 
 When mapping over a list that renders multiple sibling elements per item, use `<Fragment key={...}>` (named import from `react`) instead of `<>`. The shorthand `<>` does not accept a `key` prop.
+
+## TanStack Query Patterns
+
+### Query key structure
+
+All query keys use the key factories in `@/lib/queryKeys`. Add a new factory for every new endpoint before writing the hook. Never use raw inline arrays.
+
+### Stale-data loading pattern
+
+Dashboard query hooks use `placeholderData: keepPreviousData` and a `staleTime` of 5 minutes. When the query key changes (e.g. year navigation), React Query keeps the previous result visible rather than dropping to a blank state. Pages wire this up as follows:
+
+- `isPending` — true only on the very first fetch (no cached or placeholder data yet). Pass to `useDelayedPending(isPending)` and conditionally render the skeleton. `useDelayedPending` gates the skeleton behind a 200 ms delay to prevent a flash on fast loads.
+- `isFetching` — true on any background refetch, including key changes. Apply `opacity-50` to the data wrapper so stale data is visibly dimmed: `className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}`.
+- `data` — render content whenever truthy; on key-change refetches it will be the previous period's placeholder data.
+
+Never add a new dashboard query hook without `placeholderData: keepPreviousData`.
 
 ## Forms
 
@@ -77,7 +87,27 @@ Do not use `useState` per field for form inputs. Do not mix controlled `value`/`
 
 Not everything with inputs is a form. Components that fire mutations directly on click (no submit), or filter bars driven by parent state, do not need RHF.
 
-## Dashboard features
+## Error Handling & Toasts
+
+### Toasts
+
+Call `toast()` directly from `sonner`. Import message strings from the `TOAST` constant in `@/lib/toastMessages` — never write inline toast strings.
+
+```ts
+import { toast } from 'sonner';
+import { TOAST } from '@/lib/toastMessages';
+
+toast.success(TOAST.ACCOUNT_CREATED);
+toast.error(TOAST.ACCOUNT_CREATE_FAILED);
+```
+
+`<Toaster>` is mounted once in `main.tsx`.
+
+### Error boundaries
+
+Error boundary components live in `components/error/`. API error messages are extracted via `getApiErrorMessage` from `@/lib/errors`.
+
+## Dashboard Features
 
 Dashboard pages live in `features/dashboards/`. Each tab is a separate sub-feature:
 
@@ -105,18 +135,6 @@ features/dashboards/
 **Anticipated budget entry pattern** — collapsed cards, expandable to 12 month chips, default vs override chips visually distinct. Yearly total computed client-side by summing resolved monthly amounts.
 
 **Snapshot tab** — defaults to the current month; navigable backward/forward one month at a time via URL search params (cannot navigate to a future month). Live badge in header shows last data upload time. Two-column top grid (Income Flow | Accounts), full-width spending summary card below.
-
-**Stale-data loading pattern** — dashboard query hooks use `placeholderData: keepPreviousData` and a `staleTime` of 5 minutes. When the query key changes (e.g. year navigation), React Query keeps the previous result visible rather than dropping to a blank state. Pages wire this up as follows:
-
-- `isPending` — true only on the very first fetch (no cached or placeholder data yet). Pass to `useDelayedPending(isPending)` and conditionally render the skeleton. `useDelayedPending` gates the skeleton behind a 200 ms delay to prevent a flash on fast loads.
-- `isFetching` — true on any background refetch, including key changes. Apply `opacity-50` to the data wrapper so stale data is visibly dimmed: `className={cn('transition-opacity duration-200', isFetching && 'opacity-50')}`.
-- `data` — render content whenever truthy; on key-change refetches it will be the previous period's placeholder data.
-
-Never add a new dashboard query hook without `placeholderData: keepPreviousData`.
-
-## Dev proxy
-
-Vite proxies `/api` to `localhost:3000` in dev.
 
 ---
 
@@ -190,7 +208,7 @@ Avoid raw Tailwind `gray-*`, `blue-*`, `green-*` in semantic contexts — use th
 
 ---
 
-## Component Patterns
+## Component Conventions
 
 ### Cards and Table Wrappers
 
@@ -349,6 +367,14 @@ Differs from `components/common/` (domain-agnostic) and `features/transactions/c
 
 Use `<FormField label="..." error={...} labelSize="xs|sm">` for all form fields.
 
+### Naming & Structure
+
+- Custom utilities live in `@layer components` in `src/index.css`.
+- Semantic color tokens (`content-primary`, `surface-muted`) are always preferred over raw Tailwind palette classes.
+- Column-specific classes for TanStack Table go in `meta.thClassName` / `meta.tdClassName` on the column def.
+
+---
+
 ## Responsive Design
 
 ### Breakpoints
@@ -420,12 +446,6 @@ Always import `cn` from `@/lib/utils`, never directly from `clsx`.
 
 Never wrap a single unconditional string in `cn()` — it adds noise with no benefit.
 Never mix `cn()` and string interpolation on the same element.
-
-## Naming & Structure Conventions
-
-- Custom utilities live in `@layer components` in `src/index.css`.
-- Semantic color tokens (`content-primary`, `surface-muted`) are always preferred over raw Tailwind palette classes.
-- Column-specific classes for TanStack Table go in `meta.thClassName` / `meta.tdClassName` on the column def.
 
 ---
 
