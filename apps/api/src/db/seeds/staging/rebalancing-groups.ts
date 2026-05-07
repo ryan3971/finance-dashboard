@@ -17,45 +17,54 @@ export interface StagingRebalancingGroup {
 
 export const STAGING_REBALANCING_GROUPS: StagingRebalancingGroup[] = [
   {
-    label: 'Hardware Run',
+    // Open group — user split a restaurant bill with friends, not yet resolved
+    label: 'Dinner Split',
     status: 'open',
     myShareOverride: null,
     flaggedForReview: false,
     transactions: [
       {
         accountName: 'CIBC Mastercard',
-        description: 'hardware supply 789 burnaby, bc',
+        description: 'restaurant midtown',
         role: 'source',
       },
     ],
   },
   {
-    label: 'Montreal Weekend',
+    // Resolved group — weekend trip shared expenses with partial reimbursement received
+    // Two source transactions (coffee + supplies), one offset (e-transfer back from friends)
+    label: 'Weekend Trip',
     status: 'resolved',
-    myShareOverride: 200,
+    myShareOverride: 50,
     flaggedForReview: false,
     transactions: [
       {
-        accountName: 'TD Chequing',
-        description: 'e-transfer out ***abc',
+        accountName: 'Amex',
+        description: 'city coffee shop',
         role: 'source',
       },
       {
         accountName: 'Amex',
-        description: 'sunrise boutique 99812',
+        description: 'online retailer purchase',
         role: 'source',
+      },
+      {
+        accountName: 'TD Chequing 2',
+        description: 'e-transfer in reimbursement',
+        role: 'offset',
       },
     ],
   },
   {
-    label: 'LCBO Party Run',
+    // Open group — shared subscription, flagged for review as the split is unclear
+    label: 'Shared Subscription',
     status: 'open',
     myShareOverride: null,
     flaggedForReview: true,
     transactions: [
       {
         accountName: 'CIBC Mastercard',
-        description: 'lcbo #456 vancouver, bc',
+        description: 'stream plus subscription',
         role: 'source',
       },
     ],

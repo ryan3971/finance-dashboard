@@ -1,112 +1,100 @@
 import type { SeedRule } from '@/db/seeds/system/rules';
 
 export const STAGING_RULES: SeedRule[] = [
-  // ADD sentinel — flag for review, assign no category
+  // ── Transfers (high priority) ─────────────────────────────────────────────
+  // These keywords appear on the chequing side of credit card bill payments.
+  // The credit card side is covered by the system 'payment received' / 'payment thank you' rules.
   {
-    keyword: 'e-transfer',
-    sourceName: 'E-Transfer',
-    category: null,
-    subcategory: null,
-    needWant: 'ADD',
-    priority: 10,
-  },
-  // Transfer payments
-  {
-    keyword: 'payment received',
-    sourceName: 'Payment',
+    keyword: 'bill payment',
+    sourceName: 'Bill Payment',
     category: 'Transfer',
     subcategory: 'Credit Card Payment',
     needWant: 'NA',
     priority: 10,
   },
+
+  // ── Income ────────────────────────────────────────────────────────────────
   {
-    keyword: 'payment thank you',
-    sourceName: 'Payment',
-    category: 'Transfer',
-    subcategory: 'Credit Card Payment',
-    needWant: 'NA',
-    priority: 10,
-  },
-  // Income
-  {
-    keyword: 'prodigy educati',
-    sourceName: 'Prodigy Education',
+    keyword: 'employer direct deposit',
+    sourceName: 'Employer',
     category: 'Salary',
     subcategory: 'Paycheque',
     needWant: 'NA',
     priority: 5,
   },
   {
-    keyword: 'gst gst',
+    keyword: 'gst/hst',
     sourceName: 'Government',
     category: 'Government',
     subcategory: 'GST',
     needWant: 'NA',
     priority: 5,
   },
-  // Need expenses
+
+  // ── Need expenses ─────────────────────────────────────────────────────────
   {
-    keyword: 'walmart',
-    sourceName: 'Walmart',
-    category: 'Food',
-    subcategory: 'Groceries',
+    keyword: 'rent payment',
+    sourceName: 'Rent',
+    category: 'Housing',
+    subcategory: 'Rent',
     needWant: 'Need',
     priority: 0,
   },
   {
-    keyword: 'presto',
-    sourceName: 'Presto',
+    keyword: 'transit pass',
+    sourceName: 'Transit',
     category: 'Transport',
     subcategory: 'Transit',
     needWant: 'Need',
     priority: 0,
   },
   {
-    keyword: 'shoppers drug',
-    sourceName: 'Shoppers Drug Mart',
+    keyword: 'grocery',
+    sourceName: 'Grocery Store',
+    category: 'Food',
+    subcategory: 'Groceries',
+    needWant: 'Need',
+    priority: 0,
+  },
+  {
+    keyword: 'pharmacy',
+    sourceName: 'Pharmacy',
     category: 'Health',
     subcategory: 'Pharmacy',
     needWant: 'Need',
     priority: 0,
   },
-  // Want expenses
+
+  // ── Want expenses ─────────────────────────────────────────────────────────
   {
-    keyword: 'tim hortons',
-    sourceName: 'Tim Hortons',
+    keyword: 'online retailer',
+    sourceName: 'Online Retailer',
+    category: 'Shopping',
+    subcategory: 'Online Retail',
+    needWant: 'Want',
+    priority: 0,
+  },
+  {
+    keyword: 'stream plus',
+    sourceName: 'Streaming Service',
+    category: 'Subscriptions',
+    subcategory: 'Media',
+    needWant: 'Want',
+    priority: 0,
+  },
+  {
+    keyword: 'coffee shop',
+    sourceName: 'Coffee Shop',
     category: 'Food',
     subcategory: 'Eating Out',
     needWant: 'Want',
     priority: 0,
   },
   {
-    keyword: 'lcbo',
-    sourceName: 'LCBO',
+    keyword: 'restaurant',
+    sourceName: 'Restaurant',
     category: 'Food',
-    subcategory: 'Alcohol',
-    needWant: 'Want',
-    priority: 0,
-  },
-  {
-    keyword: 'netflix',
-    sourceName: 'Netflix',
-    category: 'Subscriptions',
-    subcategory: 'Media',
-    needWant: 'Want',
-    priority: 0,
-  },
-  {
-    keyword: 'spotify',
-    sourceName: 'Spotify',
-    category: 'Subscriptions',
-    subcategory: 'Media',
-    needWant: 'Want',
-    priority: 0,
-  },
-  {
-    keyword: 'amzn',
-    sourceName: 'Amazon',
-    category: 'Shopping',
-    subcategory: 'Online Retail',
+    subcategory: 'Eating Out',
     needWant: 'Want',
     priority: 0,
   },

@@ -3,21 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { db as defaultDb } from '@/db';
 import { processImport } from '@/features/imports/import.service';
-import { STAGING_ACCOUNTS } from '@/db/seeds/staging/accounts';
 import { DEV_ACCOUNTS } from '@/db/seeds/test/accounts';
 import type { SeedEnv } from './system-categories';
 
 type DbLike = typeof defaultDb;
 
-function getAccountsData(env: SeedEnv) {
-  if (env === 'staging') return STAGING_ACCOUNTS;
-  return DEV_ACCOUNTS;
-}
-
-function getCsvDir(env: SeedEnv): string {
-  if (env === 'staging') {
-    return path.join(__dirname, '../seeds/staging/csv');
-  }
+function getCsvDir(): string {
   return path.join(__dirname, '../../testing/csv');
 }
 
@@ -32,10 +23,16 @@ export async function seedSampleTransactions(
   accountIds: Record<string, string>,
   _db: DbLike = defaultDb
 ): Promise<void> {
-  const data = getAccountsData(env);
-  const csvDir = getCsvDir(env);
+  // Staging transactions are seeded via the HTTP endpoint (POST /api/v1/seed/load),
+  // which uses STAGING_TRANSACTIONS directly. The CLI seeder only handles test env.
+  if (env === 'staging') {
+    console.log('  Staging transactions are loaded via the seed HTTP endpoint — skipping CLI import.');
+    return;
+  }
 
-  for (const def of data) {
+  const csvDir = getCsvDir();
+
+  for (const def of DEV_ACCOUNTS) {
     const accountId = accountIds[def.name];
     if (!accountId) {
       console.warn(`  ⚠ No account ID for "${def.name}" — skipping import`);

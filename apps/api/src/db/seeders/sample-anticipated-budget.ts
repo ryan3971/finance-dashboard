@@ -66,7 +66,7 @@ export async function seedSampleAnticipatedBudget(
         isIncome: entry.isIncome,
         monthlyAmount: entry.monthlyAmount,
         notes: entry.notes,
-        effectiveYear: entry.effectiveYear,
+        effectiveYear: new Date().getFullYear(),
       })
       .returning({ id: anticipatedBudget.id });
 
