@@ -43,14 +43,14 @@ export const STAGING_TRANSACTIONS: StagingTransaction[] = [
   { accountName: 'Amex', monthsAgo: 1, day: 9,  description: 'corner grocery store',      amount: '-85.00',  isIncome: false },
   { accountName: 'Amex', monthsAgo: 1, day: 14, description: 'city coffee shop',          amount: '-22.00',  isIncome: false },
   { accountName: 'Amex', monthsAgo: 1, day: 20, description: 'city pharmacy',             amount: '-48.00',  isIncome: false },
-  { accountName: 'Amex', monthsAgo: 1, day: 22, description: 'payment received',          amount: '-350.00', isIncome: false },
+  { accountName: 'Amex', monthsAgo: 1, day: 22, description: 'payment received',          amount: '350.00',  isIncome: false },
   { accountName: 'Amex', monthsAgo: 1, day: 25, description: 'hillside community centre', amount: '-80.00',  isIncome: false },
   { accountName: 'Amex', monthsAgo: 1, day: 27, description: 'north point athletics',     amount: '-45.00',  isIncome: false },
 
   // CIBC Mastercard — subscription (Shared Subscription source), restaurant (Dinner Split source), payment
   { accountName: 'CIBC Mastercard', monthsAgo: 1, day: 12, description: 'stream plus subscription', amount: '-18.00',  isIncome: false },
   { accountName: 'CIBC Mastercard', monthsAgo: 1, day: 16, description: 'restaurant midtown',        amount: '-68.00',  isIncome: false },
-  { accountName: 'CIBC Mastercard', monthsAgo: 1, day: 22, description: 'payment thank you',         amount: '-420.00', isIncome: false },
+  { accountName: 'CIBC Mastercard', monthsAgo: 1, day: 22, description: 'payment thank you',         amount: '420.00',  isIncome: false },
 
   // TD Chequing 2 — receives the chequing transfer and a reimbursement (Weekend Trip offset)
   { accountName: 'TD Chequing 2', monthsAgo: 1, day: 5,  description: 'e-transfer in personal',       amount: '200.00', isIncome: false },
