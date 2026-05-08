@@ -5,12 +5,6 @@ import type { CategorizationResult } from './pipeline.types';
 import { categorizationRules } from '@/db/schema';
 import { db } from '@/db';
 
-// TODO(hardening): The 'ADD' value in needWant is a sentinel that changes rule
-// behaviour entirely (flag-for-review instead of assign category). This couples
-// two unrelated concerns in one column. A dedicated boolean `flagForReview`
-// column on `categorization_rules` would make the intent explicit and prevent
-// accidental misuse of the needWant field.
-
 // TODO(hardening): Keyword matching uses a plain substring check (.includes()),
 // so short keywords can produce false positives (e.g. "pay" matching
 // "repayment", "visa" matching "supervisor"). Consider storing a `matchType`
@@ -39,6 +33,7 @@ export async function loadRules(userId: string | null): Promise<LoadedRule[]> {
       categoryId: categorizationRules.categoryId,
       subcategoryId: categorizationRules.subcategoryId,
       needWant: categorizationRules.needWant,
+      flagForReview: categorizationRules.flagForReview,
       priority: categorizationRules.priority,
     })
     .from(categorizationRules)
@@ -59,8 +54,7 @@ export function applyRules(
   for (const rule of rules) {
     if (!normalisedDesc.includes(rule.keyword.toLowerCase())) continue;
 
-    // ADD sentinel: flag for review, do not assign category
-    if (rule.needWant === 'ADD') {
+    if (rule.flagForReview) {
       return {
         categoryId: null,
         subcategoryId: null,

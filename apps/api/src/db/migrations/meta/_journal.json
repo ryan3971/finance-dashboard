@@ -57,6 +57,13 @@
       "when": 1776820292277,
       "tag": "0007_giant_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778264800051,
+      "tag": "0008_dazzling_susan_delgado",
+      "breakpoints": true
     }
   ]
 }

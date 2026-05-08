@@ -9,6 +9,7 @@ export interface Rule {
   subcategoryId: string | null;
   subcategoryName: string | null;
   needWant: NeedWant | null;
+  flagForReview: boolean;
   priority: number;
   createdAt: string;
 }

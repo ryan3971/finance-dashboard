@@ -5,24 +5,26 @@ export interface SeedRule {
   sourceName: string | null;
   category: string | null;
   subcategory: string | null;
-  needWant: NeedWant | 'ADD';
+  needWant: NeedWant | null;
+  flagForReview?: boolean;
   priority: number;
 }
 
-// Format: { keyword, sourceName, category, subcategory, needWant, priority }
-// keyword   — case-insensitive contains match against transaction description
-// needWant  — 'Need' | 'Want' | 'NA' | 'ADD'
-//             ADD = sentinel: flag for review without assigning a category
-// priority  — higher wins when multiple rules match (default 0)
+// Format: { keyword, sourceName, category, subcategory, needWant, flagForReview, priority }
+// keyword       — case-insensitive contains match against transaction description
+// needWant      — 'Need' | 'Want' | 'NA' | null
+// flagForReview — true to flag the transaction for manual review without assigning a category
+// priority      — higher wins when multiple rules match (default 0)
 
 export const RULES: SeedRule[] = [
-  // ── Transfers & payments (ADD sentinel — always needs review) ─────────────
+  // ── Transfers & payments (flagged for review — no category assigned) ──────
   {
     keyword: 'send e-tfr',
     sourceName: 'E-Transfer',
     category: null,
     subcategory: null,
-    needWant: 'ADD',
+    needWant: null,
+    flagForReview: true,
     priority: 10,
   },
   {
@@ -30,7 +32,8 @@ export const RULES: SeedRule[] = [
     sourceName: 'E-Transfer',
     category: null,
     subcategory: null,
-    needWant: 'ADD',
+    needWant: null,
+    flagForReview: true,
     priority: 10,
   },
   {

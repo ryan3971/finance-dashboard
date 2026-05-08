@@ -9,7 +9,8 @@ interface CategorizationRuleRow {
   sourceName: string | null;
   categoryId: string | null;
   subcategoryId: string | null;
-  needWant: 'Need' | 'Want' | 'NA' | 'ADD' | null;
+  needWant: 'Need' | 'Want' | 'NA' | null;
+  flagForReview: boolean;
   priority: number;
   createdAt: Date;
 }
@@ -37,6 +38,7 @@ export async function categorizationRuleFixture(
       categoryId: null,
       subcategoryId: null,
       needWant: null,
+      flagForReview: false,
       priority: 0,
       ...overrides,
     })

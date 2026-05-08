@@ -119,6 +119,7 @@ export async function addSystemRules(
       categoryId,
       subcategoryId,
       needWant: rule.needWant,
+      flagForReview: rule.flagForReview ?? false,
       priority: rule.priority,
     });
 

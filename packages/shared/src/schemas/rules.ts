@@ -7,6 +7,7 @@ export const patchRuleSchema = z.object({
   subcategoryId: z.string().uuid().nullable().optional(),
   priority: z.number().int().optional(),
   needWant: z.enum(NEED_WANT_OPTIONS).nullable().optional(),
+  flagForReview: z.boolean().optional(),
 });
 
 export type PatchRuleInput = z.infer<typeof patchRuleSchema>;

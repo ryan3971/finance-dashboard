@@ -1,0 +1,2 @@
+ALTER TABLE "categorization_rules" ADD COLUMN "flag_for_review" boolean DEFAULT false NOT NULL;
+UPDATE "categorization_rules" SET "flag_for_review" = true, "need_want" = NULL WHERE "need_want" = 'ADD';
