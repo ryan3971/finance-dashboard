@@ -82,7 +82,8 @@ export const categorizationRules = pgTable('categorization_rules', {
   sourceName: text('source_name'),
   categoryId: uuid('category_id').references(() => categories.id),
   subcategoryId: uuid('subcategory_id').references(() => categories.id),
-  needWant: text('need_want', { enum: [...NEED_WANT_OPTIONS, 'ADD'] }),
+  needWant: text('need_want', { enum: NEED_WANT_OPTIONS }),
+  flagForReview: boolean('flag_for_review').notNull().default(false),
   priority: integer('priority').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()

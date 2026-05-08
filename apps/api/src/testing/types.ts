@@ -97,6 +97,7 @@ export interface RuleResponse {
   subcategoryId: string | null;
   subcategoryName: string | null;
   needWant: string | null;
+  flagForReview: boolean;
   priority: number;
   createdAt: string;
 }

@@ -5,7 +5,7 @@ import type { SeedRule } from '../system/rules';
 // Designed so that payees in the current CSV fixtures map predictably:
 //
 //   TD fixture
-//     "E-TRANSFER OUT ***abc/zzz"       → ADD sentinel (flagged, no category)
+//     "E-TRANSFER OUT ***abc/zzz"       → flagged for review (no category)
 //     "PRODIGY EDUCATION INC PAYRL"     → Salary / Paycheque    (income)
 //     "GST GST TAX REFUND"              → Government / GST       (income)
 //     "WALMART GROCERY STORE 321"       → Food / Groceries       (Need)
@@ -30,17 +30,18 @@ import type { SeedRule } from '../system/rules';
 //     "SPOTIFY CANADA"                  → Subscriptions / Media  (Want)
 //     "HARDWARE SUPPLY 789 …"           → Uncategorized (no rule)
 //
-// Priority 10 rules (ADD sentinel, transfers) run before priority 0 rules so
-// that a transfer keyword always wins over any merchant keyword.
+// Priority 10 rules (flagged for review, transfers) run before priority 0 rules
+// so that a transfer keyword always wins over any merchant keyword.
 
 export const TEST_RULES: SeedRule[] = [
-  // ADD sentinel — flag for review, assign no category
+  // Flag for review — no category assigned
   {
     keyword: 'e-transfer',
     sourceName: 'E-Transfer',
     category: null,
     subcategory: null,
-    needWant: 'ADD',
+    needWant: null,
+    flagForReview: true,
     priority: 10,
   },
   // Transfer payments

@@ -55,6 +55,7 @@ describe('GET /api/v1/categorization-rules', () => {
       subcategoryId: null,
       subcategoryName: null,
       needWant: 'Want',
+      flagForReview: false,
       priority: 5,
     });
   });
@@ -213,6 +214,32 @@ describe('PATCH /api/v1/categorization-rules/:id', () => {
 
     expect(res.status).toBe(200);
     expect((res.body as RuleResponse).needWant).toBe('Need');
+  });
+
+  it('sets flagForReview to true', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const { id } = await categorizationRuleFixture({ userId: user.id, flagForReview: false });
+
+    const res = await request(app)
+      .patch(`/api/v1/categorization-rules/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ flagForReview: true });
+
+    expect(res.status).toBe(200);
+    expect((res.body as RuleResponse).flagForReview).toBe(true);
+  });
+
+  it('clears flagForReview back to false', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const { id } = await categorizationRuleFixture({ userId: user.id, flagForReview: true });
+
+    const res = await request(app)
+      .patch(`/api/v1/categorization-rules/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ flagForReview: false });
+
+    expect(res.status).toBe(200);
+    expect((res.body as RuleResponse).flagForReview).toBe(false);
   });
 
   it('clears needWant to null', async () => {

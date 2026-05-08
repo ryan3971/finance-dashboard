@@ -19,6 +19,7 @@ function ruleSelect(conn: typeof db | DbTransaction = db) {
       subcategoryId: categorizationRules.subcategoryId,
       subcategoryName: subcat.name,
       needWant: categorizationRules.needWant,
+      flagForReview: categorizationRules.flagForReview,
       priority: categorizationRules.priority,
       createdAt: categorizationRules.createdAt,
     })

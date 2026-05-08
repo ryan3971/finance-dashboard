@@ -15,6 +15,7 @@ function makeRule(overrides: Partial<LoadedRule> = {}): LoadedRule {
     categoryId: 'cat-1',
     subcategoryId: 'subcat-1',
     needWant: 'Want',
+    flagForReview: false,
     priority: 10,
     ...overrides,
   };
@@ -61,12 +62,13 @@ describe('applyRules', () => {
     expect(result?.categoryId).toBe('cat-high');
   });
 
-  it('ADD sentinel flags for review without assigning a category', () => {
+  it('flagForReview rule flags for review without assigning a category', () => {
     const rule = makeRule({
       keyword: 'paypal',
-      needWant: 'ADD',
-      categoryId: 'cat-1',
-      subcategoryId: 'subcat-1',
+      flagForReview: true,
+      needWant: null,
+      categoryId: null,
+      subcategoryId: null,
       sourceName: 'PayPal',
     });
     const result = applyRules('PAYPAL TRANSFER', [rule]);
@@ -82,11 +84,11 @@ describe('applyRules', () => {
     });
   });
 
-  it('ADD sentinel stops matching — later rules are not evaluated', () => {
-    const addRule = makeRule({ id: 'rule-add', keyword: 'transfer', needWant: 'ADD', priority: 20 });
+  it('flagForReview rule stops matching — later rules are not evaluated', () => {
+    const reviewRule = makeRule({ id: 'rule-review', keyword: 'transfer', flagForReview: true, needWant: null, priority: 20 });
     const normalRule = makeRule({ id: 'rule-normal', keyword: 'transfer', needWant: 'Need', categoryId: 'cat-normal', priority: 5 });
 
-    const result = applyRules('e-TRANSFER DEBIT', [addRule, normalRule]);
+    const result = applyRules('e-TRANSFER DEBIT', [reviewRule, normalRule]);
 
     expect(result?.flaggedForReview).toBe(true);
     expect(result?.categoryId).toBeNull();
