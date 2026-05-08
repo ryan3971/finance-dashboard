@@ -12,6 +12,7 @@ interface AccountRow {
   currency: string;
   isActive: boolean;
   isCredit: boolean;
+  initialBalance: string;
   createdAt: Date;
 }
 

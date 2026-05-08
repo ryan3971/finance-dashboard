@@ -7,6 +7,7 @@ export const accountFormSchema = z.object({
   institution: z.enum(INSTITUTIONS),
   currency: z.literal('CAD'),
   isCredit: z.boolean(),
+  initialBalance: z.number().optional(),
 });
 
 export type AccountFormInput = z.infer<typeof accountFormSchema>;
@@ -21,6 +22,7 @@ export const accountResponseSchema = z.object({
   currency: z.literal('CAD'),
   isActive: z.boolean(),
   isCredit: z.boolean(),
+  initialBalance: z.number(),
   createdAt: z.string(),
 });
 

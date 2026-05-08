@@ -54,6 +54,9 @@ export const accounts = pgTable('accounts', {
   currency: text('currency').notNull().default(DEFAULT_CURRENCY),
   isActive: boolean('is_active').notNull().default(true),
   isCredit: boolean('is_credit').notNull().default(false),
+  initialBalance: numeric('initial_balance', { precision: 12, scale: 2 })
+    .notNull()
+    .default('0'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

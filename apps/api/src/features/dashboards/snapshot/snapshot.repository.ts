@@ -59,13 +59,14 @@ export async function queryAccountBalances(
       // Amounts are signed: positive = income, negative = expense.
       // Non-credit: sum signed amounts directly.
       // Credit: invert — a negative charge increases debt, a positive payment reduces it.
+      // initialBalance is added as a constant offset representing pre-tracking account value.
       balance: sql<string>`CAST(COALESCE(SUM(
         CASE
           WHEN ${accounts.isCredit} = false THEN  ${transactions.amount}
           WHEN ${accounts.isCredit} = true  THEN -${transactions.amount}
           ELSE 0
         END
-      ), 0) AS text)`.as('balance'),
+      ), 0) + ${accounts.initialBalance} AS text)`.as('balance'),
     })
     .from(accounts)
     .leftJoin(transactions, eq(transactions.accountId, accounts.id))
@@ -76,7 +77,8 @@ export async function queryAccountBalances(
       accounts.type,
       accounts.institution,
       accounts.currency,
-      accounts.isCredit
+      accounts.isCredit,
+      accounts.initialBalance
     );
 }
 
