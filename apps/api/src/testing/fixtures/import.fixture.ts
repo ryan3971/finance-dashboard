@@ -8,7 +8,6 @@ interface ImportRow {
   userId: string;
   accountId: string;
   filename: string;
-  s3Key: string;
   status: string;
   rowCount: number | null;
   importedCount: number | null;
@@ -43,7 +42,6 @@ export async function importFixture(
       userId,
       accountId,
       filename: `test-${key}.csv`,
-      s3Key: `uploads/test-${key}.csv`,
       status: 'completed',
       rowCount: 0,
       importedCount: 0,

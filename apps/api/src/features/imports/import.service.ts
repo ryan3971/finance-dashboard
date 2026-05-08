@@ -121,17 +121,12 @@ export async function processImport(
   const adapter = resolveAdapter(account.institution, rows);
   if (!adapter) throw new ImportError(ImportErrorCode.NO_ADAPTER);
 
-  // TODO: upload the raw file buffer to S3 at this key before processing.
-  // The key is stored in the DB so the original file can be retrieved later.
-  const s3Key = `imports/${userId}/${accountId}/${Date.now()}-${filename}`;
-
   const [importRecord] = await db
     .insert(imports)
     .values({
       userId,
       accountId,
       filename,
-      s3Key,
       status: IMPORT_STATUS.PROCESSING,
       rowCount: rows.length,
     })

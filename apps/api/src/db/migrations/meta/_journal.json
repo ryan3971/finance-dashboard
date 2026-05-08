@@ -71,6 +71,13 @@
       "when": 1778268590193,
       "tag": "0009_big_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778276329386,
+      "tag": "0010_white_snowbird",
+      "breakpoints": true
     }
   ]
 }

@@ -122,7 +122,6 @@ export const imports = pgTable('imports', {
     .references(() => accounts.id)
     .notNull(),
   filename: text('filename').notNull(),
-  s3Key: text('s3_key').notNull(),
   status: text('status').notNull().default('pending'),
   rowCount: integer('row_count'),
   importedCount: integer('imported_count'),
