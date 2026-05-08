@@ -5,6 +5,7 @@ import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { cn } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useDeleteRule, useRules, useUpdateRule } from '../hooks/useRules';
 import { FIELD_LIMITS, NEED_WANT_OPTIONS, type NeedWant } from '@finance/shared/constants';
@@ -41,6 +42,7 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
   const [keyword, setKeyword] = useState(rule.keyword);
   const [priority, setPriority] = useState(String(rule.priority));
   const [needWant, setNeedWant] = useState<NeedWant | ''>(rule.needWant ?? '');
+  const [flagForReview, setFlagForReview] = useState(rule.flagForReview);
   const update = useUpdateRule();
   const remove = useDeleteRule();
 
@@ -58,7 +60,8 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
         input: {
           keyword: keyword.trim(),
           priority: parsedPriority,
-          needWant: needWant || null,
+          needWant: flagForReview ? null : (needWant || null),
+          flagForReview,
         },
       },
       { onSuccess: () => setEditing(false) }
@@ -69,6 +72,7 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
     setKeyword(rule.keyword);
     setPriority(String(rule.priority));
     setNeedWant(rule.needWant ?? '');
+    setFlagForReview(rule.flagForReview);
     setEditing(false);
   }
 
@@ -96,18 +100,39 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
           />
         </td>
         <td className="px-3 py-2">
-          <select
-            value={needWant}
-            onChange={(e) => setNeedWant(e.target.value as NeedWant | '')}
-            className="h-7 text-sm border border-border-base rounded px-1"
-          >
-            <option value="">—</option>
-            {NEED_WANT_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-col gap-1.5">
+            <select
+              value={needWant}
+              onChange={(e) => {
+                setNeedWant(e.target.value as NeedWant | '');
+                if (e.target.value) setFlagForReview(false);
+              }}
+              disabled={flagForReview}
+              className={cn(
+                'h-7 text-sm border border-border-base rounded px-1',
+                flagForReview && 'opacity-40'
+              )}
+            >
+              <option value="">—</option>
+              {NEED_WANT_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+            <label className="flex items-center gap-1.5 text-xs text-content-secondary cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={flagForReview}
+                onChange={(e) => {
+                  setFlagForReview(e.target.checked);
+                  if (e.target.checked) setNeedWant('');
+                }}
+                className="rounded"
+              />
+              Flag for review
+            </label>
+          </div>
         </td>
         <td className="px-3 py-2">
           <div className="flex gap-1">
@@ -147,7 +172,11 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
         {rule.priority}
       </td>
       <td className="px-3 py-2 text-sm text-content-secondary">
-        {rule.needWant ?? '—'}
+        {rule.flagForReview ? (
+          <span className="text-xs font-medium text-warning">Flag for review</span>
+        ) : (
+          rule.needWant ?? '—'
+        )}
       </td>
       <td className="px-3 py-2">
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
