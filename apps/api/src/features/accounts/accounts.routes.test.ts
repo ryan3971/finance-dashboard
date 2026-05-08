@@ -128,6 +128,45 @@ describe('POST /api/v1/accounts', () => {
     expect(typeof body.createdAt).toBe('string');
   });
 
+  it('persists initialBalance when provided', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/accounts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(
+        accountRequest({
+          name: 'TD Chequing',
+          type: 'chequing',
+          institution: 'td',
+          currency: 'CAD',
+          isCredit: false,
+          initialBalance: 1500,
+        })
+      );
+
+    expect(res.status).toBe(201);
+    expect((res.body as AccountResponse).initialBalance).toBe(1500);
+  });
+
+  it('defaults initialBalance to 0 when omitted', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/accounts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(
+        accountRequest({
+          name: 'TD Chequing',
+          type: 'chequing',
+          institution: 'td',
+          currency: 'CAD',
+          isCredit: false,
+        })
+      );
+
+    expect(res.status).toBe(201);
+    expect((res.body as AccountResponse).initialBalance).toBe(0);
+  });
+
   it('derives isCredit from type, ignoring the request body value', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)
@@ -353,6 +392,65 @@ describe('PATCH /api/v1/accounts/:id', () => {
 
     expect(res.status).toBe(200);
     expect((res.body as AccountResponse).isCredit).toBe(true);
+  });
+
+  it('updates initialBalance and persists the new value', async () => {
+    const { accessToken } = await registerUser(app);
+    const createRes = await request(app)
+      .post('/api/v1/accounts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(
+        accountRequest({
+          name: 'TD Chequing',
+          type: 'chequing',
+          institution: 'td',
+          currency: 'CAD',
+          isCredit: false,
+          initialBalance: 500,
+        })
+      );
+    expect(createRes.status).toBe(201);
+    const { id } = createRes.body as AccountResponse;
+
+    const patchRes = await request(app)
+      .patch(`/api/v1/accounts/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(patchAccountRequest({ initialBalance: 2000 }));
+
+    expect(patchRes.status).toBe(200);
+    expect((patchRes.body as AccountResponse).initialBalance).toBe(2000);
+
+    const getRes = await request(app)
+      .get(`/api/v1/accounts/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect((getRes.body as AccountResponse).initialBalance).toBe(2000);
+  });
+
+  it('does not reset initialBalance when patch omits it', async () => {
+    const { accessToken } = await registerUser(app);
+    const createRes = await request(app)
+      .post('/api/v1/accounts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(
+        accountRequest({
+          name: 'TD Chequing',
+          type: 'chequing',
+          institution: 'td',
+          currency: 'CAD',
+          isCredit: false,
+          initialBalance: 3000,
+        })
+      );
+    expect(createRes.status).toBe(201);
+    const { id } = createRes.body as AccountResponse;
+
+    const patchRes = await request(app)
+      .patch(`/api/v1/accounts/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(patchAccountRequest({ name: 'New Name' }));
+
+    expect(patchRes.status).toBe(200);
+    expect((patchRes.body as AccountResponse).initialBalance).toBe(3000);
   });
 
   it('returns 400 for an empty body', async () => {

@@ -41,8 +41,13 @@ export function AccountForm({
       institution: initialValues.institution ?? INSTITUTIONS[0],
       currency: initialValues.currency ?? DEFAULT_CURRENCY,
       isCredit: initialValues.isCredit ?? false,
+      initialBalance: initialValues.initialBalance ?? 0,
     },
   });
+
+  const isCredit = showType
+    ? watch('type') === 'credit'
+    : watch('isCredit');
 
   return (
     <form
@@ -91,6 +96,22 @@ export function AccountForm({
           </p>
         </FormField>
       </div>
+      <FormField
+        label="Initial Balance"
+        labelSize="xs"
+        error={errors.initialBalance?.message}
+      >
+        <Input
+          type="number"
+          step="0.01"
+          {...register('initialBalance', { valueAsNumber: true })}
+        />
+        <p className="text-xs text-content-muted mt-1">
+          {isCredit
+            ? 'Amount owed before your first tracked transaction.'
+            : "Account value before your first tracked transaction."}
+        </p>
+      </FormField>
       {!showType && (
         <label className="flex items-center gap-2 text-xs text-content-secondary cursor-pointer">
           <input

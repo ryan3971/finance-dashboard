@@ -16,6 +16,7 @@ export interface AccountRequest {
   institution: string;
   currency: string;
   isCredit: boolean;
+  initialBalance?: number;
 }
 
 // isCredit is omitted from PATCH — the service derives it from type.
@@ -24,6 +25,7 @@ export interface PatchAccountRequest {
   type?: string;
   institution?: string;
   currency?: string;
+  initialBalance?: number;
 }
 
 export interface AccountResponse {
@@ -34,6 +36,7 @@ export interface AccountResponse {
   currency: string;
   isCredit: boolean;
   isActive: boolean;
+  initialBalance: number;
   createdAt: string;
 }
 
