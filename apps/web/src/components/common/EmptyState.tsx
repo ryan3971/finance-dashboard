@@ -1,7 +1,7 @@
 interface EmptyStateProps {
-  message: string;
-  hint?: string;
-  variant?: 'default' | 'error';
+  readonly message: string;
+  readonly hint?: string;
+  readonly variant?: 'default' | 'error';
 }
 
 export function EmptyState({
