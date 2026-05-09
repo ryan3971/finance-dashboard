@@ -2,7 +2,7 @@
 
 A full-stack personal finance dashboard for tracking income, expenses, accounts, and budgets with automatic transaction categorization. Built to replace a manually maintained Excel workbook — the goal was a proper data model, multi-account support, and dashboard views that update in real time rather than requiring formula maintenance.
 
-> **Live Demo:** `[PLACEHOLDER: deployed app URL]`
+> **Live Demo:** [https://app.ryantyrrell.ca/]
 
 ---
 
@@ -28,11 +28,6 @@ A full-stack personal finance dashboard for tracking income, expenses, accounts,
 
 ---
 
-## Architecture Diagram
-
-`[PLACEHOLDER: embed or link architecture diagram here]`
-
----
 
 ## Project Structure
 
@@ -168,11 +163,9 @@ A [Bruno](https://www.usebruno.com/) collection lives in the `bruno/` folder at 
 | Environment | Base URL |
 |---|---|
 | `dev` | `http://localhost:3000` |
-| `production` | `[PLACEHOLDER: production API URL]` |
+| `production` | `https://app.ryantyrrell.ca/` |
 
 Open Bruno, select **Open Collection**, and point it at the `bruno/` directory. Switch environments using the environment selector in the top-right corner.
-
-An HTML snapshot of the collection documentation is available at [`bruno/Finance Dashboard Collection-documentation.html`](bruno/Finance%20Dashboard%20Collection-documentation.html).
 
 ---
 
@@ -180,10 +173,10 @@ An HTML snapshot of the collection documentation is available at [`bruno/Finance
 
 | Document | Description |
 |---|---|
-| [`docs/infrastructure.md`](docs/infrastructure.md) | AWS deployment architecture |
-| [`docs/environment-setup.md`](docs/environment-setup.md) | Detailed local setup guide |
-| [`docs/database-seeding.md`](docs/database-seeding.md) | Seeding strategy and environments |
+| [`docs/development/infrastructure.md`](docs/development/infrastructure.md) | AWS deployment architecture |
+| [`docs/development/environment-setup.md`](docs/development/environment-setup.md) | Detailed local setup guide |
+| [`docs/development/seeding-layer.md`](docs/development/seeding-layer.md) | Seeding strategy and environments |
 | [`CLAUDE.md`](CLAUDE.md) | Monorepo-level conventions and commands |
 | [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) | API architecture rules and patterns |
 | [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) | Frontend architecture rules and patterns |
-| `[PLACEHOLDER: portfolio case study URL]` | Portfolio write-up with design decisions |
+| [`Portfolio`](https://carnation-increase-9e6.notion.site/Finance-Dashboard-35a1e09c304880f6ab07ebc2e3057e37) | Portfolio write-up with design decisions |
