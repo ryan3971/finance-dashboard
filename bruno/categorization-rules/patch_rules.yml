@@ -8,8 +8,14 @@ http:
   url: "{{localhost}}/api/v1/categorization-rules/:id"
   params:
     - name: id
-      value: ""
+      value: ca431a42-a2d3-4cc7-af5a-4554fdf9dd3a
       type: path
+  body:
+    type: json
+    data: |
+      { 
+        "flagForReview": false 
+      }
   auth:
     type: bearer
     token: "{{token}}"

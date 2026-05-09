@@ -120,8 +120,8 @@ Multi-stage build optimised for a small production image.
 |-------|------|---------|
 | `base` | `node:20-alpine` | Sets up pnpm and working directory |
 | `deps` | `base` | Installs all dependencies (dev + prod) using pnpm content-addressable store |
-| `build` | `deps` | Compiles TypeScript for api and shared packages |
-| `runner` | `base` | Copies only compiled output + production deps; runs `node dist/server.js` |
+| `build` | `base` | Compiles TypeScript for api and shared packages; copies deps artifacts via `COPY --from=deps` |
+| `runner` | `node:20-alpine` | Copies only compiled output + production deps; runs `node dist/server.js` |
 
 The `runner` stage re-uses the pnpm store from the `deps` stage with `--prefer-offline` so no network access is needed at image runtime.
 
@@ -129,7 +129,7 @@ The `runner` stage re-uses the pnpm store from the `deps` stage with `--prefer-o
 
 - `packages/shared/dist` — compiled shared types/schemas
 - `apps/api/dist` — compiled API
-- `apps/api/drizzle/` — migration SQL files
+- `apps/api/src/db/migrations` — migration SQL files
 - `apps/api/drizzle.config.ts` — required by `drizzle-kit migrate`
 - Production `node_modules` (via pnpm store)
 
@@ -182,17 +182,17 @@ The deploy workflows only trigger after this workflow completes successfully on 
 
 | Secret | Value |
 |--------|-------|
-| `AWS_ROLE_ARN` | ARN of the `github-actions` IAM role |
+| `AWS_ROLE_ARN` | ARN of the `github-actions-finance` IAM role |
 | `ECR_REPOSITORY_URL` | Full ECR URL (without tag) |
+| `AWS_REGION` | `ca-central-1` |
 
-**Other values referenced** (hardcoded in the workflow or passed as env):
+**Other values referenced** (hardcoded inline in shell commands):
 
 | Variable | Value |
 |----------|-------|
-| `AWS_REGION` | `ca-central-1` |
 | ECS cluster name | `staging-finance` |
-| ECS service name | set in workflow env |
-| Migration task definition | set in workflow env |
+| ECS service name | `staging-finance-api` |
+| Migration task definition | `staging-finance-api` |
 
 ### `deploy-frontend.yml` — Frontend CD
 
@@ -272,7 +272,7 @@ Output: `repository_url` — referenced by the staging environment stack and the
 
 Creates the OIDC provider and the `github-actions` IAM role used by all three GitHub Actions workflows.
 
-The role's trust policy restricts assumption to the repository `ryan3971/finance-dashboard` — update `main.tf` here if the GitHub org or repo name changes.
+The role is named `github-actions-finance`. Its trust policy restricts assumption to the repository `ryan3971/finance-dashboard` — update `main.tf` here if the GitHub org or repo name changes.
 
 **Allowed actions the role can perform:**
 
