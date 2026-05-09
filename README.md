@@ -1,6 +1,6 @@
 # Finance Dashboard
 
-A full-stack personal finance dashboard for tracking income, expenses, accounts, and budgets with automatic transaction categorization. Built to replace a manually maintained Excel workbook — the goal was a proper data model, multi-account support, and dashboard views that update in real time rather than requiring formula maintenance.
+A full-stack personal finance dashboard for tracking income, expenses, accounts, and budgets with automatic transaction categorization. Built to replace a manually maintained Excel workbook, the goal was a proper data model, multi-account support, and dashboard views that update in real time rather than requiring formula maintenance.
 
 > **Live Demo:** [https://app.ryantyrrell.ca/]
 
