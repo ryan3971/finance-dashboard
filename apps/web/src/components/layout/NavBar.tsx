@@ -25,6 +25,9 @@ const MAIN_LINKS = [
   { to: '/config' as const, label: 'Config' },
 ];
 
+// The desktop nav carries ~10 links plus the brand, email, and sign-out — roughly
+// 1 200 px of content at text-sm. xl (1 280 px) is the smallest breakpoint where
+// everything fits without overflowing. All other components in the app use sm/md.
 const LINK_BASE =
   'inline-flex items-center px-3 text-sm transition-colors text-content-secondary hover:text-content-primary hover:bg-surface-subtle';
 const LINK_ACTIVE =
@@ -77,15 +80,15 @@ export function NavBar() {
 
   return (
     <>
-      <nav className="bg-surface border-b border-border-base px-4 sm:px-6 flex items-stretch justify-between h-14">
+      <nav className="bg-surface border-b border-border-base px-4 xl:px-6 flex items-stretch justify-between h-14">
         <div className="flex items-stretch">
           {/* Brand */}
           <span className="flex items-center pr-4 sm:pr-6 mr-4 sm:mr-2 border-r border-border-base text-base font-semibold text-content-primary whitespace-nowrap">
             Finance Dashboard
           </span>
 
-          {/* Desktop nav — hidden below sm */}
-          <div className="hidden sm:flex items-stretch">
+          {/* Desktop nav — hidden below xl */}
+          <div className="hidden xl:flex items-stretch">
             {DASHBOARD_LINKS.map((link) => (
               <Link
                 key={link.to}
@@ -117,9 +120,9 @@ export function NavBar() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Mobile hamburger — hidden at sm+ */}
+          {/* Mobile hamburger — hidden at xl+ */}
           <button
-            className="sm:hidden p-1.5 rounded text-content-secondary hover:text-content-primary hover:bg-surface-subtle transition-colors"
+            className="xl:hidden p-1.5 rounded text-content-secondary hover:text-content-primary hover:bg-surface-subtle transition-colors"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open menu"
           >
@@ -145,31 +148,31 @@ export function NavBar() {
             <button
               onClick={handleSeedLoad}
               disabled={seedLoad.isPending}
-              className="hidden sm:flex items-center px-2.5 py-1 text-sm text-content-secondary border border-border-strong rounded hover:text-content-primary hover:bg-surface-subtle transition-colors disabled:opacity-50"
+              className="hidden xl:flex items-center px-2.5 py-1 text-sm text-content-secondary border border-border-strong rounded hover:text-content-primary hover:bg-surface-subtle transition-colors disabled:opacity-50 whitespace-nowrap"
             >
               {seedLoad.isPending ? 'Loading…' : 'Load sample data'}
             </button>
           )}
 
-          {/* Desktop user info — hidden below sm */}
-          <span className="hidden sm:block text-sm text-content-muted">
+          {/* Desktop user info — hidden below xl */}
+          <span className="hidden xl:block text-sm text-content-muted">
             {user?.email}
           </span>
-          <div className="hidden sm:block w-px h-4 bg-border-base" />
+          <div className="hidden xl:block w-px h-4 bg-border-base" />
           <button
             onClick={() => {
               void handleLogout();
             }}
-            className="hidden sm:block text-sm text-content-secondary hover:text-content-primary transition-colors"
+            className="hidden xl:block text-sm text-content-secondary hover:text-content-primary transition-colors"
           >
             Sign out
           </button>
         </div>
       </nav>
 
-      {/* Mobile drawer — only rendered below sm */}
+      {/* Mobile drawer — only rendered below xl */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 sm:hidden">
+        <div className="fixed inset-0 z-50 xl:hidden">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/40"
