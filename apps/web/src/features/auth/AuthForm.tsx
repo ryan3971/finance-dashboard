@@ -21,15 +21,20 @@ const modeConfig = {
     passwordLabel: 'Password',
     passwordAutoComplete: 'current-password' as const,
     footer: (
-      <p className="mt-4 text-center text-sm text-content-secondary">
-        Don&apos;t have an account?{' '}
-        <Link
-          to="/register"
-          className="text-content-primary font-medium hover:underline"
-        >
-          Create one
-        </Link>
-      </p>
+      <>
+        <p className="mt-4 text-center text-sm text-content-secondary">
+          Don&apos;t have an account?{' '}
+          <Link
+            to="/register"
+            className="text-content-primary font-medium hover:underline"
+          >
+            Create one
+          </Link>
+        </p>
+        <p className="mt-3 text-center text-xs text-content-muted">
+          No real email needed, feel free to use a fake one to try the app.
+        </p>
+      </>
     ),
   },
   register: {
