@@ -49,7 +49,9 @@ override.tf.json
 
 # Agent Skills
 .agents/
-.claude/
+.claude/*
+!.claude/commands/
+!.claude/commands/**
 
 # Bruno
 
