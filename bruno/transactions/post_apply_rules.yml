@@ -1,0 +1,17 @@
+info:
+  name: post_apply_rules
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/transactions/apply-rules"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -71,7 +71,7 @@ Services never use HTTP status codes. Business rule violations are thrown as dom
 
 ### Bulk apply-rules endpoint
 
-`POST /api/v1/transactions/apply-rules` runs all of a user's categorization rules against their unresolved transactions (where `categoryId IS NULL OR flaggedForReview = true`, excluding transfers). Manually-categorized transactions (`categorySource = 'manual'`) are excluded because they won't have `flaggedForReview = true` or a null `categoryId`. Returns `{ applied: number, skipped: number }`.
+`POST /api/v1/transactions/apply-rules` runs all of a user's categorization rules against their unresolved transactions (where `categorySource != 'manual'` AND (`categoryId IS NULL OR flaggedForReview = true`), excluding transfers). Returns `{ applied: number, skipped: number }`.
 
 Implementation notes:
 - The route is defined **before** `/:id` routes in `transactions-mutation.routes.ts` so Express does not match the literal string `apply-rules` as a transaction id.

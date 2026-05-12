@@ -7,7 +7,7 @@ import {
   transactions,
   transactionTags,
 } from '@/db/schema';
-import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
@@ -497,7 +497,8 @@ export async function removeTagFromTransaction(
 
 /**
  * Fetches all uncategorized or flagged-for-review non-transfer transactions for
- * a user. Returns only the columns needed by the rules engine.
+ * a user, excluding manually-categorized transactions. Returns only the columns
+ * needed by the rules engine.
  */
 async function fetchUncategorizedTransactions(userId: string) {
   return db
@@ -512,6 +513,7 @@ async function fetchUncategorizedTransactions(userId: string) {
       and(
         eq(accounts.userId, userId),
         eq(transactions.isTransfer, false),
+        ne(transactions.categorySource, 'manual'),
         or(isNull(transactions.categoryId), eq(transactions.flaggedForReview, true))
       )
     );
