@@ -1,25 +1,21 @@
 import { applyRules, type LoadedRule, loadRules } from './rules-engine';
 import type { CategorizationResult } from './pipeline.types';
-//import { categorizeWithAnthropic } from './anthropic-provider';
-//import { categorizeWithOpenAI } from './openai-provider';
+import { categorizeWithAnthropic } from './anthropic-provider';
+import { categorizeWithOpenAI } from './openai-provider';
 import { CONFIDENCE } from '@/lib/constants';
 import { CATEGORY_SOURCE } from '@finance/shared/constants';
-//import { config } from '@/lib/config';
-
-// IGNORE THE AI RELATED IMPLEMENTATIONS FOR NOW - They will be implemented in the future
-
+import { config } from '@/lib/config';
 
 // Re-export for callers that batch-load rules before a loop (e.g. import pipeline)
 export { loadRules } from './rules-engine';
 export type { Rule, LoadedRule } from './rules-engine';
 
-// const AI_ENABLED = () => config.aiEnabled;
+const AI_ENABLED = () => config.aiEnabled;
 
 /**
  * Select and call the configured AI provider.
  * Returns null on failure or low confidence — caller handles fallback.
  */
-/**
 async function runAiProvider(
   description: string,
   amount: number,
@@ -34,7 +30,7 @@ async function runAiProvider(
   // Default: Anthropic Claude Haiku
   return categorizeWithAnthropic(description, amount, currency, userId);
 }
-*/
+
 /**
  * Categorize a single transaction.
  *
@@ -50,7 +46,7 @@ export async function categorize(
   description: string,
   userId: string,
   amount: number,
-  _currency: string,
+  currency: string,
   rules?: LoadedRule[]
 ): Promise<CategorizationResult> {
   // Step 1: Rules engine
@@ -64,12 +60,14 @@ export async function categorize(
   }
 
   // Step 2: AI provider (feature-flagged, provider configurable)
-  /*
   if (AI_ENABLED()) {
     const aiResult = await runAiProvider(description, amount, currency, userId);
-    if (aiResult) return aiResult;
+    if (aiResult) {
+      if (amount > 0) aiResult.needWant = null;
+      return aiResult;
+    }
   }
-*/
+
   // Step 3: Fallback — no category assigned, flagged for user review
   return {
     categoryId: null,

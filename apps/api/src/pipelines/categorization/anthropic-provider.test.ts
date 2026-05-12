@@ -1,6 +1,3 @@
-// IGNORE THIS FILE - it is a future implementation
-
-/**
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -21,6 +18,7 @@ vi.mock('./provider-utils', () => ({
 import Anthropic from '@anthropic-ai/sdk';
 
 import { categorizeWithAnthropic } from './anthropic-provider';
+import { resolveCategories } from './provider-utils';
 
 const mockCreate = vi.fn();
 
@@ -69,6 +67,39 @@ describe('categorizeWithAnthropic', () => {
     expect(result).toBeNull();
   });
 
+  it('returns a categorization result on success', async () => {
+    vi.mocked(resolveCategories).mockReturnValueOnce({
+      categoryId: 'cat-food',
+      subcategoryId: 'subcat-coffee',
+    });
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            category: 'Food',
+            subcategory: 'Coffee',
+            need_want: 'Want',
+            confidence: 0.92,
+            reasoning: 'Starbucks is a coffee shop',
+          }),
+        },
+      ],
+    });
+
+    const result = await categorizeWithAnthropic('starbucks', -5.5, 'CAD', 'user-1');
+
+    expect(result).toMatchObject({
+      categoryId: 'cat-food',
+      subcategoryId: 'subcat-coffee',
+      needWant: 'Want',
+      categorySource: 'ai',
+      categoryConfidence: 0.92,
+      sourceName: null,
+      flaggedForReview: false,
+    });
+  });
+
   it('strips markdown fences from response before parsing', async () => {
     mockCreate.mockResolvedValueOnce({
       content: [
@@ -87,4 +118,3 @@ describe('categorizeWithAnthropic', () => {
     ).resolves.not.toThrow();
   });
 });
- */
