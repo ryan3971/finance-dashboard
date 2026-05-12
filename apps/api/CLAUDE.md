@@ -69,6 +69,15 @@ Drizzle generates migration filenames automatically — do not rename them. Run 
 
 Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles `DomainError` instances generically, and also catches `ZodError` (→ 400) and `multer.MulterError`. Route handlers do not need to catch these.
 
+### Bulk apply-rules endpoint
+
+`POST /api/v1/transactions/apply-rules` runs all of a user's categorization rules against their unresolved transactions (where `categoryId IS NULL OR flaggedForReview = true`, excluding transfers). Manually-categorized transactions (`categorySource = 'manual'`) are excluded because they won't have `flaggedForReview = true` or a null `categoryId`. Returns `{ applied: number, skipped: number }`.
+
+Implementation notes:
+- The route is defined **before** `/:id` routes in `transactions-mutation.routes.ts` so Express does not match the literal string `apply-rules` as a transaction id.
+- The service (`applyRulesToUncategorized`) loads rules once via `loadRules(userId)`, then groups matching transactions by their categorization outcome fingerprint to issue one `inArray` UPDATE per unique outcome — avoiding one query per transaction.
+- `needWant` is coerced to `null` for income transactions at the service layer, matching the behaviour of `patchTransaction`.
+
 ### Constants
 
 Before adding a constant, decide where it belongs: if it's needed by the web app too, it goes in `packages/shared/src/constants.ts` — import with `@finance/shared/constants`. If it's API-only and appears in 2+ files, it goes in `src/lib/constants.ts` — import with `@/lib/constants`.

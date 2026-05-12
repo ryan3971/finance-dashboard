@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import {
   addTagToTransaction,
+  applyRulesToUncategorized,
   createManualTransaction,
   deleteTransaction,
   patchTransaction,
@@ -23,6 +24,14 @@ const transactionParamsSchema = idParamsSchema;
 const tagParamsSchema = z.object({
   id: z.string().uuid(),
   tagId: z.string().uuid(),
+});
+
+// ─── POST /api/v1/transactions/apply-rules ───────────────────────────────────
+// Defined before /:id routes so Express does not match "apply-rules" as an id.
+
+router.post('/apply-rules', async (req: Request, res: Response) => {
+  const result = await applyRulesToUncategorized(getAuthUser(req).id);
+  res.json(result);
 });
 
 // ─── PATCH /api/v1/transactions/:id ──────────────────────────────────────────

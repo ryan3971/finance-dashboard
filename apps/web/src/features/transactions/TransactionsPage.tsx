@@ -15,10 +15,12 @@ import type { Transaction } from '@finance/shared/schemas/transactions';
 import { useCallback, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { PAGINATION } from '@finance/shared/constants';
+import { useApplyRules } from '@/features/transactions/hooks/useTransactionMutations';
 
 export function TransactionsPage() {
   const search = useSearch({ from: '/' });
   const navigate = useNavigate({ from: '/' });
+  const applyRules = useApplyRules();
   const [isExporting, setIsExporting] = useState(false);
   const [addPanelOpen, setAddPanelOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo | undefined>();
@@ -157,6 +159,14 @@ export function TransactionsPage() {
               onClick={() => void handleExportCsv()}
             >
               {isExporting ? 'Exporting…' : 'Export CSV'}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={applyRules.isPending}
+              onClick={() => applyRules.mutate()}
+            >
+              {applyRules.isPending ? 'Applying…' : 'Apply Rules'}
             </Button>
             <Button size="sm" onClick={() => setAddPanelOpen(true)}>
               Add Transaction

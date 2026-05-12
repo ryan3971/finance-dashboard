@@ -111,3 +111,25 @@ export function useDismissTransfer() {
     onError: () => toast.error(TOAST.TRANSFER_DISMISS_FAILED),
   });
 }
+
+export function useApplyRules() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ applied: number; skipped: number }>(
+        '/transactions/apply-rules'
+      );
+      return data;
+    },
+    onSuccess: ({ applied }) => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: dashboardKeys.all() });
+      const message =
+        applied === 0
+          ? 'No matching transactions found'
+          : `Applied rules to ${applied} transaction${applied === 1 ? '' : 's'}`;
+      toast.success(message);
+    },
+    onError: () => toast.error(TOAST.RULES_APPLY_FAILED),
+  });
+}

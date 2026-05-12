@@ -7,7 +7,7 @@ import {
   transactions,
   transactionTags,
 } from '@/db/schema';
-import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
@@ -22,6 +22,7 @@ import type { PatchTransactionInput } from '@finance/shared/types/transactions';
 import { db } from '@/db';
 import { assertDefined } from '@/lib/assert';
 import { updateGroupAfterMemberRemoval } from '@/pipelines/rebalancing/rebalancing-group-hooks';
+import { applyRules, loadRules } from '@/pipelines/categorization/rules-engine';
 import type { RebalancingRole } from '@finance/shared/types/rebalancing';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -490,4 +491,119 @@ export async function removeTagFromTransaction(
     );
 
   return true;
+}
+
+// ─── Apply Rules ──────────────────────────────────────────────────────────────
+
+/**
+ * Fetches all uncategorized or flagged-for-review non-transfer transactions for
+ * a user. Returns only the columns needed by the rules engine.
+ */
+async function fetchUncategorizedTransactions(userId: string) {
+  return db
+    .select({
+      id: transactions.id,
+      description: transactions.description,
+      isIncome: transactions.isIncome,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        eq(transactions.isTransfer, false),
+        or(isNull(transactions.categoryId), eq(transactions.flaggedForReview, true))
+      )
+    );
+}
+
+/**
+ * Runs all of the user's categorization rules against their unresolved
+ * transactions (uncategorized or flagged-for-review, excluding transfers).
+ * Manually-categorized transactions are never overwritten.
+ *
+ * Returns a count of how many transactions were updated vs skipped.
+ */
+export async function applyRulesToUncategorized(
+  userId: string
+): Promise<{ applied: number; skipped: number }> {
+  const rules = await loadRules(userId);
+  if (rules.length === 0) return { applied: 0, skipped: 0 };
+
+  const candidates = await fetchUncategorizedTransactions(userId);
+  if (candidates.length === 0) return { applied: 0, skipped: 0 };
+
+  // Map from a fingerprint of the update values → list of transaction ids that
+  // should receive those values. Grouping lets us do one inArray UPDATE per
+  // unique categorization outcome rather than one UPDATE per transaction.
+  const groups = new Map<
+    string,
+    {
+      ids: string[];
+      values: {
+        categoryId: string | null;
+        subcategoryId: string | null;
+        needWant: string | null;
+        sourceName: string | null;
+        categorySource: string;
+        categoryConfidence: string;
+        flaggedForReview: boolean;
+        updatedAt: Date;
+      };
+    }
+  >();
+
+  let skipped = 0;
+  const now = new Date();
+
+  for (const txn of candidates) {
+    const result = applyRules(txn.description, rules);
+    if (!result) {
+      skipped++;
+      continue;
+    }
+
+    const effectiveNeedWant = txn.isIncome ? null : result.needWant;
+    const fingerprint = JSON.stringify({
+      categoryId: result.categoryId,
+      subcategoryId: result.subcategoryId,
+      needWant: effectiveNeedWant,
+      sourceName: result.sourceName,
+      categorySource: result.categorySource,
+      flaggedForReview: result.flaggedForReview,
+    });
+
+    const existing = groups.get(fingerprint);
+    if (existing) {
+      existing.ids.push(txn.id);
+    } else {
+      groups.set(fingerprint, {
+        ids: [txn.id],
+        values: {
+          categoryId: result.categoryId,
+          subcategoryId: result.subcategoryId,
+          needWant: effectiveNeedWant,
+          sourceName: result.sourceName,
+          categorySource: result.categorySource,
+          categoryConfidence: String(result.categoryConfidence),
+          flaggedForReview: result.flaggedForReview,
+          updatedAt: now,
+        },
+      });
+    }
+  }
+
+  const applied = candidates.length - skipped;
+  if (applied === 0) return { applied: 0, skipped };
+
+  await db.transaction(async (tx) => {
+    for (const { ids, values } of groups.values()) {
+      await tx
+        .update(transactions)
+        .set(values)
+        .where(inArray(transactions.id, ids));
+    }
+  });
+
+  return { applied, skipped };
 }

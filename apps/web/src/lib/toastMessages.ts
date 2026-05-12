@@ -37,6 +37,7 @@ export const TOAST = {
   CATEGORY_DELETE_BLOCKED:
     'Delete all subcategories before deleting this category',
   // Rules
+  RULES_APPLY_FAILED: 'Failed to apply rules',
   RULE_UPDATED: 'Rule updated',
   RULE_UPDATE_FAILED: 'Failed to update rule',
   RULE_DELETED: 'Rule deleted',

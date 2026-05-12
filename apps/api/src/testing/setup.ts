@@ -32,10 +32,15 @@ vi.mock('@/middleware/logger', () => {
 });
 
 // Seed the test category/rule set once per file before any test runs.
-// System rows (userId IS NULL) survive cleanDatabase() between tests, so the
-// set is stable for the whole file without per-test re-seeding.
 // The replace is unconditional so a stale production set from a prior manual
 // seed run can never bleed into tests.
+//
+// NOTE: cleanDatabase() deletes ALL rows from categorizationRules (no WHERE
+// clause), so system rules do NOT survive between tests — they are gone after
+// the first beforeEach fires. System categories DO survive (cleanDatabase()
+// filters that delete to userId IS NOT NULL). Do not write tests that assume
+// the system rule set is active; insert rules directly in the DB if a test
+// needs them.
 beforeAll(async () => {
   await resetTestSystemData();
 });

@@ -41,6 +41,10 @@ pnpm --filter api db:migrate:test  # Migrate test DB
 pnpm --filter api vitest run src/features/accounts/accounts.routes.test.ts
 ```
 
+**When working in a git worktree (`.claude/worktrees/`):**
+
+Worktrees share the git repository but not `node_modules`. All `pnpm` commands that invoke binaries (`vitest`, `tsc`, etc.) must be run from the monorepo root, not the worktree directory.
+
 ## Environment
 
 Each app has its own `.env` — copy the relevant `.env.example` before starting.
@@ -112,3 +116,7 @@ Do not touch a file until all three are answered.
 ## Tooling
 
 If the TypeScript language server reports unexpected errors (e.g. "Unsafe call of a type that could not be resolved") after editing a file — particularly after adding a new export or changing an import — restart the TS server before investigating further. These are stale diagnostics that clear on restart and are not real errors.
+
+The API `tsc --noEmit` output includes pre-existing TS5107 and TS5101 deprecation warnings (`moduleResolution=node10`, `baseUrl`) that are not real errors — ignore them when checking typecheck output for regressions.
+
+The Bruno collection (`bruno/`) lives in the monorepo root only and is not present in git worktrees. Add new requests to the main project directory.

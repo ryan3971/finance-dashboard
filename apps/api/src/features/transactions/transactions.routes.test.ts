@@ -13,12 +13,12 @@ import {
 import { createApp } from '@/app';
 import request from 'supertest';
 import { UNKNOWN_ID, MALFORMED_ID } from '@/testing/constants';
-import type { RuleResponse, PaginatedResponse } from '@/testing/types';
+import type { RuleResponse, PaginatedResponse, TransactionResponse } from '@/testing/types';
 import { accountFixture } from '@/testing/fixtures/account.fixture';
 import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { transactions } from '@/db/schema';
+import { categorizationRules, transactions } from '@/db/schema';
 
 const app = createApp();
 
@@ -910,5 +910,204 @@ describe('DELETE /api/v1/transactions/:id', () => {
       .from(transactions)
       .where(eq(transactions.id, txnB.id));
     expect(pairRow?.transferPairId).toBeNull();
+  });
+});
+
+// ── POST /api/v1/transactions/apply-rules ─────────────────────────────────────
+
+describe('POST /api/v1/transactions/apply-rules', () => {
+  it('returns 401 without auth token', async () => {
+    const res = await request(app).post('/api/v1/transactions/apply-rules');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns zeros when the user has no rules', async () => {
+    // Service exits early before fetching candidates when there are no rules.
+    const { accessToken } = await setupWithImport();
+
+    const res = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { applied: number; skipped: number };
+    expect(body).toMatchObject({ applied: 0, skipped: 0 });
+  });
+
+  it('returns zeros when the user has no uncategorized transactions', async () => {
+    // User has a rule but no transactions to match against
+    const { accessToken, user } = await registerUser(app);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'netflix',
+      categoryId,
+      priority: 5,
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { applied: number; skipped: number };
+    expect(body).toMatchObject({ applied: 0, skipped: 0 });
+  });
+
+  it('applies matching rules, updates transactions, and returns counts', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'My AMEX',
+      type: 'credit',
+      institution: 'amex',
+      currency: 'CAD',
+      isCredit: true,
+    });
+    await uploadAmex(app, accessToken, accountId);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    // Insert a rule that matches exactly one amex transaction (NETFLIX.COM SUBSCRIPTION)
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'netflix',
+      categoryId,
+      priority: 5,
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { applied: number; skipped: number };
+    expect(body).toMatchObject({ applied: 1, skipped: 5 });
+
+    // Verify DB state: exactly one transaction is now rule-categorized
+    const listRes = await request(app)
+      .get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${accessToken}`);
+    const { data } = listRes.body as PaginatedResponse<TransactionResponse>;
+    const ruleMatched = data.filter((t) => t.categorySource === 'rule');
+    expect(ruleMatched).toHaveLength(1);
+    expect(ruleMatched[0]).toMatchObject({
+      categoryId,
+      flaggedForReview: false,
+      categorySource: 'rule',
+    });
+  });
+
+  it('does not overwrite manually-categorized transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'My AMEX',
+      type: 'credit',
+      institution: 'amex',
+      currency: 'CAD',
+      isCredit: true,
+    });
+    await uploadAmex(app, accessToken, accountId);
+
+    // Manually categorize the first transaction (SUNRISE BOUTIQUE by date desc)
+    const txn = await getFirstTransaction(app, accessToken);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+    await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId });
+
+    // Create a rule whose keyword matches SUNRISE BOUTIQUE's description
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'sunrise',
+      categoryId,
+      priority: 5,
+    });
+
+    await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    // The manually-categorized transaction must still have categorySource='manual'
+    const after = await getTransaction(app, accessToken, txn.id);
+    expect(after).toMatchObject({
+      categoryId,
+      categorySource: 'manual',
+      flaggedForReview: false,
+    });
+  });
+
+  it('does not apply rules to transfer transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'My AMEX',
+      type: 'credit',
+      institution: 'amex',
+      currency: 'CAD',
+      isCredit: true,
+    });
+    await uploadAmex(app, accessToken, accountId);
+
+    // Mark the first transaction as a transfer
+    const txn = await getFirstTransaction(app, accessToken);
+    await db
+      .update(transactions)
+      .set({ isTransfer: true })
+      .where(eq(transactions.id, txn.id));
+
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    // Create a rule matching only the transfer transaction (SUNRISE BOUTIQUE)
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'sunrise',
+      categoryId,
+      priority: 5,
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { applied: number; skipped: number };
+    // Transfer excluded → 5 candidates, none match "sunrise" → all skipped
+    expect(body).toMatchObject({ applied: 0, skipped: 5 });
+
+    // The transfer transaction remains uncategorized
+    const after = await getTransaction(app, accessToken, txn.id);
+    expect(after?.categorySource).not.toBe('rule');
+    expect(after?.categoryId).toBeNull();
+  });
+
+  it("only applies rules to the authenticated user's transactions", async () => {
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] =
+      await Promise.all([
+        registerUser(app, 'a@example.com'),
+        registerUser(app, 'b@example.com'),
+      ]);
+    const accountId = await createAccount(app, tokenA, {
+      name: 'My AMEX',
+      type: 'credit',
+      institution: 'amex',
+      currency: 'CAD',
+      isCredit: true,
+    });
+    await uploadAmex(app, tokenA, accountId);
+
+    // User B calls apply-rules — B has no transactions of their own
+    const res = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${tokenB}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { applied: number; skipped: number };
+    expect(body).toMatchObject({ applied: 0, skipped: 0 });
+
+    // User A's transactions remain uncategorized
+    const listRes = await request(app)
+      .get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${tokenA}`);
+    const { data } = listRes.body as PaginatedResponse<TransactionResponse>;
+    expect(data.every((t) => t.flaggedForReview === true)).toBe(true);
   });
 });
