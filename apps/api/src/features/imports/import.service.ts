@@ -15,7 +15,10 @@ import {
   ImportError,
   ImportErrorCode,
 } from '@/features/imports/imports.errors';
-import type { ImportResult } from '@finance/shared/types/transactions';
+import type {
+  ImportProgressEvent,
+  ImportResult,
+} from '@finance/shared/types/transactions';
 import type {
   RawInvestmentTransaction,
   RawTransaction,
@@ -28,6 +31,10 @@ import { IMPORT_STATUS, TRANSACTION_SOURCE } from '@/lib/constants';
 import { logger } from '@/middleware/logger';
 import type { Logger } from 'pino';
 import { parseCsv } from './pipeline/parser';
+
+// --- Types ---
+
+type ImportProgressCallback = (event: ImportProgressEvent) => void;
 
 // --- Helpers ---
 
@@ -56,16 +63,19 @@ async function processAllRows(
   userId: string,
   rules: LoadedRule[],
   result: ImportResult,
-  log: Logger
+  log: Logger,
+  onProgress?: ImportProgressCallback
 ): Promise<string[]> {
   const importedTransactionIds: string[] = [];
 
-  for (const raw of parsed) {
+  for (let rowIndex = 0; rowIndex < parsed.length; rowIndex++) {
+    const raw = parsed[rowIndex];
+    if (!raw) continue;
     try {
       if (isInvestmentTransaction(raw)) {
         await processInvestmentRow(raw, accountId, importId, result);
       } else {
-        const insertedId = await processTransactionRow(
+        const row = await processTransactionRow(
           raw,
           accountId,
           importId,
@@ -73,7 +83,17 @@ async function processAllRows(
           rules,
           result
         );
-        if (insertedId) importedTransactionIds.push(insertedId);
+        if (row) importedTransactionIds.push(row.id);
+        onProgress?.({
+          stage: 'categorizing',
+          processed: rowIndex + 1,
+          total: parsed.length,
+          importedCount: result.importedCount,
+          flaggedCount: result.flaggedCount,
+          duplicateCount: result.duplicateCount,
+          errorCount: result.errorCount,
+          method: row?.method ?? 'fallback',
+        });
       }
     } catch (err: unknown) {
       log.error({ err }, 'Unexpected error processing import row');
@@ -105,7 +125,8 @@ export async function processImport(
   // Accept a request-scoped child logger so import errors are correlated with
   // the originating HTTP request's requestId in the log stream. Defaults to the
   // module logger when called from scripts or tests (no request context).
-  log: Logger = logger
+  log: Logger = logger,
+  onProgress?: ImportProgressCallback
 ): Promise<ImportResult> {
   const [account] = await db
     .select({ institution: accounts.institution })
@@ -150,6 +171,12 @@ export async function processImport(
   const parsed = await parseRows(adapter, rows, accountId, importRecord.id);
   result.rowCount = parsed.length;
 
+  onProgress?.({
+    stage: 'parsing',
+    rowCount: parsed.length,
+    institution: account.institution,
+  });
+
   const rules = await loadRules(userId);
 
   try {
@@ -160,8 +187,11 @@ export async function processImport(
       userId,
       rules,
       result,
-      log
+      log,
+      onProgress
     );
+
+    onProgress?.({ stage: 'detecting_transfers' });
 
     result.transferCandidateCount = (
       await detectTransfers(importedTransactionIds, userId)
@@ -200,7 +230,7 @@ async function processTransactionRow(
   userId: string,
   rules: LoadedRule[],
   result: ImportResult
-): Promise<string | null> {
+): Promise<{ id: string; method: 'rule' | 'ai' | 'fallback' } | null> {
   const categorization = await categorize(
     raw.description,
     userId,
@@ -246,7 +276,14 @@ async function processTransactionRow(
   }
 
   result.importedCount++;
-  return inserted.id;
+
+  const sourceToMethod: Record<string, 'rule' | 'ai' | 'fallback'> = {
+    rule: 'rule',
+    ai: 'ai',
+  };
+  const method = sourceToMethod[categorization.categorySource] ?? 'fallback';
+
+  return { id: inserted.id, method };
 }
 
 async function processInvestmentRow(

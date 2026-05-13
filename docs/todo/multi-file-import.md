@@ -82,6 +82,21 @@ No changes required. `processImport` is already a pure single-file function and 
 
 ## Frontend
 
+> **Note — superseded by import-progress-streaming:** Once the streaming feature
+> (`POST /imports/upload/stream`) is implemented, `useImportUpload.ts` no longer
+> calls `/imports/upload` via axios. The frontend section below assumes the
+> pre-streaming axios path and cannot be applied as written after that point.
+>
+> When implementing multi-file after streaming, the frontend changes must target
+> `/upload/stream` instead. That requires:
+> - Extending `/upload/stream` to accept `upload.array('files', 10)`
+> - Adding a `fileIndex: number` field to the relevant `ImportProgressEvent` stages
+>   so the client can attribute events to the correct file
+> - Tracking `results: ImportResult[]` accumulated from per-file `complete` events
+>
+> The backend changes below (`/upload` route, `import.service.ts`) remain valid
+> regardless of implementation order.
+
 ### API client
 
 Update the import API call to send `files` (multi-value field) instead of `file`:

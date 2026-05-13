@@ -3,6 +3,7 @@ import multer from 'multer';
 import { z } from 'zod';
 import { processImport } from '@/features/imports/import.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
+import type { ImportProgressEvent } from '@finance/shared/types/transactions';
 
 const router = Router();
 router.use(requireAuth);
@@ -57,6 +58,59 @@ router.post(
     );
 
     res.status(201).json(result);
+  }
+);
+
+// POST /api/v1/imports/upload/stream
+router.post(
+  '/upload/stream',
+  upload.single('file'),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file provided' });
+      return;
+    }
+
+    const body = z.object({ accountId: z.string().uuid() }).safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: 'accountId must be a valid UUID' });
+      return;
+    }
+
+    const { accountId } = body.data;
+    const { id: userId } = getAuthUser(req);
+    const log = req.log.child({ userId });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    function emit(event: ImportProgressEvent) {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    }
+
+    // Intentional try/catch despite Express 5 async propagation: res.flushHeaders()
+    // has already been called, so the error middleware cannot write a JSON response.
+    // We must emit the error event ourselves before ending the stream.
+    try {
+      const result = await processImport(
+        userId,
+        accountId,
+        req.file.originalname,
+        req.file.buffer,
+        log,
+        emit
+      );
+      emit({ stage: 'complete', result });
+    } catch (err) {
+      emit({
+        stage: 'error',
+        message: err instanceof Error ? err.message : 'Import failed',
+      });
+    } finally {
+      res.end();
+    }
   }
 );
 
