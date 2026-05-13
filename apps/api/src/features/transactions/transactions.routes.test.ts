@@ -1110,4 +1110,73 @@ describe('POST /api/v1/transactions/apply-rules', () => {
     const { data } = listRes.body as PaginatedResponse<TransactionResponse>;
     expect(data.every((t) => t.flaggedForReview === true)).toBe(true);
   });
+
+  it('is idempotent — repeated clicks do not re-apply rules to already-processed transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'My AMEX',
+      type: 'credit',
+      institution: 'amex',
+      currency: 'CAD',
+      isCredit: true,
+    });
+    await uploadAmex(app, accessToken, accountId);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'netflix',
+      categoryId,
+      priority: 5,
+    });
+
+    // First click — categorizes the one matching transaction
+    const first = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect((first.body as { applied: number }).applied).toBe(1);
+
+    // Second click — the already-rule-categorized transaction must not be re-counted
+    const second = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(second.status).toBe(200);
+    expect((second.body as { applied: number }).applied).toBe(0);
+  });
+
+  it('is idempotent when the matching rule has flagForReview=true', async () => {
+    // This is the specific scenario that caused the original bug: a flagForReview
+    // rule sets categoryId=null and flaggedForReview=true, which would re-match
+    // the filter on every subsequent click without the categorySource='rule' guard.
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'My AMEX',
+      type: 'credit',
+      institution: 'amex',
+      currency: 'CAD',
+      isCredit: true,
+    });
+    await uploadAmex(app, accessToken, accountId);
+
+    // A flagForReview rule — leaves categoryId=null and flaggedForReview=true
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'netflix',
+      categoryId: null,
+      flagForReview: true,
+      priority: 5,
+    });
+
+    const first = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect((first.body as { applied: number }).applied).toBe(1);
+
+    // Second click — the flagForReview-matched transaction must not be re-counted
+    const second = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(second.status).toBe(200);
+    expect((second.body as { applied: number }).applied).toBe(0);
+  });
 });

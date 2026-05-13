@@ -496,9 +496,15 @@ export async function removeTagFromTransaction(
 // ─── Apply Rules ──────────────────────────────────────────────────────────────
 
 /**
- * Fetches all uncategorized or flagged-for-review non-transfer transactions for
- * a user, excluding manually-categorized transactions. Returns only the columns
- * needed by the rules engine.
+ * Fetches candidates for rule application: unresolved, non-transfer transactions
+ * that the rules engine has not yet processed. Excludes:
+ *   - Transfers (isTransfer = true)
+ *   - Manually-categorized transactions (categorySource = 'manual')
+ *   - Transactions already processed by the rules engine (categorySource = 'rule')
+ *     — this prevents idempotency violations where a flagForReview rule would
+ *     keep re-matching the same transaction on every Apply Rules click.
+ *
+ * Returns only the columns needed by the rules engine.
  */
 async function fetchUncategorizedTransactions(userId: string) {
   return db
@@ -513,7 +519,8 @@ async function fetchUncategorizedTransactions(userId: string) {
       and(
         eq(accounts.userId, userId),
         eq(transactions.isTransfer, false),
-        ne(transactions.categorySource, 'manual'),
+        ne(transactions.categorySource, CATEGORY_SOURCE.MANUAL),
+        ne(transactions.categorySource, CATEGORY_SOURCE.RULE),
         or(isNull(transactions.categoryId), eq(transactions.flaggedForReview, true))
       )
     );
