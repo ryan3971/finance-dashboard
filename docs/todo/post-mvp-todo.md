@@ -2,6 +2,12 @@
 ### General
 - Show a load screen or progress bar when the app is loading data or performing a task that takes time (especially when AI categorization is enabled during import).
 
+- During Imports; medium priority; cancel button
+
+### AI Categorization
+- AI Categorization; low priority; toggle in settings, confidence threshold slider, progress bar during import
+- AI Categorization; high priority; have the categories it created added as Rules the user can review and confirm, edit, or delete (instead of just categorizing transactions and leaving it at that)
+
 ### Transfer
 - Maybe add a button to run transfer detection on all transactions after import? (I'm unsure if transactions already imported are being picked up)
 
@@ -28,3 +34,11 @@
 ### General
 - Enable an option to edit an existing budget (e.g., change the name, amount, note, category/subcategory, etc.) instead of having to delete and create a new one.
 - Organize the budgets, or group them
+
+## Rebalancing:
+- Ability to organize, filter, and sort the rebalancing transactions/history. Currently, it shows all on one page with no way to filter or sort them, which could get unwieldy if there are a lot of transactions and a long history of rebalancing.
+
+
+
+## Other
+- Pagination may come into play for tables other than the transactions table as more items are added (e.g., rules, budgets, rebalancing history, etc.)
