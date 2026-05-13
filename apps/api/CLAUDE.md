@@ -78,6 +78,10 @@ Implementation notes:
 - The service (`applyRulesToUncategorized`) loads rules once via `loadRules(userId)`, then groups matching transactions by their categorization outcome fingerprint to issue one `inArray` UPDATE per unique outcome — avoiding one query per transaction.
 - `needWant` is coerced to `null` for income transactions at the service layer, matching the behaviour of `patchTransaction`.
 
+### SSE streaming routes
+
+`POST /api/v1/imports/upload/stream` uses Server-Sent Events. The handler intentionally wraps `processImport` in try/catch **despite Express 5's automatic async error propagation** — because `res.flushHeaders()` has already been called before the async work begins, leaving the SSE response body open. Express's error middleware cannot write a JSON error body to an already-open stream. The catch block emits a `{ stage: 'error', message }` SSE event and the finally block calls `res.end()`. Do not remove this try/catch or replace it with Express propagation.
+
 ### Constants
 
 Before adding a constant, decide where it belongs: if it's needed by the web app too, it goes in `packages/shared/src/constants.ts` — import with `@finance/shared/constants`. If it's API-only and appears in 2+ files, it goes in `src/lib/constants.ts` — import with `@/lib/constants`.

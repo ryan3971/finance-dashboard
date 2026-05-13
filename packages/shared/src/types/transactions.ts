@@ -12,4 +12,20 @@ export interface ImportResult {
   transferCandidateCount: number;
 }
 
+export type ImportProgressEvent =
+  | { stage: 'parsing'; rowCount: number; institution: string }
+  | {
+      stage: 'categorizing';
+      processed: number;
+      total: number;
+      importedCount: number;
+      flaggedCount: number;
+      duplicateCount: number;
+      errorCount: number;
+      method: 'rule' | 'ai' | 'fallback';
+    }
+  | { stage: 'detecting_transfers' }
+  | { stage: 'complete'; result: ImportResult }
+  | { stage: 'error'; message: string };
+
 export type PatchTransactionInput = z.infer<typeof patchTransactionSchema>;

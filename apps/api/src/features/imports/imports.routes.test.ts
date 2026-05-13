@@ -208,3 +208,152 @@ describe('POST /api/v1/imports/upload', () => {
     expect(firstTx.categoryName).toBe(null);
   });
 });
+
+// ── SSE helpers ───────────────────────────────────────────────────────────────
+
+interface SseEvent {
+  stage: string;
+  [key: string]: unknown;
+}
+
+function parseSseBody(text: string): SseEvent[] {
+  return text
+    .split('\n\n')
+    .map((chunk) => chunk.trim())
+    .filter((chunk) => chunk.startsWith('data: '))
+    .map((chunk) => JSON.parse(chunk.slice(6)) as SseEvent);
+}
+
+describe('POST /api/v1/imports/upload/stream', () => {
+  // ── Auth & input validation ────────────────────────────────────────────────
+
+  it('returns 401 without auth token', async () => {
+    const res = await request(app).post('/api/v1/imports/upload/stream');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 for a malformed accountId before stream opens', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/imports/upload/stream')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .field('accountId', MALFORMED_ID)
+      .attach('file', TD_FIXTURE, 'td.csv');
+
+    expect(res.status).toBe(400);
+    expect(res.headers['content-type']).toMatch(/json/);
+  });
+
+  it('returns 400 when no file is provided before stream opens', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/imports/upload/stream')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .field('accountId', '00000000-0000-0000-0000-000000000001');
+
+    expect(res.status).toBe(400);
+    expect(res.headers['content-type']).toMatch(/json/);
+  });
+
+  // ── Ownership enforcement ─────────────────────────────────────────────────
+
+  it('emits error event when accountId belongs to another user', async () => {
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] =
+      await Promise.all([
+        registerUser(app, 'a@example.com'),
+        registerUser(app, 'b@example.com'),
+      ]);
+    const accountId = await createAccount(app, tokenA, TD_ACCOUNT);
+
+    const res = await request(app)
+      .post('/api/v1/imports/upload/stream')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .field('accountId', accountId)
+      .attach('file', TD_FIXTURE, 'td.csv');
+
+    const events = parseSseBody(res.text);
+    const last = events[events.length - 1];
+    expect(last?.stage).toBe('error');
+  });
+
+  // ── Happy path ────────────────────────────────────────────────────────────
+
+  it('streams events in order and completes with correct ImportResult', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, TD_ACCOUNT);
+
+    const res = await request(app)
+      .post('/api/v1/imports/upload/stream')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .field('accountId', accountId)
+      .attach('file', TD_FIXTURE, 'td.csv');
+
+    const events = parseSseBody(res.text);
+
+    // Must start with parsing
+    expect(events[0]?.stage).toBe('parsing');
+
+    // Must have at least one categorizing event
+    const categorizingEvents = events.filter((e) => e.stage === 'categorizing');
+    expect(categorizingEvents.length).toBeGreaterThan(0);
+
+    // detecting_transfers comes after all categorizing events
+    const detectingIdx = events.findIndex(
+      (e) => e.stage === 'detecting_transfers'
+    );
+    const lastCategorizingIdx = events.reduce(
+      (max, e, i) => (e.stage === 'categorizing' ? i : max),
+      -1
+    );
+    expect(detectingIdx).toBeGreaterThan(lastCategorizingIdx);
+
+    // Must end with complete
+    const last = events[events.length - 1];
+    expect(last?.stage).toBe('complete');
+
+    interface CompleteEvent {
+      stage: 'complete';
+      result: {
+        importedCount: number;
+        duplicateCount: number;
+        errorCount: number;
+      };
+    }
+    const complete = last as unknown as CompleteEvent;
+    expect(complete.result.importedCount).toBe(9);
+    expect(complete.result.duplicateCount).toBe(0);
+    expect(complete.result.errorCount).toBe(0);
+  });
+
+  // ── Deduplication ─────────────────────────────────────────────────────────
+
+  it('emits complete event with duplicateCount on re-upload', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, TD_ACCOUNT);
+
+    // First upload via the sync endpoint so we have existing rows
+    await request(app)
+      .post('/api/v1/imports/upload')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .field('accountId', accountId)
+      .attach('file', TD_FIXTURE, 'td.csv');
+
+    const res = await request(app)
+      .post('/api/v1/imports/upload/stream')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .field('accountId', accountId)
+      .attach('file', TD_FIXTURE, 'td.csv');
+
+    const events = parseSseBody(res.text);
+    const last = events[events.length - 1];
+    expect(last?.stage).toBe('complete');
+
+    interface CompleteEvent {
+      stage: 'complete';
+      result: { importedCount: number; duplicateCount: number };
+    }
+    const complete = last as unknown as CompleteEvent;
+    expect(complete.result.importedCount).toBe(0);
+    expect(complete.result.duplicateCount).toBe(9);
+  });
+});
