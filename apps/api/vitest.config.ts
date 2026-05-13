@@ -11,8 +11,6 @@ export default defineConfig({
       '**/node_modules/**',
       'src/features/imports/questrade-import.routes.test.ts',
       'src/features/imports/adapters/questrade/questrade.adapter.test.ts',
-      'src/pipelines/categorization/anthropic-provider.test.ts',
-      'src/pipelines/categorization/openai-provider.test.ts',
     ],
     alias: [
       {
