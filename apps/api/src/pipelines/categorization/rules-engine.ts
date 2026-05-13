@@ -1,6 +1,6 @@
 import { CONFIDENCE } from '@/lib/constants';
 import { CATEGORY_SOURCE } from '@finance/shared/constants';
-import { desc, eq, isNull } from 'drizzle-orm';
+import { desc, eq, isNull, or } from 'drizzle-orm';
 import type { CategorizationResult } from './pipeline.types';
 import { categorizationRules } from '@/db/schema';
 import { db } from '@/db';
@@ -21,7 +21,7 @@ export type LoadedRule = Omit<Rule, 'createdAt'>;
  */
 export async function loadRules(userId: string | null): Promise<LoadedRule[]> {
   const conditions = userId
-    ? eq(categorizationRules.userId, userId)
+    ? or(eq(categorizationRules.userId, userId), isNull(categorizationRules.userId))
     : isNull(categorizationRules.userId);
 
   return db

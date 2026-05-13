@@ -1,5 +1,3 @@
-// IGNORE THIS FILE - it is a future implementation
-/** 
 import {
   buildCategorizationPrompt,
   buildCategoryList,
@@ -9,11 +7,8 @@ import {
 } from './provider-utils';
 import Anthropic from '@anthropic-ai/sdk';
 import type { CategorizationResult } from './pipeline.types';
-import {
-  AI_MAX_TOKENS,
-  AI_TEMPERATURE,
-  CATEGORY_SOURCE,
-} from '@/lib/constants';
+import { AI_MAX_TOKENS, AI_TEMPERATURE } from '@/lib/constants';
+import { CATEGORY_SOURCE } from '@finance/shared/constants';
 import { config } from '@/lib/config';
 import { logger } from '@/middleware/logger';
 
@@ -103,4 +98,3 @@ export async function categorizeWithAnthropic(
     return null;
   }
 }
-*/
