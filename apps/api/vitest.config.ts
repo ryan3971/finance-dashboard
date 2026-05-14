@@ -2,22 +2,27 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 export default defineConfig({
-  test: {
-    globals: true,
-    setupFiles: ['./src/testing/setup.ts'],
-    fileParallelism: false,
-    env: { BCRYPT_ROUNDS: '4' },
-    exclude: [
-      '**/node_modules/**',
-      'src/features/imports/questrade-import.routes.test.ts',
-      'src/features/imports/adapters/questrade/questrade.adapter.test.ts',
-    ],
+  // resolve.alias applies to both the main vite-node process (globalSetup) and
+  // all test workers. test.alias only applies to workers.
+  resolve: {
     alias: [
       {
         find: /^@finance\/shared(\/.*)?$/,
         replacement: path.resolve(__dirname, '../../packages/shared/src') + '$1',
       },
       { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
+  },
+  test: {
+    globals: true,
+    globalSetup: ['./src/testing/global-setup.ts'],
+    setupFiles: ['./src/testing/setup.ts'],
+    fileParallelism: true,
+    env: { BCRYPT_ROUNDS: '4' },
+    exclude: [
+      '**/node_modules/**',
+      'src/features/imports/questrade-import.routes.test.ts',
+      'src/features/imports/adapters/questrade/questrade.adapter.test.ts',
     ],
   },
 });

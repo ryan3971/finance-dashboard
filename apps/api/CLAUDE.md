@@ -52,7 +52,7 @@ PostgreSQL 15 via Docker (`docker-compose.yml`). Drizzle ORM with generated migr
 - Dev DB: `finance_dev`, Test DB: `finance_test` — both on port `5434`
 - Schema: `src/db/schema.ts`
 - Tests switch to `DATABASE_URL_TEST` automatically via `testing/setup.ts`
-- Tests run serially (`fileParallelism: false`) to avoid DB race conditions
+- Tests run in parallel (`fileParallelism: true`). Isolation is achieved by scoping all data to a per-worker user ID — see `src/testing/test-helpers.ts`.
 
 Drizzle generates migration filenames automatically — do not rename them. Run `pnpm db:migrate` (dev) or `pnpm --filter api db:migrate:test` (test) after generating a new migration. The ECS deploy pipeline runs migrations as a one-off task before updating the service — never deploy API changes that require a migration without including the migration in the same commit.
 
@@ -130,7 +130,7 @@ features/dashboards/
 
 ## Testing Strategy
 
-Tests live in `src/testing/`. The suite is integration-only — there are no separate unit test files. Tests run serially against a real database (`finance_test`) to avoid race conditions.
+Tests live in `src/testing/`. The suite is integration-only — there are no separate unit test files. Tests run in parallel against a real database (`finance_test`). Each worker uses a unique email suffix (injected by `registerUser()`) so users created by different workers never collide on the unique constraint. `cleanDatabase()` deletes only rows owned by users registered in the current file — system rows (`userId IS NULL`) are never touched.
 
 ### What to assert
 
