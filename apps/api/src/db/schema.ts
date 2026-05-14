@@ -87,7 +87,7 @@ export const categorizationRules = pgTable('categorization_rules', {
   subcategoryId: uuid('subcategory_id').references(() => categories.id),
   needWant: text('need_want', { enum: NEED_WANT_OPTIONS }),
   flagForReview: boolean('flag_for_review').notNull().default(false),
-  priority: integer('priority').notNull().default(0),
+  priority: integer('priority').notNull().default(5),
   matchType: text('match_type', { enum: ['substring', 'wildcard'] })
     .notNull()
     .default('substring'),

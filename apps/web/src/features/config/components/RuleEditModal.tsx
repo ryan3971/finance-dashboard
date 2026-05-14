@@ -33,10 +33,11 @@ type FormValues = z.infer<typeof formSchema>;
 interface RuleEditModalProps {
   readonly rule?: Rule;
   readonly onClose: () => void;
-  readonly onSave: (input: PatchRuleInput | CreateRuleInput) => Promise<void>;
+  readonly onCreate: (input: CreateRuleInput) => Promise<void>;
+  readonly onUpdate: (input: PatchRuleInput) => Promise<void>;
 }
 
-export function RuleEditModal({ rule, onClose, onSave }: RuleEditModalProps) {
+export function RuleEditModal({ rule, onClose, onCreate, onUpdate }: RuleEditModalProps) {
   const isCreate = rule === undefined;
 
   const {
@@ -78,7 +79,7 @@ export function RuleEditModal({ rule, onClose, onSave }: RuleEditModalProps) {
   const subcategoryId = watch('subcategoryId');
 
   async function onSubmit(values: FormValues) {
-    const input: PatchRuleInput | CreateRuleInput = {
+    const input = {
       keyword: values.keyword,
       matchType: values.matchType,
       categoryId: values.categoryId || null,
@@ -87,7 +88,11 @@ export function RuleEditModal({ rule, onClose, onSave }: RuleEditModalProps) {
       needWant: values.flagForReview ? null : (values.needWant || null),
       flagForReview: values.flagForReview,
     };
-    await onSave(input);
+    if (isCreate) {
+      await onCreate(input);
+    } else {
+      await onUpdate(input);
+    }
   }
 
   return (
@@ -167,7 +172,11 @@ export function RuleEditModal({ rule, onClose, onSave }: RuleEditModalProps) {
                     checked={field.value}
                     onChange={(e) => {
                       field.onChange(e.target.checked);
-                      if (e.target.checked) setValue('needWant', '');
+                      if (e.target.checked) {
+                        setValue('needWant', '');
+                        setValue('categoryId', '');
+                        setValue('subcategoryId', '');
+                      }
                     }}
                     className="rounded"
                   />
@@ -225,7 +234,10 @@ export function RuleEditModal({ rule, onClose, onSave }: RuleEditModalProps) {
                 <Input
                   type="number"
                   value={field.value}
-                  onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    if (!isNaN(n)) field.onChange(n);
+                  }}
                   className="w-24"
                 />
               )}

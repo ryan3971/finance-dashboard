@@ -97,7 +97,7 @@ export async function createRule(userId: string, input: CreateRuleInput) {
       .insert(categorizationRules)
       .values({ ...input, userId })
       .returning({ id: categorizationRules.id });
-    if (!inserted) throw new RuleError(RuleErrorCode.NOT_FOUND);
+    if (!inserted) throw new Error('insert returned no rows');
 
     const [rule] = await ruleSelect(conn)
       .where(eq(categorizationRules.id, inserted.id))

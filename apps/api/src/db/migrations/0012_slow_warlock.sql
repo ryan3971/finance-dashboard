@@ -1,0 +1,1 @@
+ALTER TABLE "categorization_rules" ALTER COLUMN "priority" SET DEFAULT 5;

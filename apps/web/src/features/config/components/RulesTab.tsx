@@ -284,12 +284,14 @@ export function RulesTab() {
     setEditingRule(undefined);
   }
 
-  async function handleSave(input: PatchRuleInput | CreateRuleInput) {
-    if (editingRule) {
-      await update.mutateAsync({ id: editingRule.id, input: input as PatchRuleInput });
-    } else {
-      await create.mutateAsync(input as CreateRuleInput);
-    }
+  async function handleCreate(input: CreateRuleInput) {
+    await create.mutateAsync(input);
+    closeModal();
+  }
+
+  async function handleUpdate(input: PatchRuleInput) {
+    if (!editingRule) return;
+    await update.mutateAsync({ id: editingRule.id, input });
     closeModal();
   }
 
@@ -378,7 +380,12 @@ export function RulesTab() {
 
       {/* Modal */}
       {modalOpen && (
-        <RuleEditModal rule={editingRule} onClose={closeModal} onSave={handleSave} />
+        <RuleEditModal
+          rule={editingRule}
+          onClose={closeModal}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
+        />
       )}
     </div>
   );
