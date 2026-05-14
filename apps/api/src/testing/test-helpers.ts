@@ -55,6 +55,14 @@ export function trackForCleanup(userId: string): void {
  * the last test's data after the file finishes).
  */
 export async function cleanDatabase(): Promise<void> {
+  // System categorization rules (userId IS NULL) are always cleared —
+  // GET /api/v1/categorization-rules returns them alongside user rules, so
+  // any test that asserts on an empty rule list would see them otherwise.
+  // This must run unconditionally, before the early-return below, so the
+  // first test in each file (which has no tracked users yet) also gets a
+  // clean slate.
+  await db.delete(categorizationRules).where(isNull(categorizationRules.userId));
+
   if (_trackedUserIds.size === 0) return;
 
   const userIds = [..._trackedUserIds];
@@ -81,16 +89,8 @@ export async function cleanDatabase(): Promise<void> {
 
   // rebalancing_group_transactions cascades from rebalancing_groups.
   await db.delete(rebalancingGroups).where(inArray(rebalancingGroups.userId, userIds));
-  // Delete user-scoped rules AND system rules (userId IS NULL).
-  // GET /api/v1/categorization-rules returns system rules to users, so they
-  // must be cleared between tests just like the old global TRUNCATE did.
-  // Safe in parallel mode: no test relies on system rules being present.
-  await db.delete(categorizationRules).where(
-    isNull(categorizationRules.userId)
-  );
-  await db.delete(categorizationRules).where(
-    inArray(categorizationRules.userId, userIds)
-  );
+  // System rules already deleted above; delete user-scoped rules here.
+  await db.delete(categorizationRules).where(inArray(categorizationRules.userId, userIds));
   // transaction_tags cascades from tags.
   await db.delete(tags).where(inArray(tags.userId, userIds));
   // anticipated_budget_months cascades from anticipated_budget.
