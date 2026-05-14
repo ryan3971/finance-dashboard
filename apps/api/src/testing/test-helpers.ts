@@ -2,10 +2,11 @@ import * as path from 'path';
 import {
   accounts,
   anticipatedBudget,
-  anticipatedBudgetMonths,
   categories,
   categorizationRules,
+  contributionRecords,
   imports,
+  investmentSnapshots,
   investmentTransactions,
   rebalancingGroups,
   refreshTokens,
@@ -16,7 +17,7 @@ import {
 } from '@/db/schema';
 import type { Application } from 'express';
 import { db } from '@/db';
-import { eq, isNotNull } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import request from 'supertest';
 import type {
   AuthResponse,
@@ -31,29 +32,80 @@ export interface ImportSummaryResponse {
   errorCount: number;
 }
 
-export async function cleanDatabase(): Promise<void> {
-  await db.delete(transactions);
-  await db.delete(investmentTransactions);
-  await db.delete(imports);
-  await db.delete(accounts);
-  await db.delete(refreshTokens);
-  await db.delete(categorizationRules);
-  await db.delete(categories).where(isNotNull(categories.userId));
-  await db.delete(tags);
-  await db.delete(anticipatedBudgetMonths);
-  await db.delete(anticipatedBudget);
-  await db.delete(userConfig);
-  await db.delete(rebalancingGroups);
-  await db.delete(users);
+// Worker-local set of user IDs created during this test file's run.
+// Vitest re-initialises module state for each file (isolate: true),
+// so this set is automatically scoped to a single file's lifecycle.
+const _trackedUserIds = new Set<string>();
+
+/**
+ * Register a user ID for cleanup by cleanDatabase().
+ * Call this when registering a user via raw HTTP instead of registerUser()
+ * (e.g. in auth tests that exercise the registration endpoint directly).
+ */
+export function trackForCleanup(userId: string): void {
+  _trackedUserIds.add(userId);
 }
+
+/**
+ * Delete all data created by the current test file. Only removes rows owned
+ * by users registered through registerUser() or trackForCleanup(). System
+ * categories (userId IS NULL) and global sequences are untouched.
+ *
+ * Called in beforeEach (cleans previous test's data) and afterAll (cleans
+ * the last test's data after the file finishes).
+ */
+export async function cleanDatabase(): Promise<void> {
+  if (_trackedUserIds.size === 0) return;
+
+  const userIds = [..._trackedUserIds];
+  _trackedUserIds.clear();
+
+  // Resolve account IDs before deleting accounts; transactions are scoped
+  // to accounts rather than users directly.
+  const userAccounts = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(inArray(accounts.userId, userIds));
+  const accountIds = userAccounts.map((a) => a.id);
+
+  if (accountIds.length > 0) {
+    // transaction_tags and rebalancing_group_transactions cascade from
+    // transactions, so they don't need explicit deletes.
+    await db.delete(transactions).where(inArray(transactions.accountId, accountIds));
+    await db.delete(investmentTransactions).where(inArray(investmentTransactions.accountId, accountIds));
+    await db.delete(investmentSnapshots).where(inArray(investmentSnapshots.accountId, accountIds));
+    await db.delete(contributionRecords).where(inArray(contributionRecords.accountId, accountIds));
+    await db.delete(imports).where(inArray(imports.accountId, accountIds));
+    await db.delete(accounts).where(inArray(accounts.id, accountIds));
+  }
+
+  // rebalancing_group_transactions cascades from rebalancing_groups.
+  await db.delete(rebalancingGroups).where(inArray(rebalancingGroups.userId, userIds));
+  await db.delete(categorizationRules).where(inArray(categorizationRules.userId, userIds));
+  // transaction_tags cascades from tags.
+  await db.delete(tags).where(inArray(tags.userId, userIds));
+  // anticipated_budget_months cascades from anticipated_budget.
+  await db.delete(anticipatedBudget).where(inArray(anticipatedBudget.userId, userIds));
+  await db.delete(userConfig).where(inArray(userConfig.userId, userIds));
+  await db.delete(refreshTokens).where(inArray(refreshTokens.userId, userIds));
+  await db.delete(categories).where(inArray(categories.userId, userIds));
+  await db.delete(users).where(inArray(users.id, userIds));
+}
+
+// Suffix applied to all emails registered via this helper to keep them unique
+// across parallel workers. Each Vitest worker gets a distinct VITEST_WORKER_ID.
+const _workerSuffix = `-w${process.env.VITEST_WORKER_ID ?? '0'}`;
 
 export async function registerUser(
   app: Application,
   email = 'test@example.com'
 ): Promise<AuthResponse> {
+  // Inject the worker suffix before the @ so parallel workers never collide on
+  // the users.email unique constraint. 'test@example.com' → 'test-w1@example.com'.
+  const workerEmail = email.replace('@', `${_workerSuffix}@`);
   const res = await request(app)
     .post('/api/v1/auth/register')
-    .send({ email, password: 'password123' });
+    .send({ email: workerEmail, password: 'password123' });
   if (res.status !== 201) {
     throw new Error(
       `registerUser failed: ${res.status} ${JSON.stringify(res.body)}`
@@ -62,7 +114,9 @@ export async function registerUser(
   // supertest types res.body as `any`; the cast satisfies no-unsafe-return
   // without hiding a real type gap — the shape is validated by the route's
   // Zod schema before it ever reaches this helper.
-  return res.body as AuthResponse;
+  const body = res.body as AuthResponse;
+  _trackedUserIds.add(body.user.id);
+  return body;
 }
 
 // Retrieving 500 transactions is a bit hacky but allows us to avoid adding a dedicated test-only route or directly querying the database in tests that need to verify transaction details after an operation like deletion or categorization.
