@@ -1,7 +1,7 @@
 import '@/lib/config'; // ensures dotenv runs before tests
 
-import { beforeAll, vi } from 'vitest';
-import { resetTestSystemData } from './seeders/reset-test-system-data';
+import { afterAll, vi } from 'vitest';
+import { cleanDatabase } from '@/testing/test-helpers';
 
 // Override DATABASE_URL for the test environment.
 // Tests run against finance_test, never finance_dev.
@@ -12,6 +12,12 @@ if (process.env.DATABASE_URL_TEST) {
 
 // Silence Pino during tests — log output from services is noise in test runs.
 // Individual tests can restore specific log methods if they need to assert on them.
+// Clean up the last test's data after every file completes. The beforeEach in
+// each test file handles all-but-last tests; this handles the final one.
+afterAll(async () => {
+  await cleanDatabase();
+});
+
 vi.mock('@/middleware/logger', () => {
   const mockLogger = {
     error: vi.fn(),
@@ -29,18 +35,4 @@ vi.mock('@/middleware/logger', () => {
       next();
     }),
   };
-});
-
-// Seed the test category/rule set once per file before any test runs.
-// The replace is unconditional so a stale production set from a prior manual
-// seed run can never bleed into tests.
-//
-// NOTE: cleanDatabase() deletes ALL rows from categorizationRules (no WHERE
-// clause), so system rules do NOT survive between tests — they are gone after
-// the first beforeEach fires. System categories DO survive (cleanDatabase()
-// filters that delete to userId IS NOT NULL). Do not write tests that assume
-// the system rule set is active; insert rules directly in the DB if a test
-// needs them.
-beforeAll(async () => {
-  await resetTestSystemData();
 });
