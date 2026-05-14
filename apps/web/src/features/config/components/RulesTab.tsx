@@ -309,11 +309,36 @@ export function RulesTab() {
 
   if (isError) return <EmptyState message="Failed to load rules." variant="error" />;
 
+  const ruleCount = rules?.length ?? 0;
+  const filteredCount = sorted.length;
+
+  let content;
+  if (sorted.length === 0) {
+    content = search ? (
+      <EmptyState message="No rules match your search." />
+    ) : (
+      <EmptyState
+        message="No rules yet."
+        hint="Rules are created automatically when you categorise transactions during import review."
+      />
+    );
+  } else if (groupByCategory && groups) {
+    content = (
+      <div className="space-y-4">
+        {groups.map(([label, groupRules]) => (
+          <CategoryGroup key={label} label={label} rules={groupRules} onEdit={openEdit} />
+        ))}
+      </div>
+    );
+  } else {
+    content = <RulesTable rules={sorted} onEdit={openEdit} />;
+  }
+
   return (
     <div className="mt-4 space-y-3">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-48">
+      {/* Row 1: search + primary action */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-lg">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-content-muted pointer-events-none" />
           <Input
             placeholder="Search rules…"
@@ -322,7 +347,14 @@ export function RulesTab() {
             className="pl-8 h-8 text-sm"
           />
         </div>
+        <Button size="sm" className="shrink-0 flex items-center h-8" onClick={openCreate}>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add rule
+        </Button>
+      </div>
 
+      {/* Row 2: view controls + count + export */}
+      <div className="flex items-center gap-2">
         <select
           value={sortKey}
           onChange={(e) => setSortKey(e.target.value as SortKey)}
@@ -334,7 +366,6 @@ export function RulesTab() {
             </option>
           ))}
         </select>
-
         <Button
           size="sm"
           variant={groupByCategory ? 'primary' : 'secondary'}
@@ -342,41 +373,25 @@ export function RulesTab() {
         >
           Group by category
         </Button>
-
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={!rules || rules.length === 0}
-          onClick={() => rules && exportRulesCsv(rules)}
-        >
-          Export CSV
-        </Button>
-
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Add rule
-        </Button>
+        <div className="ml-auto flex items-center gap-3 shrink-0">
+          <span className="text-sm text-content-muted">
+            {search && filteredCount !== ruleCount
+              ? `${filteredCount} of ${ruleCount} rules`
+              : `${ruleCount} ${ruleCount === 1 ? 'rule' : 'rules'}`}
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={ruleCount === 0}
+            onClick={() => rules && exportRulesCsv(rules)}
+          >
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
-      {sorted.length === 0 ? (
-        search ? (
-          <EmptyState message="No rules match your search." />
-        ) : (
-          <EmptyState
-            message="No rules yet."
-            hint="Rules are created automatically when you categorise transactions during import review."
-          />
-        )
-      ) : groupByCategory && groups ? (
-        <div className="space-y-4">
-          {groups.map(([label, groupRules]) => (
-            <CategoryGroup key={label} label={label} rules={groupRules} onEdit={openEdit} />
-          ))}
-        </div>
-      ) : (
-        <RulesTable rules={sorted} onEdit={openEdit} />
-      )}
+      {content}
 
       {/* Modal */}
       {modalOpen && (
