@@ -5,12 +5,6 @@ import type { CategorizationResult } from './pipeline.types';
 import { categorizationRules } from '@/db/schema';
 import { db } from '@/db';
 
-// TODO(hardening): Keyword matching uses a plain substring check (.includes()),
-// so short keywords can produce false positives (e.g. "pay" matching
-// "repayment", "visa" matching "supervisor"). Consider storing a `matchType`
-// column ('substring' | 'word' | 'regex') and dispatching accordingly, or at
-// minimum enforcing word-boundary matching for short keywords.
-
 export type Rule = typeof categorizationRules.$inferSelect;
 export type LoadedRule = Omit<Rule, 'createdAt'>;
 
@@ -35,10 +29,24 @@ export async function loadRules(userId: string | null): Promise<LoadedRule[]> {
       needWant: categorizationRules.needWant,
       flagForReview: categorizationRules.flagForReview,
       priority: categorizationRules.priority,
+      matchType: categorizationRules.matchType,
     })
     .from(categorizationRules)
     .where(conditions)
     .orderBy(desc(categorizationRules.priority));
+}
+
+function descriptionMatchesRule(description: string, rule: LoadedRule): boolean {
+  const normDesc = description.toLowerCase();
+  const normKeyword = rule.keyword.toLowerCase();
+
+  if (rule.matchType === 'wildcard') {
+    const escaped = normKeyword.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    const pattern = escaped.replace(/\*/g, '.*').replace(/\?/g, '.');
+    return new RegExp(`^${pattern}$`).test(normDesc);
+  }
+
+  return normDesc.includes(normKeyword);
 }
 
 /**
@@ -49,10 +57,8 @@ export function applyRules(
   description: string,
   rules: LoadedRule[]
 ): CategorizationResult | null {
-  const normalisedDesc = description.toLowerCase();
-
   for (const rule of rules) {
-    if (!normalisedDesc.includes(rule.keyword.toLowerCase())) continue;
+    if (!descriptionMatchesRule(description, rule)) continue;
 
     if (rule.flagForReview) {
       return {

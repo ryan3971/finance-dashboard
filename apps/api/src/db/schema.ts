@@ -88,6 +88,9 @@ export const categorizationRules = pgTable('categorization_rules', {
   needWant: text('need_want', { enum: NEED_WANT_OPTIONS }),
   flagForReview: boolean('flag_for_review').notNull().default(false),
   priority: integer('priority').notNull().default(0),
+  matchType: text('match_type', { enum: ['substring', 'wildcard'] })
+    .notNull()
+    .default('substring'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

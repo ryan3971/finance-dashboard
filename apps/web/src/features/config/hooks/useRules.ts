@@ -3,7 +3,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PatchRuleInput } from '@finance/shared/schemas/rules';
+import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import type { Rule } from '@finance/shared/types/rules';
 
 export function useRules() {
@@ -42,5 +42,20 @@ export function useDeleteRule() {
       toast.success(TOAST.RULE_DELETED);
     },
     onError: () => toast.error(TOAST.RULE_DELETE_FAILED),
+  });
+}
+
+export function useCreateRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateRuleInput) => {
+      const { data } = await api.post<Rule>('/categorization-rules', input);
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ruleKeys.all() });
+      toast.success(TOAST.RULE_CREATED);
+    },
+    onError: () => toast.error(TOAST.RULE_CREATE_FAILED),
   });
 }

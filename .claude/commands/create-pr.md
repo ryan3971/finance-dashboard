@@ -2,6 +2,8 @@
 
 Create a pull request for the changes in this session.
 
+If `/worktree-init` has not been run yet this session, run it before staging any commits.
+
 ## Steps
 
 1. Check for uncommitted changes. If any exist, stage and commit them with a message that describes what changed and why.
@@ -20,40 +22,9 @@ Working directory: C:\Users\rbt7r\OneDrive\Documents\VSCode Workspace\Finance Da
 
 ---
 
-## Worktree setup (run first when working directory is a worktree)
-
-Worktrees have no `node_modules` and no `.env`. Both are required by the pre-commit and pre-push hooks. Before staging any commit, run the following from PowerShell:
-
-```powershell
-$worktree = "<absolute path to worktree>"
-$main     = "C:\Users\rbt7r\OneDrive\Documents\VSCode Workspace\Finance Dashbard"
-
-# Link node_modules so lint-staged and ESLint can resolve types
-cmd /c mklink /J "$worktree\node_modules"                    "$main\node_modules"
-cmd /c mklink /J "$worktree\apps\api\node_modules"           "$main\apps\api\node_modules"
-cmd /c mklink /J "$worktree\apps\web\node_modules"           "$main\apps\web\node_modules"
-cmd /c mklink /J "$worktree\packages\shared\node_modules"    "$main\packages\shared\node_modules"
-
-# Copy .env so the pre-push test suite can connect to the test DB
-Copy-Item "$main\apps\api\.env" "$worktree\apps\api\.env"
-```
-
-Skip this block if `node_modules` already exists in the worktree (i.e. junctions were created earlier in the session).
-
 ## Bruno files
 
 The Bruno collection lives in the monorepo root only (`C:\Users\rbt7r\OneDrive\Documents\VSCode Workspace\Finance Dashbard\bruno\`) and is **not** present in worktrees. Any Bruno requests added during the session must be committed from the main project directory, not from the worktree. Stage and commit them separately before or after the worktree commit.
-
-## Pre-push test verification (run before committing)
-
-Run the targeted test file from the **main project** directory (where `node_modules` and `.env` are always present) to catch expectation errors before they surface in the pre-push hook:
-
-```bash
-cd "C:\Users\rbt7r\OneDrive\Documents\VSCode Workspace\Finance Dashbard"
-pnpm --filter api test src/features/<feature>/<feature>.routes.test.ts
-```
-
-Fix any failures before staging the commit.
 
 ## Worktree teardown (run after PR is created)
 

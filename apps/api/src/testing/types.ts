@@ -102,6 +102,7 @@ export interface RuleResponse {
   needWant: string | null;
   flagForReview: boolean;
   priority: number;
+  matchType: string;
   createdAt: string;
 }
 

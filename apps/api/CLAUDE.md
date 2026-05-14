@@ -69,6 +69,18 @@ Drizzle generates migration filenames automatically — do not rename them. Run 
 
 Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles `DomainError` instances generically, and also catches `ZodError` (→ 400) and `multer.MulterError`. Route handlers do not need to catch these.
 
+### Categorization rules endpoints
+
+`GET /api/v1/categorization-rules` — returns all rules for the authenticated user, ordered by priority descending. Each rule includes `matchType: 'substring' | 'wildcard'`.
+
+`POST /api/v1/categorization-rules` — creates a new rule; returns `201` with the full rule shape including joined `categoryName`/`subcategoryName`.
+
+`PATCH /api/v1/categorization-rules/:id` — partial update; accepts `matchType` along with all other rule fields.
+
+`DELETE /api/v1/categorization-rules/:id` — deletes the rule.
+
+Rules with `matchType: 'wildcard'` use `*` (any chars) and `?` (one char) wildcards. The pattern is anchored (`^...$`) — add `*` prefix/suffix to match substrings. Implemented in `rules-engine.ts` via `descriptionMatchesRule`.
+
 ### Bulk apply-rules endpoint
 
 `POST /api/v1/transactions/apply-rules` runs all of a user's categorization rules against their unresolved transactions (where `categorySource != 'manual'` AND (`categoryId IS NULL OR flaggedForReview = true`), excluding transfers). Returns `{ applied: number, skipped: number }`.

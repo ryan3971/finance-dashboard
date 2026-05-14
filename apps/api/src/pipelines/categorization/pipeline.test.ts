@@ -32,6 +32,7 @@ interface MutableConfig {
 }
 
 function makeRule(overrides: Partial<LoadedRule> = {}): LoadedRule {
+  // as LoadedRule: TypeScript can't prove Partial<LoadedRule> spreads never leave required fields undefined
   return {
     id: 'rule-1',
     userId: 'user-1',
@@ -42,8 +43,9 @@ function makeRule(overrides: Partial<LoadedRule> = {}): LoadedRule {
     needWant: 'Want',
     flagForReview: false,
     priority: 10,
+    matchType: 'substring',
     ...overrides,
-  };
+  } as LoadedRule;
 }
 
 const aiSuccessResult = {
@@ -99,6 +101,7 @@ describe('categorize — AI provider', () => {
 
   it('calls the Anthropic provider when aiEnabled is true and provider is anthropic', async () => {
     (config as unknown as MutableConfig).aiEnabled = true;
+     
     vi.mocked(categorizeWithAnthropic).mockResolvedValueOnce(aiSuccessResult);
 
     const result = await categorize('STARBUCKS', 'user-1', -5.5, 'CAD', []);
@@ -111,6 +114,7 @@ describe('categorize — AI provider', () => {
   it('calls the OpenAI provider when aiEnabled is true and provider is openai', async () => {
     (config as unknown as MutableConfig).aiEnabled = true;
     (config as unknown as MutableConfig).aiProvider = 'openai';
+     
     vi.mocked(categorizeWithOpenAI).mockResolvedValueOnce(aiSuccessResult);
 
     await categorize('STARBUCKS', 'user-1', -5.5, 'CAD', []);
@@ -121,6 +125,7 @@ describe('categorize — AI provider', () => {
 
   it('clears needWant to null for income (amount > 0) on an AI hit', async () => {
     (config as unknown as MutableConfig).aiEnabled = true;
+     
     vi.mocked(categorizeWithAnthropic).mockResolvedValueOnce({
       ...aiSuccessResult,
       needWant: 'Want', // AI returned incorrect needWant for income
@@ -133,6 +138,7 @@ describe('categorize — AI provider', () => {
 
   it('falls back to default when the AI provider returns null', async () => {
     (config as unknown as MutableConfig).aiEnabled = true;
+     
     vi.mocked(categorizeWithAnthropic).mockResolvedValueOnce(null);
 
     const result = await categorize('STARBUCKS', 'user-1', -5.5, 'CAD', []);

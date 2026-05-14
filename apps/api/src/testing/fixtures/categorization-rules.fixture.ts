@@ -12,6 +12,7 @@ interface CategorizationRuleRow {
   needWant: 'Need' | 'Want' | 'NA' | null;
   flagForReview: boolean;
   priority: number;
+  matchType: 'substring' | 'wildcard';
   createdAt: Date;
 }
 
