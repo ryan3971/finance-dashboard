@@ -17,7 +17,7 @@ import {
 } from '@/db/schema';
 import type { Application } from 'express';
 import { db } from '@/db';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, isNull } from 'drizzle-orm';
 import request from 'supertest';
 import type {
   AuthResponse,
@@ -81,7 +81,16 @@ export async function cleanDatabase(): Promise<void> {
 
   // rebalancing_group_transactions cascades from rebalancing_groups.
   await db.delete(rebalancingGroups).where(inArray(rebalancingGroups.userId, userIds));
-  await db.delete(categorizationRules).where(inArray(categorizationRules.userId, userIds));
+  // Delete user-scoped rules AND system rules (userId IS NULL).
+  // GET /api/v1/categorization-rules returns system rules to users, so they
+  // must be cleared between tests just like the old global TRUNCATE did.
+  // Safe in parallel mode: no test relies on system rules being present.
+  await db.delete(categorizationRules).where(
+    isNull(categorizationRules.userId)
+  );
+  await db.delete(categorizationRules).where(
+    inArray(categorizationRules.userId, userIds)
+  );
   // transaction_tags cascades from tags.
   await db.delete(tags).where(inArray(tags.userId, userIds));
   // anticipated_budget_months cascades from anticipated_budget.
