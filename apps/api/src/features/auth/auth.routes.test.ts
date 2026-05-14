@@ -1,4 +1,4 @@
-import { cleanDatabase } from '@/testing/test-helpers';
+import { cleanDatabase, trackForCleanup } from '@/testing/test-helpers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '@/app';
 import request from 'supertest';
@@ -40,6 +40,7 @@ describe('POST /api/v1/auth/register', () => {
     expect(body.user.id).toBeDefined();
     expect(body.user.email).toBe(TEST_CREDENTIALS.email);
     expect(res.headers['set-cookie']).toBeDefined();
+    trackForCleanup(body.user.id);
   });
 
   it('normalizes email to lowercase', async () => {
@@ -47,21 +48,28 @@ describe('POST /api/v1/auth/register', () => {
       .post('/api/v1/auth/register')
       .send({ email: 'Test@Example.COM', password: 'password123' });
 
+    const body = res.body as AuthResponse;
     expect(res.status).toBe(201);
-    expect((res.body as AuthResponse).user.email).toBe('test@example.com');
+    expect(body.user.email).toBe('test@example.com');
+    trackForCleanup(body.user.id);
   });
 
   describe('when email already exists', () => {
+    let registeredEmail: string;
+
     beforeEach(async () => {
-      await request(app)
+      const res = await request(app)
         .post('/api/v1/auth/register')
         .send({ ...TEST_CREDENTIALS });
+      const body = res.body as AuthResponse;
+      registeredEmail = body.user.email;
+      trackForCleanup(body.user.id);
     });
 
     it('returns 409 with error message', async () => {
       const res = await request(app)
         .post('/api/v1/auth/register')
-        .send({ email: TEST_CREDENTIALS.email, password: 'different' });
+        .send({ email: registeredEmail, password: 'different' });
 
       expect(res.status).toBe(409);
       expect(res.body).toMatchObject({ error: 'Email already registered' });
@@ -105,9 +113,10 @@ describe('POST /api/v1/auth/register', () => {
 
 describe('POST /api/v1/auth/login', () => {
   beforeEach(async () => {
-    await request(app)
+    const res = await request(app)
       .post('/api/v1/auth/register')
       .send({ ...TEST_CREDENTIALS });
+    trackForCleanup((res.body as AuthResponse).user.id);
   });
 
   it('returns tokens and sets cookie for valid credentials', async () => {
@@ -157,6 +166,7 @@ describe('POST /api/v1/auth/refresh', () => {
     const registerRes = await request(app)
       .post('/api/v1/auth/register')
       .send({ ...TEST_CREDENTIALS });
+    trackForCleanup((registerRes.body as AuthResponse).user.id);
     const cookie = extractRefreshCookie(registerRes.headers['set-cookie']);
 
     const res = await request(app)
@@ -192,6 +202,7 @@ describe('POST /api/v1/auth/refresh', () => {
     const registerRes = await request(app)
       .post('/api/v1/auth/register')
       .send({ ...TEST_CREDENTIALS });
+    trackForCleanup((registerRes.body as AuthResponse).user.id);
     const originalCookie = extractRefreshCookie(
       registerRes.headers['set-cookie']
     );
@@ -218,6 +229,7 @@ describe('POST /api/v1/auth/logout', () => {
     const registerRes = await request(app)
       .post('/api/v1/auth/register')
       .send({ ...TEST_CREDENTIALS });
+    trackForCleanup((registerRes.body as AuthResponse).user.id);
     const cookie = extractRefreshCookie(registerRes.headers['set-cookie']);
 
     const res = await request(app)
@@ -242,6 +254,7 @@ describe('POST /api/v1/auth/logout', () => {
     const registerRes = await request(app)
       .post('/api/v1/auth/register')
       .send({ ...TEST_CREDENTIALS });
+    trackForCleanup((registerRes.body as AuthResponse).user.id);
     const cookie = extractRefreshCookie(registerRes.headers['set-cookie']);
 
     await request(app).post('/api/v1/auth/logout').set('Cookie', cookie);
