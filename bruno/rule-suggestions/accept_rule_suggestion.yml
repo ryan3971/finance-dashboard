@@ -1,0 +1,21 @@
+info:
+  name: accept_rule_suggestion
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/rule-suggestions/{{suggestionId}}/accept"
+  auth:
+    type: bearer
+    token: "{{token}}"
+  body:
+    mode: json
+    json: |
+      {}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

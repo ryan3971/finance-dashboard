@@ -1,0 +1,17 @@
+info:
+  name: get_rule_suggestions
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{localhost}}/api/v1/rule-suggestions"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
