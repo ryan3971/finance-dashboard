@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FIELD_LIMITS, NEED_WANT_OPTIONS } from '@finance/shared/constants';
+import { FIELD_LIMITS, NEED_WANT_OPTIONS, RULE_PRIORITY_DEFAULT } from '@finance/shared/constants';
 import type { Rule } from '@finance/shared/types/rules';
 import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { FormField } from '@/components/common/FormField';
 import { CategorySelect } from '@/components/common/CategorySelect';
 import {
@@ -16,9 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import { cn } from '@/lib/utils';
 
-const formSchema = z.object({
+// Uses empty strings for nullable foreign keys (categoryId, subcategoryId) so RHF
+// can manage uncontrolled-empty state. onSubmit converts '' → null before the API call.
+const ruleFormSchema = z.object({
   keyword: z.string().min(1, 'Keyword is required').max(FIELD_LIMITS.RULE_KEYWORD_MAX).trim(),
   matchType: z.enum(['substring', 'wildcard']),
   categoryId: z.string(),
@@ -28,7 +29,7 @@ const formSchema = z.object({
   flagForReview: z.boolean(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof ruleFormSchema>;
 
 interface RuleEditModalProps {
   readonly rule?: Rule;
@@ -47,34 +48,20 @@ export function RuleEditModal({ rule, onClose, onCreate, onUpdate }: RuleEditMod
     setValue,
     control,
     formState: { errors, isSubmitting },
-    reset,
   } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(ruleFormSchema),
     defaultValues: {
       keyword: rule?.keyword ?? '',
       matchType: rule?.matchType ?? 'substring',
       categoryId: rule?.categoryId ?? '',
       subcategoryId: rule?.subcategoryId ?? '',
-      priority: rule?.priority ?? 5,
+      priority: rule?.priority ?? RULE_PRIORITY_DEFAULT,
       needWant: rule?.needWant ?? '',
       flagForReview: rule?.flagForReview ?? false,
     },
   });
 
-  useEffect(() => {
-    reset({
-      keyword: rule?.keyword ?? '',
-      matchType: rule?.matchType ?? 'substring',
-      categoryId: rule?.categoryId ?? '',
-      subcategoryId: rule?.subcategoryId ?? '',
-      priority: rule?.priority ?? 5,
-      needWant: rule?.needWant ?? '',
-      flagForReview: rule?.flagForReview ?? false,
-    });
-  }, [rule, reset]);
-
   const flagForReview = watch('flagForReview');
-  const matchType = watch('matchType');
   const categoryId = watch('categoryId');
   const subcategoryId = watch('subcategoryId');
 
@@ -114,37 +101,27 @@ export function RuleEditModal({ rule, onClose, onCreate, onUpdate }: RuleEditMod
           </FormField>
 
           <FormField label="Match type">
-            <div className="flex gap-1 mt-1">
-              <button
-                type="button"
-                onClick={() => setValue('matchType', 'substring')}
-                className={cn(
-                  'px-3 py-1 text-xs rounded border transition-colors',
-                  matchType === 'substring'
-                    ? 'bg-content-primary text-white border-content-primary'
-                    : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
-                )}
-              >
-                Contains
-              </button>
-              <button
-                type="button"
-                onClick={() => setValue('matchType', 'wildcard')}
-                className={cn(
-                  'px-3 py-1 text-xs rounded border transition-colors',
-                  matchType === 'wildcard'
-                    ? 'bg-content-primary text-white border-content-primary'
-                    : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
-                )}
-              >
-                Wildcard
-              </button>
-            </div>
-            {matchType === 'wildcard' && (
-              <p className="mt-1 text-xs text-content-muted">
-                * matches anything, ? matches one character
-              </p>
-            )}
+            <Controller
+              name="matchType"
+              control={control}
+              render={({ field }) => (
+                <>
+                  <SegmentedControl
+                    options={[
+                      { value: 'substring' as const, label: 'Contains' },
+                      { value: 'wildcard' as const, label: 'Wildcard' },
+                    ]}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                  {field.value === 'wildcard' && (
+                    <p className="mt-1 text-xs text-content-muted">
+                      * matches anything, ? matches one character
+                    </p>
+                  )}
+                </>
+              )}
+            />
           </FormField>
 
           {!flagForReview && (
@@ -192,55 +169,24 @@ export function RuleEditModal({ rule, onClose, onCreate, onUpdate }: RuleEditMod
                 name="needWant"
                 control={control}
                 render={({ field }) => (
-                  <div className="flex gap-1 mt-1">
-                    <button
-                      type="button"
-                      onClick={() => field.onChange('')}
-                      className={cn(
-                        'px-3 py-1 text-xs rounded border transition-colors',
-                        field.value === ''
-                          ? 'bg-content-primary text-white border-content-primary'
-                          : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
-                      )}
-                    >
-                      —
-                    </button>
-                    {NEED_WANT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => field.onChange(opt)}
-                        className={cn(
-                          'px-3 py-1 text-xs rounded border transition-colors',
-                          field.value === opt
-                            ? 'bg-content-primary text-white border-content-primary'
-                            : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
-                        )}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl
+                    options={[
+                      { value: '' as const, label: '—' },
+                      ...NEED_WANT_OPTIONS.map((opt) => ({ value: opt, label: opt })),
+                    ]}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
                 )}
               />
             </FormField>
           )}
 
           <FormField label="Priority" error={errors.priority?.message}>
-            <Controller
-              name="priority"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  value={field.value}
-                  onChange={(e) => {
-                    const n = parseInt(e.target.value, 10);
-                    if (!isNaN(n)) field.onChange(n);
-                  }}
-                  className="w-24"
-                />
-              )}
+            <Input
+              {...register('priority', { valueAsNumber: true })}
+              type="number"
+              className="w-24"
             />
           </FormField>
 

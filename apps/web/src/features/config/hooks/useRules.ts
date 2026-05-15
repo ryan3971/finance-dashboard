@@ -2,12 +2,13 @@ import { ruleKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
+import { getApiErrorMessage } from '@/lib/errors';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import type { Rule } from '@finance/shared/types/rules';
 
 export function useRules() {
-  return useQuery<Rule[]>({
+  return useQuery({
     queryKey: ruleKeys.all(),
     queryFn: async () => {
       const { data } = await api.get<Rule[]>('/categorization-rules');
@@ -27,7 +28,7 @@ export function useUpdateRule() {
       void queryClient.invalidateQueries({ queryKey: ruleKeys.all() });
       toast.success(TOAST.RULE_UPDATED);
     },
-    onError: () => toast.error(TOAST.RULE_UPDATE_FAILED),
+    onError: (err) => toast.error(getApiErrorMessage(err, TOAST.RULE_UPDATE_FAILED)),
   });
 }
 
@@ -41,7 +42,7 @@ export function useDeleteRule() {
       void queryClient.invalidateQueries({ queryKey: ruleKeys.all() });
       toast.success(TOAST.RULE_DELETED);
     },
-    onError: () => toast.error(TOAST.RULE_DELETE_FAILED),
+    onError: (err) => toast.error(getApiErrorMessage(err, TOAST.RULE_DELETE_FAILED)),
   });
 }
 
@@ -56,6 +57,6 @@ export function useCreateRule() {
       void queryClient.invalidateQueries({ queryKey: ruleKeys.all() });
       toast.success(TOAST.RULE_CREATED);
     },
-    onError: () => toast.error(TOAST.RULE_CREATE_FAILED),
+    onError: (err) => toast.error(getApiErrorMessage(err, TOAST.RULE_CREATE_FAILED)),
   });
 }

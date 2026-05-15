@@ -233,8 +233,8 @@ export function RulesTab() {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('priority-desc');
   const [groupByCategory, setGroupByCategory] = useState(false);
-  const [editingRule, setEditingRule] = useState<Rule | undefined>(undefined);
-  const [modalOpen, setModalOpen] = useState(false);
+  // null = closed, 'create' = creating new, Rule = editing that rule
+  const [modalState, setModalState] = useState<null | 'create' | Rule>(null);
 
   const filtered = useMemo(() => {
     if (!rules) return [];
@@ -270,18 +270,15 @@ export function RulesTab() {
   }, [sorted, groupByCategory]);
 
   function openCreate() {
-    setEditingRule(undefined);
-    setModalOpen(true);
+    setModalState('create');
   }
 
   function openEdit(rule: Rule) {
-    setEditingRule(rule);
-    setModalOpen(true);
+    setModalState(rule);
   }
 
   function closeModal() {
-    setModalOpen(false);
-    setEditingRule(undefined);
+    setModalState(null);
   }
 
   async function handleCreate(input: CreateRuleInput) {
@@ -290,8 +287,8 @@ export function RulesTab() {
   }
 
   async function handleUpdate(input: PatchRuleInput) {
-    if (!editingRule) return;
-    await update.mutateAsync({ id: editingRule.id, input });
+    if (modalState === null || modalState === 'create') return;
+    await update.mutateAsync({ id: modalState.id, input });
     closeModal();
   }
 
@@ -309,7 +306,7 @@ export function RulesTab() {
 
   if (isError) return <EmptyState message="Failed to load rules." variant="error" />;
 
-  const ruleCount = rules?.length ?? 0;
+  const ruleCount = rules.length;
   const filteredCount = sorted.length;
 
   let content;
@@ -357,7 +354,10 @@ export function RulesTab() {
       <div className="flex items-center gap-2">
         <select
           value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as SortKey)}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (SORT_OPTIONS.some((o) => o.value === v)) setSortKey(v as SortKey);
+          }}
           className="select-base h-8 text-sm"
         >
           {SORT_OPTIONS.map((opt) => (
@@ -382,8 +382,8 @@ export function RulesTab() {
           <Button
             size="sm"
             variant="secondary"
-            disabled={ruleCount === 0}
-            onClick={() => rules && exportRulesCsv(rules)}
+            disabled={sorted.length === 0}
+            onClick={() => exportRulesCsv(sorted)}
           >
             Export CSV
           </Button>
@@ -394,9 +394,9 @@ export function RulesTab() {
       {content}
 
       {/* Modal */}
-      {modalOpen && (
+      {modalState !== null && (
         <RuleEditModal
-          rule={editingRule}
+          rule={modalState === 'create' ? undefined : modalState}
           onClose={closeModal}
           onCreate={handleCreate}
           onUpdate={handleUpdate}
