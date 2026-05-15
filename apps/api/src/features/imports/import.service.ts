@@ -229,6 +229,12 @@ function isInvestmentTransaction(
   return 'action' in raw && 'accountNumber' in raw;
 }
 
+// Dismissed suggestions intentionally resurface on the next import of the same
+// merchant. The partial unique index only deduplicates *pending* suggestions, so
+// dismissed/accepted rows don't block a new pending entry. "Dismiss" means
+// "not now" — if the user later imports the same merchant again they get a fresh
+// chance to accept. This is consistent with the spec; change the index or add a
+// dismissed-keyword lookup here if "never again" semantics are ever wanted.
 async function maybeSuggestRule(
   userId: string,
   sourceName: string | null,

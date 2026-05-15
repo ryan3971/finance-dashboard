@@ -31,15 +31,37 @@ const ruleFormSchema = z.object({
 
 type FormValues = z.infer<typeof ruleFormSchema>;
 
+// Partial form-state values for pre-populating the modal without a full Rule
+// object. Used by RuleSuggestionsPanel to feed suggestion fields into the form.
+// categoryId/subcategoryId accept null (→ treated as '' internally by RHF).
+// needWant accepts null (→ '' / "—" selection). Callers must coerce 'NA' → null
+// before passing, as 'NA' is not a valid modal option.
+export interface InitialFormValues {
+  keyword?: string;
+  matchType?: 'substring' | 'wildcard';
+  categoryId?: string | null;
+  subcategoryId?: string | null;
+  priority?: number;
+  needWant?: 'Need' | 'Want' | null;
+  flagForReview?: boolean;
+}
+
 interface RuleEditModalProps {
   readonly rule?: Rule;
+  readonly initialValues?: InitialFormValues;
   readonly onClose: () => void;
   readonly onCreate: (input: CreateRuleInput) => Promise<void>;
   readonly onUpdate: (input: PatchRuleInput) => Promise<void>;
 }
 
-export function RuleEditModal({ rule, onClose, onCreate, onUpdate }: RuleEditModalProps) {
+export function RuleEditModal({ rule, initialValues, onClose, onCreate, onUpdate }: RuleEditModalProps) {
   const isCreate = rule === undefined;
+
+  const title = rule !== undefined
+    ? 'Edit rule'
+    : initialValues !== undefined
+      ? 'Accept suggestion'
+      : 'Add rule';
 
   const {
     register,
@@ -50,15 +72,25 @@ export function RuleEditModal({ rule, onClose, onCreate, onUpdate }: RuleEditMod
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(ruleFormSchema),
-    defaultValues: {
-      keyword: rule?.keyword ?? '',
-      matchType: rule?.matchType ?? 'substring',
-      categoryId: rule?.categoryId ?? '',
-      subcategoryId: rule?.subcategoryId ?? '',
-      priority: rule?.priority ?? RULE_PRIORITY_DEFAULT,
-      needWant: rule?.needWant ?? '',
-      flagForReview: rule?.flagForReview ?? false,
-    },
+    defaultValues: rule !== undefined
+      ? {
+          keyword:       rule.keyword,
+          matchType:     rule.matchType,
+          categoryId:    rule.categoryId ?? '',
+          subcategoryId: rule.subcategoryId ?? '',
+          priority:      rule.priority,
+          needWant:      rule.needWant ?? '',
+          flagForReview: rule.flagForReview,
+        }
+      : {
+          keyword:       initialValues?.keyword ?? '',
+          matchType:     initialValues?.matchType ?? 'substring',
+          categoryId:    initialValues?.categoryId ?? '',
+          subcategoryId: initialValues?.subcategoryId ?? '',
+          priority:      initialValues?.priority ?? RULE_PRIORITY_DEFAULT,
+          needWant:      initialValues?.needWant ?? '',
+          flagForReview: initialValues?.flagForReview ?? false,
+        },
   });
 
   const flagForReview = watch('flagForReview');
@@ -86,7 +118,7 @@ export function RuleEditModal({ rule, onClose, onCreate, onUpdate }: RuleEditMod
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isCreate ? 'Add rule' : 'Edit rule'}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-4">

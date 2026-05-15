@@ -91,6 +91,9 @@ export async function acceptSuggestion(
         needWant:      resolvedNeedWant,
         priority:      input.priority  ?? AUTO_RULE_PRIORITY,
         matchType:     input.matchType ?? 'substring',
+        // Suggestions are never created for flagForReview-only rules, so
+        // there is no valid path where accepting a suggestion should produce
+        // a flag-for-review rule. Hard-coding false is intentional.
         flagForReview: false,
         sourceName:    suggestion.suggestedKeyword,
       },

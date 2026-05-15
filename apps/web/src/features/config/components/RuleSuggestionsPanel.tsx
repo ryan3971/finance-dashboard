@@ -3,10 +3,9 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
-import { RuleEditModal } from './RuleEditModal';
+import { RuleEditModal, type InitialFormValues } from './RuleEditModal';
 import { useAcceptSuggestion, useDismissSuggestion } from '../hooks/useRuleSuggestions';
 import type { RuleSuggestion, AcceptSuggestionInput } from '@finance/shared/types/rule-suggestions';
-import type { Rule } from '@finance/shared/types/rules';
 import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import { RULE_PRIORITY_DEFAULT } from '@finance/shared/constants';
 import { cn } from '@/lib/utils';
@@ -39,34 +38,31 @@ function SuggestionRow({ suggestion }: { readonly suggestion: RuleSuggestion }) 
     accept.mutate({ id: suggestion.id, input: {} });
   }
 
-  function handleEditAccept(input: PatchRuleInput) {
+  // Called by RuleEditModal as onCreate (isCreate=true since no rule prop is passed).
+  // 'NA' from the suggestion is already coerced to null in initialFormValues below.
+  async function handleEditAccept(input: CreateRuleInput) {
     const acceptInput: AcceptSuggestionInput = {
-      keyword:       input.keyword       ?? undefined,
-      categoryId:    input.categoryId    !== undefined ? input.categoryId    : undefined,
-      subcategoryId: input.subcategoryId !== undefined ? input.subcategoryId : undefined,
-      needWant:      input.needWant === 'NA' ? null : (input.needWant ?? undefined),
-      priority:      input.priority  ?? undefined,
-      matchType:     input.matchType ?? undefined,
+      keyword:       input.keyword,
+      categoryId:    input.categoryId,
+      subcategoryId: input.subcategoryId ?? undefined,
+      needWant:      input.needWant === 'NA' ? null : (input.needWant ?? null),
+      priority:      input.priority,
+      matchType:     input.matchType,
     };
-    return accept.mutateAsync({ id: suggestion.id, input: acceptInput }).then(() => {
-      setEditOpen(false);
-    });
+    await accept.mutateAsync({ id: suggestion.id, input: acceptInput });
+    setEditOpen(false);
   }
 
-  // Synthetic Rule to pre-populate RuleEditModal
-  const syntheticRule: Rule = {
-    id:             suggestion.id,
-    keyword:        suggestion.suggestedKeyword,
-    sourceName:     null,
-    categoryId:     suggestion.categoryId,
-    categoryName:   suggestion.categoryName,
-    subcategoryId:  suggestion.subcategoryId,
-    subcategoryName:suggestion.subcategoryName,
-    needWant:       suggestion.needWant === 'NA' ? null : (suggestion.needWant ?? null),
-    flagForReview:  false,
-    priority:       RULE_PRIORITY_DEFAULT,
-    matchType:      'substring',
-    createdAt:      suggestion.createdAt,
+  // Pre-populate the modal from suggestion fields. 'NA' is not a valid modal
+  // option (the field only offers Need / Want / —), so it is coerced to null.
+  const initialFormValues: InitialFormValues = {
+    keyword:       suggestion.suggestedKeyword,
+    matchType:     'substring',
+    categoryId:    suggestion.categoryId,
+    subcategoryId: suggestion.subcategoryId,
+    priority:      RULE_PRIORITY_DEFAULT,
+    needWant:      suggestion.needWant === 'NA' ? null : (suggestion.needWant ?? null),
+    flagForReview: false,
   };
 
   const isBusy = accept.isPending || dismiss.isPending;
@@ -125,10 +121,10 @@ function SuggestionRow({ suggestion }: { readonly suggestion: RuleSuggestion }) 
 
       {editOpen && (
         <RuleEditModal
-          rule={syntheticRule}
+          initialValues={initialFormValues}
           onClose={() => setEditOpen(false)}
-          onCreate={(_input: CreateRuleInput) => Promise.resolve()}
-          onUpdate={handleEditAccept}
+          onCreate={handleEditAccept}
+          onUpdate={(_input: PatchRuleInput) => Promise.resolve()}
         />
       )}
     </>
