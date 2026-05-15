@@ -10,6 +10,7 @@ export interface ImportResult {
   errorCount: number;
   errors: string[];
   transferCandidateCount: number;
+  suggestionCount: number;
 }
 
 export type ImportProgressEvent =

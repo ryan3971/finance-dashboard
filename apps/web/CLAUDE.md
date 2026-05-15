@@ -45,7 +45,7 @@ Vite proxies `/api` to `localhost:3000` in dev.
 ### Constants
 
 - **localStorage keys** — use `STORAGE_KEYS` from `@/lib/storageKeys` (`ACCESS_TOKEN`, `USER`). Never use the raw strings directly.
-- **React Query keys** — use the key factories in `@/lib/queryKeys` (`transactionKeys`, `accountKeys`, `categoryKeys`, `tagKeys`, `dashboardKeys`, `anticipatedBudgetKeys`, `ruleKeys`, `userConfigKeys`, `rebalancingKeys`). Never use raw arrays like `['tags']`. Add a new key factory to `queryKeys.ts` for every new endpoint before writing the hook that calls it.
+- **React Query keys** — use the key factories in `@/lib/queryKeys` (`transactionKeys`, `accountKeys`, `categoryKeys`, `tagKeys`, `dashboardKeys`, `anticipatedBudgetKeys`, `ruleKeys`, `ruleSuggestionKeys`, `userConfigKeys`, `rebalancingKeys`). Never use raw arrays like `['tags']`. Add a new key factory to `queryKeys.ts` for every new endpoint before writing the hook that calls it.
 - **Cross-app constants** (field limits, transfer keywords, default currency) — import from `@finance/shared`.
 
 ### Auth

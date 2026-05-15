@@ -17,7 +17,7 @@ features/transactions/
   transactions.routes.test.ts
 ```
 
-Features include: `accounts`, `transactions`, `categories`, `categorization-rules`, `imports`, `rebalancing`, `tags`, `transfers`, `user-config`, `seed` (admin data seeding), and `dashboards/` (see below).
+Features include: `accounts`, `transactions`, `categories`, `categorization-rules`, `rule-suggestions`, `imports`, `rebalancing`, `tags`, `transfers`, `user-config`, `seed` (admin data seeding), and `dashboards/` (see below).
 
 Other top-level directories:
 - `db/` — Drizzle schema, migrations. `db/seeders/` contains the seeding scripts; `db/seeds/` holds the seed data organized by environment (`staging/`, `system/`, `test/`)
@@ -83,12 +83,24 @@ Rules with `matchType: 'wildcard'` use `*` (any chars) and `?` (one char) wildca
 
 ### Bulk apply-rules endpoint
 
-`POST /api/v1/transactions/apply-rules` runs all of a user's categorization rules against their unresolved transactions (where `categorySource != 'manual'` AND (`categoryId IS NULL OR flaggedForReview = true`), excluding transfers). Returns `{ applied: number, skipped: number }`.
+`POST /api/v1/transactions/apply-rules` runs all of a user's categorization rules against eligible transactions, excluding transfers. Returns `{ applied: number, skipped: number }`.
+
+**Candidate query** (`fetchRuleApplicableTransactions`): targets `categorySource IN ('default', 'ai')` — rules overwrite both. Manual and rule-applied transactions are excluded implicitly. This replaced the previous `categoryId IS NULL OR flaggedForReview = true` filter, which was missing AI-categorized transactions.
 
 Implementation notes:
 - The route is defined **before** `/:id` routes in `transactions-mutation.routes.ts` so Express does not match the literal string `apply-rules` as a transaction id.
 - The service (`applyRulesToUncategorized`) loads rules once via `loadRules(userId)`, then groups matching transactions by their categorization outcome fingerprint to issue one `inArray` UPDATE per unique outcome — avoiding one query per transaction.
 - `needWant` is coerced to `null` for income transactions at the service layer, matching the behaviour of `patchTransaction`.
+
+### Rule suggestions endpoints
+
+`GET /api/v1/rule-suggestions` — returns all `pending` suggestions for the authenticated user, ordered by confidence descending. Suggestions are generated automatically during import when the AI categorizes a transaction with `categorySource = 'ai'` (see `maybeSuggestRule` in `import.service.ts`). Deduplication is enforced by a partial unique index on `(user_id, lower(suggested_keyword)) WHERE status = 'pending'`.
+
+`POST /api/v1/rule-suggestions/:id/accept` — body overrides are optional; omitting uses the suggestion's stored values. Coerces `needWant = 'NA'` → `null` before calling `createRule`. Runs in a DB transaction. Returns `201` with the created rule.
+
+`POST /api/v1/rule-suggestions/:id/dismiss` — marks `status = 'dismissed'`. Returns `204`.
+
+Both mutating endpoints return `409` if the suggestion is already accepted or dismissed.
 
 ### SSE streaming routes
 

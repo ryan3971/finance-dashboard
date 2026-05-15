@@ -2,6 +2,7 @@ import {
   accounts,
   imports,
   investmentTransactions,
+  ruleSuggestions,
   transactions,
 } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
@@ -28,6 +29,7 @@ import { db } from '@/db';
 import { detectTransfers } from '@/pipelines/transfer-detection/transfer-detection.service';
 import { assertDefined } from '@/lib/assert';
 import { IMPORT_STATUS, TRANSACTION_SOURCE } from '@/lib/constants';
+import { CATEGORY_SOURCE } from '@finance/shared/constants';
 import { logger } from '@/middleware/logger';
 import type { Logger } from 'pino';
 import { parseCsv } from './pipeline/parser';
@@ -83,7 +85,10 @@ async function processAllRows(
           rules,
           result
         );
-        if (row) importedTransactionIds.push(row.id);
+        if (row) {
+          importedTransactionIds.push(row.id);
+          if (row.suggestionCreated) result.suggestionCount++;
+        }
         onProgress?.({
           stage: 'categorizing',
           processed: rowIndex + 1,
@@ -163,6 +168,7 @@ export async function processImport(
     errorCount: 0,
     errors: [],
     transferCandidateCount: 0,
+    suggestionCount: 0,
   };
 
   // The adapter may filter or transform rows (e.g. skip headers, unsupported
@@ -223,6 +229,34 @@ function isInvestmentTransaction(
   return 'action' in raw && 'accountNumber' in raw;
 }
 
+async function maybeSuggestRule(
+  userId: string,
+  sourceName: string | null,
+  categorization: Awaited<ReturnType<typeof categorize>>,
+  transactionId: string
+): Promise<boolean> {
+  if (!sourceName) return false;
+  if (categorization.categorySource !== CATEGORY_SOURCE.AI) return false;
+  if (!categorization.categoryId) return false;
+
+  const inserted = await db
+    .insert(ruleSuggestions)
+    .values({
+      userId,
+      suggestedKeyword: sourceName,
+      categoryId:       categorization.categoryId,
+      subcategoryId:    categorization.subcategoryId ?? null,
+      needWant:         categorization.needWant,
+      confidence:       String(categorization.categoryConfidence),
+      transactionId,
+      status:           'pending',
+    })
+    .onConflictDoNothing()
+    .returning({ id: ruleSuggestions.id });
+
+  return inserted.length > 0;
+}
+
 async function processTransactionRow(
   raw: RawTransaction,
   accountId: string,
@@ -230,7 +264,7 @@ async function processTransactionRow(
   userId: string,
   rules: LoadedRule[],
   result: ImportResult
-): Promise<{ id: string; method: 'rule' | 'ai' | 'fallback' } | null> {
+): Promise<{ id: string; method: 'rule' | 'ai' | 'fallback'; suggestionCreated: boolean } | null> {
   const categorization = await categorize(
     raw.description,
     userId,
@@ -283,7 +317,14 @@ async function processTransactionRow(
   };
   const method = sourceToMethod[categorization.categorySource] ?? 'fallback';
 
-  return { id: inserted.id, method };
+  const suggestionCreated = await maybeSuggestRule(
+    userId,
+    categorization.sourceName,
+    categorization,
+    inserted.id
+  );
+
+  return { id: inserted.id, method, suggestionCreated };
 }
 
 async function processInvestmentRow(

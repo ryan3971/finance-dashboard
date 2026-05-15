@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import type { ImportResult } from '@finance/shared/types/transactions';
 
 interface Props {
@@ -24,12 +25,31 @@ export function ImportResultCard({ result, onReset }: Props) {
           value={result.transferCandidateCount}
           highlight={result.transferCandidateCount > 0 ? 'blue' : undefined}
         />
+        {result.suggestionCount > 0 && (
+          <ResultRow
+            label="Rule suggestions"
+            value={result.suggestionCount}
+            highlight="blue"
+          />
+        )}
         <ResultRow
           label="Errors"
           value={result.errorCount}
           highlight={result.errorCount > 0 ? 'red' : undefined}
         />
       </dl>
+      {result.suggestionCount > 0 && (
+        <p className="mt-3 text-xs text-content-secondary">
+          {result.suggestionCount === 1
+            ? '1 rule suggestion ready for review. '
+            : `${result.suggestionCount} rule suggestions ready for review. `}
+          Visit the{' '}
+          <Link to="/config" className="text-info underline underline-offset-2">
+            Rules page
+          </Link>{' '}
+          to accept or dismiss them.
+        </p>
+      )}
       {result.errors.length > 0 && (
         <div className="mt-3 text-xs text-danger space-y-0.5">
           {result.errors.map((e) => (

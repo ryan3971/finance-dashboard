@@ -91,7 +91,11 @@ export async function deleteRule(
   return tx ? execute(tx) : db.transaction(execute);
 }
 
-export async function createRule(userId: string, input: CreateRuleInput) {
+export async function createRule(
+  userId: string,
+  input: CreateRuleInput,
+  tx?: typeof db | DbTransaction
+) {
   const execute = async (conn: typeof db | DbTransaction) => {
     const [inserted] = await conn
       .insert(categorizationRules)
@@ -106,5 +110,5 @@ export async function createRule(userId: string, input: CreateRuleInput) {
     return rule;
   };
 
-  return db.transaction(execute);
+  return tx ? execute(tx) : db.transaction(execute);
 }

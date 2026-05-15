@@ -24,6 +24,7 @@ import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
 import transactionsRouter from './features/transactions/transactions.routes';
 import rebalancingRouter from './features/rebalancing/rebalancing.routes';
+import ruleSuggestionsRouter from './features/rule-suggestions/rule-suggestions.routes';
 import seedRouter from './features/seed/seed.routes';
 import transfersRouter from '@/features/transfers/transfers.routes';
 import userConfigRouter from './features/user-config/user-config.routes';
@@ -102,6 +103,7 @@ export function createApp() {
   );
   app.use('/api/v1/categories', categoriesRouter);
   app.use('/api/v1/categorization-rules', categorizationRulesRouter);
+  app.use('/api/v1/rule-suggestions', ruleSuggestionsRouter);
   app.use('/api/v1/rebalancing', rebalancingRouter);
   app.use('/api/v1/transfers', transfersRouter);
   app.use('/api/v1/tags', tagsRouter);

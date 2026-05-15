@@ -44,6 +44,11 @@ export const TOAST = {
   RULE_UPDATE_FAILED: 'Failed to update rule',
   RULE_DELETED: 'Rule deleted',
   RULE_DELETE_FAILED: 'Failed to delete rule',
+  // Rule suggestions
+  RULE_SUGGESTION_ACCEPTED: 'Rule created from suggestion',
+  RULE_SUGGESTION_ACCEPT_FAILED: 'Failed to accept suggestion',
+  RULE_SUGGESTION_DISMISSED: 'Suggestion dismissed',
+  RULE_SUGGESTION_DISMISS_FAILED: 'Failed to dismiss suggestion',
   // Anticipated Budget
   BUDGET_ENTRY_CREATED: 'Entry created',
   BUDGET_ENTRY_CREATE_FAILED: 'Failed to create entry',

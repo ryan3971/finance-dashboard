@@ -10,6 +10,7 @@ import {
   investmentTransactions,
   rebalancingGroups,
   refreshTokens,
+  ruleSuggestions,
   tags,
   transactions,
   userConfig,
@@ -30,6 +31,7 @@ export interface ImportSummaryResponse {
   importedCount: number;
   duplicateCount: number;
   errorCount: number;
+  suggestionCount: number;
 }
 
 // Worker-local set of user IDs created during this test file's run.
@@ -87,6 +89,8 @@ export async function cleanDatabase(): Promise<void> {
     await db.delete(accounts).where(inArray(accounts.id, accountIds));
   }
 
+  // rule_suggestions cascade from users; delete before users.
+  await db.delete(ruleSuggestions).where(inArray(ruleSuggestions.userId, userIds));
   // rebalancing_group_transactions cascades from rebalancing_groups.
   await db.delete(rebalancingGroups).where(inArray(rebalancingGroups.userId, userIds));
   // System rules already deleted above; delete user-scoped rules here.

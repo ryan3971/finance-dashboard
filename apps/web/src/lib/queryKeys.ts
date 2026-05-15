@@ -22,6 +22,10 @@ export const ruleKeys = {
   all: () => ['rules'] as const,
 };
 
+export const ruleSuggestionKeys = {
+  all: () => ['rule-suggestions'] as const,
+};
+
 export const userConfigKeys = {
   all: () => ['user-config'] as const,
 };
