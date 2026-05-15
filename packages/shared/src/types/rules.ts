@@ -11,5 +11,6 @@ export interface Rule {
   needWant: NeedWant | null;
   flagForReview: boolean;
   priority: number;
+  matchType: 'substring' | 'wildcard';
   createdAt: string;
 }

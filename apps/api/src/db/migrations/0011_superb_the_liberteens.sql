@@ -1,0 +1,1 @@
+ALTER TABLE "categorization_rules" ADD COLUMN "match_type" text DEFAULT 'substring' NOT NULL;

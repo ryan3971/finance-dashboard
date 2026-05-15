@@ -4,6 +4,7 @@ import {
   anticipatedBudgetMonths,
   categories,
   categorizationRules,
+  transactions,
 } from '@/db/schema';
 import { db } from '@/db';
 import { seedTestSystemData } from './seed-test-system-data';
@@ -20,10 +21,16 @@ import { seedTestSystemData } from './seed-test-system-data';
  * previous manual seed run, and keeps per-file startup cost predictable.
  *
  * Ordering matters:
- *   1. Delete rules before categories — rules hold FKs into categories.
- *   2. Insert categories before rules — rules need the IDs that seeding produces.
+ *   1. Delete transactions before categories — transactions.categoryId/subcategoryId
+ *      FK into categories. Stale rows from the last test of the previous file cause
+ *      FK violations if not cleared here. transactionTags cascades automatically.
+ *   2. Delete rules before categories — rules hold FKs into categories.
+ *   3. Insert categories before rules — rules need the IDs that seeding produces.
  */
 export async function resetTestSystemData(): Promise<void> {
+  // Transactions left over from the last test of the previous file reference
+  // system categories. Clear them before deleting those categories.
+  await db.delete(transactions);
   // anticipated_budget rows can reference system category IDs (userId IS NULL).
   // Delete them before the system category delete to avoid FK violations when
   // the test DB has leftover data from a previous run.

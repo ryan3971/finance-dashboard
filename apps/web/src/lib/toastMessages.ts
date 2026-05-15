@@ -38,6 +38,8 @@ export const TOAST = {
     'Delete all subcategories before deleting this category',
   // Rules
   RULES_APPLY_FAILED: 'Failed to apply rules',
+  RULE_CREATED: 'Rule created',
+  RULE_CREATE_FAILED: 'Failed to create rule',
   RULE_UPDATED: 'Rule updated',
   RULE_UPDATE_FAILED: 'Failed to update rule',
   RULE_DELETED: 'Rule deleted',

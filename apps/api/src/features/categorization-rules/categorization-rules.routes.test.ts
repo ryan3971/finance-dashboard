@@ -149,6 +149,182 @@ describe('GET /api/v1/categorization-rules', () => {
     const body = res.body as RuleResponse[];
     expect(body[0]).toMatchObject({ sourceName: 'TD' });
   });
+
+  it('returns matchType: substring on rules seeded with the default', async () => {
+    const { accessToken, user } = await registerUser(app);
+    await categorizationRuleFixture({ userId: user.id, keyword: 'amazon' });
+
+    const res = await request(app)
+      .get('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect((res.body as RuleResponse[])[0]).toMatchObject({ matchType: 'substring' });
+  });
+});
+
+// ─── POST /api/v1/categorization-rules ────────────────────────────────────────
+
+describe('POST /api/v1/categorization-rules', () => {
+  it('returns 401 without auth token', async () => {
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .send({ keyword: 'amazon', categoryId: null });
+    expect(res.status).toBe(401);
+  });
+
+  it('creates a rule and returns 201 with default matchType: substring', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'amazon', categoryId: null });
+
+    expect(res.status).toBe(201);
+    const body = res.body as RuleResponse;
+    expect(body.id).toBeDefined();
+    expect(body).toMatchObject({
+      keyword: 'amazon',
+      categoryId: null,
+      categoryName: null,
+      subcategoryId: null,
+      subcategoryName: null,
+      needWant: null,
+      flagForReview: false,
+      matchType: 'substring',
+    });
+    expect(typeof body.createdAt).toBe('string');
+  });
+
+  it('creates a rule with matchType: wildcard and returns it correctly', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'amazon*', categoryId: null, matchType: 'wildcard' });
+
+    expect(res.status).toBe(201);
+    expect((res.body as RuleResponse).matchType).toBe('wildcard');
+  });
+
+  it('created wildcard rule appears in GET with matchType: wildcard', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'amazon*', categoryId: null, matchType: 'wildcard' });
+
+    const listRes = await request(app)
+      .get('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(listRes.status).toBe(200);
+    expect((listRes.body as RuleResponse[])[0]?.matchType).toBe('wildcard');
+  });
+
+  it('creates a rule with a linked category and returns categoryName', async () => {
+    const { accessToken } = await registerUser(app);
+    const categoryId = await createCategory(app, accessToken, { name: 'Groceries', isIncome: false });
+
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'walmart', categoryId });
+
+    expect(res.status).toBe(201);
+    expect(res.body as RuleResponse).toMatchObject({ categoryId, categoryName: 'Groceries' });
+  });
+
+  it('returns 400 when keyword is missing', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId: null });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('returns 400 when keyword is empty', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: '', categoryId: null });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('returns 400 when keyword exceeds 200 characters', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'a'.repeat(201), categoryId: null });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('accepts a keyword of exactly 200 characters', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'a'.repeat(200), categoryId: null });
+    expect(res.status).toBe(201);
+  });
+
+  it('returns 400 when categoryId is missing', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'amazon' });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('accepts categoryId: null when flagForReview is true', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'transfer', categoryId: null, flagForReview: true });
+    expect(res.status).toBe(201);
+    expect((res.body as RuleResponse).flagForReview).toBe(true);
+  });
+
+  it('returns 400 for an invalid matchType value', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ keyword: 'amazon', categoryId: null, matchType: 'regex' });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it("rule is scoped to the authenticated user — another user's GET does not return it", async () => {
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'a@example.com'),
+      registerUser(app, 'b@example.com'),
+    ]);
+
+    await request(app)
+      .post('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ keyword: 'user-a-only', categoryId: null });
+
+    const res = await request(app)
+      .get('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${tokenB}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body as RuleResponse[]).toHaveLength(0);
+  });
 });
 
 // ─── PATCH /api/v1/categorization-rules/:id ───────────────────────────────────
@@ -404,6 +580,37 @@ describe('PATCH /api/v1/categorization-rules/:id', () => {
       .patch(`/api/v1/categorization-rules/${id}`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ needWant: 'Invalid' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('updates matchType to wildcard and persists it', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const { id } = await categorizationRuleFixture({ userId: user.id, matchType: 'substring' });
+
+    const res = await request(app)
+      .patch(`/api/v1/categorization-rules/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ matchType: 'wildcard' });
+
+    expect(res.status).toBe(200);
+    expect((res.body as RuleResponse).matchType).toBe('wildcard');
+
+    const listRes = await request(app)
+      .get('/api/v1/categorization-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect((listRes.body as RuleResponse[])[0]?.matchType).toBe('wildcard');
+  });
+
+  it('returns 400 for an invalid matchType value', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const { id } = await categorizationRuleFixture({ userId: user.id });
+
+    const res = await request(app)
+      .patch(`/api/v1/categorization-rules/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ matchType: 'regex' });
 
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({ error: 'Validation error' });

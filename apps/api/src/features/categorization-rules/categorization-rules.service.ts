@@ -2,7 +2,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { categorizationRules, categories } from '@/db/schema';
 import { db, type DbTransaction } from '@/db';
 import { desc, eq } from 'drizzle-orm';
-import type { PatchRuleInput } from '@finance/shared/schemas/rules';
+import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import { RuleError, RuleErrorCode } from './categorization-rules.errors';
 
 const cat = alias(categories, 'cat');
@@ -21,6 +21,7 @@ function ruleSelect(conn: typeof db | DbTransaction = db) {
       needWant: categorizationRules.needWant,
       flagForReview: categorizationRules.flagForReview,
       priority: categorizationRules.priority,
+      matchType: categorizationRules.matchType,
       createdAt: categorizationRules.createdAt,
     })
     .from(categorizationRules)
@@ -88,4 +89,22 @@ export async function deleteRule(
   };
 
   return tx ? execute(tx) : db.transaction(execute);
+}
+
+export async function createRule(userId: string, input: CreateRuleInput) {
+  const execute = async (conn: typeof db | DbTransaction) => {
+    const [inserted] = await conn
+      .insert(categorizationRules)
+      .values({ ...input, userId })
+      .returning({ id: categorizationRules.id });
+    if (!inserted) throw new Error('insert returned no rows');
+
+    const [rule] = await ruleSelect(conn)
+      .where(eq(categorizationRules.id, inserted.id))
+      .limit(1);
+    if (!rule) throw new RuleError(RuleErrorCode.NOT_FOUND);
+    return rule;
+  };
+
+  return db.transaction(execute);
 }

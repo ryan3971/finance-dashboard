@@ -1,21 +1,37 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { ChevronDown, ChevronRight, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { DataTable } from '@/components/ui/DataTable';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { cn } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
-import { useDeleteRule, useRules, useUpdateRule } from '../hooks/useRules';
-import { FIELD_LIMITS, NEED_WANT_OPTIONS, type NeedWant } from '@finance/shared/constants';
+import { useCreateRule, useDeleteRule, useRules, useUpdateRule } from '../hooks/useRules';
+import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import type { Rule } from '@finance/shared/types/rules';
+import { RuleEditModal } from './RuleEditModal';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type SortKey =
+  | 'keyword-asc'
+  | 'keyword-desc'
+  | 'category-asc'
+  | 'priority-desc'
+  | 'priority-asc'
+  | 'date-desc'
+  | 'date-asc';
+
+// ─── CSV export ───────────────────────────────────────────────────────────────
 
 function exportRulesCsv(rules: Rule[]) {
-  const header = 'keyword,category,subcategory,priority,needWant';
+  const header = 'keyword,matchType,category,subcategory,priority,needWant';
   const rows = rules.map((r) =>
     [
       r.keyword,
+      r.matchType,
       r.categoryName ?? '',
       r.subcategoryName ?? '',
       r.priority,
@@ -36,141 +52,57 @@ function exportRulesCsv(rules: Rule[]) {
   URL.revokeObjectURL(url);
 }
 
-function RuleRow({ rule }: { readonly rule: Rule }) {
-  const [editing, setEditing] = useState(false);
+// ─── Sorting ─────────────────────────────────────────────────────────────────
+
+function sortRules(rules: Rule[], key: SortKey): Rule[] {
+  return [...rules].sort((a, b) => {
+    switch (key) {
+      case 'keyword-asc':
+        return a.keyword.localeCompare(b.keyword);
+      case 'keyword-desc':
+        return b.keyword.localeCompare(a.keyword);
+      case 'category-asc':
+        return (a.categoryName ?? '').localeCompare(b.categoryName ?? '');
+      case 'priority-desc':
+        return b.priority - a.priority;
+      case 'priority-asc':
+        return a.priority - b.priority;
+      case 'date-desc':
+        return b.createdAt.localeCompare(a.createdAt);
+      case 'date-asc':
+        return a.createdAt.localeCompare(b.createdAt);
+    }
+  });
+}
+
+// ─── RuleRow ─────────────────────────────────────────────────────────────────
+
+function RuleRow({
+  rule,
+  onEdit,
+}: {
+  readonly rule: Rule;
+  readonly onEdit: () => void;
+}) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [keyword, setKeyword] = useState(rule.keyword);
-  const [priority, setPriority] = useState(String(rule.priority));
-  const [needWant, setNeedWant] = useState<NeedWant | ''>(rule.needWant ?? '');
-  const [flagForReview, setFlagForReview] = useState(rule.flagForReview);
-  const update = useUpdateRule();
   const remove = useDeleteRule();
 
-  const categoryWithSub = rule.subcategoryName
+  const categoryLabel = rule.subcategoryName
     ? `${rule.categoryName} › ${rule.subcategoryName}`
-    : rule.categoryName;
-  const categoryLabel = rule.categoryName ? categoryWithSub : '—';
-
-  const parsedPriority = parseInt(priority, 10);
-
-  function handleSave() {
-    update.mutate(
-      {
-        id: rule.id,
-        input: {
-          keyword: keyword.trim(),
-          priority: parsedPriority,
-          needWant: flagForReview ? null : (needWant || null),
-          flagForReview,
-        },
-      },
-      { onSuccess: () => setEditing(false) }
-    );
-  }
-
-  function handleCancel() {
-    setKeyword(rule.keyword);
-    setPriority(String(rule.priority));
-    setNeedWant(rule.needWant ?? '');
-    setFlagForReview(rule.flagForReview);
-    setEditing(false);
-  }
-
-  if (editing) {
-    return (
-      <tr className="border-t border-border-subtle">
-        <td className="px-3 py-2">
-          <Input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            maxLength={FIELD_LIMITS.RULE_KEYWORD_MAX}
-            className="h-7 text-sm w-full"
-            autoFocus
-          />
-        </td>
-        <td className="px-3 py-2 text-sm text-content-secondary">
-          {categoryLabel}
-        </td>
-        <td className="px-3 py-2">
-          <Input
-            type="number"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-            className="h-7 text-sm w-16"
-          />
-        </td>
-        <td className="px-3 py-2">
-          <div className="flex flex-col gap-1.5">
-            <select
-              value={needWant}
-              onChange={(e) => {
-                setNeedWant(e.target.value as NeedWant | '');
-                if (e.target.value) setFlagForReview(false);
-              }}
-              disabled={flagForReview}
-              className={cn(
-                'h-7 text-sm border border-border-base rounded px-1',
-                flagForReview && 'opacity-40'
-              )}
-            >
-              <option value="">—</option>
-              {NEED_WANT_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-            <label className="flex items-center gap-1.5 text-xs text-content-secondary cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={flagForReview}
-                onChange={(e) => {
-                  setFlagForReview(e.target.checked);
-                  if (e.target.checked) setNeedWant('');
-                }}
-                className="rounded"
-              />
-              Flag for review
-            </label>
-          </div>
-        </td>
-        <td className="px-3 py-2">
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              disabled={
-                !keyword.trim() || isNaN(parsedPriority) || update.isPending
-              }
-              onClick={handleSave}
-            >
-              Save
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs"
-              onClick={handleCancel}
-            >
-              Cancel
-            </Button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
+    : (rule.categoryName ?? '—');
 
   return (
     <tr className="border-t border-border-subtle group">
       <td className="px-3 py-2 text-sm font-mono text-content-primary">
-        {rule.keyword}
+        <span>{rule.keyword}</span>
+        {rule.matchType === 'wildcard' && (
+          <Badge variant="neutral" className="ml-2 text-xs rounded px-1.5 py-0">
+            W
+          </Badge>
+        )}
       </td>
-      <td className="px-3 py-2 text-sm text-content-secondary">
-        {categoryLabel}
-      </td>
-      <td className="px-3 py-2 text-sm text-content-secondary">
-        {rule.priority}
-      </td>
+      <td className="px-3 py-2 text-sm text-content-secondary">{categoryLabel}</td>
+      <td className="px-3 py-2 text-sm text-content-secondary">{rule.priority}</td>
       <td className="px-3 py-2 text-sm text-content-secondary">
         {rule.flagForReview ? (
           <span className="text-xs font-medium text-warning">Flag for review</span>
@@ -180,12 +112,7 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
       </td>
       <td className="px-3 py-2">
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
-            onClick={() => setEditing(true)}
-          >
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onEdit}>
             Edit
           </Button>
           <Button
@@ -211,11 +138,159 @@ function RuleRow({ rule }: { readonly rule: Rule }) {
   );
 }
 
+// ─── RulesTable ───────────────────────────────────────────────────────────────
+
+function RulesTable({
+  rules,
+  onEdit,
+}: {
+  readonly rules: Rule[];
+  readonly onEdit: (rule: Rule) => void;
+}) {
+  return (
+    <DataTable>
+      <table className="min-w-full text-left">
+        <thead>
+          <tr className="bg-surface-muted">
+            <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
+              Keyword
+            </th>
+            <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
+              Category
+            </th>
+            <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
+              Priority
+            </th>
+            <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
+              Need/Want
+            </th>
+            <th className="px-3 py-2" />
+          </tr>
+        </thead>
+        <tbody>
+          {rules.map((rule) => (
+            <RuleRow key={rule.id} rule={rule} onEdit={() => onEdit(rule)} />
+          ))}
+        </tbody>
+      </table>
+    </DataTable>
+  );
+}
+
+// ─── CategoryGroup ────────────────────────────────────────────────────────────
+
+function CategoryGroup({
+  label,
+  rules,
+  onEdit,
+}: {
+  readonly label: string;
+  readonly rules: Rule[];
+  readonly onEdit: (rule: Rule) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className="flex items-center gap-1.5 w-full text-left px-1 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider hover:text-content-secondary"
+      >
+        {collapsed ? (
+          <ChevronRight className="h-3 w-3" />
+        ) : (
+          <ChevronDown className="h-3 w-3" />
+        )}
+        {label}
+        <span className="ml-1 font-normal normal-case text-content-muted">({rules.length})</span>
+      </button>
+      {!collapsed && <RulesTable rules={rules} onEdit={onEdit} />}
+    </div>
+  );
+}
+
+// ─── RulesTab ─────────────────────────────────────────────────────────────────
+
 const RULE_SKELETON_ROW_COUNT = 5;
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'priority-desc', label: 'Priority ↑ (default)' },
+  { value: 'priority-asc', label: 'Priority ↓' },
+  { value: 'keyword-asc', label: 'Keyword A–Z' },
+  { value: 'keyword-desc', label: 'Keyword Z–A' },
+  { value: 'category-asc', label: 'Category A–Z' },
+  { value: 'date-desc', label: 'Newest first' },
+  { value: 'date-asc', label: 'Oldest first' },
+];
 
 export function RulesTab() {
   const { data: rules, isPending, isError } = useRules();
   const showSkeleton = useDelayedPending(isPending);
+  const update = useUpdateRule();
+  const create = useCreateRule();
+
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('priority-desc');
+  const [groupByCategory, setGroupByCategory] = useState(false);
+  // null = closed, 'create' = creating new, Rule = editing that rule
+  const [modalState, setModalState] = useState<null | 'create' | Rule>(null);
+
+  const filtered = useMemo(() => {
+    if (!rules) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return rules;
+    return rules.filter(
+      (r) =>
+        r.keyword.toLowerCase().includes(q) ||
+        (r.categoryName ?? '').toLowerCase().includes(q) ||
+        (r.subcategoryName ?? '').toLowerCase().includes(q)
+    );
+  }, [rules, search]);
+
+  const sorted = useMemo(() => sortRules(filtered, sortKey), [filtered, sortKey]);
+
+  const groups = useMemo(() => {
+    if (!groupByCategory) return null;
+    const map = new Map<string, Rule[]>();
+    for (const rule of sorted) {
+      const key = rule.categoryName ?? 'Uncategorized';
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(rule);
+      } else {
+        map.set(key, [rule]);
+      }
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => {
+      if (a === 'Uncategorized') return 1;
+      if (b === 'Uncategorized') return -1;
+      return a.localeCompare(b);
+    });
+  }, [sorted, groupByCategory]);
+
+  function openCreate() {
+    setModalState('create');
+  }
+
+  function openEdit(rule: Rule) {
+    setModalState(rule);
+  }
+
+  function closeModal() {
+    setModalState(null);
+  }
+
+  async function handleCreate(input: CreateRuleInput) {
+    await create.mutateAsync(input);
+    closeModal();
+  }
+
+  async function handleUpdate(input: PatchRuleInput) {
+    if (modalState === null || modalState === 'create') return;
+    await update.mutateAsync({ id: modalState.id, input });
+    closeModal();
+  }
 
   if (showSkeleton) {
     return (
@@ -229,54 +304,103 @@ export function RulesTab() {
 
   if (isPending) return null;
 
-  if (isError)
-    return <EmptyState message="Failed to load rules." variant="error" />;
+  if (isError) return <EmptyState message="Failed to load rules." variant="error" />;
+
+  const ruleCount = rules.length;
+  const filteredCount = sorted.length;
+
+  let content;
+  if (sorted.length === 0) {
+    content = search ? (
+      <EmptyState message="No rules match your search." />
+    ) : (
+      <EmptyState
+        message="No rules yet."
+        hint="Rules are created automatically when you categorise transactions during import review."
+      />
+    );
+  } else if (groupByCategory && groups) {
+    content = (
+      <div className="space-y-4">
+        {groups.map(([label, groupRules]) => (
+          <CategoryGroup key={label} label={label} rules={groupRules} onEdit={openEdit} />
+        ))}
+      </div>
+    );
+  } else {
+    content = <RulesTable rules={sorted} onEdit={openEdit} />;
+  }
 
   return (
-    <div className="mt-4">
-      <div className="flex justify-end mb-3">
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={!rules || rules.length === 0}
-          onClick={() => rules && exportRulesCsv(rules)}
-        >
-          Export CSV
+    <div className="mt-4 space-y-3">
+      {/* Row 1: search + primary action */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-lg">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-content-muted pointer-events-none" />
+          <Input
+            placeholder="Search rules…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <Button size="sm" className="shrink-0 flex items-center h-8" onClick={openCreate}>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add rule
         </Button>
       </div>
 
-      {!rules || rules.length === 0 ? (
-        <EmptyState
-          message="No rules yet."
-          hint="Rules are created automatically when you categorise transactions during import review."
+      {/* Row 2: view controls + count + export */}
+      <div className="flex items-center gap-2">
+        <select
+          value={sortKey}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (SORT_OPTIONS.some((o) => o.value === v)) setSortKey(v as SortKey);
+          }}
+          className="select-base h-8 text-sm"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <Button
+          size="sm"
+          variant={groupByCategory ? 'primary' : 'secondary'}
+          onClick={() => setGroupByCategory((g) => !g)}
+        >
+          Group by category
+        </Button>
+        <div className="ml-auto flex items-center gap-3 shrink-0">
+          <span className="text-sm text-content-muted">
+            {search && filteredCount !== ruleCount
+              ? `${filteredCount} of ${ruleCount} rules`
+              : `${ruleCount} ${ruleCount === 1 ? 'rule' : 'rules'}`}
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={sorted.length === 0}
+            onClick={() => exportRulesCsv(sorted)}
+          >
+            Export CSV
+          </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      {content}
+
+      {/* Modal */}
+      {modalState !== null && (
+        <RuleEditModal
+          rule={modalState === 'create' ? undefined : modalState}
+          onClose={closeModal}
+          onCreate={handleCreate}
+          onUpdate={handleUpdate}
         />
-      ) : (
-        <DataTable>
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="bg-surface-muted">
-                <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
-                  Keyword
-                </th>
-                <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-3 py-2 text-xs font-semibold text-content-muted uppercase tracking-wider">
-                  Need/Want
-                </th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {rules.map((rule) => (
-                <RuleRow key={rule.id} rule={rule} />
-              ))}
-            </tbody>
-          </table>
-        </DataTable>
       )}
     </div>
   );

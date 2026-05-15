@@ -43,7 +43,7 @@ pnpm --filter api vitest run src/features/accounts/accounts.routes.test.ts
 
 **When working in a git worktree (`.claude/worktrees/`):**
 
-Worktrees share the git repository but not `node_modules`. All `pnpm` commands that invoke binaries (`vitest`, `tsc`, etc.) must be run from the monorepo root, not the worktree directory.
+Run `/worktree-init` at the start of the session before writing any code. It sets up node_modules junctions, copies the .env, and documents how to generate migrations and run tests from the worktree.
 
 ## Environment
 

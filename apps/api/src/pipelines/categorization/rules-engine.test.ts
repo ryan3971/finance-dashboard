@@ -7,6 +7,7 @@ import { applyRules } from './rules-engine';
 import type { LoadedRule } from './rules-engine';
 
 function makeRule(overrides: Partial<LoadedRule> = {}): LoadedRule {
+  // as LoadedRule: TypeScript can't prove Partial<LoadedRule> spreads never leave required fields undefined
   return {
     id: 'rule-1',
     userId: 'user-1',
@@ -17,8 +18,9 @@ function makeRule(overrides: Partial<LoadedRule> = {}): LoadedRule {
     needWant: 'Want',
     flagForReview: false,
     priority: 10,
+    matchType: 'substring',
     ...overrides,
-  };
+  } as LoadedRule;
 }
 
 describe('applyRules', () => {
@@ -92,5 +94,42 @@ describe('applyRules', () => {
 
     expect(result?.flaggedForReview).toBe(true);
     expect(result?.categoryId).toBeNull();
+  });
+
+  describe('wildcard matchType', () => {
+    it('AMAZON* matches AMAZON PRIME', () => {
+      const rule = makeRule({ keyword: 'amazon*', matchType: 'wildcard' });
+      expect(applyRules('AMAZON PRIME', [rule])).not.toBeNull();
+    });
+
+    it('AMAZON* does not match WHOLE FOODS', () => {
+      const rule = makeRule({ keyword: 'amazon*', matchType: 'wildcard' });
+      expect(applyRules('WHOLE FOODS', [rule])).toBeNull();
+    });
+
+    it('STARBUCKS ??? matches STARBUCKS #12 (exactly 3-char suffix)', () => {
+      const rule = makeRule({ keyword: 'starbucks ???', matchType: 'wildcard' });
+      expect(applyRules('STARBUCKS #12', [rule])).not.toBeNull();
+    });
+
+    it('STARBUCKS ??? does not match STARBUCKS #1234 (5-char suffix, too long)', () => {
+      const rule = makeRule({ keyword: 'starbucks ???', matchType: 'wildcard' });
+      expect(applyRules('STARBUCKS #1234', [rule])).toBeNull();
+    });
+
+    it('*TRANSFER* matches INTERAC E-TRANSFER DEBIT', () => {
+      const rule = makeRule({ keyword: '*transfer*', matchType: 'wildcard' });
+      expect(applyRules('INTERAC E-TRANSFER DEBIT', [rule])).not.toBeNull();
+    });
+
+    it('dot in wildcard keyword is escaped — AMAZON.CA does not match AMAZONXCA', () => {
+      const rule = makeRule({ keyword: 'amazon.ca', matchType: 'wildcard' });
+      expect(applyRules('AMAZONXCA', [rule])).toBeNull();
+    });
+
+    it('dot in wildcard keyword is literal — AMAZON.CA* matches AMAZON.CA PURCHASE', () => {
+      const rule = makeRule({ keyword: 'amazon.ca*', matchType: 'wildcard' });
+      expect(applyRules('AMAZON.CA PURCHASE', [rule])).not.toBeNull();
+    });
   });
 });

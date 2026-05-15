@@ -88,3 +88,5 @@ export const CATEGORY_SOURCE = {
   MANUAL: 'manual',
   DEFAULT: 'default',
 } as const;
+
+export const RULE_PRIORITY_DEFAULT = 5;

@@ -1,12 +1,13 @@
 import { type Request, type Response, Router } from 'express';
 import {
+  createRule,
   deleteRule,
   listRules,
   updateRule,
 } from './categorization-rules.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { idParamsSchema } from '@/lib/common-schemas';
-import { patchRuleSchema } from '@finance/shared/schemas/rules';
+import { createRuleSchema, patchRuleSchema } from '@finance/shared/schemas/rules';
 
 const router = Router();
 router.use(requireAuth);
@@ -15,6 +16,13 @@ router.use(requireAuth);
 router.get('/', async (req: Request, res: Response) => {
   const rules = await listRules(getAuthUser(req).id);
   res.json(rules);
+});
+
+// POST /api/v1/categorization-rules
+router.post('/', async (req: Request, res: Response) => {
+  const input = createRuleSchema.parse(req.body);
+  const rule = await createRule(getAuthUser(req).id, input);
+  res.status(201).json(rule);
 });
 
 // PATCH /api/v1/categorization-rules/:id
