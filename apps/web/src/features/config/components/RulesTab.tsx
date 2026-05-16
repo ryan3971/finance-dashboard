@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useCreateRule, useDeleteRule, useRules, useUpdateRule } from '../hooks/useRules';
+import { useRuleSuggestions } from '../hooks/useRuleSuggestions';
 import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import type { Rule } from '@finance/shared/types/rules';
 import { RuleEditModal } from './RuleEditModal';
+import { RuleSuggestionsPanel } from './RuleSuggestionsPanel';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -225,6 +227,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ];
 
 export function RulesTab() {
+  const { data: suggestions = [] } = useRuleSuggestions();
   const { data: rules, isPending, isError } = useRules();
   const showSkeleton = useDelayedPending(isPending);
   const update = useUpdateRule();
@@ -332,7 +335,10 @@ export function RulesTab() {
   }
 
   return (
-    <div className="mt-4 space-y-3">
+    <div className="mt-4 space-y-4">
+      {suggestions.length > 0 && <RuleSuggestionsPanel suggestions={suggestions} />}
+
+      <div className="space-y-3">
       {/* Row 1: search + primary action */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-lg">
@@ -392,6 +398,7 @@ export function RulesTab() {
 
       {/* Content */}
       {content}
+      </div>
 
       {/* Modal */}
       {modalState !== null && (

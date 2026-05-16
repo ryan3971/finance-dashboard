@@ -7,7 +7,7 @@ import {
   uploadAmex,
   uploadCsv,
   type ImportSummaryResponse,
-} from '../../testing/test-helpers';
+} from '@/testing/test-helpers';
 import { createApp } from '@/app';
 import request from 'supertest';
 import { MALFORMED_ID } from '@/testing/constants';
@@ -188,6 +188,38 @@ describe('POST /api/v1/imports/upload', () => {
 
     expect(summary.importedCount).toBe(0);
     expect(summary.duplicateCount).toBe(9);
+  });
+
+  // ── Rule suggestions ───────────────────────────────────────────────────────
+
+  it('includes suggestionCount in the ImportResult response', async () => {
+    // AI categorization is disabled in test env (ENABLE_AI_CATEGORIZATION=false),
+    // so suggestions are never generated — suggestionCount should be exactly 0.
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, TD_ACCOUNT);
+
+    const res = await request(app)
+      .post('/api/v1/imports/upload')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .field('accountId', accountId)
+      .attach('file', TD_FIXTURE, 'td.csv');
+
+    expect(res.status).toBe(201);
+    const body = res.body as ImportSummaryResponse;
+    expect(body.suggestionCount).toBe(0);
+  });
+
+  it('does not generate suggestions for duplicate rows on re-import', async () => {
+    // Even if AI were enabled, duplicate rows are skipped before maybeSuggestRule
+    // is called, so re-importing the same file must never increment suggestionCount.
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, TD_ACCOUNT);
+    await uploadTd(accessToken, accountId);
+
+    const summary = await uploadTd(accessToken, accountId);
+
+    expect(summary.duplicateCount).toBe(9);
+    expect(summary.suggestionCount).toBe(0);
   });
 
   // ── Categorization ────────────────────────────────────────────────────────

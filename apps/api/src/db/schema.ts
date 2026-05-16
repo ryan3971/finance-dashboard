@@ -356,6 +356,34 @@ export const rebalancingGroupTransactions = pgTable(
   ]
 );
 
+// ─── Rule Suggestions ────────────────────────────────────────────────────────
+
+export const ruleSuggestions = pgTable(
+  'rule_suggestions',
+  {
+    id:               uuid('id').primaryKey().defaultRandom(),
+    userId:           uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    suggestedKeyword: text('suggested_keyword').notNull(),
+    categoryId:       uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    subcategoryId:    uuid('subcategory_id').references(() => categories.id, { onDelete: 'set null' }),
+    needWant:         text('need_want'),
+    confidence:       numeric('confidence', { precision: 4, scale: 3 }).notNull(),
+    transactionId:    uuid('transaction_id').references(() => transactions.id, { onDelete: 'set null' }),
+    status:           text('status').notNull().default('pending'),
+    createdAt:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      'rule_suggestions_need_want_check',
+      sql`${t.needWant} IS NULL OR ${t.needWant} IN ('Need', 'Want', 'NA')`
+    ),
+    check(
+      'rule_suggestions_status_check',
+      sql`${t.status} IN ('pending', 'accepted', 'dismissed')`
+    ),
+  ]
+);
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many, one }) => ({

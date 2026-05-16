@@ -7,7 +7,7 @@ import {
   transactions,
   transactionTags,
 } from '@/db/schema';
-import { and, desc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
@@ -496,17 +496,12 @@ export async function removeTagFromTransaction(
 // ─── Apply Rules ──────────────────────────────────────────────────────────────
 
 /**
- * Fetches candidates for rule application: unresolved, non-transfer transactions
- * that the rules engine has not yet processed. Excludes:
- *   - Transfers (isTransfer = true)
- *   - Manually-categorized transactions (categorySource = 'manual')
- *   - Transactions already processed by the rules engine (categorySource = 'rule')
- *     — this prevents idempotency violations where a flagForReview rule would
- *     keep re-matching the same transaction on every Apply Rules click.
- *
- * Returns only the columns needed by the rules engine.
+ * Fetches candidates for rule application: non-transfer transactions with a
+ * default or AI-assigned categorization. Rules overwrite both sources.
+ * Manual and rule-applied transactions are implicitly excluded by not being in
+ * the target set, preventing idempotency violations on repeated Apply Rules runs.
  */
-async function fetchUncategorizedTransactions(userId: string) {
+async function fetchRuleApplicableTransactions(userId: string) {
   return db
     .select({
       id: transactions.id,
@@ -519,9 +514,10 @@ async function fetchUncategorizedTransactions(userId: string) {
       and(
         eq(accounts.userId, userId),
         eq(transactions.isTransfer, false),
-        ne(transactions.categorySource, CATEGORY_SOURCE.MANUAL),
-        ne(transactions.categorySource, CATEGORY_SOURCE.RULE),
-        or(isNull(transactions.categoryId), eq(transactions.flaggedForReview, true))
+        inArray(transactions.categorySource, [
+          CATEGORY_SOURCE.DEFAULT,
+          CATEGORY_SOURCE.AI,
+        ])
       )
     );
 }
@@ -539,7 +535,7 @@ export async function applyRulesToUncategorized(
   const rules = await loadRules(userId);
   if (rules.length === 0) return { applied: 0, skipped: 0 };
 
-  const candidates = await fetchUncategorizedTransactions(userId);
+  const candidates = await fetchRuleApplicableTransactions(userId);
   if (candidates.length === 0) return { applied: 0, skipped: 0 };
 
   // Map from a fingerprint of the update values → list of transaction ids that

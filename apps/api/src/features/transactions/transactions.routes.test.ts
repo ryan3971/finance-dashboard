@@ -1144,6 +1144,42 @@ describe('POST /api/v1/transactions/apply-rules', () => {
     expect((second.body as { applied: number }).applied).toBe(0);
   });
 
+  it('applies rules to AI-categorized transactions', async () => {
+    // Previously fetchUncategorizedTransactions excluded AI-categorized transactions
+    // (categoryId != null && flaggedForReview = false). fetchRuleApplicableTransactions
+    // explicitly includes categorySource = 'ai' so rules can override AI results.
+    const { accessToken, user } = await registerUser(app);
+    const account = await accountFixture(user.id);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    // Insert a transaction that looks like an AI-categorized result
+    const tx = await transactionFixture(account.id, {
+      description: 'NETFLIX.COM SUBSCRIPTION',
+      categorySource: 'ai',
+      categoryId: null,
+      flaggedForReview: false,
+    });
+
+    // A rule that matches this description
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'netflix',
+      categoryId,
+      priority: 5,
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transactions/apply-rules')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect((res.body as { applied: number }).applied).toBe(1);
+
+    // Verify the AI-categorized transaction now has categorySource='rule'
+    const after = await getTransaction(app, accessToken, tx.id);
+    expect(after).toMatchObject({ categoryId, categorySource: 'rule' });
+  });
+
   it('is idempotent when the matching rule has flagForReview=true', async () => {
     // This is the specific scenario that caused the original bug: a flagForReview
     // rule sets categoryId=null and flaggedForReview=true, which would re-match

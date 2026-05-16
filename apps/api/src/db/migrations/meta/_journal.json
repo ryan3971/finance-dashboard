@@ -92,6 +92,13 @@
       "when": 1778736885488,
       "tag": "0012_slow_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1778813678732,
+      "tag": "0013_spotty_tenebrous",
+      "breakpoints": true
     }
   ]
 }
