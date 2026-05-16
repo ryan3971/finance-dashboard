@@ -4,6 +4,44 @@ import { db } from '@/db';
 import { TEST_CATEGORIES } from '@/db/seeds/test/categories';
 import { TEST_RULES } from '@/db/seeds/test/rules';
 
+/**
+ * Seed only system categories (userId: null). Does NOT seed system
+ * categorization rules — tests that need a system rule create one directly via
+ * categorizationRuleFixture(), which registers it for per-test cleanup. This
+ * avoids the parallel-execution race where one worker's cleanDatabase() would
+ * delete another worker's fixture-created system rule mid-test.
+ */
+export async function seedSystemCategories(): Promise<void> {
+  for (const cat of TEST_CATEGORIES) {
+    const [parent] = await db
+      .insert(categories)
+      .values({
+        userId: null,
+        name: cat.name,
+        isIncome: cat.isIncome,
+        icon: cat.icon,
+        parentId: null,
+      })
+      .returning({ id: categories.id });
+    assertDefined(parent, 'Expected category insert to return a row');
+
+    for (const subName of cat.subcategories) {
+      const subRows: { id: string }[] = await db
+        .insert(categories)
+        .values({
+          userId: null,
+          name: subName,
+          isIncome: cat.isIncome,
+          icon: null,
+          parentId: parent.id,
+        })
+        .returning({ id: categories.id });
+      const [sub] = subRows;
+      assertDefined(sub, 'Expected subcategory insert to return a row');
+    }
+  }
+}
+
 export async function seedTestSystemData(): Promise<void> {
   const idByPath = new Map<string, string>();
 

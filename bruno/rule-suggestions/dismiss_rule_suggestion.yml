@@ -1,0 +1,17 @@
+info:
+  name: dismiss_rule_suggestion
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/rule-suggestions/{{suggestionId}}/dismiss"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
