@@ -18,7 +18,7 @@ export default defineConfig({
     globalSetup: ['./src/testing/global-setup.ts'],
     setupFiles: ['./src/testing/setup.ts'],
     fileParallelism: true,
-    env: { BCRYPT_ROUNDS: '4' },
+    env: { BCRYPT_ROUNDS: '4', ENABLE_AI_CATEGORIZATION: 'false' },
     exclude: [
       '**/node_modules/**',
       'src/features/imports/questrade-import.routes.test.ts',

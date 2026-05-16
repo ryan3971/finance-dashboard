@@ -28,7 +28,7 @@ import { buildCompositeKey } from './pipeline/utils';
 import { db } from '@/db';
 import { detectTransfers } from '@/pipelines/transfer-detection/transfer-detection.service';
 import { assertDefined } from '@/lib/assert';
-import { IMPORT_STATUS, TRANSACTION_SOURCE } from '@/lib/constants';
+import { IMPORT_STATUS, KEYWORD_SLICE_LENGTH, TRANSACTION_SOURCE } from '@/lib/constants';
 import { CATEGORY_SOURCE } from '@finance/shared/constants';
 import { logger } from '@/middleware/logger';
 import type { Logger } from 'pino';
@@ -237,11 +237,13 @@ function isInvestmentTransaction(
 // dismissed-keyword lookup here if "never again" semantics are ever wanted.
 async function maybeSuggestRule(
   userId: string,
-  sourceName: string | null,
+  keyword: string,
   categorization: Awaited<ReturnType<typeof categorize>>,
   transactionId: string
 ): Promise<boolean> {
-  if (!sourceName) return false;
+  // AI providers do not extract a structured merchant name — keyword is derived
+  // from raw.description by the caller (matching the auto-rule creation pattern).
+  if (!keyword) return false;
   if (categorization.categorySource !== CATEGORY_SOURCE.AI) return false;
   if (!categorization.categoryId) return false;
 
@@ -249,7 +251,7 @@ async function maybeSuggestRule(
     .insert(ruleSuggestions)
     .values({
       userId,
-      suggestedKeyword: sourceName,
+      suggestedKeyword: keyword,
       categoryId:       categorization.categoryId,
       subcategoryId:    categorization.subcategoryId ?? null,
       needWant:         categorization.needWant,
@@ -323,12 +325,11 @@ async function processTransactionRow(
   };
   const method = sourceToMethod[categorization.categorySource] ?? 'fallback';
 
-  const suggestionCreated = await maybeSuggestRule(
-    userId,
-    categorization.sourceName,
-    categorization,
-    inserted.id
-  );
+  // Derive the suggestion keyword from the cleaned description (same approach as
+  // auto-rule creation in patchTransaction). Both AI providers return sourceName=null,
+  // so using categorization.sourceName here would always skip suggestion creation.
+  const keyword = raw.description.slice(0, KEYWORD_SLICE_LENGTH).toLowerCase().trim();
+  const suggestionCreated = await maybeSuggestRule(userId, keyword, categorization, inserted.id);
 
   return { id: inserted.id, method, suggestionCreated };
 }
