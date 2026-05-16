@@ -17,7 +17,7 @@ import {
 } from '@/db/schema';
 import type { Application } from 'express';
 import { db } from '@/db';
-import { eq, inArray, isNull } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import request from 'supertest';
 import type {
   AuthResponse,
@@ -32,10 +32,11 @@ export interface ImportSummaryResponse {
   errorCount: number;
 }
 
-// Worker-local set of user IDs created during this test file's run.
+// Worker-local sets of IDs created during this test file's run.
 // Vitest re-initialises module state for each file (isolate: true),
-// so this set is automatically scoped to a single file's lifecycle.
+// so these sets are automatically scoped to a single file's lifecycle.
 const _trackedUserIds = new Set<string>();
+const _trackedSystemRuleIds = new Set<string>();
 
 /**
  * Register a user ID for cleanup by cleanDatabase().
@@ -47,21 +48,37 @@ export function trackForCleanup(userId: string): void {
 }
 
 /**
+ * Register a system rule ID (userId: null) for cleanup by cleanDatabase().
+ * Called automatically by categorizationRuleFixture() when it inserts a
+ * system rule. Deleting by specific ID — rather than all isNull rules —
+ * prevents one worker from wiping another worker's just-created fixture rule
+ * in parallel test runs.
+ */
+export function trackSystemRuleForCleanup(ruleId: string): void {
+  _trackedSystemRuleIds.add(ruleId);
+}
+
+/**
  * Delete all data created by the current test file. Only removes rows owned
- * by users registered through registerUser() or trackForCleanup(). System
- * categories (userId IS NULL) and global sequences are untouched.
+ * by users registered through registerUser() or trackForCleanup(), plus any
+ * system rules explicitly registered via trackSystemRuleForCleanup(). System
+ * categories (userId IS NULL) and untracked rows are never touched.
  *
  * Called in beforeEach (cleans previous test's data) and afterAll (cleans
  * the last test's data after the file finishes).
  */
 export async function cleanDatabase(): Promise<void> {
-  // System categorization rules (userId IS NULL) are always cleared —
-  // GET /api/v1/categorization-rules returns them alongside user rules, so
-  // any test that asserts on an empty rule list would see them otherwise.
-  // This must run unconditionally, before the early-return below, so the
-  // first test in each file (which has no tracked users yet) also gets a
-  // clean slate.
-  await db.delete(categorizationRules).where(isNull(categorizationRules.userId));
+  // Delete only the specific system rules this worker created via fixtures,
+  // not all isNull rules. A global isNull DELETE would race with concurrent
+  // workers doing the same and wipe rules that another worker's test is
+  // currently using.
+  if (_trackedSystemRuleIds.size > 0) {
+    const ruleIds = [..._trackedSystemRuleIds];
+    _trackedSystemRuleIds.clear();
+    await db
+      .delete(categorizationRules)
+      .where(inArray(categorizationRules.id, ruleIds));
+  }
 
   if (_trackedUserIds.size === 0) return;
 

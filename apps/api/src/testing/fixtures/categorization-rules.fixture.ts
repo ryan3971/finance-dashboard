@@ -1,6 +1,7 @@
 import { assertDefined } from '@/lib/assert';
 import { db } from '@/db';
 import { categorizationRules } from '@/db/schema';
+import { trackSystemRuleForCleanup } from '@/testing/test-helpers';
 
 interface CategorizationRuleRow {
   id: string;
@@ -45,5 +46,11 @@ export async function categorizationRuleFixture(
     })
     .returning();
   assertDefined(row, 'Expected categorization rule insert to return a row');
+  // System rules (userId: null) are not tied to a tracked user, so
+  // cleanDatabase() can't reach them via the user cleanup path. Register the
+  // ID directly so it gets deleted at the end of the current test.
+  if (row.userId === null) {
+    trackSystemRuleForCleanup(row.id);
+  }
   return row;
 }
