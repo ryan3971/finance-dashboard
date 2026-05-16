@@ -1,45 +1,44 @@
-import { isNull } from 'drizzle-orm';
-import {
-  anticipatedBudget,
-  anticipatedBudgetMonths,
-  categories,
-  categorizationRules,
-  transactions,
-} from '@/db/schema';
+import { sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { seedTestSystemData } from './seed-test-system-data';
+import { seedSystemCategories } from './seed-test-system-data';
 
 /**
- * Replace system-level categories and rules with the test set.
+ * Full reset called once per test session from global-setup.ts.
  *
- * Called from the global beforeAll in setup.ts. System rows (userId IS NULL)
- * survive cleanDatabase() between individual tests, so the test set is stable
- * for the entire test file without any per-test re-seeding.
+ * Two responsibilities:
+ *   1. Wipe all data — including stale rows from a crashed or failed previous
+ *      run whose per-test cleanDatabase() never fired. RESTART IDENTITY resets
+ *      sequences; CASCADE satisfies FK ordering automatically.
+ *   2. Re-seed system categories so every test file sees the expected category
+ *      tree without having to set it up itself.
  *
- * Performing a full replace (delete → re-seed) on every call is intentional:
- * it guards against the test DB containing a stale production set from a
- * previous manual seed run, and keeps per-file startup cost predictable.
- *
- * Ordering matters:
- *   1. Delete transactions before categories — transactions.categoryId/subcategoryId
- *      FK into categories. Stale rows from the last test of the previous file cause
- *      FK violations if not cleared here. transactionTags cascades automatically.
- *   2. Delete rules before categories — rules hold FKs into categories.
- *   3. Insert categories before rules — rules need the IDs that seeding produces.
+ * System categorization rules are intentionally NOT re-seeded here. Tests that
+ * need a system rule (e.g. "returns 403 when patching a system rule") create one
+ * directly via categorizationRuleFixture(), which registers the rule ID for
+ * per-worker cleanup. Globally seeding rules caused a race condition in parallel
+ * mode: one worker's cleanDatabase() would wipe another worker's just-created
+ * fixture rule before the assertion ran.
  */
 export async function resetTestSystemData(): Promise<void> {
-  // Transactions left over from the last test of the previous file reference
-  // system categories. Clear them before deleting those categories.
-  await db.delete(transactions);
-  // anticipated_budget rows can reference system category IDs (userId IS NULL).
-  // Delete them before the system category delete to avoid FK violations when
-  // the test DB has leftover data from a previous run.
-  await db.delete(anticipatedBudgetMonths);
-  await db.delete(anticipatedBudget);
-  await db
-    .delete(categorizationRules)
-    .where(isNull(categorizationRules.userId));
-  await db.delete(categories).where(isNull(categories.userId));
+  await db.execute(sql`
+    TRUNCATE
+      transactions,
+      investment_transactions,
+      investment_snapshots,
+      contribution_records,
+      imports,
+      accounts,
+      refresh_tokens,
+      categorization_rules,
+      tags,
+      anticipated_budget_months,
+      anticipated_budget,
+      user_config,
+      rebalancing_groups,
+      categories,
+      users
+    RESTART IDENTITY CASCADE
+  `);
 
-  await seedTestSystemData();
+  await seedSystemCategories();
 }
