@@ -239,24 +239,23 @@ export const investmentSnapshots = pgTable('investment_snapshots', {
     .notNull(),
 });
 
-export const contributionRecords = pgTable('contribution_records', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  accountId: uuid('account_id')
-    .references(() => accounts.id)
-    .notNull(),
-  taxYear: integer('tax_year').notNull(),
-  annualLimit: numeric('annual_limit', { precision: 12, scale: 2 }),
-  contributions: numeric('contributions', { precision: 12, scale: 2 })
-    .notNull()
-    .default('0'),
-  withdrawals: numeric('withdrawals', { precision: 12, scale: 2 })
-    .notNull()
-    .default('0'),
-  roomCarried: numeric('room_carried', { precision: 12, scale: 2 }),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const contributionRecords = pgTable(
+  'contribution_records',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id')
+      .references(() => accounts.id)
+      .notNull(),
+    taxYear: integer('tax_year').notNull(),
+    annualLimit: numeric('annual_limit', { precision: 12, scale: 2 }),
+    roomCarried: numeric('room_carried', { precision: 12, scale: 2 }),
+    roomCarriedConfirmed: boolean('room_carried_confirmed').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [unique().on(t.accountId, t.taxYear)]
+);
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
