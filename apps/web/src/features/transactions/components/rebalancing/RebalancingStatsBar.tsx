@@ -5,9 +5,15 @@ interface RebalancingStatsBarProps {
 }
 
 export function RebalancingStatsBar({ groups }: RebalancingStatsBarProps) {
-  const open = groups.filter((g) => g.status === 'open').length;
-  const flagged = groups.filter((g) => g.flaggedForReview).length;
-  const resolved = groups.filter((g) => g.status === 'resolved').length;
+  const { open, flagged, resolved } = groups.reduce(
+    (acc, g) => {
+      if (g.status === 'open') acc.open++;
+      if (g.flaggedForReview) acc.flagged++;
+      if (g.status === 'resolved') acc.resolved++;
+      return acc;
+    },
+    { open: 0, flagged: 0, resolved: 0 },
+  );
 
   return (
     <p className="text-xs text-content-secondary">

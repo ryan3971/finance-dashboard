@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useRebalancingGroups } from '@/features/transactions/hooks/useRebalancingGroups';
 import { RebalancingGroupCard } from './RebalancingGroupCard';
-import { RebalancingFilterBar, type StatusFilter } from './RebalancingFilterBar';
+import { RebalancingFilterBar } from './RebalancingFilterBar';
 import { RebalancingStatsBar } from './RebalancingStatsBar';
+import type { StatusFilter } from './rebalancingTypes';
 
 const SKELETON_COUNT = Array.from({ length: 3 }, (_, i) => `skeleton-${i}`);
 
@@ -42,6 +43,26 @@ export function RebalancingTab() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [labelSearch, setLabelSearch] = useState('');
 
+  const filtered = useMemo(() => {
+    const groups = data?.groups;
+    if (!groups?.length) return [];
+    const query = labelSearch.trim().toLowerCase();
+    return [...groups]
+      .sort((a, b) => {
+        if (a.flaggedForReview !== b.flaggedForReview)
+          return a.flaggedForReview ? -1 : 1;
+        if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
+        return b.createdAt.localeCompare(a.createdAt);
+      })
+      .filter((g) => {
+        if (statusFilter === 'flagged' && !g.flaggedForReview) return false;
+        if (statusFilter === 'open' && g.status !== 'open') return false;
+        if (statusFilter === 'resolved' && g.status !== 'resolved') return false;
+        if (query && !g.label.toLowerCase().includes(query)) return false;
+        return true;
+      });
+  }, [data?.groups, statusFilter, labelSearch]);
+
   if (showSkeleton) {
     return (
       <div className="space-y-3 mt-4">
@@ -77,23 +98,6 @@ export function RebalancingTab() {
       </div>
     );
   }
-
-  // Sort: flagged-for-review first, then open, then resolved; within each bucket newest first
-  const sorted = [...groups].sort((a, b) => {
-    if (a.flaggedForReview !== b.flaggedForReview)
-      return a.flaggedForReview ? -1 : 1;
-    if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
-    return b.createdAt.localeCompare(a.createdAt);
-  });
-
-  const query = labelSearch.trim().toLowerCase();
-  const filtered = sorted.filter((g) => {
-    if (statusFilter === 'flagged' && !g.flaggedForReview) return false;
-    if (statusFilter === 'open' && g.status !== 'open') return false;
-    if (statusFilter === 'resolved' && g.status !== 'resolved') return false;
-    if (query && !g.label.toLowerCase().includes(query)) return false;
-    return true;
-  });
 
   return (
     <div className="mt-4 space-y-3">

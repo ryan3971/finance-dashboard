@@ -1,6 +1,5 @@
 import { cn } from '@/lib/utils';
-
-export type StatusFilter = 'all' | 'flagged' | 'open' | 'resolved';
+import type { StatusFilter } from './rebalancingTypes';
 
 const STATUS_TABS: { label: string; value: StatusFilter }[] = [
   { label: 'All', value: 'all' },
@@ -24,11 +23,17 @@ export function RebalancingFilterBar({
 }: RebalancingFilterBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="flex overflow-hidden rounded border border-border-strong">
+      <div
+        role="tablist"
+        aria-label="Filter by status"
+        className="flex overflow-hidden rounded border border-border-strong"
+      >
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.value}
             type="button"
+            role="tab"
+            aria-selected={statusFilter === tab.value}
             onClick={() => onStatusChange(tab.value)}
             className={cn(
               'border-r border-border-strong px-3 py-1 text-xs transition-colors last:border-r-0',
