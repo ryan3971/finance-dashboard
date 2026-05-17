@@ -18,6 +18,7 @@ export async function seedUserRules(
       categoryId: categorizationRules.categoryId,
       subcategoryId: categorizationRules.subcategoryId,
       needWant: categorizationRules.needWant,
+      flagForReview: categorizationRules.flagForReview,
       priority: categorizationRules.priority,
       matchType: categorizationRules.matchType,
     })
@@ -79,6 +80,7 @@ export async function seedUserRules(
         ? (idMap.get(rule.subcategoryId) ?? null)
         : null,
       needWant: rule.needWant,
+      flagForReview: rule.flagForReview,
       priority: rule.priority,
       matchType: rule.matchType,
     }))
