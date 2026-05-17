@@ -1,8 +1,12 @@
+import { useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useRebalancingGroups } from '@/features/transactions/hooks/useRebalancingGroups';
 import { RebalancingGroupCard } from './RebalancingGroupCard';
+import { RebalancingFilterBar } from './RebalancingFilterBar';
+import { RebalancingStatsBar } from './RebalancingStatsBar';
+import type { StatusFilter } from '../../types/rebalancingTypes';
 
 const SKELETON_COUNT = Array.from({ length: 3 }, (_, i) => `skeleton-${i}`);
 
@@ -36,6 +40,28 @@ function GroupSkeleton() {
 export function RebalancingTab() {
   const { data, isPending, isError } = useRebalancingGroups();
   const showSkeleton = useDelayedPending(isPending);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [labelSearch, setLabelSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    const groups = data?.groups;
+    if (!groups?.length) return [];
+    const query = labelSearch.trim().toLowerCase();
+    return [...groups]
+      .sort((a, b) => {
+        if (a.flaggedForReview !== b.flaggedForReview)
+          return a.flaggedForReview ? -1 : 1;
+        if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
+        return b.createdAt.localeCompare(a.createdAt);
+      })
+      .filter((g) => {
+        if (statusFilter === 'flagged' && !g.flaggedForReview) return false;
+        if (statusFilter === 'open' && g.status !== 'open') return false;
+        if (statusFilter === 'resolved' && g.status !== 'resolved') return false;
+        if (query && !g.label.toLowerCase().includes(query)) return false;
+        return true;
+      });
+  }, [data?.groups, statusFilter, labelSearch]);
 
   if (showSkeleton) {
     return (
@@ -73,19 +99,30 @@ export function RebalancingTab() {
     );
   }
 
-  // Sort: flagged-for-review first, then open, then resolved; within each bucket newest first
-  const sorted = [...groups].sort((a, b) => {
-    if (a.flaggedForReview !== b.flaggedForReview)
-      return a.flaggedForReview ? -1 : 1;
-    if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
-    return b.createdAt.localeCompare(a.createdAt);
-  });
-
   return (
-    <div className="space-y-3 mt-4">
-      {sorted.map((group) => (
-        <RebalancingGroupCard key={group.id} group={group} />
-      ))}
+    <div className="mt-4 space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <RebalancingStatsBar groups={groups} />
+        <RebalancingFilterBar
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+          labelSearch={labelSearch}
+          onLabelSearch={setLabelSearch}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          message="No groups match your filters."
+          hint="Try a different status tab or clear the search."
+        />
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((group) => (
+            <RebalancingGroupCard key={group.id} group={group} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
