@@ -19,6 +19,7 @@ export async function seedUserRules(
       subcategoryId: categorizationRules.subcategoryId,
       needWant: categorizationRules.needWant,
       priority: categorizationRules.priority,
+      matchType: categorizationRules.matchType,
     })
     .from(categorizationRules)
     .where(isNull(categorizationRules.userId));
@@ -79,6 +80,7 @@ export async function seedUserRules(
         : null,
       needWant: rule.needWant,
       priority: rule.priority,
+      matchType: rule.matchType,
     }))
   );
 }

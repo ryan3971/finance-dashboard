@@ -7,7 +7,7 @@ import type { SeedRule } from '../system/rules';
 //   TD fixture
 //     "E-TRANSFER OUT ***abc/zzz"       → flagged for review (no category)
 //     "PRODIGY EDUCATION INC PAYRL"     → Salary / Paycheque    (income)
-//     "GST GST TAX REFUND"              → Government / GST       (income)
+//     "GST GST TAX REFUND"              → Government / GST Credit (income)
 //     "WALMART GROCERY STORE 321"       → Food / Groceries       (Need)
 //     "PRESTO TOPUP"                    → Transport / Transit    (Need)
 //     "TIM HORTONS #227"                → Food / Eating Out      (Want)
@@ -74,7 +74,7 @@ export const TEST_RULES: SeedRule[] = [
     keyword: 'gst gst',
     sourceName: 'Government',
     category: 'Government',
-    subcategory: 'GST',
+    subcategory: 'GST Credit',
     needWant: 'NA',
     priority: 5,
   },

@@ -121,6 +121,7 @@ export async function addSystemRules(
       needWant: rule.needWant,
       flagForReview: rule.flagForReview ?? false,
       priority: rule.priority,
+      matchType: rule.matchType ?? 'substring',
     });
 
     inserted++;

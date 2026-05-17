@@ -8,13 +8,15 @@ export interface SeedRule {
   needWant: NeedWant | null;
   flagForReview?: boolean;
   priority: number;
+  matchType?: 'substring' | 'wildcard';
 }
 
-// Format: { keyword, sourceName, category, subcategory, needWant, flagForReview, priority }
-// keyword       — case-insensitive contains match against transaction description
+// Format: { keyword, sourceName, category, subcategory, needWant, flagForReview, priority, matchType }
+// keyword       — case-insensitive contains match against transaction description (substring) or glob pattern (wildcard)
 // needWant      — 'Need' | 'Want' | 'NA' | null
 // flagForReview — true to flag the transaction for manual review without assigning a category
 // priority      — higher wins when multiple rules match (default 0)
+// matchType     — 'substring' (default) | 'wildcard' (* = any chars, ? = one char; pattern is anchored)
 
 export const RULES: SeedRule[] = [
   // ── Transfers & payments (flagged for review — no category assigned) ──────
@@ -98,7 +100,7 @@ export const RULES: SeedRule[] = [
     keyword: 'gst gst',
     sourceName: 'Government',
     category: 'Government',
-    subcategory: 'GST',
+    subcategory: 'GST Credit',
     needWant: 'NA',
     priority: 5,
   },
@@ -219,14 +221,6 @@ export const RULES: SeedRule[] = [
     priority: 0,
   },
   {
-    keyword: 'mcdonalds',
-    sourceName: "McDonald's",
-    category: 'Food',
-    subcategory: 'Eating Out',
-    needWant: 'Want',
-    priority: 0,
-  },
-  {
     keyword: 'mcdonald',
     sourceName: "McDonald's",
     category: 'Food',
@@ -238,7 +232,7 @@ export const RULES: SeedRule[] = [
     keyword: 'starbucks',
     sourceName: 'Starbucks',
     category: 'Food',
-    subcategory: 'Coffee',
+    subcategory: 'Café',
     needWant: 'Want',
     priority: 0,
   },
@@ -256,7 +250,7 @@ export const RULES: SeedRule[] = [
     category: 'Food',
     subcategory: 'Delivery',
     needWant: 'Want',
-    priority: 0,
+    priority: 1,
   },
   {
     keyword: 'skip the dishes',
@@ -553,9 +547,10 @@ export const RULES: SeedRule[] = [
   {
     keyword: 'questrade',
     sourceName: 'Questrade',
-    category: 'Finance',
-    subcategory: 'Insurance',
-    needWant: 'NA',
+    category: null,
+    subcategory: null,
+    needWant: null,
+    flagForReview: true,
     priority: 5,
   },
   {
