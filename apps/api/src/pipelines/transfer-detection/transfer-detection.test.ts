@@ -154,11 +154,11 @@ describe('detectTransfers', () => {
       amount: '-100.00',
       date: '2024-01-15',
     });
-    // 4 days later — outside the default 3-day window
+    // 6 days later — outside the default 5-day window
     await transactionFixture(savings.id, {
       description: 'Deposit',
       amount: '100.00',
-      date: '2024-01-19',
+      date: '2024-01-21',
     });
 
     const result = await detectTransfers([txn.id], userId);
