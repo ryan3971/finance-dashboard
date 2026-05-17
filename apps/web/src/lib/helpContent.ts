@@ -173,6 +173,16 @@ export const helpContent = {
         description:
           'Expense entries are classified as Need, Want, or NA. Need and Want drive the split benchmarks in the Spending Summary. NA is for expenses that do not fit either classification.',
       },
+      {
+        heading: 'Copy from year',
+        description:
+          'Use the Copy from [year] button to duplicate all entries from the previous year into the current year. This is only available when the current year has no entries yet, and is useful for years where your budget does not change significantly.',
+      },
+      {
+        heading: 'Adding and editing entries',
+        description:
+          'Click Add Entry to create a new income or expense line. Choose whether it is income or an expense, set the Need/Want classification for expenses, and enter the default monthly amount. Expand the entry afterwards to override individual months.',
+      },
     ],
   },
 
@@ -186,6 +196,21 @@ export const helpContent = {
         heading: 'Flagged for review',
         description:
           'A transaction is flagged on import for one of two reasons: it has no matching categorization rule and needs a category assigned, or its description matches a known transfer pattern and needs to be confirmed or dismissed. Unresolved flags can cause dashboard totals to be incomplete or inaccurate.',
+      },
+      {
+        heading: 'Category source badge',
+        description:
+          'Each categorized transaction shows how its category was assigned: Rule (matched a categorization rule on import), AI (assigned by the AI categorization model), or Manual (set by you directly). Badges appear in the transaction detail panel.',
+      },
+      {
+        heading: 'Filters',
+        description:
+          'Open the Filters panel to narrow the list by account, month or date range, category, Need/Want classification, tags, transfer status, or review status. Active filters are shown as a count badge on the Filters button. Use Clear all to reset all filters at once.',
+      },
+      {
+        heading: 'Tags',
+        description:
+          'Tags are coloured labels you can attach to transactions for custom grouping or tracking — for example, tagging a group of transactions to a specific trip or project. Filter by one or more tags using the Filters panel.',
       },
       {
         heading: 'Editing and duplicating',
@@ -202,6 +227,11 @@ export const helpContent = {
         description:
           'Use Add Transaction to record cash purchases or other transactions not captured by a CSV import.',
       },
+      {
+        heading: 'Apply Rules',
+        description:
+          'Re-runs all categorization rules against existing uncategorized transactions. Useful after adding new rules to catch transactions that were previously flagged for review.',
+      },
     ],
   },
 
@@ -210,6 +240,21 @@ export const helpContent = {
     body: 'Rebalancing groups let you link related transactions — such as split expenses, reimbursements, or refunds — so that only your net cost appears in dashboard totals.',
     sections: [
       {
+        heading: 'Stats bar',
+        description:
+          'Shows a summary across all groups: total count, open groups awaiting resolution, resolved groups, and groups flagged for review. Use these to quickly gauge how many outstanding items need attention.',
+      },
+      {
+        heading: 'Filtering and search',
+        description:
+          'Filter groups by status (All, Flagged, Open, Resolved) and search by label to quickly locate a specific group. Filters apply together — for example, Flagged + a label search narrows to flagged groups matching that name.',
+      },
+      {
+        heading: 'Flagged groups',
+        description:
+          'A group is flagged for review when its calculated share may not reflect reality — for example, when offset amounts are incomplete or when a transaction in the group has been modified. Review flagged groups to confirm the share is correct, then mark it resolved.',
+      },
+      {
         heading: 'Sources and offsets',
         description:
           'Each group contains source transactions (the original expenses you paid) and offset transactions (reimbursements or payments received from others). The dashboard subtracts the offset total from the source total, so only your net share affects spending figures.',
@@ -217,7 +262,7 @@ export const helpContent = {
       {
         heading: 'My share',
         description:
-          'Your net cost after offsets are applied. If the offsets do not fully cover the sources, the remainder is counted against your spending totals. A manual override is available on each group if the calculated share does not reflect reality.',
+          'Your net cost after offsets are applied. If the offsets do not fully cover the sources, the remainder is counted against your spending totals. A manual override is available on each group if the calculated share does not reflect reality — the original calculated amount is shown in parentheses when an override is active.',
       },
       {
         heading: 'Open vs resolved',
@@ -265,7 +310,12 @@ export const helpContent = {
       {
         heading: 'Auto-categorization',
         description:
-          'On import, each transaction is matched against your categorization rules. Transactions that match a rule are categorized automatically. Unmatched transactions are flagged for review.',
+          'On import, each transaction is matched against your categorization rules. Transactions that match a rule are categorized automatically. Unmatched transactions are either sent to the AI categorization model (if enabled) or flagged for manual review.',
+      },
+      {
+        heading: 'AI categorization',
+        description:
+          'When AI categorization is enabled, transactions that do not match any rule are sent to an AI model for classification. The model assigns a category based on the transaction description and a confidence score. Only results that meet the confidence threshold are applied — lower-confidence results are flagged for review instead. AI-categorized transactions show an "AI" badge in the transaction detail panel.',
       },
       {
         heading: 'Duplicate detection',
@@ -304,14 +354,34 @@ export const helpContent = {
           'Each rule matches against the transaction description using a keyword or phrase. Matching is case-insensitive. When multiple rules match the same transaction, the rule with the highest priority number is applied.',
       },
       {
+        heading: 'Match type: Substring vs Wildcard',
+        description:
+          'Substring rules match anywhere in the description — the keyword "netflix" matches "NETFLIX.COM/CA". Wildcard rules use * as a stand-in for any sequence of characters, giving you more precise control — for example, "AMAZON*CA" matches descriptions that start with "AMAZON" and end with "CA" but not other Amazon variants. Wildcard rules are marked with a "W" badge in the rules list.',
+      },
+      {
         heading: 'Priority',
         description:
           'A numeric field you set on each rule. Higher numbers take precedence. Assign higher priority to more specific rules so they are not overridden by broader ones.',
       },
       {
+        heading: 'Flag for review',
+        description:
+          'Instead of assigning a category, a rule can be configured to flag matching transactions for manual review. Use this for transactions that look like transfers or that you always want to inspect before they are counted.',
+      },
+      {
+        heading: 'Suggested rules',
+        description:
+          'The Suggested Rules panel appears when the AI model has identified patterns across flagged transactions that could become rules. Each suggestion shows the proposed keyword, category, and a confidence score. Accept a suggestion to create the rule immediately, use Edit & Accept to adjust it first, or Dismiss to discard it.',
+      },
+      {
         heading: 'Creating rules automatically',
         description:
           "While reviewing a flagged transaction, check 'Save as rule' before saving. This creates a rule from the category you assigned, so similar transactions are categorized automatically on future imports.",
+      },
+      {
+        heading: 'Apply Rules',
+        description:
+          'The Apply Rules button on the Transactions page re-runs all rules against existing transactions that have no category. Use it after adding new rules to categorize transactions that were previously left unresolved without needing to re-import.',
       },
     ],
   },
@@ -329,6 +399,11 @@ export const helpContent = {
         heading: 'Emergency fund target',
         description:
           'The savings balance you are working toward. Displayed as a progress bar in the Snapshot Accounts card. Progress is calculated from the combined balance of all chequing accounts.',
+      },
+      {
+        heading: 'Reset Account',
+        description:
+          'Permanently deletes all accounts, transactions, categories, rules, and budget entries and restores the default categories and rules. This cannot be undone. Use only if you want to start completely fresh.',
       },
     ],
   },
