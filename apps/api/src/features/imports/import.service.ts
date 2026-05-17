@@ -5,7 +5,7 @@ import {
   ruleSuggestions,
   transactions,
 } from '@/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import {
   categorize,
   type LoadedRule,
@@ -58,6 +58,15 @@ async function parseRows(
   }
 }
 
+async function fetchExistingKeys(keys: string[]): Promise<Set<string>> {
+  if (keys.length === 0) return new Set();
+  const rows = await db
+    .select({ compositeKey: transactions.compositeKey })
+    .from(transactions)
+    .where(inArray(transactions.compositeKey, keys));
+  return new Set(rows.map(r => r.compositeKey));
+}
+
 async function processAllRows(
   parsed: (RawTransaction | RawInvestmentTransaction)[],
   accountId: string,
@@ -70,6 +79,11 @@ async function processAllRows(
 ): Promise<string[]> {
   const importedTransactionIds: string[] = [];
 
+  const regularKeys = parsed
+    .filter((r): r is RawTransaction => !isInvestmentTransaction(r))
+    .map(r => r.compositeKey);
+  const existingKeys = await fetchExistingKeys(regularKeys);
+
   for (let rowIndex = 0; rowIndex < parsed.length; rowIndex++) {
     const raw = parsed[rowIndex];
     if (!raw) continue;
@@ -77,6 +91,20 @@ async function processAllRows(
       if (isInvestmentTransaction(raw)) {
         await processInvestmentRow(raw, accountId, importId, result);
       } else {
+        if (existingKeys.has(raw.compositeKey)) {
+          result.duplicateCount++;
+          onProgress?.({
+            stage: 'categorizing',
+            processed: rowIndex + 1,
+            total: parsed.length,
+            importedCount: result.importedCount,
+            flaggedCount: result.flaggedCount,
+            duplicateCount: result.duplicateCount,
+            errorCount: result.errorCount,
+            method: 'fallback',
+          });
+          continue;
+        }
         const row = await processTransactionRow(
           raw,
           accountId,
