@@ -6,7 +6,7 @@ export function InvestmentSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {['s0', 's1', 's2'].map((k) => (
+        {Array.from({ length: 3 }, (_, i) => `scard-${i}`).map((k) => (
           <div key={k} className="bg-surface rounded-lg border border-border-base p-6">
             <Skeleton className="h-4 w-32 mb-3" />
             <Skeleton className="h-7 w-28" />

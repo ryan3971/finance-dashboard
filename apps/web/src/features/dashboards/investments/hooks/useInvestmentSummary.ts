@@ -5,13 +5,13 @@ import type { InvestmentSummaryResponse } from '@finance/shared/types/investment
 
 const STALE_TIME_MS = 5 * 60 * 1000;
 
-export function useInvestmentSummary(year: number, accountId?: string) {
+export function useInvestmentSummary(year: number) {
   return useQuery({
-    queryKey: investmentKeys.summary(year, accountId),
+    queryKey: investmentKeys.summary(year),
     queryFn: async () => {
       const { data } = await api.get<InvestmentSummaryResponse>(
         '/investments/summary',
-        { params: { year, ...(accountId !== undefined && { accountId }) } }
+        { params: { year } }
       );
       return data;
     },

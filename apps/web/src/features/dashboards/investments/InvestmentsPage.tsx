@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearch } from '@tanstack/react-router';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -20,14 +20,21 @@ export function InvestmentsPage() {
 
   const search = useSearch({ from: '/dashboard/investments' });
 
-  const filters = investmentTransactionFiltersSchema.parse({
-    accountId: search.accountId,
-    action: search.action,
-    symbol: search.symbol,
-    startDate: search.startDate,
-    endDate: search.endDate,
-    page: search.page ?? 1,
-  });
+  // TanStack Router already validates against investmentsSearchSchema; parse once
+  // via useMemo so Zod doesn't run on every unrelated context re-render.
+  const { accountId, action, symbol, startDate, endDate, page } = search;
+  const filters = useMemo(
+    () =>
+      investmentTransactionFiltersSchema.parse({
+        accountId,
+        action,
+        symbol,
+        startDate,
+        endDate,
+        page: page ?? 1,
+      }),
+    [accountId, action, symbol, startDate, endDate, page]
+  );
 
   const {
     data: summaryData,
@@ -61,14 +68,14 @@ export function InvestmentsPage() {
       {/* Skeleton */}
       {showSkeleton && <InvestmentSkeleton />}
 
-      {/* Error */}
-      {(summaryError || txError) && !showSkeleton && (
-        <EmptyState variant="error" message="Failed to load investment data." />
-      )}
-
-      {/* Data */}
+      {/* Data — skeleton gate prevents flash; error shown only when no stale data available */}
       {!showSkeleton && (
         <div className="space-y-6">
+          {/* Error: only when no stale data can be shown */}
+          {(summaryError || txError) && !summaryData && !txData && (
+            <EmptyState variant="error" message="Failed to load investment data." />
+          )}
+
           {/* Activity summary cards */}
           {summaryData && (
             <div
@@ -81,8 +88,8 @@ export function InvestmentsPage() {
             </div>
           )}
 
-          {/* Contribution room */}
-          {roomData && roomData.accounts.length > 0 && (
+          {/* Contribution room — card owns the "no registered accounts" guard */}
+          {roomData && (
             <ContributionRoomCard data={roomData} isFetching={roomFetching} />
           )}
 

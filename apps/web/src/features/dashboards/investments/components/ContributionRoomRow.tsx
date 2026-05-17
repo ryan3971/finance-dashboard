@@ -1,15 +1,37 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/Badge';
-import { fmt } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { cn, fmt } from '@/lib/utils';
+import { TOAST } from '@/lib/toastMessages';
 import type { AccountContributionSummary } from '@finance/shared/types/investments';
 import { useContributionRoomMutation } from '../hooks/useContributionRoomMutation';
 
-const ACCOUNT_TYPE_VARIANT: Record<string, 'info' | 'success' | 'accent'> = {
+// accountType is narrowed to 'tfsa' | 'rrsp' | 'fhsa' by AccountContributionSummary,
+// so this map is exhaustive and requires no fallback.
+const ACCOUNT_TYPE_VARIANT: Record<'tfsa' | 'rrsp' | 'fhsa', 'info' | 'success' | 'accent'> = {
   tfsa: 'success',
   rrsp: 'info',
   fhsa: 'accent',
 };
+
+function PencilIcon() {
+  return (
+    <svg
+      className="w-3 h-3"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+      />
+    </svg>
+  );
+}
 
 interface EditableCellProps {
   readonly value: number | null;
@@ -53,10 +75,10 @@ function EditableCell({
       {suffix}
       <button
         onClick={onStartEdit}
-        className="opacity-0 group-hover:opacity-100 transition-opacity text-content-muted hover:text-content-primary text-xs"
+        className="opacity-0 group-hover:opacity-100 transition-opacity text-content-muted hover:text-content-primary"
         aria-label="Edit"
       >
-        ✏️
+        <PencilIcon />
       </button>
     </span>
   );
@@ -86,6 +108,7 @@ export function ContributionRoomRow({ account, year }: Props) {
   function handleSave() {
     const num = parseFloat(editValue);
     if (isNaN(num) || num < 0) {
+      toast.error(TOAST.CONTRIBUTION_ROOM_SAVE_FAILED);
       cancelEdit();
       return;
     }
@@ -130,7 +153,7 @@ export function ContributionRoomRow({ account, year }: Props) {
         {account.accountName}
       </td>
       <td className="px-4 py-3">
-        <Badge variant={ACCOUNT_TYPE_VARIANT[account.accountType] ?? 'neutral'}>
+        <Badge variant={ACCOUNT_TYPE_VARIANT[account.accountType]}>
           {account.accountType.toUpperCase()}
         </Badge>
       </td>

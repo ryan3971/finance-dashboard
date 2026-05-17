@@ -26,6 +26,18 @@ export interface InvestmentTransactionRow {
   note: string | null;
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface InvestmentTransactionsResponse {
+  data: InvestmentTransactionRow[];
+  pagination: PaginationMeta;
+}
+
 export interface InvestmentSummaryResponse {
   year: number;
   dividendsReceived: number;

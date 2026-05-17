@@ -44,13 +44,13 @@ export const rebalancingKeys = {
 };
 
 export const investmentKeys = {
-  all: ['investments'] as const,
+  all: () => ['investments'] as const,
   transactions: (filters: InvestmentTransactionFilters) =>
-    [...investmentKeys.all, 'transactions', filters] as const,
-  summary: (year: number, accountId?: string) =>
-    [...investmentKeys.all, 'summary', year, accountId] as const,
+    [...investmentKeys.all(), 'transactions', filters] as const,
+  summary: (year: number) =>
+    [...investmentKeys.all(), 'summary', year] as const,
   contributionRoom: (year: number) =>
-    [...investmentKeys.all, 'contribution-room', year] as const,
+    [...investmentKeys.all(), 'contribution-room', year] as const,
 };
 
 export const dashboardKeys = {

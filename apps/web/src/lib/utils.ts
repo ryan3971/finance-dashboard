@@ -58,3 +58,12 @@ export function getMonthDateRange(year: number, month: number) {
 export function getYearDateRange(year: number) {
   return { start: `${year}-01-01`, end: `${year}-12-31` };
 }
+
+/** Formats an investment transaction amount with sign (+/-) and CAD currency. */
+export function fmtInvestmentAmount(amount: number): string {
+  const abs = new Intl.NumberFormat('en-CA', {
+    style: 'currency',
+    currency: 'CAD',
+  }).format(Math.abs(amount));
+  return amount < 0 ? `-${abs}` : `+${abs}`;
+}

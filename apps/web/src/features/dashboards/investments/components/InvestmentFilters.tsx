@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useAccounts } from '@/hooks/useAccounts';
 
 const INVESTMENT_TYPES = new Set(['tfsa', 'rrsp', 'fhsa', 'non-registered']);
+const SYMBOL_DEBOUNCE_MS = 300;
 
 const ACTION_OPTIONS = [
   { value: '', label: 'All actions' },
@@ -47,7 +48,7 @@ export function InvestmentFilters({ filters }: Props) {
       void navigate({
         search: (prev) => ({ ...prev, symbol: trimmed, page: undefined }),
       });
-    }, 300);
+    }, SYMBOL_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [symbolInput, filters.symbol, navigate]);
 
