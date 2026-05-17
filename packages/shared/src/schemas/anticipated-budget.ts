@@ -73,3 +73,12 @@ export const anticipatedBudgetEntrySchema = z.object({
 });
 
 export const anticipatedBudgetResponseSchema = z.array(anticipatedBudgetEntrySchema);
+
+// ─── Copy ─────────────────────────────────────────────────────────────────────
+
+export const copyAnticipatedBudgetSchema = z.object({
+  fromYear: z.number().int().min(2000).max(2100),
+  toYear: z.number().int().min(2000).max(2100),
+});
+
+export type CopyAnticipatedBudgetInput = z.infer<typeof copyAnticipatedBudgetSchema>;

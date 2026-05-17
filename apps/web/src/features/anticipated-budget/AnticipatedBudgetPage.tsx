@@ -10,7 +10,26 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { SummaryCards } from './components/SummaryCards';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useAnticipatedBudget } from './hooks/useAnticipatedBudget';
-import { useCreateEntry } from './hooks/useAnticipatedBudgetMutations';
+import { useCreateEntry, useCopyFromYear } from './hooks/useAnticipatedBudgetMutations';
+import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
+
+type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'amount-desc' | 'amount-asc';
+
+function yearlyTotal(entry: AnticipatedBudgetEntry): number {
+  return entry.months.reduce((sum, m) => sum + m.amount, 0);
+}
+
+function sortEntries(entries: AnticipatedBudgetEntry[], order: SortOrder): AnticipatedBudgetEntry[] {
+  if (order === 'default') return entries;
+  return [...entries].sort((a, b) => {
+    switch (order) {
+      case 'name-asc':  return a.name.localeCompare(b.name);
+      case 'name-desc': return b.name.localeCompare(a.name);
+      case 'amount-desc': return yearlyTotal(b) - yearlyTotal(a);
+      case 'amount-asc':  return yearlyTotal(a) - yearlyTotal(b);
+    }
+  });
+}
 
 export function AnticipatedBudgetPage() {
   const currentYear = new Date().getFullYear();
@@ -18,13 +37,17 @@ export function AnticipatedBudgetPage() {
 
   const [year, setYear] = useState(currentYear);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<SortOrder>('default');
 
   const { data: entries, isPending, isFetching } = useAnticipatedBudget(year);
   const showSkeleton = useDelayedPending(isPending);
   const createEntry = useCreateEntry();
+  const copyFromYear = useCopyFromYear();
 
-  const incomeEntries = entries?.filter((e) => e.isIncome) ?? [];
-  const expenseEntries = entries?.filter((e) => !e.isIncome) ?? [];
+  const sorted = sortEntries(entries ?? [], sortOrder);
+
+  const incomeEntries = sorted.filter((e) => e.isIncome);
+  const expenseEntries = sorted.filter((e) => !e.isIncome);
 
   const needEntries = expenseEntries.filter((e) => e.needWant === 'Need');
   const wantEntries = expenseEntries.filter((e) => e.needWant === 'Want');
@@ -65,7 +88,28 @@ export function AnticipatedBudgetPage() {
             </button>
           </div>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>Add Entry</Button>
+        <div className="flex items-center gap-2">
+          <select
+            className="select-base text-sm"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+            aria-label="Sort entries"
+          >
+            <option value="default">Default order</option>
+            <option value="name-asc">Name A→Z</option>
+            <option value="name-desc">Name Z→A</option>
+            <option value="amount-desc">Amount (high→low)</option>
+            <option value="amount-asc">Amount (low→high)</option>
+          </select>
+          <Button
+            variant="secondary"
+            disabled={copyFromYear.isPending}
+            onClick={() => copyFromYear.mutate({ fromYear: year - 1, toYear: year })}
+          >
+            {copyFromYear.isPending ? 'Copying…' : `Copy from ${year - 1}`}
+          </Button>
+          <Button onClick={() => setDialogOpen(true)}>Add Entry</Button>
+        </div>
       </div>
 
       {/* Loading */}

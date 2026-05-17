@@ -4,6 +4,7 @@ import type {
   UpsertMonthOverrideInput,
 } from '@finance/shared/schemas/anticipated-budget';
 import { and, eq, inArray } from 'drizzle-orm';
+import type { CopyAnticipatedBudgetResponse } from '@finance/shared/types/anticipated-budget';
 import Decimal from 'decimal.js';
 import {
   AnticipatedBudgetError,
@@ -227,6 +228,39 @@ export async function upsertMonthOverride(
       ],
       set: { amount: input.amount },
     });
+}
+
+export async function copyEntries(
+  userId: string,
+  fromYear: number,
+  toYear: number
+): Promise<CopyAnticipatedBudgetResponse> {
+  const rows = await db
+    .select(entryColumns)
+    .from(anticipatedBudget)
+    .where(
+      and(
+        eq(anticipatedBudget.userId, userId),
+        eq(anticipatedBudget.effectiveYear, fromYear)
+      )
+    );
+
+  if (rows.length === 0) return { copied: 0 };
+
+  await db.insert(anticipatedBudget).values(
+    rows.map((row) => ({
+      userId,
+      categoryId: row.categoryId,
+      name: row.name,
+      needWant: row.needWant,
+      isIncome: row.isIncome,
+      monthlyAmount: row.monthlyAmount,
+      notes: row.notes,
+      effectiveYear: toYear,
+    }))
+  );
+
+  return { copied: rows.length };
 }
 
 export async function deleteMonthOverride(

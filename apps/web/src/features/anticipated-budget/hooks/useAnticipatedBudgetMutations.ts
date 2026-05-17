@@ -1,5 +1,9 @@
-import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
 import type {
+  AnticipatedBudgetEntry,
+  CopyAnticipatedBudgetResponse,
+} from '@finance/shared/types/anticipated-budget';
+import type {
+  CopyAnticipatedBudgetInput,
   CreateAnticipatedBudgetInput,
   UpdateAnticipatedBudgetInput,
   UpsertMonthOverrideInput,
@@ -93,6 +97,28 @@ export function useUpsertMonthOverride() {
       toast.success(TOAST.BUDGET_MONTH_OVERRIDE_SAVED);
     },
     onError: () => toast.error(TOAST.BUDGET_MONTH_OVERRIDE_SAVE_FAILED),
+  });
+}
+
+export function useCopyFromYear() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CopyAnticipatedBudgetInput) => {
+      const { data } = await api.post<CopyAnticipatedBudgetResponse>(
+        '/anticipated-budget/copy',
+        input
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.copied === 0) {
+        toast.warning(TOAST.BUDGET_COPY_NONE);
+        return;
+      }
+      void queryClient.invalidateQueries({ queryKey: anticipatedBudgetKeys.all() });
+      toast.success(TOAST.BUDGET_COPY_SUCCESS);
+    },
+    onError: () => toast.error(TOAST.BUDGET_COPY_FAILED),
   });
 }
 

@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { createAnticipatedBudgetSchema } from '@finance/shared/schemas/anticipated-budget';
-import { createEntry, listEntries } from './anticipated-budget.service';
+import {
+  copyAnticipatedBudgetSchema,
+  createAnticipatedBudgetSchema,
+} from '@finance/shared/schemas/anticipated-budget';
+import { copyEntries, createEntry, listEntries } from './anticipated-budget.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import { z } from 'zod';
 
@@ -17,6 +20,13 @@ router.get('/', async (req: Request, res: Response) => {
   const { year } = yearQuerySchema.parse(req.query);
   const entries = await listEntries(getAuthUser(req).id, year);
   res.json(entries);
+});
+
+// POST /anticipated-budget/copy — must appear before POST / to keep the path unambiguous
+router.post('/copy', async (req: Request, res: Response) => {
+  const input = copyAnticipatedBudgetSchema.parse(req.body);
+  const result = await copyEntries(getAuthUser(req).id, input.fromYear, input.toYear);
+  res.status(201).json(result);
 });
 
 // POST /anticipated-budget
