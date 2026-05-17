@@ -15,6 +15,7 @@ const DASHBOARD_LINKS = [
   { to: '/dashboard/income' as const, label: 'Income' },
   { to: '/dashboard/expenses' as const, label: 'Expenses' },
   { to: '/dashboard/ytd' as const, label: 'YTD' },
+  { to: '/dashboard/investments' as const, label: 'Investments' },
 ];
 
 const MAIN_LINKS = [

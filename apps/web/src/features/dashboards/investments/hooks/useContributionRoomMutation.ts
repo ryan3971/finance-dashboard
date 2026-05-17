@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { investmentKeys } from '@/lib/queryKeys';
+import { TOAST } from '@/lib/toastMessages';
 import type { UpsertContributionRoomInput } from '@finance/shared/schemas/investments';
 
 interface UpsertParams {
@@ -19,6 +21,8 @@ export function useContributionRoomMutation() {
       void queryClient.invalidateQueries({
         queryKey: investmentKeys.contributionRoom(year),
       });
+      toast.success(TOAST.CONTRIBUTION_ROOM_SAVED);
     },
+    onError: () => toast.error(TOAST.CONTRIBUTION_ROOM_SAVE_FAILED),
   });
 }
