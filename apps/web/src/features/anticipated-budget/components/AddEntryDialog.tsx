@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
 import {
   type CreateAnticipatedBudgetInput,
   createAnticipatedBudgetSchema,
@@ -7,16 +6,11 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/Button';
-import { Controller, useForm } from 'react-hook-form';
-import { FormField } from '@/components/common/FormField';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { useCategories } from '@/hooks/useCategories';
+import { BudgetEntryFormFields } from './BudgetEntryFormFields';
+import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 interface Props {
@@ -46,17 +40,7 @@ export function AddEntryDialog({
   isPending,
   effectiveYear,
 }: Props) {
-  const { data: categories } = useCategories();
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    control,
-    reset,
-    setValue,
-    formState: { errors },
-  } = useForm<CreateAnticipatedBudgetInput>({
+  const methods = useForm<CreateAnticipatedBudgetInput>({
     resolver: zodResolver(createAnticipatedBudgetSchema),
     defaultValues: freshValues(effectiveYear),
   });
@@ -65,16 +49,8 @@ export function AddEntryDialog({
   // This also prevents effectiveYear from going stale when the user changes
   // the year selector while the dialog is already mounted.
   useEffect(() => {
-    if (open) reset(freshValues(effectiveYear));
-  }, [open, effectiveYear, reset]);
-
-  const isIncome = watch('isIncome');
-
-  function handleFormSubmit(data: CreateAnticipatedBudgetInput) {
-    onSubmit(data);
-    // Do not reset here — if the mutation fails the dialog stays open and the
-    // user's input is preserved. The useEffect above resets on next open.
-  }
+    if (open) methods.reset(freshValues(effectiveYear));
+  }, [open, effectiveYear, methods]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,124 +58,21 @@ export function AddEntryDialog({
         <DialogHeader>
           <DialogTitle>Add Budget Entry</DialogTitle>
         </DialogHeader>
-        <form
-          onSubmit={(e) => {
-            void handleSubmit(handleFormSubmit)(e);
-          }}
-          className="space-y-4"
-        >
-          <FormField label="Name" error={errors.name?.message}>
-            <Input placeholder="e.g. Rent" {...register('name')} />
-          </FormField>
-
-          <FormField label="Category" error={errors.categoryId?.message}>
-            <Select
-              {...register('categoryId', {
-                setValueAs: (v: string) => (v === '' ? null : v),
-              })}
-            >
-              <option value="">No category</option>
-              {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-
-          <FormField label="Type">
-            <label className="flex items-center gap-2 text-sm text-content-secondary cursor-pointer">
-              <Controller
-                name="isIncome"
-                control={control}
-                render={({ field }) => (
-                  <input
-                    type="checkbox"
-                    className="rounded"
-                    checked={field.value}
-                    onChange={(e) => {
-                      field.onChange(e.target.checked);
-                      if (e.target.checked) setValue('needWant', null);
-                    }}
-                  />
-                )}
-              />
-              <span>This is an income entry</span>
-            </label>
-          </FormField>
-
-          {!isIncome && (
-            <FormField label="Need / Want" error={errors.needWant?.message}>
-              <Controller
-                name="needWant"
-                control={control}
-                render={({ field }) => (
-                  <div className="flex gap-1">
-                    {NEED_WANT_OPTIONS.filter((o) => o !== 'NA').map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => field.onChange(opt)}
-                        className={`px-3 py-1 text-xs rounded border transition-colors ${
-                          field.value === opt
-                            ? 'bg-content-primary text-white border-content-primary'
-                            : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => field.onChange(null)}
-                      className={`px-3 py-1 text-xs rounded border transition-colors ${
-                        field.value === null
-                          ? 'bg-content-primary text-white border-content-primary'
-                          : 'border-border-strong text-content-secondary hover:bg-surface-subtle'
-                      }`}
-                    >
-                      Unset
-                    </button>
-                  </div>
-                )}
-              />
-            </FormField>
-          )}
-
-          <FormField
-            label="Default Monthly Amount"
-            error={errors.monthlyAmount?.message}
+        <FormProvider {...methods}>
+          <form
+            onSubmit={(e) => {
+              void methods.handleSubmit(onSubmit)(e);
+            }}
+            className="space-y-4"
           >
-            <Input
-              placeholder="e.g. 1500.00 (leave blank for overrides only)"
-              {...register('monthlyAmount', {
-                setValueAs: (v: string | null) => (!v || v.trim() === '' ? null : v.trim()),
-              })}
+            <BudgetEntryFormFields
+              isPending={isPending}
+              submitLabel="Add Entry"
+              pendingLabel="Adding…"
+              onCancel={() => onOpenChange(false)}
             />
-          </FormField>
-
-          <FormField label="Notes" error={errors.notes?.message}>
-            <Input
-              placeholder="e.g. Annual renewal paid in March"
-              {...register('notes', {
-                setValueAs: (v: string | null) => (!v || v.trim() === '' ? null : v.trim()),
-              })}
-            />
-          </FormField>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Adding…' : 'Add Entry'}
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );

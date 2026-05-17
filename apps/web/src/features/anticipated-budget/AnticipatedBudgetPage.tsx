@@ -1,40 +1,55 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { SectionHelp } from '@/components/common/SectionHelp';
 import { AddEntryDialog } from './components/AddEntryDialog';
 import { AnticipatedBudgetEntryCard } from './components/AnticipatedBudgetEntryCard';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SummaryCards } from './components/SummaryCards';
+import { YearSelector } from '@/components/common/YearSelector';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useAnticipatedBudget } from './hooks/useAnticipatedBudget';
 import { useCreateEntry, useCopyFromYear } from './hooks/useAnticipatedBudgetMutations';
 import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
 
-type SortOrder = 'default' | 'name-asc' | 'name-desc' | 'amount-desc' | 'amount-asc';
+const SORT_OPTIONS = [
+  { value: 'default',      label: 'Default order' },
+  { value: 'name-asc',     label: 'Name A→Z' },
+  { value: 'name-desc',    label: 'Name Z→A' },
+  { value: 'amount-desc',  label: 'Amount (high→low)' },
+  { value: 'amount-asc',   label: 'Amount (low→high)' },
+] as const;
 
-function yearlyTotal(entry: AnticipatedBudgetEntry): number {
-  return entry.months.reduce((sum, m) => sum + m.amount, 0);
-}
+type SortOrder = (typeof SORT_OPTIONS)[number]['value'];
 
-function sortEntries(entries: AnticipatedBudgetEntry[], order: SortOrder): AnticipatedBudgetEntry[] {
+function sortedEntries(entries: AnticipatedBudgetEntry[], order: SortOrder): AnticipatedBudgetEntry[] {
   if (order === 'default') return entries;
-  return [...entries].sort((a, b) => {
+
+  // Pre-compute yearly totals so each is calculated once, not once per comparison.
+  const withTotals = entries.map((e) => ({
+    entry: e,
+    total: e.months.reduce((sum, m) => sum + m.amount, 0),
+  }));
+
+  withTotals.sort((a, b) => {
     switch (order) {
-      case 'name-asc':  return a.name.localeCompare(b.name);
-      case 'name-desc': return b.name.localeCompare(a.name);
-      case 'amount-desc': return yearlyTotal(b) - yearlyTotal(a);
-      case 'amount-asc':  return yearlyTotal(a) - yearlyTotal(b);
+      case 'name-asc':    return a.entry.name.localeCompare(b.entry.name);
+      case 'name-desc':   return b.entry.name.localeCompare(a.entry.name);
+      case 'amount-desc': return b.total - a.total;
+      case 'amount-asc':  return a.total - b.total;
     }
   });
+
+  return withTotals.map((x) => x.entry);
 }
 
 export function AnticipatedBudgetPage() {
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
 
   const [year, setYear] = useState(currentYear);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -45,7 +60,12 @@ export function AnticipatedBudgetPage() {
   const createEntry = useCreateEntry();
   const copyFromYear = useCopyFromYear();
 
-  const sorted = sortEntries(entries ?? [], sortOrder);
+  const hasEntries = (entries?.length ?? 0) > 0;
+
+  const sorted = useMemo(
+    () => sortedEntries(entries ?? [], sortOrder),
+    [entries, sortOrder],
+  );
 
   const incomeEntries = sorted.filter((e) => e.isIncome);
   const expenseEntries = sorted.filter((e) => !e.isIncome);
@@ -56,7 +76,17 @@ export function AnticipatedBudgetPage() {
     (e) => e.needWant !== 'Need' && e.needWant !== 'Want'
   );
 
-  const isEmpty = !isPending && entries?.length === 0;
+  const isEmpty = !isPending && !hasEntries;
+
+  function handleYearChange(newYear: number) {
+    setYear(newYear);
+    setSortOrder('default');
+  }
+
+  function handleSortChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const match = SORT_OPTIONS.find((o) => o.value === e.target.value);
+    if (match) setSortOrder(match.value);
+  }
 
   return (
     <PageLayout>
@@ -69,41 +99,17 @@ export function AnticipatedBudgetPage() {
             </h1>
             <SectionHelp contentKey="anticipatedBudget.entryList" />
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              className="text-content-muted hover:text-content-primary transition-colors px-1"
-              onClick={() => setYear((y) => y - 1)}
-              aria-label="Previous year"
-            >
-              ‹
-            </button>
-            <span className="text-sm font-medium text-content-primary w-12 text-center">
-              {year}
-            </span>
-            <button
-              className="text-content-muted hover:text-content-primary transition-colors px-1"
-              onClick={() => setYear((y) => y + 1)}
-              aria-label="Next year"
-            >
-              ›
-            </button>
-          </div>
+          <YearSelector year={year} onChange={handleYearChange} />
         </div>
         <div className="flex items-center gap-2">
-          <Select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-            aria-label="Sort entries"
-          >
-            <option value="default">Default order</option>
-            <option value="name-asc">Name A→Z</option>
-            <option value="name-desc">Name Z→A</option>
-            <option value="amount-desc">Amount (high→low)</option>
-            <option value="amount-asc">Amount (low→high)</option>
+          <Select value={sortOrder} onChange={handleSortChange} aria-label="Sort entries">
+            {SORT_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </Select>
           <Button
             variant="secondary"
-            disabled={copyFromYear.isPending}
+            disabled={copyFromYear.isPending || hasEntries}
             onClick={() => copyFromYear.mutate({ fromYear: year - 1, toYear: year })}
           >
             {copyFromYear.isPending ? 'Copying…' : `Copy from ${year - 1}`}
@@ -139,10 +145,7 @@ export function AnticipatedBudgetPage() {
               </h2>
               <div className="space-y-2">
                 {incomeEntries.map((entry) => (
-                  <AnticipatedBudgetEntryCard
-                    key={entry.id}
-                    entry={entry}
-                  />
+                  <AnticipatedBudgetEntryCard key={entry.id} entry={entry} />
                 ))}
               </div>
             </section>
@@ -160,10 +163,7 @@ export function AnticipatedBudgetPage() {
                     <p className="text-xs font-medium text-info mb-1.5">Needs</p>
                     <div className="space-y-2">
                       {needEntries.map((entry) => (
-                        <AnticipatedBudgetEntryCard
-                          key={entry.id}
-                          entry={entry}
-                        />
+                        <AnticipatedBudgetEntryCard key={entry.id} entry={entry} />
                       ))}
                     </div>
                   </div>
@@ -173,10 +173,7 @@ export function AnticipatedBudgetPage() {
                     <p className="text-xs font-medium text-accent mb-1.5">Wants</p>
                     <div className="space-y-2">
                       {wantEntries.map((entry) => (
-                        <AnticipatedBudgetEntryCard
-                          key={entry.id}
-                          entry={entry}
-                        />
+                        <AnticipatedBudgetEntryCard key={entry.id} entry={entry} />
                       ))}
                     </div>
                   </div>
@@ -188,10 +185,7 @@ export function AnticipatedBudgetPage() {
                     </p>
                     <div className="space-y-2">
                       {otherEntries.map((entry) => (
-                        <AnticipatedBudgetEntryCard
-                          key={entry.id}
-                          entry={entry}
-                        />
+                        <AnticipatedBudgetEntryCard key={entry.id} entry={entry} />
                       ))}
                     </div>
                   </div>
@@ -201,7 +195,7 @@ export function AnticipatedBudgetPage() {
           )}
 
           {/* Summary cards */}
-          {entries.length > 0 && (
+          {hasEntries && (
             <SummaryCards entries={entries} month={currentMonth} />
           )}
         </div>

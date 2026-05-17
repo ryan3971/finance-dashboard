@@ -27,7 +27,6 @@ export function AnticipatedBudgetEntryCard({ entry }: Props) {
   const updateEntry = useUpdateEntry();
 
   const yearlyTotal = entry.months.reduce((sum, m) => sum + m.amount, 0);
-
   const overrideCount = entry.months.filter((m) => m.isOverride).length;
 
   return (
@@ -81,6 +80,7 @@ export function AnticipatedBudgetEntryCard({ entry }: Props) {
             className="text-content-muted hover:text-danger transition-colors text-xs"
             onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true); }}
             title="Delete entry"
+            aria-label="Delete entry"
           >
             ✕
           </button>
@@ -121,18 +121,20 @@ export function AnticipatedBudgetEntryCard({ entry }: Props) {
         onCancel={() => setConfirmingDelete(false)}
       />
 
-      <EditEntryDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        entry={entry}
-        isPending={updateEntry.isPending}
-        onSubmit={(patch) => {
-          updateEntry.mutate(
-            { id: entry.id, patch },
-            { onSuccess: () => setEditOpen(false) }
-          );
-        }}
-      />
+      {editOpen && (
+        <EditEntryDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          entry={entry}
+          isPending={updateEntry.isPending}
+          onSubmit={(data) => {
+            updateEntry.mutate(
+              { id: entry.id, patch: data },
+              { onSuccess: () => setEditOpen(false) }
+            );
+          }}
+        />
+      )}
     </div>
   );
 }
