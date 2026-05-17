@@ -36,8 +36,8 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/:id/accept', async (req: Request<{ id: string }>, res: Response) => {
   const { id } = idParamsSchema.parse(req.params);
   const input = acceptBodySchema.parse(req.body ?? {});
-  const rule = await acceptSuggestion(id, getAuthUser(req).id, input);
-  res.status(201).json(rule);
+  const { rule, retroactivelyApplied } = await acceptSuggestion(id, getAuthUser(req).id, input);
+  res.status(201).json({ ...rule, retroactivelyApplied });
 });
 
 // POST /api/v1/rule-suggestions/:id/dismiss

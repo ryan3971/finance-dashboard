@@ -19,10 +19,10 @@ import {
 import { CATEGORY_SOURCE } from '@finance/shared/constants';
 import type { NeedWant } from '@finance/shared/constants';
 import type { PatchTransactionInput } from '@finance/shared/types/transactions';
-import { db } from '@/db';
+import { db, type DbTransaction } from '@/db';
 import { assertDefined } from '@/lib/assert';
 import { updateGroupAfterMemberRemoval } from '@/pipelines/rebalancing/rebalancing-group-hooks';
-import { applyRules, loadRules } from '@/pipelines/categorization/rules-engine';
+import { applyRules, loadRules, type LoadedRule } from '@/pipelines/categorization/rules-engine';
 import type { RebalancingRole } from '@finance/shared/types/rebalancing';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -289,6 +289,8 @@ export async function patchTransaction(
   if (input.isInvestmentContribution !== undefined)
     updateData.isInvestmentContribution = txn.isIncome ? false : input.isInvestmentContribution;
 
+  let retroactivelyApplied = 0;
+
   await db.transaction(async (tx) => {
     await tx.update(transactions).set(updateData).where(eq(transactions.id, id));
 
@@ -318,6 +320,21 @@ export async function patchTransaction(
           needWant: input.needWant ?? null,
           priority: AUTO_RULE_PRIORITY,
         });
+
+        retroactivelyApplied = await applyRuleRetroactively(
+          tx,
+          {
+            keyword,
+            matchType: 'substring',
+            categoryId: input.categoryId,
+            subcategoryId: input.subcategoryId ?? null,
+            // 'NA' is a valid transaction needWant but not meaningful as a rule target
+            needWant: input.needWant === 'NA' ? null : (input.needWant ?? null),
+            sourceName: null,
+            flagForReview: false,
+          },
+          userId
+        );
       }
     }
   });
@@ -328,7 +345,7 @@ export async function patchTransaction(
     .where(eq(transactions.id, id))
     .limit(1);
 
-  return updated ?? null;
+  return updated ? { transaction: updated, retroactivelyApplied } : null;
 }
 
 // ─── Create (manual entry) ────────────────────────────────────────────────────
@@ -496,6 +513,112 @@ export async function removeTagFromTransaction(
     );
 
   return true;
+}
+
+// ─── Retroactive Rule Application ────────────────────────────────────────────
+
+export interface RetroactiveRule {
+  keyword: string;
+  matchType: 'substring' | 'wildcard';
+  categoryId: string | null;
+  subcategoryId: string | null;
+  needWant: NeedWant | null;
+  sourceName: string | null;
+  flagForReview: boolean;
+}
+
+/**
+ * Applies a single rule to all eligible transactions (categorySource in
+ * 'default' | 'ai', non-transfer) within an existing DB transaction. Intended
+ * to be called immediately after a rule is created so existing miscategorized
+ * transactions are corrected in the same atomic operation.
+ *
+ * Returns the number of transactions updated.
+ */
+export async function applyRuleRetroactively(
+  tx: DbTransaction,
+  rule: RetroactiveRule,
+  userId: string
+): Promise<number> {
+  const candidates = await tx
+    .select({
+      id: transactions.id,
+      description: transactions.description,
+      isIncome: transactions.isIncome,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        eq(transactions.isTransfer, false),
+        inArray(transactions.categorySource, [
+          CATEGORY_SOURCE.DEFAULT,
+          CATEGORY_SOURCE.AI,
+        ])
+      )
+    );
+
+  if (candidates.length === 0) return 0;
+
+  // TODO: For the substring case, a WHERE LOWER(description) LIKE '%keyword%' pre-filter
+  // would avoid loading all eligible transactions into memory. Fine at personal-finance
+  // scale; revisit if transaction counts grow into the tens of thousands.
+
+  // id/userId/priority are not used by applyRules — placeholders are fine here.
+  const loadedRule: LoadedRule = {
+    id: '',
+    userId,
+    keyword: rule.keyword,
+    matchType: rule.matchType,
+    categoryId: rule.categoryId,
+    subcategoryId: rule.subcategoryId,
+    needWant: rule.needWant,
+    sourceName: rule.sourceName,
+    flagForReview: rule.flagForReview,
+    priority: 0,
+  };
+
+  const now = new Date();
+  const sharedValues = {
+    categoryId: rule.flagForReview ? null : rule.categoryId,
+    subcategoryId: rule.flagForReview ? null : rule.subcategoryId,
+    sourceName: rule.sourceName,
+    categorySource: CATEGORY_SOURCE.RULE,
+    categoryConfidence: String(CONFIDENCE.RULE),
+    flaggedForReview: rule.flagForReview,
+    updatedAt: now,
+  };
+
+  const incomeIds: string[] = [];
+  const expenseIds: string[] = [];
+
+  for (const candidate of candidates) {
+    if (!applyRules(candidate.description, [loadedRule])) continue;
+    if (candidate.isIncome) {
+      incomeIds.push(candidate.id);
+    } else {
+      expenseIds.push(candidate.id);
+    }
+  }
+
+  const total = incomeIds.length + expenseIds.length;
+  if (total === 0) return 0;
+
+  if (incomeIds.length > 0) {
+    await tx
+      .update(transactions)
+      .set({ ...sharedValues, needWant: null })
+      .where(inArray(transactions.id, incomeIds));
+  }
+  if (expenseIds.length > 0) {
+    await tx
+      .update(transactions)
+      .set({ ...sharedValues, needWant: rule.needWant })
+      .where(inArray(transactions.id, expenseIds));
+  }
+
+  return total;
 }
 
 // ─── Apply Rules ──────────────────────────────────────────────────────────────

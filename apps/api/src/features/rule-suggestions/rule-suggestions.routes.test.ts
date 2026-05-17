@@ -5,6 +5,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { ruleSuggestionFixture } from '@/testing/fixtures/rule-suggestion.fixture';
 import { categoryFixture } from '@/testing/fixtures/category.fixture';
+import { accountFixture } from '@/testing/fixtures/account.fixture';
+import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
+import { db } from '@/db';
+import { eq } from 'drizzle-orm';
+import { transactions } from '@/db/schema';
 
 const app = createApp();
 
@@ -265,6 +270,188 @@ describe('POST /api/v1/rule-suggestions/:id/accept', () => {
       .set('Authorization', `Bearer ${accessToken}`);
     expect(listRes.status).toBe(200);
     expect(listRes.body).toEqual([]);
+  });
+
+  it('response includes retroactivelyApplied count', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const cat = await categoryFixture({ userId: user.id, name: 'Food' });
+    const suggestion = await ruleSuggestionFixture({
+      userId: user.id,
+      suggestedKeyword: 'MCDONALDS',
+      categoryId: cat.id,
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/rule-suggestions/${suggestion.id}/accept`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    const body = res.body as { retroactivelyApplied: number };
+    expect(typeof body.retroactivelyApplied).toBe('number');
+  });
+
+  it('retroactively updates matching AI-categorized transactions when a suggestion is accepted', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const cat = await categoryFixture({ userId: user.id, name: 'Food' });
+    const account = await accountFixture(user.id);
+
+    // Transaction with AI-assigned category whose description matches the suggestion keyword
+    const txn = await transactionFixture(account.id, {
+      description: 'mcdonalds',
+      categorySource: 'ai',
+      categoryId: null,
+      flaggedForReview: false,
+    });
+
+    const suggestion = await ruleSuggestionFixture({
+      userId: user.id,
+      suggestedKeyword: 'mcdonalds',
+      categoryId: cat.id,
+      transactionId: txn.id,
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/rule-suggestions/${suggestion.id}/accept`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    const body = res.body as { retroactivelyApplied: number };
+    expect(body.retroactivelyApplied).toBe(1);
+
+    // Verify the transaction was updated in the DB
+    const [updated] = await db
+      .select({ categoryId: transactions.categoryId, categorySource: transactions.categorySource })
+      .from(transactions)
+      .where(eq(transactions.id, txn.id));
+    expect(updated).toMatchObject({ categoryId: cat.id, categorySource: 'rule' });
+  });
+
+  it('does not retroactively update manually-categorized transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const cat = await categoryFixture({ userId: user.id, name: 'Food' });
+    const account = await accountFixture(user.id);
+
+    const txn = await transactionFixture(account.id, {
+      description: 'mcdonalds',
+      categorySource: 'manual',
+      categoryId: cat.id,
+      flaggedForReview: false,
+    });
+
+    const suggestion = await ruleSuggestionFixture({
+      userId: user.id,
+      suggestedKeyword: 'mcdonalds',
+      categoryId: cat.id,
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/rule-suggestions/${suggestion.id}/accept`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    expect((res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe(0);
+
+    // Manual categorization must be preserved
+    const [after] = await db
+      .select({ categorySource: transactions.categorySource })
+      .from(transactions)
+      .where(eq(transactions.id, txn.id));
+    expect(after?.categorySource).toBe('manual');
+  });
+
+  it('does not retroactively update transfer transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const cat = await categoryFixture({ userId: user.id, name: 'Food' });
+    const account = await accountFixture(user.id);
+
+    const txn = await transactionFixture(account.id, {
+      description: 'mcdonalds',
+      categorySource: 'ai',
+      categoryId: null,
+      isTransfer: true,
+    });
+
+    const suggestion = await ruleSuggestionFixture({
+      userId: user.id,
+      suggestedKeyword: 'mcdonalds',
+      categoryId: cat.id,
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/rule-suggestions/${suggestion.id}/accept`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    expect((res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe(0);
+
+    const [after] = await db
+      .select({ categorySource: transactions.categorySource })
+      .from(transactions)
+      .where(eq(transactions.id, txn.id));
+    expect(after?.categorySource).toBe('ai');
+  });
+
+  it('returns retroactivelyApplied: 0 when no transactions match the rule keyword', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const cat = await categoryFixture({ userId: user.id, name: 'Food' });
+    const account = await accountFixture(user.id);
+
+    // Transaction that does NOT match the keyword
+    await transactionFixture(account.id, {
+      description: 'starbucks',
+      categorySource: 'ai',
+      categoryId: null,
+    });
+
+    const suggestion = await ruleSuggestionFixture({
+      userId: user.id,
+      suggestedKeyword: 'mcdonalds',
+      categoryId: cat.id,
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/rule-suggestions/${suggestion.id}/accept`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+
+    expect(res.status).toBe(201);
+    expect((res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe(0);
+  });
+
+  it('coerces needWant to null for income transactions during retroactive application', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const cat = await categoryFixture({ userId: user.id, name: 'Income' });
+    const account = await accountFixture(user.id);
+
+    const txn = await transactionFixture(account.id, {
+      description: 'employer payroll',
+      categorySource: 'ai',
+      categoryId: null,
+      isIncome: true,
+      amount: '3000.00',
+    });
+
+    const suggestion = await ruleSuggestionFixture({
+      userId: user.id,
+      suggestedKeyword: 'employer',
+      categoryId: cat.id,
+      needWant: 'Need',
+    });
+
+    await request(app)
+      .post(`/api/v1/rule-suggestions/${suggestion.id}/accept`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({});
+
+    const [after] = await db
+      .select({ needWant: transactions.needWant, categorySource: transactions.categorySource })
+      .from(transactions)
+      .where(eq(transactions.id, txn.id));
+    expect(after).toMatchObject({ needWant: null, categorySource: 'rule' });
   });
 });
 

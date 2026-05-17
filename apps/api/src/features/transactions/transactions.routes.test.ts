@@ -519,6 +519,119 @@ describe('PATCH /api/v1/transactions/:id', () => {
     expect(rules.some((r) => r.categoryId === categoryId)).toBe(true);
   });
 
+  it('response always includes retroactivelyApplied field', async () => {
+    const { accessToken } = await setupWithImport();
+    const txn = await getFirstTransaction(app, accessToken);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId });
+
+    expect(res.status).toBe(200);
+    expect(typeof (res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe('number');
+  });
+
+  it('retroactively applies the new rule to other matching AI-categorized transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const account = await accountFixture(user.id);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    // Two transactions with matching description, one with 'ai' source
+    const target = await transactionFixture(account.id, {
+      description: 'netflix streaming',
+      categorySource: 'ai',
+      categoryId: null,
+    });
+    const source = await transactionFixture(account.id, {
+      description: 'netflix streaming',
+      categorySource: 'default',
+      categoryId: null,
+    });
+
+    // Patch one of them and save a rule
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${source.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId, createRule: true });
+
+    expect(res.status).toBe(200);
+    const body = res.body as { retroactivelyApplied: number };
+    // The patched transaction itself is now 'manual' so only the other one is counted
+    expect(body.retroactivelyApplied).toBe(1);
+
+    // Verify the other transaction was updated
+    const [updated] = await db
+      .select({ categoryId: transactions.categoryId, categorySource: transactions.categorySource })
+      .from(transactions)
+      .where(eq(transactions.id, target.id));
+    expect(updated).toMatchObject({ categoryId, categorySource: 'rule' });
+  });
+
+  it('does not include the patched transaction itself in retroactivelyApplied', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const account = await accountFixture(user.id);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    const txn = await transactionFixture(account.id, {
+      description: 'netflix streaming',
+      categorySource: 'ai',
+      categoryId: null,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId, createRule: true });
+
+    expect(res.status).toBe(200);
+    // The patched transaction is now 'manual' — excluded from retroactive candidates
+    expect((res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe(0);
+  });
+
+  it('retroactivelyApplied is 0 when createRule is false', async () => {
+    const { accessToken } = await setupWithImport();
+    const txn = await getFirstTransaction(app, accessToken);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId, createRule: false });
+
+    expect(res.status).toBe(200);
+    expect((res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe(0);
+  });
+
+  it('retroactivelyApplied is 0 when a rule with the same keyword already exists', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const account = await accountFixture(user.id);
+    const categoryId = await getCategoryId(app, accessToken, 'Food');
+
+    const txn = await transactionFixture(account.id, {
+      description: 'netflix streaming',
+      categorySource: 'ai',
+      categoryId: null,
+    });
+
+    // Pre-insert a rule with the same keyword so the service skips creation
+    await db.insert(categorizationRules).values({
+      userId: user.id,
+      keyword: 'netflix streaming',
+      categoryId,
+      priority: 5,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId, createRule: true });
+
+    expect(res.status).toBe(200);
+    expect((res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe(0);
+  });
+
   it('returns 404 for unknown id', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)

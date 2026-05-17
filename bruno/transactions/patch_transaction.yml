@@ -25,6 +25,12 @@ http:
     type: bearer
     token: "{{token}}"
 
+# Response shape (200):
+# {
+#   ...transactionFields,
+#   retroactivelyApplied: number   ← other matching transactions updated when createRule:true created a new rule
+# }
+
 settings:
   encodeUrl: true
   timeout: 0

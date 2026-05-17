@@ -3,6 +3,7 @@ import { categories, ruleSuggestions } from '@/db/schema';
 import { db } from '@/db';
 import { and, desc, eq } from 'drizzle-orm';
 import { createRule } from '@/features/categorization-rules/categorization-rules.service';
+import { applyRuleRetroactively } from '@/features/transactions/transactions.service';
 import { AUTO_RULE_PRIORITY } from '@/lib/constants';
 import type { AcceptSuggestionInput } from '@finance/shared/types/rule-suggestions';
 import { RuleSuggestionError, RuleSuggestionErrorCode } from './rule-suggestions.errors';
@@ -100,12 +101,26 @@ export async function acceptSuggestion(
       tx
     );
 
+    const retroactivelyApplied = await applyRuleRetroactively(
+      tx,
+      {
+        keyword:      rule.keyword,
+        matchType:    rule.matchType,
+        categoryId:   rule.categoryId,
+        subcategoryId: rule.subcategoryId,
+        needWant:     rule.needWant ?? null,
+        sourceName:   rule.sourceName,
+        flagForReview: rule.flagForReview,
+      },
+      userId
+    );
+
     await tx
       .update(ruleSuggestions)
       .set({ status: 'accepted' })
       .where(eq(ruleSuggestions.id, id));
 
-    return rule;
+    return { rule, retroactivelyApplied };
   });
 }
 
