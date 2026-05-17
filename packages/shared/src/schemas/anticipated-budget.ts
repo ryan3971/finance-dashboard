@@ -73,3 +73,31 @@ export const anticipatedBudgetEntrySchema = z.object({
 });
 
 export const anticipatedBudgetResponseSchema = z.array(anticipatedBudgetEntrySchema);
+
+// ─── Copy ─────────────────────────────────────────────────────────────────────
+
+export const copyAnticipatedBudgetSchema = z
+  .object({
+    fromYear: z.number().int().min(2000).max(2100),
+    toYear: z.number().int().min(2000).max(2100),
+  })
+  .refine((v) => v.fromYear !== v.toYear, {
+    message: 'fromYear and toYear must be different',
+    path: ['toYear'],
+  });
+
+export type CopyAnticipatedBudgetInput = z.infer<typeof copyAnticipatedBudgetSchema>;
+
+// ─── Edit form ────────────────────────────────────────────────────────────────
+
+// All entry fields required (for the form) but without effectiveYear (which
+// the PATCH endpoint does not accept). Separate from updateAnticipatedBudgetSchema
+// which is partial/.partial() for the API boundary.
+export const editAnticipatedBudgetSchema = anticipatedBudgetBaseSchema
+  .omit({ effectiveYear: true })
+  .refine(
+    (data) => !(data.isIncome && data.needWant !== null && data.needWant !== undefined),
+    needWantNullForIncome,
+  );
+
+export type EditAnticipatedBudgetInput = z.infer<typeof editAnticipatedBudgetSchema>;

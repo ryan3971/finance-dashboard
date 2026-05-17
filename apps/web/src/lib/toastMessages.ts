@@ -60,6 +60,10 @@ export const TOAST = {
   BUDGET_MONTH_OVERRIDE_SAVE_FAILED: 'Failed to save override',
   BUDGET_MONTH_OVERRIDE_REMOVED: 'Override removed',
   BUDGET_MONTH_OVERRIDE_REMOVE_FAILED: 'Failed to remove override',
+  BUDGET_COPY_SUCCESS: 'Entries copied',
+  BUDGET_COPY_FAILED: 'Failed to copy entries',
+  BUDGET_COPY_NONE: 'No entries found for the selected year',
+  BUDGET_COPY_TARGET_NOT_EMPTY: 'This year already has entries. Clear them first or use Add Entry.',
   // Rebalancing Groups
   REBALANCING_GROUP_CREATED: 'Group created',
   REBALANCING_GROUP_CREATE_FAILED: 'Failed to create group',

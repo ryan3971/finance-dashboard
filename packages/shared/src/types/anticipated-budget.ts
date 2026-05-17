@@ -8,3 +8,4 @@ import type {
 export type AnticipatedBudgetMonth = z.infer<typeof anticipatedBudgetMonthSchema>;
 export type AnticipatedBudgetEntry = z.infer<typeof anticipatedBudgetEntrySchema>;
 export type AnticipatedBudgetResponse = z.infer<typeof anticipatedBudgetResponseSchema>;
+export type CopyAnticipatedBudgetResponse = { copied: number };

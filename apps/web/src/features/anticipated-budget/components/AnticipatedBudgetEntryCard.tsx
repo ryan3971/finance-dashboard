@@ -1,12 +1,14 @@
 import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
 import { Badge } from '@/components/ui/Badge';
 import { DeleteEntryDialog } from './DeleteEntryDialog';
+import { EditEntryDialog } from './EditEntryDialog';
 import { MonthChips } from './MonthChips';
 import { fmt } from '@/lib/utils';
 import { useState } from 'react';
 import {
   useDeleteEntry,
   useDeleteMonthOverride,
+  useUpdateEntry,
   useUpsertMonthOverride,
 } from '../hooks/useAnticipatedBudgetMutations';
 
@@ -17,13 +19,14 @@ interface Props {
 export function AnticipatedBudgetEntryCard({ entry }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const upsertOverride = useUpsertMonthOverride();
   const deleteOverride = useDeleteMonthOverride();
   const deleteEntry = useDeleteEntry();
+  const updateEntry = useUpdateEntry();
 
   const yearlyTotal = entry.months.reduce((sum, m) => sum + m.amount, 0);
-
   const overrideCount = entry.months.filter((m) => m.isOverride).length;
 
   return (
@@ -54,7 +57,7 @@ export function AnticipatedBudgetEntryCard({ entry }: Props) {
           )}
         </button>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 group">
           <div className="text-right">
             <p className="text-xs text-content-muted">
               {entry.monthlyAmount !== null
@@ -66,9 +69,18 @@ export function AnticipatedBudgetEntryCard({ entry }: Props) {
             </p>
           </div>
           <button
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-content-muted hover:text-content-primary text-xs"
+            onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
+            title="Edit entry"
+            aria-label="Edit entry"
+          >
+            ✎
+          </button>
+          <button
             className="text-content-muted hover:text-danger transition-colors text-xs"
-            onClick={() => setConfirmingDelete(true)}
+            onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true); }}
             title="Delete entry"
+            aria-label="Delete entry"
           >
             ✕
           </button>
@@ -108,6 +120,21 @@ export function AnticipatedBudgetEntryCard({ entry }: Props) {
         onConfirm={() => deleteEntry.mutate(entry.id)}
         onCancel={() => setConfirmingDelete(false)}
       />
+
+      {editOpen && (
+        <EditEntryDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          entry={entry}
+          isPending={updateEntry.isPending}
+          onSubmit={(data) => {
+            updateEntry.mutate(
+              { id: entry.id, patch: data },
+              { onSuccess: () => setEditOpen(false) }
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

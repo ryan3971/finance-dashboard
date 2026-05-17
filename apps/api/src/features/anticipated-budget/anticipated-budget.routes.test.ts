@@ -606,3 +606,207 @@ describe('DELETE /api/v1/anticipated-budget/:id/months/:month', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('POST /api/v1/anticipated-budget/copy', () => {
+  it('returns 401 without auth', async () => {
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .send({ fromYear: 2024, toYear: 2025 });
+    expect(res.status).toBe(401);
+  });
+
+  it('copies entries from fromYear to toYear and returns { copied: N }', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const create1 = await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...baseEntry, name: 'Rent', effectiveYear: 2024 });
+    expect(create1.status).toBe(201);
+
+    const create2 = await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...baseEntry, name: 'Groceries', effectiveYear: 2024 });
+    expect(create2.status).toBe(201);
+
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ copied: 2 });
+
+    const list = await request(app)
+      .get('/api/v1/anticipated-budget?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(list.status).toBe(200);
+    expect(list.body).toHaveLength(2);
+    expect(list.body as AnticipatedBudgetEntry[]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'Rent', effectiveYear: 2025 }),
+        expect.objectContaining({ name: 'Groceries', effectiveYear: 2025 }),
+      ])
+    );
+  });
+
+  it('copied entries have 12 resolved months at the default amount', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const create = await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...baseEntry, effectiveYear: 2024 });
+    expect(create.status).toBe(201);
+
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+    expect(res.status).toBe(201);
+
+    const list = await request(app)
+      .get('/api/v1/anticipated-budget?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const [entry] = list.body as [AnticipatedBudgetEntry];
+    expect(entry.months).toHaveLength(12);
+    expect(entry.months[0]).toMatchObject({ month: 1, amount: 1500, isOverride: false });
+  });
+
+  it('does not copy month overrides', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const create = await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...baseEntry, effectiveYear: 2024 });
+    expect(create.status).toBe(201);
+    const { id } = create.body as { id: string };
+
+    await request(app)
+      .put(`/api/v1/anticipated-budget/${id}/months/6`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ amount: '9999.00' });
+
+    await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+
+    const list = await request(app)
+      .get('/api/v1/anticipated-budget?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const [entry] = list.body as [AnticipatedBudgetEntry];
+    const june = entry.months.find((m) => m.month === 6);
+    // Override from 2024 must not appear — June should revert to default amount
+    expect(june).toMatchObject({ month: 6, amount: 1500, isOverride: false });
+  });
+
+  it('returns 201 with { copied: 0 } when fromYear has no entries', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2020, toYear: 2025 });
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ copied: 0 });
+  });
+
+  it('returns 400 when fromYear equals toYear', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2025, toYear: 2025 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('returns 409 when toYear already has entries', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...baseEntry, effectiveYear: 2024 });
+
+    const first = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+    expect(first.status).toBe(201);
+
+    const second = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+    expect(second.status).toBe(409);
+
+    // Verify no duplication occurred
+    const list = await request(app)
+      .get('/api/v1/anticipated-budget?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(list.body).toHaveLength(1);
+  });
+
+  it('returns 400 for missing fromYear', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ toYear: 2025 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('returns 400 for a year below the allowed range', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 1999, toYear: 2025 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('returns 400 for a year above the allowed range', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2101 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('isolates between users — user B cannot copy user A entries', async () => {
+    const [{ accessToken: accessTokenA }, { accessToken: accessTokenB }] =
+      await Promise.all([
+        registerUser(app, 'a@example.com'),
+        registerUser(app, 'b@example.com'),
+      ]);
+
+    await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessTokenA}`)
+      .send({ ...baseEntry, effectiveYear: 2024 });
+
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessTokenB}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+
+    expect(res.status).toBe(201);
+    // User B's fromYear is empty — nothing to copy
+    expect(res.body).toEqual({ copied: 0 });
+
+    const list = await request(app)
+      .get('/api/v1/anticipated-budget?year=2025')
+      .set('Authorization', `Bearer ${accessTokenB}`);
+    expect(list.body).toHaveLength(0);
+  });
+});

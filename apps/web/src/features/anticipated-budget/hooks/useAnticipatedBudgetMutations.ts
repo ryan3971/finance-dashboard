@@ -1,5 +1,9 @@
-import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
 import type {
+  AnticipatedBudgetEntry,
+  CopyAnticipatedBudgetResponse,
+} from '@finance/shared/types/anticipated-budget';
+import type {
+  CopyAnticipatedBudgetInput,
   CreateAnticipatedBudgetInput,
   UpdateAnticipatedBudgetInput,
   UpsertMonthOverrideInput,
@@ -7,6 +11,7 @@ import type {
 import { TOAST } from '@/lib/toastMessages';
 import { anticipatedBudgetKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
+import axios from 'axios';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -93,6 +98,34 @@ export function useUpsertMonthOverride() {
       toast.success(TOAST.BUDGET_MONTH_OVERRIDE_SAVED);
     },
     onError: () => toast.error(TOAST.BUDGET_MONTH_OVERRIDE_SAVE_FAILED),
+  });
+}
+
+export function useCopyFromYear() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CopyAnticipatedBudgetInput) => {
+      const { data } = await api.post<CopyAnticipatedBudgetResponse>(
+        '/anticipated-budget/copy',
+        input
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.copied === 0) {
+        toast.warning(TOAST.BUDGET_COPY_NONE);
+        return;
+      }
+      void queryClient.invalidateQueries({ queryKey: anticipatedBudgetKeys.all() });
+      toast.success(TOAST.BUDGET_COPY_SUCCESS);
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        toast.error(TOAST.BUDGET_COPY_TARGET_NOT_EMPTY);
+      } else {
+        toast.error(TOAST.BUDGET_COPY_FAILED);
+      }
+    },
   });
 }
 
