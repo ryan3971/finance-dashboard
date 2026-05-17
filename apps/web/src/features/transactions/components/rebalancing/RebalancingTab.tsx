@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useRebalancingGroups } from '@/features/transactions/hooks/useRebalancingGroups';
 import { RebalancingGroupCard } from './RebalancingGroupCard';
+import { RebalancingFilterBar, type StatusFilter } from './RebalancingFilterBar';
+import { RebalancingStatsBar } from './RebalancingStatsBar';
 
 const SKELETON_COUNT = Array.from({ length: 3 }, (_, i) => `skeleton-${i}`);
 
@@ -36,6 +39,8 @@ function GroupSkeleton() {
 export function RebalancingTab() {
   const { data, isPending, isError } = useRebalancingGroups();
   const showSkeleton = useDelayedPending(isPending);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [labelSearch, setLabelSearch] = useState('');
 
   if (showSkeleton) {
     return (
@@ -81,11 +86,39 @@ export function RebalancingTab() {
     return b.createdAt.localeCompare(a.createdAt);
   });
 
+  const query = labelSearch.trim().toLowerCase();
+  const filtered = sorted.filter((g) => {
+    if (statusFilter === 'flagged' && !g.flaggedForReview) return false;
+    if (statusFilter === 'open' && g.status !== 'open') return false;
+    if (statusFilter === 'resolved' && g.status !== 'resolved') return false;
+    if (query && !g.label.toLowerCase().includes(query)) return false;
+    return true;
+  });
+
   return (
-    <div className="space-y-3 mt-4">
-      {sorted.map((group) => (
-        <RebalancingGroupCard key={group.id} group={group} />
-      ))}
+    <div className="mt-4 space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <RebalancingStatsBar groups={groups} />
+        <RebalancingFilterBar
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+          labelSearch={labelSearch}
+          onLabelSearch={setLabelSearch}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          message="No groups match your filters."
+          hint="Try a different status tab or clear the search."
+        />
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((group) => (
+            <RebalancingGroupCard key={group.id} group={group} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
