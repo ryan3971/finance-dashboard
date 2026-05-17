@@ -11,6 +11,7 @@ import type {
 import { TOAST } from '@/lib/toastMessages';
 import { anticipatedBudgetKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
+import axios from 'axios';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -118,7 +119,13 @@ export function useCopyFromYear() {
       void queryClient.invalidateQueries({ queryKey: anticipatedBudgetKeys.all() });
       toast.success(TOAST.BUDGET_COPY_SUCCESS);
     },
-    onError: () => toast.error(TOAST.BUDGET_COPY_FAILED),
+    onError: (error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        toast.error(TOAST.BUDGET_COPY_TARGET_NOT_EMPTY);
+      } else {
+        toast.error(TOAST.BUDGET_COPY_FAILED);
+      }
+    },
   });
 }
 

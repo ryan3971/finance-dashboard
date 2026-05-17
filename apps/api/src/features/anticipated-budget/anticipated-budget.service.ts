@@ -235,6 +235,21 @@ export async function copyEntries(
   fromYear: number,
   toYear: number
 ): Promise<CopyAnticipatedBudgetResponse> {
+  const [toYearEntry] = await db
+    .select({ id: anticipatedBudget.id })
+    .from(anticipatedBudget)
+    .where(
+      and(
+        eq(anticipatedBudget.userId, userId),
+        eq(anticipatedBudget.effectiveYear, toYear)
+      )
+    )
+    .limit(1);
+
+  if (toYearEntry) {
+    throw new AnticipatedBudgetError(AnticipatedBudgetErrorCode.COPY_TARGET_NOT_EMPTY);
+  }
+
   const rows = await db
     .select(entryColumns)
     .from(anticipatedBudget)

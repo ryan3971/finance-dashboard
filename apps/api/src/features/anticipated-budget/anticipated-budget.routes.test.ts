@@ -716,6 +716,43 @@ describe('POST /api/v1/anticipated-budget/copy', () => {
     expect(res.body).toEqual({ copied: 0 });
   });
 
+  it('returns 400 when fromYear equals toYear', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2025, toYear: 2025 });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation error' });
+  });
+
+  it('returns 409 when toYear already has entries', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ ...baseEntry, effectiveYear: 2024 });
+
+    const first = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+    expect(first.status).toBe(201);
+
+    const second = await request(app)
+      .post('/api/v1/anticipated-budget/copy')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fromYear: 2024, toYear: 2025 });
+    expect(second.status).toBe(409);
+
+    // Verify no duplication occurred
+    const list = await request(app)
+      .get('/api/v1/anticipated-budget?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(list.body).toHaveLength(1);
+  });
+
   it('returns 400 for missing fromYear', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)

@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { NEED_WANT_OPTIONS } from '@finance/shared/constants';
 import {
-  createAnticipatedBudgetSchema,
-  type CreateAnticipatedBudgetInput,
+  editAnticipatedBudgetSchema,
+  type EditAnticipatedBudgetInput,
   type UpdateAnticipatedBudgetInput,
 } from '@finance/shared/schemas/anticipated-budget';
 import type { AnticipatedBudgetEntry } from '@finance/shared/types/anticipated-budget';
@@ -29,7 +29,7 @@ interface Props {
   readonly onSubmit: (patch: UpdateAnticipatedBudgetInput) => void;
 }
 
-function entryToFormValues(entry: AnticipatedBudgetEntry): CreateAnticipatedBudgetInput {
+function entryToFormValues(entry: AnticipatedBudgetEntry): EditAnticipatedBudgetInput {
   return {
     name: entry.name,
     categoryId: entry.categoryId,
@@ -37,7 +37,6 @@ function entryToFormValues(entry: AnticipatedBudgetEntry): CreateAnticipatedBudg
     isIncome: entry.isIncome,
     monthlyAmount: entry.monthlyAmount !== null ? String(entry.monthlyAmount) : null,
     notes: entry.notes,
-    effectiveYear: entry.effectiveYear,
   };
 }
 
@@ -58,8 +57,8 @@ export function EditEntryDialog({
     reset,
     setValue,
     formState: { errors },
-  } = useForm<CreateAnticipatedBudgetInput>({
-    resolver: zodResolver(createAnticipatedBudgetSchema),
+  } = useForm<EditAnticipatedBudgetInput>({
+    resolver: zodResolver(editAnticipatedBudgetSchema),
     defaultValues: entryToFormValues(entry),
   });
 
@@ -70,8 +69,8 @@ export function EditEntryDialog({
 
   const isIncome = watch('isIncome');
 
-  function handleFormSubmit({ effectiveYear: _year, ...patch }: CreateAnticipatedBudgetInput) {
-    onSubmit(patch);
+  function handleFormSubmit(data: EditAnticipatedBudgetInput) {
+    onSubmit(data);
   }
 
   return (
