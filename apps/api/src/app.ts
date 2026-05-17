@@ -19,6 +19,8 @@ import helmet from 'helmet';
 import healthRouter from './routes/health.routes';
 import { httpLogger } from './middleware/logger';
 import importsRouter from './features/imports/imports.routes';
+import investmentsRouter from './features/investments/investments.routes';
+import investmentsMutationRouter from './features/investments/investments-mutation.routes';
 import rateLimit from 'express-rate-limit';
 import tagsRouter from './features/tags/tags.routes';
 import transactionsMutationRouter from './features/transactions/transactions-mutation.routes';
@@ -104,6 +106,7 @@ export function createApp() {
   app.use('/api/v1/categories', categoriesRouter);
   app.use('/api/v1/categorization-rules', categorizationRulesRouter);
   app.use('/api/v1/rule-suggestions', ruleSuggestionsRouter);
+  app.use('/api/v1/investments', investmentsRouter, investmentsMutationRouter);
   app.use('/api/v1/rebalancing', rebalancingRouter);
   app.use('/api/v1/transfers', transfersRouter);
   app.use('/api/v1/tags', tagsRouter);
