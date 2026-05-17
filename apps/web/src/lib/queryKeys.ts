@@ -1,3 +1,5 @@
+import type { InvestmentTransactionFilters } from '@finance/shared/schemas/investments';
+
 // TODO: this may be where I also have any keys with dashboard refresh, since a change in transactions, accounts, or anticipated budget should trigger a dashboard refresh. For now, I'm just relying on the fact that the dashboard queries are all set to refetchOnWindowFocus: true, so they'll refresh when the user navigates back to the dashboard after making changes elsewhere. But if I want more real-time updates to the dashboard while the user is still on it, I may need to add some shared keys here and use queryClient.invalidateQueries(dashboardKeys.all()) after any relevant mutations.
 // This also may be something that is done in the mutation
 export const transactionKeys = {
@@ -39,6 +41,16 @@ export const rebalancingKeys = {
   all: () => ['rebalancing'] as const,
   groups: () => ['rebalancing', 'groups'] as const,
   group: (id: string) => ['rebalancing', 'groups', id] as const,
+};
+
+export const investmentKeys = {
+  all: ['investments'] as const,
+  transactions: (filters: InvestmentTransactionFilters) =>
+    [...investmentKeys.all, 'transactions', filters] as const,
+  summary: (year: number, accountId?: string) =>
+    [...investmentKeys.all, 'summary', year, accountId] as const,
+  contributionRoom: (year: number) =>
+    [...investmentKeys.all, 'contribution-room', year] as const,
 };
 
 export const dashboardKeys = {
