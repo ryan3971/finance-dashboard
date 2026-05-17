@@ -1,0 +1,21 @@
+Transaction Date,Settlement Date,Action,Symbol,Description,Quantity,Price,Gross Amount,Commission,Net Amount,Currency,Account #,Activity Type,Account Type
+2024-01-15,2024-01-17,CON,,Cash Contribution,,,,,7000.00,CAD,10000001,Deposits,Individual TFSA
+2024-01-22,2024-01-24,Buy,VFV,Vanguard FTSE Canada All Cap ETF,50.000000,120.0000,6000.00,4.95,-6004.95,CAD,10000001,Trades,Individual TFSA
+2024-02-01,2024-02-03,DIV,VFV,Vanguard FTSE Canada All Cap ETF - Dividend,,,45.00,,45.00,CAD,10000001,Dividends,Individual TFSA
+2024-02-15,2024-02-17,DIV,VEQT,Vanguard All-Equity ETF Portfolio - Dividend,,,35.00,,35.00,CAD,10000001,Dividends,Individual TFSA
+2024-03-01,2024-03-03,REI,VFV,Vanguard FTSE Canada All Cap ETF - Reinvestment,0.100000,120.0000,12.00,,-12.00,CAD,10000001,Other,Individual TFSA
+2024-03-15,2024-03-17,,,Vanguard FTSE Canada All Cap ETF - Distribution,,,8.75,,8.75,CAD,10000001,Dividends,Individual TFSA
+2024-04-01,2024-04-03,TF6,,Transfer In - Broker Transfer,,,,,5000.00,CAD,10000001,Transfers,Individual TFSA
+2024-04-15,2024-04-17,,,Vanguard All-Equity ETF Portfolio - Distribution,,,6.25,,6.25,CAD,10000001,Dividends,Individual TFSA
+2024-05-10,2024-05-12,Sell,VCN,Vanguard FTSE Canada ETF - Sell,10.000000,42.0000,420.00,4.95,415.05,CAD,10000001,Trades,Individual TFSA
+2024-06-30,2024-07-02,FCH,,Quarterly Management Fee,,,,,-15.00,CAD,10000001,Fees,Individual TFSA
+2024-01-15,2024-01-17,CON,,RRSP Contribution,,,,,29210.00,CAD,20000002,Deposits,Individual RRSP
+2024-01-22,2024-01-24,Buy,VXC,Vanguard FTSE Global ex Canada ETF,100.000000,43.0000,4300.00,4.95,-4304.95,CAD,20000002,Trades,Individual RRSP
+2024-03-01,2024-03-03,Sell,VXC,Vanguard FTSE Global ex Canada ETF,20.000000,45.0000,900.00,4.95,895.05,CAD,20000002,Trades,Individual RRSP
+2024-07-15,2024-07-17,WDW,,RRSP Withdrawal,,,,,-5000.00,CAD,20000002,Withdrawals,Individual RRSP
+2024-09-30,2024-10-02,FCH,,Quarterly Fee,,,,,-15.00,CAD,20000002,Fees,Individual RRSP
+2024-01-15,2024-01-17,CON,,FHSA Contribution,,,,,8000.00,CAD,30000003,Deposits,Individual FHSA
+2024-01-22,2024-01-24,Buy,VFV,Vanguard FTSE Canada All Cap ETF,30.000000,120.0000,3600.00,4.95,-3604.95,CAD,30000003,Trades,Individual FHSA
+2024-03-01,2024-03-03,Buy,VEQT,Vanguard All-Equity ETF Portfolio,50.000000,42.0000,2100.00,4.95,-2104.95,CAD,30000003,Trades,Individual FHSA
+2024-05-15,2024-05-17,Sell,VFV,Vanguard FTSE Canada All Cap ETF - Partial Sell,5.000000,125.0000,625.00,4.95,620.05,CAD,30000003,Trades,Individual FHSA
+2024-09-30,2024-10-02,FCH,,Quarterly Fee,,,,,-10.00,CAD,30000003,Fees,Individual FHSA

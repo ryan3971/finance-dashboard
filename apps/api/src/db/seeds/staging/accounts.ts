@@ -23,4 +23,16 @@ export const STAGING_ACCOUNTS = [
     institution: 'td',
     isCredit: false,
   },
+  {
+    name: 'Questrade TFSA',
+    type: 'tfsa',
+    institution: 'questrade',
+    isCredit: false,
+  },
+  {
+    name: 'Questrade RRSP',
+    type: 'rrsp',
+    institution: 'questrade',
+    isCredit: false,
+  },
 ];

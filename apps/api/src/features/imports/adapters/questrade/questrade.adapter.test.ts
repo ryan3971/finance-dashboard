@@ -1,6 +1,3 @@
-// IGNORE THIS FILE FOR NOW
-
-/*
 import * as fs from 'fs';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
@@ -77,7 +74,6 @@ describe('QuestradeAdapter', () => {
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'test-account-id');
 
-    // Empty-action rows have Activity Type = "Dividends"
     const emptyActionRows = results.filter((r) => r.rawAction === '');
     expect(emptyActionRows.length).toBeGreaterThan(0);
     emptyActionRows.forEach((r) => expect(r.action).toBe('dividend'));
@@ -103,14 +99,12 @@ describe('QuestradeAdapter', () => {
     expect(Number(rei.netAmount)).toBeLessThan(0);
   });
 
-  it('compositeKey includes accountId prefix after import service rewrite', () => {
+  it('compositeKey includes account number prefix', () => {
     const content = fs.readFileSync(FIXTURE, 'utf-8');
     const rows = parseCsv(content);
     const results = adapter.parse(rows, 'test-account-id');
-    // compositeKey uses accountNumber from the file, not the passed accountId
     const r0 = results[0];
     assertDefined(r0, 'Expected results[0]');
     expect(r0.compositeKey).toMatch(/^10000001-/);
   });
 });
-*/

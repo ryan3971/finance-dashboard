@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { accounts, contributionRecords } from '@/db/schema';
 import type {
@@ -198,12 +198,16 @@ export async function upsertContributionRoom(
   body: UpsertContributionRoomBody
 ): Promise<void> {
   const [account] = await db
-    .select({ type: accounts.type })
+    .select({ userId: accounts.userId, type: accounts.type })
     .from(accounts)
-    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
+    .where(eq(accounts.id, accountId));
 
   if (!account) {
     throw new InvestmentError(InvestmentErrorCode.INVESTMENT_ACCOUNT_NOT_FOUND);
+  }
+
+  if (account.userId !== userId) {
+    throw new InvestmentError(InvestmentErrorCode.INVESTMENT_ACCOUNT_FORBIDDEN);
   }
 
   if (!(REGISTERED_ACCOUNT_TYPES as readonly string[]).includes(account.type)) {

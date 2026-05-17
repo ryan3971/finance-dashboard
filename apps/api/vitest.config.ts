@@ -21,8 +21,6 @@ export default defineConfig({
     env: { BCRYPT_ROUNDS: '4', ENABLE_AI_CATEGORIZATION: 'false' },
     exclude: [
       '**/node_modules/**',
-      'src/features/imports/questrade-import.routes.test.ts',
-      'src/features/imports/adapters/questrade/questrade.adapter.test.ts',
     ],
   },
 });
