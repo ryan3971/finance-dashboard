@@ -6,7 +6,7 @@ import { useRebalancingGroups } from '@/features/transactions/hooks/useRebalanci
 import { RebalancingGroupCard } from './RebalancingGroupCard';
 import { RebalancingFilterBar } from './RebalancingFilterBar';
 import { RebalancingStatsBar } from './RebalancingStatsBar';
-import type { StatusFilter } from './rebalancingTypes';
+import type { StatusFilter } from '../../types/rebalancingTypes';
 
 const SKELETON_COUNT = Array.from({ length: 3 }, (_, i) => `skeleton-${i}`);
 

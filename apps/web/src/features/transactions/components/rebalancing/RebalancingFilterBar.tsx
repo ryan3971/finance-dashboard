@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { StatusFilter } from './rebalancingTypes';
+import type { StatusFilter } from '../../types/rebalancingTypes';
 
 const STATUS_TABS: { label: string; value: StatusFilter }[] = [
   { label: 'All', value: 'all' },
