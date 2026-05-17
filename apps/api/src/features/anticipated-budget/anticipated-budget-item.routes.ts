@@ -53,8 +53,7 @@ router.put('/:id/months/:month', async (req: Request, res: Response) => {
 // DELETE /anticipated-budget/:id/months/:month
 router.delete('/:id/months/:month', async (req: Request, res: Response) => {
   const { id, month } = monthRouteParamsSchema.parse(req.params);
-  const found = await deleteMonthOverride(id, getAuthUser(req).id, month);
-  if (!found) throw new AnticipatedBudgetError(AnticipatedBudgetErrorCode.MONTH_OVERRIDE_NOT_FOUND);
+  await deleteMonthOverride(id, getAuthUser(req).id, month);
   res.status(204).send();
 });
 

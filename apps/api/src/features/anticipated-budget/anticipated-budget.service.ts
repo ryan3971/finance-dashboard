@@ -41,6 +41,12 @@ const monthColumns = {
   amount: anticipatedBudgetMonths.amount,
 };
 
+// Drizzle returns numeric columns as strings. Convert to number at the
+// response boundary; keep Decimal arithmetic elsewhere to avoid float drift.
+function toAmount(raw: string | null): number | null {
+  return raw !== null ? new Decimal(raw).toNumber() : null;
+}
+
 function resolveMonths(
   monthlyAmount: string | null,
   overrides: { month: number; amount: string }[]
@@ -79,6 +85,9 @@ async function requireOwnedEntry(entryId: string, userId: string) {
   }
 }
 
+// Extra round-trip for single-row mutations: acceptable cost for create/update
+// since those are always single-row operations. listEntries uses a join for the
+// bulk path — do not call this helper from any function that loops over rows.
 async function resolveCategoryColumns(categoryId: string | null) {
   if (!categoryId) return { categoryName: null, categoryIcon: null };
   const [row] = await db
@@ -126,10 +135,7 @@ export async function listEntries(userId: string, year: number) {
     categoryIcon: row.categoryIcon,
     needWant: row.needWant,
     isIncome: row.isIncome,
-    monthlyAmount:
-      row.monthlyAmount !== null
-        ? new Decimal(row.monthlyAmount).toNumber()
-        : null,
+    monthlyAmount: toAmount(row.monthlyAmount),
     notes: row.notes,
     effectiveYear: row.effectiveYear,
     months: resolveMonths(
@@ -153,10 +159,7 @@ export async function createEntry(
 
   return {
     ...row,
-    monthlyAmount:
-      row.monthlyAmount !== null
-        ? new Decimal(row.monthlyAmount).toNumber()
-        : null,
+    monthlyAmount: toAmount(row.monthlyAmount),
     ...category,
     months: resolveMonths(row.monthlyAmount, []),
   };
@@ -187,10 +190,7 @@ export async function updateEntry(
 
   return {
     ...row,
-    monthlyAmount:
-      row.monthlyAmount !== null
-        ? new Decimal(row.monthlyAmount).toNumber()
-        : null,
+    monthlyAmount: toAmount(row.monthlyAmount),
     ...category,
     months: resolveMonths(
       row.monthlyAmount,
@@ -235,54 +235,60 @@ export async function copyEntries(
   fromYear: number,
   toYear: number
 ): Promise<CopyAnticipatedBudgetResponse> {
-  const [toYearEntry] = await db
-    .select({ id: anticipatedBudget.id })
-    .from(anticipatedBudget)
-    .where(
-      and(
-        eq(anticipatedBudget.userId, userId),
-        eq(anticipatedBudget.effectiveYear, toYear)
+  return db.transaction(async (tx) => {
+    const [toYearEntry] = await tx
+      .select({ id: anticipatedBudget.id })
+      .from(anticipatedBudget)
+      .where(
+        and(
+          eq(anticipatedBudget.userId, userId),
+          eq(anticipatedBudget.effectiveYear, toYear)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (toYearEntry) {
-    throw new AnticipatedBudgetError(AnticipatedBudgetErrorCode.COPY_TARGET_NOT_EMPTY);
-  }
+    if (toYearEntry) {
+      throw new AnticipatedBudgetError(AnticipatedBudgetErrorCode.COPY_TARGET_NOT_EMPTY);
+    }
 
-  const rows = await db
-    .select(entryColumns)
-    .from(anticipatedBudget)
-    .where(
-      and(
-        eq(anticipatedBudget.userId, userId),
-        eq(anticipatedBudget.effectiveYear, fromYear)
-      )
+    const rows = await tx
+      .select(entryColumns)
+      .from(anticipatedBudget)
+      .where(
+        and(
+          eq(anticipatedBudget.userId, userId),
+          eq(anticipatedBudget.effectiveYear, fromYear)
+        )
+      );
+
+    if (rows.length === 0) return { copied: 0 };
+
+    // Intentional: month overrides are not copied. The copy produces a clean
+    // baseline that the user can adjust per-month for the new year.
+    await tx.insert(anticipatedBudget).values(
+      rows.map((row) => ({
+        userId,
+        categoryId: row.categoryId,
+        name: row.name,
+        needWant: row.needWant,
+        isIncome: row.isIncome,
+        monthlyAmount: row.monthlyAmount,
+        notes: row.notes,
+        effectiveYear: toYear,
+      }))
     );
 
-  if (rows.length === 0) return { copied: 0 };
-
-  await db.insert(anticipatedBudget).values(
-    rows.map((row) => ({
-      userId,
-      categoryId: row.categoryId,
-      name: row.name,
-      needWant: row.needWant,
-      isIncome: row.isIncome,
-      monthlyAmount: row.monthlyAmount,
-      notes: row.notes,
-      effectiveYear: toYear,
-    }))
-  );
-
-  return { copied: rows.length };
+    return { copied: rows.length };
+  });
 }
 
+// Throws MONTH_OVERRIDE_NOT_FOUND when the override does not exist so the
+// route layer does not need to inspect the return value.
 export async function deleteMonthOverride(
   entryId: string,
   userId: string,
   month: number
-) {
+): Promise<void> {
   await requireOwnedEntry(entryId, userId);
 
   const result = await db
@@ -295,5 +301,7 @@ export async function deleteMonthOverride(
     )
     .returning({ id: anticipatedBudgetMonths.id });
 
-  return result.length > 0;
+  if (result.length === 0) {
+    throw new AnticipatedBudgetError(AnticipatedBudgetErrorCode.MONTH_OVERRIDE_NOT_FOUND);
+  }
 }
