@@ -5,10 +5,16 @@ import {
   investmentTransactions,
 } from '@/db/schema';
 import { db } from '@/db';
-import type { InvestmentTransactionFilters } from '@finance/shared/schemas/investments';
+import type {
+  InvestmentTransactionFilters,
+  UpsertContributionRoomInput,
+} from '@finance/shared/schemas/investments';
 
 export const REGISTERED_ACCOUNT_TYPES = ['tfsa', 'rrsp', 'fhsa'] as const;
 export type RegisteredAccountType = (typeof REGISTERED_ACCOUNT_TYPES)[number];
+
+// Single named constant for the TFSA type, used for the carry-forward estimate branch.
+export const TFSA_TYPE = 'tfsa' as const;
 
 export interface InvestmentTransactionDbRow {
   id: string;
@@ -39,7 +45,10 @@ export interface ActivitySummaryDbRow {
 export interface RegisteredAccountRow {
   id: string;
   name: string;
-  type: string;
+  // Narrowed at the query boundary: the WHERE inArray clause guarantees this is
+  // always a registered type — the cast in queryRegisteredAccounts is the single
+  // point where the DB's string type is widened to the known union.
+  type: RegisteredAccountType;
 }
 
 export interface ContributionRecordDbRow {
@@ -160,7 +169,7 @@ export async function queryActivitySummary(
 export async function queryRegisteredAccounts(
   userId: string
 ): Promise<RegisteredAccountRow[]> {
-  return db
+  const rows = await db
     .select({
       id: accounts.id,
       name: accounts.name,
@@ -173,6 +182,10 @@ export async function queryRegisteredAccounts(
         inArray(accounts.type, [...REGISTERED_ACCOUNT_TYPES]),
       )
     );
+
+  // The WHERE inArray clause guarantees every returned row has a RegisteredAccountType.
+  // Drizzle cannot narrow text columns from WHERE predicates, so we cast once here.
+  return rows as RegisteredAccountRow[];
 }
 
 export async function queryContributionRecords(
@@ -227,4 +240,45 @@ export async function queryContributionAggregates(
       )
     )
     .groupBy(investmentTransactions.accountId);
+}
+
+export async function queryAccountOwnerAndType(
+  accountId: string
+): Promise<{ userId: string; type: string } | undefined> {
+  const [row] = await db
+    .select({ userId: accounts.userId, type: accounts.type })
+    .from(accounts)
+    .where(eq(accounts.id, accountId));
+  return row;
+}
+
+export async function upsertContributionRoomRecord(
+  accountId: string,
+  year: number,
+  body: UpsertContributionRoomInput
+): Promise<void> {
+  const updateSet = {
+    ...(body.annualLimit !== undefined ? { annualLimit: String(body.annualLimit) } : {}),
+    ...(body.roomCarried !== undefined ? { roomCarried: String(body.roomCarried) } : {}),
+    ...(body.roomCarriedConfirmed !== undefined
+      ? { roomCarriedConfirmed: body.roomCarriedConfirmed }
+      : {}),
+  };
+
+  const insertQuery = db.insert(contributionRecords).values({
+    accountId,
+    taxYear: year,
+    annualLimit: body.annualLimit !== undefined ? String(body.annualLimit) : undefined,
+    roomCarried: body.roomCarried !== undefined ? String(body.roomCarried) : undefined,
+    roomCarriedConfirmed: body.roomCarriedConfirmed ?? false,
+  });
+
+  if (Object.keys(updateSet).length > 0) {
+    await insertQuery.onConflictDoUpdate({
+      target: [contributionRecords.accountId, contributionRecords.taxYear],
+      set: updateSet,
+    });
+  } else {
+    await insertQuery.onConflictDoNothing();
+  }
 }

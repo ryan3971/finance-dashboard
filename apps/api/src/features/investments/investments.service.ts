@@ -1,22 +1,26 @@
 import Decimal from 'decimal.js';
-import { eq } from 'drizzle-orm';
-import { db } from '@/db';
-import { accounts, contributionRecords } from '@/db/schema';
 import type {
   AccountContributionSummary,
   ContributionRoomResponse,
   InvestmentSummaryResponse,
   InvestmentTransactionRow,
 } from '@finance/shared/types/investments';
-import type { InvestmentTransactionFilters } from '@finance/shared/schemas/investments';
+import type {
+  InvestmentTransactionFilters,
+  UpsertContributionRoomInput,
+} from '@finance/shared/schemas/investments';
 import {
   REGISTERED_ACCOUNT_TYPES,
+  TFSA_TYPE,
+  queryAccountOwnerAndType,
   queryActivitySummary,
   queryContributionAggregates,
   queryContributionRecords,
   queryPaginatedTransactions,
   queryRegisteredAccounts,
-  type RegisteredAccountType,
+  upsertContributionRoomRecord,
+  type ContributionAggRow,
+  type ContributionRecordDbRow,
 } from './investments.repository';
 import { InvestmentError, InvestmentErrorCode } from './investments.errors';
 
@@ -27,10 +31,29 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-interface UpsertContributionRoomBody {
-  annualLimit?: number;
-  roomCarried?: number;
-  roomCarriedConfirmed?: boolean;
+// Derives the TFSA carry-forward room estimate from prior-year data (spec Section 3.2).
+// Returns null when prior-year annualLimit is unknown — a partial estimate is worse than none.
+function estimateRoomCarried(
+  priorRecord: ContributionRecordDbRow | undefined,
+  priorAgg: ContributionAggRow | undefined
+): number | null {
+  if (priorRecord?.annualLimit === null || priorRecord?.annualLimit === undefined) {
+    return null;
+  }
+
+  const priorAnnualLimit = new Decimal(priorRecord.annualLimit);
+  const priorRoomCarried =
+    priorRecord.roomCarried !== null && priorRecord.roomCarried !== undefined
+      ? new Decimal(priorRecord.roomCarried)
+      : new Decimal(0);
+  const priorContributions = new Decimal(priorAgg?.contributions ?? '0');
+  const priorWithdrawals = new Decimal(priorAgg?.withdrawals ?? '0');
+
+  return priorAnnualLimit
+    .plus(priorRoomCarried)
+    .plus(priorWithdrawals)
+    .minus(priorContributions)
+    .toNumber();
 }
 
 export async function getInvestmentTransactions(
@@ -103,7 +126,7 @@ export async function getContributionRoom(
 
   const accountIds = registeredAccounts.map((a) => a.id);
   const tfsaAccountIds = registeredAccounts
-    .filter((a) => a.type === 'tfsa')
+    .filter((a) => a.type === TFSA_TYPE)
     .map((a) => a.id);
   const priorYear = year - 1;
 
@@ -140,28 +163,16 @@ export async function getContributionRoom(
 
     if (record?.roomCarried !== null && record?.roomCarried !== undefined) {
       roomCarried = new Decimal(record.roomCarried).toNumber();
-      // roomCarriedIsEstimate is true when the record hasn't been explicitly confirmed
       roomCarriedIsEstimate = !record.roomCarriedConfirmed;
-    } else if (account.type === 'tfsa') {
+    } else if (account.type === TFSA_TYPE) {
       // Derive an estimate from prior-year data (spec Section 3.2).
       // Only when prior-year annualLimit is known — a partial estimate is worse than none.
-      const priorRecord = priorRecordByAccount.get(account.id);
-      const priorAgg = priorAggByAccount.get(account.id);
-
-      if (priorRecord?.annualLimit !== null && priorRecord?.annualLimit !== undefined) {
-        const priorAnnualLimit = new Decimal(priorRecord.annualLimit);
-        const priorRoomCarried =
-          priorRecord.roomCarried !== null && priorRecord.roomCarried !== undefined
-            ? new Decimal(priorRecord.roomCarried)
-            : new Decimal(0);
-        const priorContributions = new Decimal(priorAgg?.contributions ?? '0');
-        const priorWithdrawals = new Decimal(priorAgg?.withdrawals ?? '0');
-
-        roomCarried = priorAnnualLimit
-          .plus(priorRoomCarried)
-          .plus(priorWithdrawals)
-          .minus(priorContributions)
-          .toNumber();
+      const estimate = estimateRoomCarried(
+        priorRecordByAccount.get(account.id),
+        priorAggByAccount.get(account.id)
+      );
+      if (estimate !== null) {
+        roomCarried = estimate;
         roomCarriedIsEstimate = true;
       }
     }
@@ -178,7 +189,7 @@ export async function getContributionRoom(
     return {
       accountId: account.id,
       accountName: account.name,
-      accountType: account.type as RegisteredAccountType,
+      accountType: account.type,
       annualLimit,
       roomCarried,
       roomCarriedIsEstimate,
@@ -195,12 +206,9 @@ export async function upsertContributionRoom(
   userId: string,
   accountId: string,
   year: number,
-  body: UpsertContributionRoomBody
+  body: UpsertContributionRoomInput
 ): Promise<void> {
-  const [account] = await db
-    .select({ userId: accounts.userId, type: accounts.type })
-    .from(accounts)
-    .where(eq(accounts.id, accountId));
+  const account = await queryAccountOwnerAndType(accountId);
 
   if (!account) {
     throw new InvestmentError(InvestmentErrorCode.INVESTMENT_ACCOUNT_NOT_FOUND);
@@ -210,32 +218,11 @@ export async function upsertContributionRoom(
     throw new InvestmentError(InvestmentErrorCode.INVESTMENT_ACCOUNT_FORBIDDEN);
   }
 
-  if (!(REGISTERED_ACCOUNT_TYPES as readonly string[]).includes(account.type)) {
+  // Widen to string[] so TypeScript accepts the string argument to includes.
+  const registeredTypes: readonly string[] = REGISTERED_ACCOUNT_TYPES;
+  if (!registeredTypes.includes(account.type)) {
     throw new InvestmentError(InvestmentErrorCode.INVALID_ACCOUNT_TYPE_FOR_ROOM);
   }
 
-  const updateSet = {
-    ...(body.annualLimit !== undefined ? { annualLimit: String(body.annualLimit) } : {}),
-    ...(body.roomCarried !== undefined ? { roomCarried: String(body.roomCarried) } : {}),
-    ...(body.roomCarriedConfirmed !== undefined
-      ? { roomCarriedConfirmed: body.roomCarriedConfirmed }
-      : {}),
-  };
-
-  const insertQuery = db.insert(contributionRecords).values({
-    accountId,
-    taxYear: year,
-    annualLimit: body.annualLimit !== undefined ? String(body.annualLimit) : undefined,
-    roomCarried: body.roomCarried !== undefined ? String(body.roomCarried) : undefined,
-    roomCarriedConfirmed: body.roomCarriedConfirmed ?? false,
-  });
-
-  if (Object.keys(updateSet).length > 0) {
-    await insertQuery.onConflictDoUpdate({
-      target: [contributionRecords.accountId, contributionRecords.taxYear],
-      set: updateSet,
-    });
-  } else {
-    await insertQuery.onConflictDoNothing();
-  }
+  await upsertContributionRoomRecord(accountId, year, body);
 }
