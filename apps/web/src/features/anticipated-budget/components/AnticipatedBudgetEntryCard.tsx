@@ -79,7 +79,7 @@ export function AnticipatedBudgetEntryCard({ entry }: Props) {
           </button>
           <button
             className="text-content-muted hover:text-danger transition-colors text-xs"
-            onClick={() => setConfirmingDelete(true)}
+            onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true); }}
             title="Delete entry"
           >
             ✕

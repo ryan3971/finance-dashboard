@@ -4,6 +4,7 @@ import { SectionHelp } from '@/components/common/SectionHelp';
 import { AddEntryDialog } from './components/AddEntryDialog';
 import { AnticipatedBudgetEntryCard } from './components/AnticipatedBudgetEntryCard';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -89,8 +90,7 @@ export function AnticipatedBudgetPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            className="select-base text-sm"
+          <Select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as SortOrder)}
             aria-label="Sort entries"
@@ -100,7 +100,7 @@ export function AnticipatedBudgetPage() {
             <option value="name-desc">Name Z→A</option>
             <option value="amount-desc">Amount (high→low)</option>
             <option value="amount-asc">Amount (low→high)</option>
-          </select>
+          </Select>
           <Button
             variant="secondary"
             disabled={copyFromYear.isPending}
