@@ -14,12 +14,19 @@ import { InvestmentFilters } from './components/InvestmentFilters';
 import { InvestmentSkeleton } from './components/InvestmentSkeleton';
 import { InvestmentTransactionsTable } from './components/InvestmentTransactionsTable';
 import { ManualInvestmentTransactionPanel } from './components/ManualInvestmentTransactionPanel';
+import { MonthlyBreakdownTable } from './components/MonthlyBreakdownTable';
+import { YtdProgressSection } from './components/YtdProgressSection';
 import { useContributionRoom } from './hooks/useContributionRoom';
 import { useInvestmentSummary } from './hooks/useInvestmentSummary';
 import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
+import { useMonthlyBreakdown } from './hooks/useMonthlyBreakdown';
 
 export function InvestmentsPage() {
-  const [year, setYear] = useState(() => new Date().getFullYear());
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  const [year, setYear] = useState(() => currentYear);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const search = useSearch({ from: '/dashboard/investments' });
@@ -59,6 +66,11 @@ export function InvestmentsPage() {
     isFetching: roomFetching,
     isError: roomError,
   } = useContributionRoom(year);
+
+  const {
+    data: breakdownData,
+    isFetching: breakdownFetching,
+  } = useMonthlyBreakdown(year);
 
   const {
     data: txData,
@@ -113,6 +125,33 @@ export function InvestmentsPage() {
 
               {roomData && (
                 <ContributionRoomCard data={roomData} isFetching={roomFetching} />
+              )}
+
+              {breakdownData && roomData && (
+                <YtdProgressSection
+                  months={breakdownData.months}
+                  selectedYear={year}
+                  currentYear={currentYear}
+                  currentMonth={currentMonth}
+                  accounts={roomData.accounts}
+                />
+              )}
+
+              {breakdownData && (
+                <div
+                  className={cn(
+                    'transition-opacity duration-200',
+                    breakdownFetching && 'opacity-50'
+                  )}
+                >
+                  <MonthlyBreakdownTable
+                    months={breakdownData.months}
+                    totals={breakdownData.totals}
+                    currentMonth={currentMonth}
+                    currentYear={currentYear}
+                    selectedYear={year}
+                  />
+                </div>
               )}
             </div>
           )}

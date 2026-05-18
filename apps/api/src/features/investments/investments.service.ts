@@ -6,6 +6,11 @@ import type {
   InvestmentTransactionRow,
 } from '@finance/shared/types/investments';
 import type {
+  MonthlyBreakdownResponse,
+  MonthlyBreakdownRow,
+  MonthlyBreakdownTotals,
+} from '@finance/shared/types/investments-monthly-breakdown';
+import type {
   CreateManualInvestmentTransactionInput,
   InvestmentTransactionFilters,
   UpsertContributionRoomInput,
@@ -18,6 +23,8 @@ import {
   queryActivitySummary,
   queryContributionAggregates,
   queryContributionRecords,
+  queryInvestmentAccountIds,
+  queryMonthlyBreakdownRaw,
   queryPaginatedTransactions,
   queryRegisteredAccounts,
   upsertContributionRoomRecord,
@@ -28,6 +35,10 @@ import { InvestmentError, InvestmentErrorCode } from './investments.errors';
 import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
 import { TRANSACTION_SOURCE } from '@/lib/constants';
 import { insertInvestmentTransaction } from '@/pipelines/investments/investment-insert';
+import { resolveMonthlyIncome } from '@/lib/anticipated-income-query';
+import { queryDashboardUserConfig } from '@/lib/user-config-query';
+
+const MONTHS_IN_YEAR = 12;
 
 interface PaginationMeta {
   page: number;
@@ -270,6 +281,80 @@ export async function createManualInvestmentTransaction(
     activityType: row.activityType,
     note:         row.note,
     source:       row.source,
+  };
+}
+
+export async function getMonthlyBreakdown(
+  userId: string,
+  year: number
+): Promise<MonthlyBreakdownResponse> {
+  const [accountIds, config, monthlyIncome] = await Promise.all([
+    queryInvestmentAccountIds(userId),
+    queryDashboardUserConfig(userId),
+    resolveMonthlyIncome(userId, year),
+  ]);
+
+  const rawRows = await queryMonthlyBreakdownRaw(accountIds, year);
+
+  const investmentsPercentage = config.investmentsPercentage;
+
+  // Index DB rows by month for O(1) lookup.
+  const dbByMonth = new Map(rawRows.map((r) => [r.month, r]));
+
+  // Check whether any income is configured for the year — if all months are zero
+  // and there are no income entries, targets should be null rather than zero.
+  const hasIncomeConfigured = monthlyIncome.some((m) => m.amount !== 0);
+
+  const months: MonthlyBreakdownRow[] = Array.from({ length: MONTHS_IN_YEAR }, (_, i) => {
+    const month = i + 1;
+    const dbRow = dbByMonth.get(month);
+
+    const contributed = dbRow ? new Decimal(dbRow.contributed).toNumber() : 0;
+    const deployed = dbRow ? new Decimal(dbRow.deployed).toNumber() : 0;
+    const uninvestedDelta = new Decimal(contributed).plus(deployed).toNumber();
+
+    let target: number | null = null;
+    if (investmentsPercentage !== null && hasIncomeConfigured) {
+      const income = monthlyIncome[i]?.amount ?? 0;
+      target = new Decimal(income)
+        .times(investmentsPercentage)
+        .dividedBy(100)
+        .toDecimalPlaces(2)
+        .toNumber();
+    }
+
+    return { month, contributed, deployed, uninvestedDelta, target };
+  });
+
+  const anyNullTarget = months.some((m) => m.target === null);
+
+  const totals: MonthlyBreakdownTotals = months.reduce(
+    (acc, m) => ({
+      contributed: new Decimal(acc.contributed).plus(m.contributed).toNumber(),
+      deployed: new Decimal(acc.deployed).plus(m.deployed).toNumber(),
+      uninvestedDelta: new Decimal(acc.uninvestedDelta).plus(m.uninvestedDelta).toNumber(),
+      target: acc.target,
+    }),
+    {
+      contributed: 0,
+      deployed: 0,
+      uninvestedDelta: 0,
+      target: anyNullTarget ? null : (0 as number | null),
+    } as MonthlyBreakdownTotals
+  );
+
+  if (!anyNullTarget) {
+    totals.target = months.reduce(
+      (sum, m) => new Decimal(sum).plus(m.target ?? 0).toNumber(),
+      0
+    );
+  }
+
+  return {
+    year,
+    investmentsPercentage,
+    months,
+    totals,
   };
 }
 

@@ -51,6 +51,8 @@ export const investmentKeys = {
     [...investmentKeys.all(), 'summary', year] as const,
   contributionRoom: (year: number) =>
     [...investmentKeys.all(), 'contribution-room', year] as const,
+  monthlyBreakdown: (year: number) =>
+    [...investmentKeys.all(), 'monthly-breakdown', year] as const,
 };
 
 export const dashboardKeys = {

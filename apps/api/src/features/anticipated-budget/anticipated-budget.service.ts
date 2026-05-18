@@ -19,6 +19,7 @@ import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { db } from '@/db';
 import { assertDefined } from '@/lib/assert';
 
+
 const entryColumns = {
   id: anticipatedBudget.id,
   name: anticipatedBudget.name,
