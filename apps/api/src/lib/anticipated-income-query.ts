@@ -12,13 +12,20 @@ export interface ResolvedMonthlyIncome {
   amount: number;
 }
 
+export interface MonthlyIncomeResult {
+  months: ResolvedMonthlyIncome[];
+  hasEntries: boolean;
+}
+
 // Resolves the sum of all income entries' monthly amounts for a given year,
 // applying per-month overrides where present (override > monthlyAmount default).
+// `hasEntries` is true when at least one anticipated budget income entry exists
+// for the year — regardless of whether the resolved amounts are zero.
 // Called by investments.service to compute monthly contribution targets.
 export async function resolveMonthlyIncome(
   userId: string,
   year: number
-): Promise<ResolvedMonthlyIncome[]> {
+): Promise<MonthlyIncomeResult> {
   const incomeEntries = await db
     .select({
       id: anticipatedBudget.id,
@@ -34,10 +41,13 @@ export async function resolveMonthlyIncome(
     );
 
   if (incomeEntries.length === 0) {
-    return Array.from({ length: MONTHS_IN_YEAR }, (_, i) => ({
-      month: i + 1,
-      amount: 0,
-    }));
+    return {
+      months: Array.from({ length: MONTHS_IN_YEAR }, (_, i) => ({
+        month: i + 1,
+        amount: 0,
+      })),
+      hasEntries: false,
+    };
   }
 
   const entryIds = incomeEntries.map((e) => e.id);
@@ -74,5 +84,8 @@ export async function resolveMonthlyIncome(
     }
   }
 
-  return totals.map((total, i) => ({ month: i + 1, amount: total.toNumber() }));
+  return {
+    months: totals.map((total, i) => ({ month: i + 1, amount: total.toNumber() })),
+    hasEntries: true,
+  };
 }

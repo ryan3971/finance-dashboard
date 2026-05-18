@@ -38,10 +38,7 @@ function computeYtd(
     : ytdMonths.reduce((sum, m) => sum + (m.target ?? 0), 0);
 
   // Projection only shown for the current year (past years are complete).
-  const projection =
-    isCurrentYear && currentMonth > 0
-      ? (contributed / currentMonth) * 12
-      : null;
+  const projection = isCurrentYear ? (contributed / currentMonth) * 12 : null;
 
   // Progress bar: sum annualLimit for accounts that have one set.
   const accountsWithLimit = accounts.filter((a) => a.annualLimit !== null);
@@ -57,7 +54,7 @@ function computeYtd(
   return { contributed, target, projection, annualLimitTotal, partialLimits };
 }
 
-function ProgressBar({
+function AnnualLimitDisplay({
   contributed,
   annualLimitTotal,
   partialLimits,
@@ -66,6 +63,17 @@ function ProgressBar({
   readonly annualLimitTotal: number;
   readonly partialLimits: boolean;
 }) {
+  if (partialLimits) {
+    return (
+      <p className="text-xs text-content-secondary">
+        {fmt(contributed)} of {fmt(annualLimitTotal)} annual limit
+        <span className="ml-1 text-content-muted">
+          (Partial — not all account limits entered)
+        </span>
+      </p>
+    );
+  }
+
   const pct = Math.min((contributed / annualLimitTotal) * 100, 100);
 
   return (
@@ -73,11 +81,6 @@ function ProgressBar({
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs text-content-secondary">
           {fmt(contributed)} of {fmt(annualLimitTotal)} annual limit
-          {partialLimits && (
-            <span className="ml-1 text-content-muted">
-              (Partial — not all account limits entered)
-            </span>
-          )}
         </span>
         <span className="text-xs font-medium text-content-secondary">
           {pct.toFixed(1)}%
@@ -123,7 +126,7 @@ export function YtdProgressSection({
           </p>
         </div>
 
-        {stats.target !== null && stats.contributed >= 0 && (
+        {stats.target !== null && (
           <div>
             <p className="text-xs text-content-muted mb-1">vs Target</p>
             <p
@@ -147,7 +150,7 @@ export function YtdProgressSection({
       </div>
 
       {stats.annualLimitTotal !== null && (
-        <ProgressBar
+        <AnnualLimitDisplay
           contributed={stats.contributed}
           annualLimitTotal={stats.annualLimitTotal}
           partialLimits={stats.partialLimits}

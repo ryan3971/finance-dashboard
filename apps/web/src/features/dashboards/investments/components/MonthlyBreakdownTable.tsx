@@ -107,12 +107,11 @@ function TotalsRow({
   readonly currentYear: number;
   readonly selectedYear: number;
 }) {
+  // month=0 is never > currentMonth, so the totals row is never "future".
   const contribClass = contributedColor(
     totals.contributed,
     totals.target,
-    // Treat the totals row as "current month" for color purposes (a complete
-    // year has passed so use the last month; only the null-target branch matters).
-    currentMonth,
+    0,
     currentMonth,
     currentYear,
     selectedYear
