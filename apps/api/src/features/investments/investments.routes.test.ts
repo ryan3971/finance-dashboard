@@ -55,16 +55,9 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-interface TransactionAggregatesBody {
-  dividends: number;
-  fees: number;
-  netDeposits: number;
-}
-
 interface TransactionsResponse {
   data: InvestmentTransactionBody[];
   pagination: PaginationMeta;
-  aggregates: TransactionAggregatesBody;
 }
 
 interface AccountContributionSummaryBody {
@@ -278,60 +271,6 @@ describe('GET /api/v1/investments/transactions', () => {
     const body = res.body as TransactionsResponse;
     expect(body.data).toHaveLength(1);
     expect(body.data[0]?.accountId).toBe(accountA);
-  });
-
-  it('returns aggregates with correct values for mixed actions', async () => {
-    const { accessToken } = await registerUser(app);
-    const accountId = await makeTfsaAccount(app, accessToken);
-    await investmentTransactionFixture(accountId, { action: 'dividend', amount: '50.00' });
-    await investmentTransactionFixture(accountId, { action: 'dividend', amount: '25.00' });
-    await investmentTransactionFixture(accountId, { action: 'fee', amount: '-10.00' });
-    await investmentTransactionFixture(accountId, { action: 'deposit', amount: '1000.00' });
-    await investmentTransactionFixture(accountId, { action: 'withdrawal', amount: '-200.00' });
-    await investmentTransactionFixture(accountId, { action: 'buy', amount: '-500.00' });
-
-    const res = await request(app)
-      .get('/api/v1/investments/transactions')
-      .set(authHeader(accessToken));
-
-    expect(res.status).toBe(200);
-    const body = res.body as TransactionsResponse;
-    expect(body.aggregates.dividends).toBe(75);
-    expect(body.aggregates.fees).toBe(10);
-    expect(body.aggregates.netDeposits).toBe(800);
-  });
-
-  it('aggregates reflect the active filters, not the full dataset', async () => {
-    const { accessToken } = await registerUser(app);
-    const tfsaId = await makeTfsaAccount(app, accessToken);
-    const rrspId = await makeRrspAccount(app, accessToken);
-    await investmentTransactionFixture(tfsaId, { action: 'dividend', amount: '100.00' });
-    await investmentTransactionFixture(rrspId, { action: 'dividend', amount: '40.00' });
-
-    const res = await request(app)
-      .get('/api/v1/investments/transactions')
-      .query({ accountId: tfsaId })
-      .set(authHeader(accessToken));
-
-    expect(res.status).toBe(200);
-    const body = res.body as TransactionsResponse;
-    expect(body.aggregates.dividends).toBe(100);
-  });
-
-  it('aggregates are zero when the filter matches no relevant actions', async () => {
-    const { accessToken } = await registerUser(app);
-    const accountId = await makeTfsaAccount(app, accessToken);
-    await investmentTransactionFixture(accountId, { action: 'buy', amount: '-300.00' });
-
-    const res = await request(app)
-      .get('/api/v1/investments/transactions')
-      .set(authHeader(accessToken));
-
-    expect(res.status).toBe(200);
-    const body = res.body as TransactionsResponse;
-    expect(body.aggregates.dividends).toBe(0);
-    expect(body.aggregates.fees).toBe(0);
-    expect(body.aggregates.netDeposits).toBe(0);
   });
 });
 

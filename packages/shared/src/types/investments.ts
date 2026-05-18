@@ -37,16 +37,9 @@ export interface PaginationMeta {
   totalPages: number;
 }
 
-export interface InvestmentTransactionAggregates {
-  dividends: number;
-  fees: number;
-  netDeposits: number;
-}
-
 export interface InvestmentTransactionsResponse {
   data: InvestmentTransactionRow[];
   pagination: PaginationMeta;
-  aggregates: InvestmentTransactionAggregates;
 }
 
 export interface InvestmentSummaryResponse {

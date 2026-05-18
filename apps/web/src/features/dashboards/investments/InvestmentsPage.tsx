@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { cn } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { investmentTransactionFiltersSchema } from '@finance/shared/schemas/investments';
-import { ActivityStatsBar } from './components/ActivityStatsBar';
+import { ActivitySummaryCards } from './components/ActivitySummaryCards';
 import { ContributionRoomCard } from './components/ContributionRoomCard';
 import { InvestmentFilters } from './components/InvestmentFilters';
 import { InvestmentSkeleton } from './components/InvestmentSkeleton';
@@ -17,6 +17,7 @@ import { ManualInvestmentTransactionPanel } from './components/ManualInvestmentT
 import { MonthlyBreakdownTable } from './components/MonthlyBreakdownTable';
 import { YtdProgressSection } from './components/YtdProgressSection';
 import { useContributionRoom } from './hooks/useContributionRoom';
+import { useInvestmentSummary } from './hooks/useInvestmentSummary';
 import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
 import { useMonthlyBreakdown } from './hooks/useMonthlyBreakdown';
 
@@ -55,8 +56,14 @@ export function InvestmentsPage() {
   );
 
   const {
+    data: summaryData,
+    isPending: summaryPending,
+    isFetching: summaryFetching,
+    isError: summaryError,
+  } = useInvestmentSummary(year);
+
+  const {
     data: roomData,
-    isPending: roomPending,
     isFetching: roomFetching,
     isError: roomError,
   } = useContributionRoom(year);
@@ -73,7 +80,7 @@ export function InvestmentsPage() {
     isError: txError,
   } = useInvestmentTransactions(filters);
 
-  const showDashboardSkeleton = useDelayedPending(roomPending);
+  const showDashboardSkeleton = useDelayedPending(summaryPending);
   const showActivitySkeleton = useDelayedPending(txPending);
 
   return (
@@ -98,6 +105,21 @@ export function InvestmentsPage() {
 
           {!showDashboardSkeleton && (
             <div className="space-y-6">
+              {summaryError && !summaryData && (
+                <EmptyState variant="error" message="Failed to load investment data." />
+              )}
+
+              {summaryData && (
+                <div
+                  className={cn(
+                    'transition-opacity duration-200',
+                    summaryFetching && 'opacity-50'
+                  )}
+                >
+                  <ActivitySummaryCards data={summaryData} />
+                </div>
+              )}
+
               {roomError && !roomData && (
                 <EmptyState variant="error" message="Failed to load contribution room data." />
               )}
@@ -169,8 +191,6 @@ export function InvestmentsPage() {
                   endDate: search.endDate,
                 }}
               />
-
-              <ActivityStatsBar aggregates={txData?.aggregates} />
 
               <InvestmentTransactionsTable
                 response={txData}

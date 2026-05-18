@@ -39,12 +39,6 @@ export interface InvestmentTransactionDbRow {
   source: string;
 }
 
-export interface TransactionAggregatesDbRow {
-  dividends: string;
-  fees: string;
-  netDeposits: string;
-}
-
 export interface ActivitySummaryDbRow {
   dividendsReceived: string;
   feesPaid: string;
@@ -125,43 +119,6 @@ export async function queryPaginatedTransactions(
   ]);
 
   return { rows, total: countRow?.total ?? 0 };
-}
-
-export async function queryTransactionAggregates(
-  userId: string,
-  filters: InvestmentTransactionFilters
-): Promise<TransactionAggregatesDbRow> {
-  const { accountId, action, symbol, startDate, endDate } = filters;
-
-  const where = and(
-    eq(accounts.userId, userId),
-    accountId !== undefined ? eq(investmentTransactions.accountId, accountId) : undefined,
-    action !== undefined ? eq(investmentTransactions.action, action) : undefined,
-    symbol !== undefined ? ilike(investmentTransactions.symbol, symbol) : undefined,
-    startDate !== undefined ? gte(investmentTransactions.date, startDate) : undefined,
-    endDate !== undefined ? lte(investmentTransactions.date, endDate) : undefined,
-  );
-
-  const [row] = await db
-    .select({
-      dividends: sql<string>`CAST(COALESCE(SUM(
-        CASE WHEN ${investmentTransactions.action} = 'dividend'
-        THEN ${investmentTransactions.amount}::numeric ELSE 0 END
-      ), 0) AS text)`,
-      fees: sql<string>`CAST(COALESCE(SUM(
-        CASE WHEN ${investmentTransactions.action} = 'fee'
-        THEN -${investmentTransactions.amount}::numeric ELSE 0 END
-      ), 0) AS text)`,
-      netDeposits: sql<string>`CAST(COALESCE(SUM(
-        CASE WHEN ${investmentTransactions.action} IN ('deposit', 'withdrawal')
-        THEN ${investmentTransactions.amount}::numeric ELSE 0 END
-      ), 0) AS text)`,
-    })
-    .from(investmentTransactions)
-    .innerJoin(accounts, eq(investmentTransactions.accountId, accounts.id))
-    .where(where);
-
-  return row ?? { dividends: '0', fees: '0', netDeposits: '0' };
 }
 
 export async function queryActivitySummary(
