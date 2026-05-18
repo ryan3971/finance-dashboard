@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
@@ -30,6 +30,24 @@ const ACTION_OPTIONS = [
 // Actions where cash flows out → stored as a negative amount.
 const CASH_OUT_ACTIONS = new Set(['buy', 'fee', 'withdrawal']);
 
+// Actions where symbol is meaningful.
+const SYMBOL_ACTIONS = new Set(['buy', 'sell', 'dividend']);
+
+// Actions where quantity / price per unit are meaningful.
+const TRADE_ACTIONS = new Set(['buy', 'sell']);
+
+/**
+ * Convert an optional numeric input to the value Zod expects.
+ * Empty string → undefined (field omitted). Non-empty → Number.
+ * Avoids the valueAsNumber pitfall where clearing an input sends NaN,
+ * which Zod's z.number() rejects even when the field is .optional().
+ */
+function toOptionalNumber(v: string): number | undefined {
+  if (v === '' || v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return isNaN(n) ? undefined : n;
+}
+
 interface Props {
   readonly onClose: () => void;
 }
@@ -48,6 +66,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<CreateManualInvestmentTransactionInput>({
     resolver: zodResolver(createManualInvestmentTransactionSchema),
@@ -60,7 +79,19 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
   });
 
   const watchedAction = useWatch({ control, name: 'action' });
-  const isTransfer = watchedAction === 'transfer';
+  const isTransfer    = watchedAction === 'transfer';
+  const showSymbol    = SYMBOL_ACTIONS.has(watchedAction);
+  const showTrade     = TRADE_ACTIONS.has(watchedAction);
+
+  // Clear fields that become hidden when the action changes, so stale values
+  // are never silently submitted.
+  useEffect(() => {
+    if (!showSymbol) setValue('symbol', undefined);
+    if (!showTrade) {
+      setValue('quantity', undefined);
+      setValue('price', undefined);
+    }
+  }, [watchedAction, showSymbol, showTrade, setValue]);
 
   async function onSubmit(values: CreateManualInvestmentTransactionInput) {
     const rawAmount = Math.abs(values.amount);
@@ -80,8 +111,8 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
       action:       'deposit',
       amount:       undefined,
       currency:     'CAD',
-      symbol:       undefined,
       description:  undefined,
+      symbol:       undefined,
       quantity:     undefined,
       price:        undefined,
       activityType: undefined,
@@ -191,36 +222,41 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
           />
         </FormField>
 
-        {/* Symbol */}
-        <FormField label="Symbol" error={errors.symbol?.message} labelSize="xs">
-          <Input
-            type="text"
-            placeholder="e.g. VFV.TO"
-            {...register('symbol')}
-          />
-        </FormField>
+        {/* Symbol — only relevant for buy, sell, dividend */}
+        {showSymbol && (
+          <FormField label="Symbol" error={errors.symbol?.message} labelSize="xs">
+            <Input
+              type="text"
+              placeholder="e.g. VFV.TO"
+              {...register('symbol')}
+            />
+          </FormField>
+        )}
 
-        {/* Quantity */}
-        <FormField label="Quantity" error={errors.quantity?.message} labelSize="xs">
-          <Input
-            type="number"
-            step="any"
-            min="0"
-            placeholder="e.g. 10"
-            {...register('quantity', { valueAsNumber: true })}
-          />
-        </FormField>
+        {/* Quantity + Price — only relevant for buy / sell */}
+        {showTrade && (
+          <>
+            <FormField label="Quantity" error={errors.quantity?.message} labelSize="xs">
+              <Input
+                type="number"
+                step="any"
+                min="0"
+                placeholder="e.g. 10"
+                {...register('quantity', { setValueAs: toOptionalNumber })}
+              />
+            </FormField>
 
-        {/* Price per unit */}
-        <FormField label="Price per unit" error={errors.price?.message} labelSize="xs">
-          <Input
-            type="number"
-            step="0.0001"
-            min="0"
-            placeholder="e.g. 100.00"
-            {...register('price', { valueAsNumber: true })}
-          />
-        </FormField>
+            <FormField label="Price per unit" error={errors.price?.message} labelSize="xs">
+              <Input
+                type="number"
+                step="0.0001"
+                min="0"
+                placeholder="e.g. 100.00"
+                {...register('price', { setValueAs: toOptionalNumber })}
+              />
+            </FormField>
+          </>
+        )}
 
         {/* Activity type */}
         <FormField label="Activity type" error={errors.activityType?.message} labelSize="xs">
