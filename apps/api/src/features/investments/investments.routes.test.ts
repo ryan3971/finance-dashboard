@@ -1292,7 +1292,7 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
     });
     // Insert directly into investment_transactions for the chequing account,
     // bypassing the API account-type guard. The breakdown must exclude it
-    // because queryInvestmentAccountIds only returns investment-type accounts.
+    // because queryInvestmentAccountDetails only returns investment-type accounts.
     await investmentTransactionFixture(chequingId, {
       date: '2024-02-15',
       action: 'deposit',
@@ -1366,8 +1366,23 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
     expect(body.accounts).toHaveLength(2);
   });
 
-  it('orders accounts: tfsa before rrsp before non-registered', async () => {
+  it('orders accounts: tfsa → rrsp → fhsa → non-registered regardless of creation order', async () => {
     const { accessToken } = await registerUser(app);
+    // Create in reverse order to prove sorting is applied.
+    await createAccount(app, accessToken, {
+      name: 'My Non-Reg',
+      type: 'non-registered',
+      institution: 'td',
+      isCredit: false,
+      currency: 'CAD',
+    });
+    await createAccount(app, accessToken, {
+      name: 'My FHSA',
+      type: 'fhsa',
+      institution: 'questrade',
+      isCredit: false,
+      currency: 'CAD',
+    });
     await makeRrspAccount(app, accessToken);
     await makeTfsaAccount(app, accessToken);
 
@@ -1378,8 +1393,11 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
 
     expect(res.status).toBe(200);
     const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts).toHaveLength(4);
     expect(body.accounts[0]?.accountType).toBe('tfsa');
     expect(body.accounts[1]?.accountType).toBe('rrsp');
+    expect(body.accounts[2]?.accountType).toBe('fhsa');
+    expect(body.accounts[3]?.accountType).toBe('non-registered');
   });
 
   it('includes accountName and institution on each account entry', async () => {

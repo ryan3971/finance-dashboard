@@ -263,19 +263,6 @@ export interface InvestmentAccountDetailRow {
   institution: string;
 }
 
-export async function queryInvestmentAccountIds(userId: string): Promise<string[]> {
-  const rows = await db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(
-      and(
-        eq(accounts.userId, userId),
-        inArray(accounts.type, [...INVESTMENT_ACCOUNT_TYPES]),
-      )
-    );
-  return rows.map((r) => r.id);
-}
-
 export async function queryInvestmentAccountDetails(
   userId: string
 ): Promise<InvestmentAccountDetailRow[]> {

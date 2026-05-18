@@ -410,9 +410,9 @@ export function MonthlyBreakdownTable({
 }: Props) {
   const [activeTab, setActiveTab] = useState('all');
 
-  const hasAnyData =
-    data.months.some((m) => m.contributed !== 0 || m.deployed !== 0) ||
-    data.months.some((m) => m.target !== null);
+  const hasAnyData = data.months.some(
+    (m) => m.contributed !== 0 || m.deployed !== 0 || m.target !== null
+  );
 
   const activeAccount =
     activeTab !== 'all'
