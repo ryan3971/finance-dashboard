@@ -3,6 +3,7 @@ import type {
   AccountContributionSummary,
   ContributionRoomResponse,
   InvestmentSummaryResponse,
+  InvestmentTransactionAggregates,
   InvestmentTransactionRow,
 } from '@finance/shared/types/investments';
 import type {
@@ -27,6 +28,7 @@ import {
   queryMonthlyBreakdownRaw,
   queryPaginatedTransactions,
   queryRegisteredAccounts,
+  queryTransactionAggregates,
   upsertContributionRoomRecord,
   type ContributionAggRow,
   type ContributionRecordDbRow,
@@ -73,8 +75,11 @@ function estimateRoomCarried(
 export async function getInvestmentTransactions(
   userId: string,
   filters: InvestmentTransactionFilters
-): Promise<{ data: InvestmentTransactionRow[]; pagination: PaginationMeta }> {
-  const { rows, total } = await queryPaginatedTransactions(userId, filters);
+): Promise<{ data: InvestmentTransactionRow[]; pagination: PaginationMeta; aggregates: InvestmentTransactionAggregates }> {
+  const [{ rows, total }, aggRow] = await Promise.all([
+    queryPaginatedTransactions(userId, filters),
+    queryTransactionAggregates(userId, filters),
+  ]);
 
   const data: InvestmentTransactionRow[] = rows.map((row) => ({
     id: row.id,
@@ -106,6 +111,11 @@ export async function getInvestmentTransactions(
       pageSize,
       total,
       totalPages: Math.ceil(total / pageSize),
+    },
+    aggregates: {
+      dividends: new Decimal(aggRow.dividends).toNumber(),
+      fees: new Decimal(aggRow.fees).toNumber(),
+      netDeposits: new Decimal(aggRow.netDeposits).toNumber(),
     },
   };
 }
