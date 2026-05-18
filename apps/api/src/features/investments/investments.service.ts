@@ -6,6 +6,11 @@ import type {
   InvestmentTransactionRow,
 } from '@finance/shared/types/investments';
 import type {
+  MonthlyBreakdownResponse,
+  MonthlyBreakdownRow,
+  MonthlyBreakdownTotals,
+} from '@finance/shared/types/investments-monthly-breakdown';
+import type {
   CreateManualInvestmentTransactionInput,
   InvestmentTransactionFilters,
   UpsertContributionRoomInput,
@@ -18,6 +23,8 @@ import {
   queryActivitySummary,
   queryContributionAggregates,
   queryContributionRecords,
+  queryInvestmentAccountIds,
+  queryMonthlyBreakdownRaw,
   queryPaginatedTransactions,
   queryRegisteredAccounts,
   upsertContributionRoomRecord,
@@ -25,9 +32,11 @@ import {
   type ContributionRecordDbRow,
 } from './investments.repository';
 import { InvestmentError, InvestmentErrorCode } from './investments.errors';
-import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
+import { INVESTMENT_ACCOUNT_TYPES, MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { TRANSACTION_SOURCE } from '@/lib/constants';
 import { insertInvestmentTransaction } from '@/pipelines/investments/investment-insert';
+import { resolveMonthlyIncome } from '@/lib/anticipated-income-query';
+import { queryDashboardUserConfig } from '@/lib/user-config-query';
 
 interface PaginationMeta {
   page: number;
@@ -270,6 +279,71 @@ export async function createManualInvestmentTransaction(
     activityType: row.activityType,
     note:         row.note,
     source:       row.source,
+  };
+}
+
+export async function getMonthlyBreakdown(
+  userId: string,
+  year: number
+): Promise<MonthlyBreakdownResponse> {
+  const [accountIds, config, incomeResult] = await Promise.all([
+    queryInvestmentAccountIds(userId),
+    queryDashboardUserConfig(userId),
+    resolveMonthlyIncome(userId, year),
+  ]);
+
+  const rawRows = await queryMonthlyBreakdownRaw(accountIds, year);
+
+  const investmentsPercentage = config.investmentsPercentage;
+  const { months: monthlyIncome, hasEntries: hasIncomeEntries } = incomeResult;
+
+  // Index DB rows by month for O(1) lookup.
+  const dbByMonth = new Map(rawRows.map((r) => [r.month, r]));
+
+  const months: MonthlyBreakdownRow[] = Array.from({ length: MONTHS_IN_YEAR }, (_, i) => {
+    const month = i + 1;
+    const dbRow = dbByMonth.get(month);
+
+    const contributed = dbRow ? new Decimal(dbRow.contributed).toNumber() : 0;
+    const deployed = dbRow ? new Decimal(dbRow.deployed).toNumber() : 0;
+    const uninvestedDelta = new Decimal(contributed).plus(deployed).toNumber();
+
+    let target: number | null = null;
+    if (investmentsPercentage !== null && hasIncomeEntries) {
+      const income = monthlyIncome[i]?.amount ?? 0;
+      target = new Decimal(income)
+        .times(investmentsPercentage)
+        .dividedBy(100)
+        .toDecimalPlaces(2)
+        .toNumber();
+    }
+
+    return { month, contributed, deployed, uninvestedDelta, target };
+  });
+
+  const anyNullTarget = investmentsPercentage === null || !hasIncomeEntries;
+
+  const initial: MonthlyBreakdownTotals = {
+    contributed: 0,
+    deployed: 0,
+    uninvestedDelta: 0,
+    target: anyNullTarget ? null : 0,
+  };
+
+  const totals = months.reduce<MonthlyBreakdownTotals>((acc, m) => ({
+    contributed: new Decimal(acc.contributed).plus(m.contributed).toNumber(),
+    deployed: new Decimal(acc.deployed).plus(m.deployed).toNumber(),
+    uninvestedDelta: new Decimal(acc.uninvestedDelta).plus(m.uninvestedDelta).toNumber(),
+    target: acc.target !== null && m.target !== null
+      ? new Decimal(acc.target).plus(m.target).toNumber()
+      : null,
+  }), initial);
+
+  return {
+    year,
+    investmentsPercentage,
+    months,
+    totals,
   };
 }
 

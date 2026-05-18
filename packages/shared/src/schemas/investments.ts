@@ -55,3 +55,7 @@ export const createManualInvestmentTransactionSchema = z.object({
 export type CreateManualInvestmentTransactionInput = z.infer<
   typeof createManualInvestmentTransactionSchema
 >;
+
+export const monthlyBreakdownQuerySchema = z.object({
+  year: z.coerce.number().int().min(2000).max(2100),
+});

@@ -6,6 +6,28 @@ import { contributionRecords } from '@/db/schema';
 import { investmentTransactionFixture } from '@/testing/fixtures/investment-transaction.fixture';
 import request from 'supertest';
 
+// ─── Local response shapes (no shared-type imports) ───────────────────────────
+
+interface MonthlyBreakdownRowBody {
+  month: number;
+  contributed: number;
+  deployed: number;
+  uninvestedDelta: number;
+  target: number | null;
+}
+
+interface MonthlyBreakdownBody {
+  year: number;
+  investmentsPercentage: number | null;
+  months: MonthlyBreakdownRowBody[];
+  totals: {
+    contributed: number;
+    deployed: number;
+    uninvestedDelta: number;
+    target: number | null;
+  };
+}
+
 const app = createApp();
 
 beforeEach(() => cleanDatabase());
@@ -987,5 +1009,379 @@ describe('GET /api/v1/investments/summary', () => {
     expect(body.netDeposits).toBe(0);
     expect(body.totalContributions).toBe(0);
     expect(body.totalWithdrawals).toBe(0);
+  });
+});
+
+// ─── GET /api/v1/investments/monthly-breakdown ────────────────────────────────
+
+describe('GET /api/v1/investments/monthly-breakdown', () => {
+  it('returns 401 without auth', async () => {
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 when year is missing', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .set(authHeader(accessToken));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when year is not an integer', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 'abc' })
+      .set(authHeader(accessToken));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when year is out of range', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 1999 })
+      .set(authHeader(accessToken));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns all 12 months with zeros when user has no investment accounts', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    expect(body.year).toBe(2024);
+    expect(body.months).toHaveLength(12);
+    expect(body.months.every((m) => m.contributed === 0)).toBe(true);
+    expect(body.months.every((m) => m.deployed === 0)).toBe(true);
+    expect(body.months.every((m) => m.uninvestedDelta === 0)).toBe(true);
+    expect(body.months.every((m) => m.target === null)).toBe(true);
+    expect(body.totals.contributed).toBe(0);
+    expect(body.totals.deployed).toBe(0);
+    expect(body.totals.uninvestedDelta).toBe(0);
+    expect(body.totals.target).toBeNull();
+  });
+
+  it('contributed correctly sums deposits and excludes other actions', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-03-01',
+      action: 'deposit',
+      amount: '500.00',
+    });
+    await investmentTransactionFixture(accountId, {
+      date: '2024-03-15',
+      action: 'deposit',
+      amount: '300.00',
+    });
+    // dividend and fee should not affect contributed or deployed
+    await investmentTransactionFixture(accountId, {
+      date: '2024-03-20',
+      action: 'dividend',
+      amount: '50.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    const march = body.months.find((m) => m.month === 3);
+    expect(march?.contributed).toBe(800);
+    expect(march?.deployed).toBe(0);
+  });
+
+  it('deployed correctly nets buys (negative) and sells (positive)', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-04-10',
+      action: 'buy',
+      symbol: 'VFV',
+      amount: '-1000.00',
+    });
+    await investmentTransactionFixture(accountId, {
+      date: '2024-04-20',
+      action: 'sell',
+      symbol: 'VFV',
+      amount: '200.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    const april = body.months.find((m) => m.month === 4);
+    expect(april?.deployed).toBe(-800);
+    expect(april?.contributed).toBe(0);
+  });
+
+  it('uninvestedDelta equals contributed + deployed', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-05-01',
+      action: 'deposit',
+      amount: '1000.00',
+    });
+    await investmentTransactionFixture(accountId, {
+      date: '2024-05-15',
+      action: 'buy',
+      symbol: 'XEI',
+      amount: '-600.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    const may = body.months.find((m) => m.month === 5);
+    expect(may?.contributed).toBe(1000);
+    expect(may?.deployed).toBe(-600);
+    expect(may?.uninvestedDelta).toBe(400);
+  });
+
+  it('months with no activity return zeros', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-01-10',
+      action: 'deposit',
+      amount: '500.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    const june = body.months.find((m) => m.month === 6);
+    expect(june?.contributed).toBe(0);
+    expect(june?.deployed).toBe(0);
+    expect(june?.uninvestedDelta).toBe(0);
+  });
+
+  it('totals row sums all 12 months', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-01-10',
+      action: 'deposit',
+      amount: '500.00',
+    });
+    await investmentTransactionFixture(accountId, {
+      date: '2024-06-10',
+      action: 'deposit',
+      amount: '300.00',
+    });
+    await investmentTransactionFixture(accountId, {
+      date: '2024-06-15',
+      action: 'buy',
+      symbol: 'VFV',
+      amount: '-200.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    expect(body.totals.contributed).toBe(800);
+    expect(body.totals.deployed).toBe(-200);
+    expect(body.totals.uninvestedDelta).toBe(600);
+  });
+
+  it('target is null when investmentsPercentage is not configured', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-03-01',
+      action: 'deposit',
+      amount: '500.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    expect(body.investmentsPercentage).toBeNull();
+    expect(body.months.every((m) => m.target === null)).toBe(true);
+    expect(body.totals.target).toBeNull();
+  });
+
+  it('target is null when no anticipated budget income entry exists', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-03-01',
+      action: 'deposit',
+      amount: '500.00',
+    });
+    // Set investmentsPercentage but do NOT create an anticipated budget income entry.
+    await request(app)
+      .patch('/api/v1/user-config')
+      .set(authHeader(accessToken))
+      .send({ allocations: { needsPercentage: 50, wantsPercentage: 30, investmentsPercentage: 20 } });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    expect(body.months.every((m) => m.target === null)).toBe(true);
+    expect(body.totals.target).toBeNull();
+  });
+
+  it('target is non-null and correct when both investmentsPercentage and income are configured', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(accountId, {
+      date: '2024-03-01',
+      action: 'deposit',
+      amount: '500.00',
+    });
+
+    // Set investmentsPercentage to 20%.
+    await request(app)
+      .patch('/api/v1/user-config')
+      .set(authHeader(accessToken))
+      .send({ allocations: { needsPercentage: 50, wantsPercentage: 30, investmentsPercentage: 20 } });
+
+    // Create an anticipated budget income entry for 2024: $5000/month.
+    await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set(authHeader(accessToken))
+      .send({
+        name: 'Salary',
+        isIncome: true,
+        monthlyAmount: '5000.00',
+        effectiveYear: 2024,
+        needWant: null,
+        categoryId: null,
+        notes: null,
+      });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    // 5000 * 20% = 1000 per month
+    expect(body.months.every((m) => m.target === 1000)).toBe(true);
+    // totals.target = 1000 * 12 = 12000
+    expect(body.totals.target).toBe(12000);
+    expect(body.investmentsPercentage).toBe(20);
+  });
+
+  it('totals.target is null if any month has a null target', async () => {
+    const { accessToken } = await registerUser(app);
+    // investmentsPercentage is not set → all targets null → totals.target null
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    expect(body.totals.target).toBeNull();
+  });
+
+  it('transactions from another user are not included', async () => {
+    const { accessToken: user1Token } = await registerUser(app, 'breakdown-a@example.com');
+    const { accessToken: user2Token } = await registerUser(app, 'breakdown-b@example.com');
+    const user1Account = await makeTfsaAccount(app, user1Token);
+    const user2Account = await makeTfsaAccount(app, user2Token);
+
+    await investmentTransactionFixture(user1Account, {
+      date: '2024-01-15',
+      action: 'deposit',
+      amount: '1000.00',
+    });
+    await investmentTransactionFixture(user2Account, {
+      date: '2024-01-20',
+      action: 'deposit',
+      amount: '9999.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(user1Token));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    const jan = body.months.find((m) => m.month === 1);
+    expect(jan?.contributed).toBe(1000);
+    expect(body.totals.contributed).toBe(1000);
+  });
+
+  it('non-investment account transactions are not included', async () => {
+    const { accessToken } = await registerUser(app);
+    const chequingId = await makeChequingAccount(app, accessToken);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    await investmentTransactionFixture(tfsaId, {
+      date: '2024-02-01',
+      action: 'deposit',
+      amount: '750.00',
+    });
+    // Insert directly into investment_transactions for the chequing account,
+    // bypassing the API account-type guard. The breakdown must exclude it
+    // because queryInvestmentAccountIds only returns investment-type accounts.
+    await investmentTransactionFixture(chequingId, {
+      date: '2024-02-15',
+      action: 'deposit',
+      amount: '9999.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    // Only the TFSA transaction should count; the chequing row must be absent.
+    expect(body.totals.contributed).toBe(750);
+  });
+
+  it('always returns 12 month rows regardless of activity', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBody;
+    expect(body.months).toHaveLength(12);
+    expect(body.months.map((m) => m.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   });
 });

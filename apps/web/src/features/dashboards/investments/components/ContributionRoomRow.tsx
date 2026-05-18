@@ -67,11 +67,20 @@ function EditableCell({
     );
   }
 
+  if (value === null) {
+    return (
+      <button
+        onClick={onStartEdit}
+        className="text-xs text-info hover:underline"
+      >
+        Set
+      </button>
+    );
+  }
+
   return (
     <span className="group inline-flex items-center gap-1.5">
-      <span className="text-sm text-content-secondary">
-        {value !== null ? fmt(value) : '—'}
-      </span>
+      <span className="text-sm font-mono text-content-secondary">{fmt(value)}</span>
       {suffix}
       <button
         onClick={onStartEdit}
