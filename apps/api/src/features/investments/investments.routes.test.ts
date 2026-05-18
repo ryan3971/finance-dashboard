@@ -84,15 +84,6 @@ interface ContributionRoomBody {
   accounts: AccountContributionSummaryBody[];
 }
 
-interface SummaryBody {
-  year: number;
-  dividendsReceived: number;
-  feesPaid: number;
-  netDeposits: number;
-  totalContributions: number;
-  totalWithdrawals: number;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function authHeader(token: string) {
@@ -285,6 +276,7 @@ describe('GET /api/v1/investments/transactions', () => {
     const accountId = await makeTfsaAccount(app, accessToken);
     await investmentTransactionFixture(accountId, { action: 'dividend', amount: '50.00' });
     await investmentTransactionFixture(accountId, { action: 'dividend', amount: '25.00' });
+    // Fees are stored as negative amounts; the query negates them, so a normal fee → positive aggregate.
     await investmentTransactionFixture(accountId, { action: 'fee', amount: '-10.00' });
     await investmentTransactionFixture(accountId, { action: 'deposit', amount: '1000.00' });
     await investmentTransactionFixture(accountId, { action: 'withdrawal', amount: '-200.00' });
@@ -299,6 +291,21 @@ describe('GET /api/v1/investments/transactions', () => {
     expect(body.aggregates.dividends).toBe(75);
     expect(body.aggregates.fees).toBe(10);
     expect(body.aggregates.netDeposits).toBe(800);
+  });
+
+  it('fee refund (positive stored amount) produces a negative fees aggregate', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+    // A refund is stored as a positive amount; the query negates it → negative aggregate.
+    await investmentTransactionFixture(accountId, { action: 'fee', amount: '5.00' });
+
+    const res = await request(app)
+      .get('/api/v1/investments/transactions')
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as TransactionsResponse;
+    expect(body.aggregates.fees).toBe(-5);
   });
 
   it('aggregates reflect the active filters, not the full dataset', async () => {
@@ -924,26 +931,6 @@ describe('POST /api/v1/investments/transactions', () => {
     expect(listBody.data[0]?.source).toBe('manual');
   });
 
-  it('affects GET /summary totals after a deposit is created', async () => {
-    const { accessToken } = await registerUser(app);
-    const tfsaId = await makeTfsaAccount(app, accessToken);
-
-    await request(app)
-      .post('/api/v1/investments/transactions')
-      .set(authHeader(accessToken))
-      .send({ accountId: tfsaId, ...validFields, amount: 3000 });
-
-    const summaryRes = await request(app)
-      .get('/api/v1/investments/summary')
-      .query({ year: 2024 })
-      .set(authHeader(accessToken));
-
-    expect(summaryRes.status).toBe(200);
-    const summaryBody = summaryRes.body as SummaryBody;
-    expect(summaryBody.totalContributions).toBe(3000);
-    expect(summaryBody.netDeposits).toBe(3000);
-  });
-
   it('accepts a non-registered investment account (non-registered type)', async () => {
     const { accessToken } = await registerUser(app);
     const nonRegId = await createAccount(app, accessToken, {
@@ -960,116 +947,6 @@ describe('POST /api/v1/investments/transactions', () => {
       .send({ accountId: nonRegId, ...validFields });
 
     expect(res.status).toBe(201);
-  });
-});
-
-// ─── GET /api/v1/investments/summary ─────────────────────────────────────────
-
-describe('GET /api/v1/investments/summary', () => {
-  it('returns 401 without auth', async () => {
-    const res = await request(app)
-      .get('/api/v1/investments/summary')
-      .query({ year: 2024 });
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 400 when year is missing', async () => {
-    const { accessToken } = await registerUser(app);
-    const res = await request(app)
-      .get('/api/v1/investments/summary')
-      .set(authHeader(accessToken));
-    expect(res.status).toBe(400);
-  });
-
-  it('correctly aggregates dividends, fees, contributions, and withdrawals for a year', async () => {
-    const { accessToken } = await registerUser(app);
-    const tfsaId = await makeTfsaAccount(app, accessToken);
-    await investmentTransactionFixture(tfsaId, {
-      action: 'deposit',
-      amount: '7000.00',
-      date: '2024-01-15',
-    });
-    await investmentTransactionFixture(tfsaId, {
-      action: 'dividend',
-      amount: '120.00',
-      date: '2024-03-01',
-    });
-    await investmentTransactionFixture(tfsaId, {
-      action: 'fee',
-      rawAction: 'FCH',
-      amount: '-15.00',
-      date: '2024-06-30',
-    });
-    await investmentTransactionFixture(tfsaId, {
-      action: 'withdrawal',
-      rawAction: 'WDW',
-      amount: '-2000.00',
-      date: '2024-09-01',
-    });
-    // Transaction in a different year — must not be included
-    await investmentTransactionFixture(tfsaId, {
-      action: 'deposit',
-      amount: '500.00',
-      date: '2023-12-31',
-    });
-
-    const res = await request(app)
-      .get('/api/v1/investments/summary')
-      .query({ year: 2024 })
-      .set(authHeader(accessToken));
-
-    expect(res.status).toBe(200);
-    const body = res.body as SummaryBody;
-    expect(body.year).toBe(2024);
-    expect(body.dividendsReceived).toBe(120);
-    expect(body.feesPaid).toBe(15);
-    expect(body.totalContributions).toBe(7000);
-    expect(body.totalWithdrawals).toBe(2000);
-    expect(body.netDeposits).toBe(5000); // 7000 - 2000
-  });
-
-  it('scopes to a specific accountId when provided', async () => {
-    const { accessToken } = await registerUser(app);
-    const tfsaId = await makeTfsaAccount(app, accessToken);
-    const rrspId = await makeRrspAccount(app, accessToken);
-    await investmentTransactionFixture(tfsaId, {
-      action: 'deposit',
-      amount: '7000.00',
-      date: '2024-01-15',
-    });
-    await investmentTransactionFixture(rrspId, {
-      action: 'deposit',
-      amount: '29000.00',
-      date: '2024-01-15',
-    });
-
-    const res = await request(app)
-      .get('/api/v1/investments/summary')
-      .query({ year: 2024, accountId: tfsaId })
-      .set(authHeader(accessToken));
-
-    expect(res.status).toBe(200);
-    const body = res.body as SummaryBody;
-    expect(body.totalContributions).toBe(7000);
-    expect(body.netDeposits).toBe(7000);
-  });
-
-  it('returns zeros (not null) when no transactions exist for the year', async () => {
-    const { accessToken } = await registerUser(app);
-    await makeTfsaAccount(app, accessToken);
-
-    const res = await request(app)
-      .get('/api/v1/investments/summary')
-      .query({ year: 2024 })
-      .set(authHeader(accessToken));
-
-    expect(res.status).toBe(200);
-    const body = res.body as SummaryBody;
-    expect(body.dividendsReceived).toBe(0);
-    expect(body.feesPaid).toBe(0);
-    expect(body.netDeposits).toBe(0);
-    expect(body.totalContributions).toBe(0);
-    expect(body.totalWithdrawals).toBe(0);
   });
 });
 

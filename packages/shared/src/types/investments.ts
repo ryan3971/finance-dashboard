@@ -49,14 +49,6 @@ export interface InvestmentTransactionsResponse {
   aggregates: InvestmentTransactionAggregates;
 }
 
-export interface InvestmentSummaryResponse {
-  year: number;
-  dividendsReceived: number;
-  feesPaid: number;
-  netDeposits: number;
-  totalContributions: number;
-  totalWithdrawals: number;
-}
 
 export interface AccountContributionSummary {
   accountId: string;

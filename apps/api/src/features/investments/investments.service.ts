@@ -2,7 +2,6 @@ import Decimal from 'decimal.js';
 import type {
   AccountContributionSummary,
   ContributionRoomResponse,
-  InvestmentSummaryResponse,
   InvestmentTransactionAggregates,
   InvestmentTransactionRow,
 } from '@finance/shared/types/investments';
@@ -21,7 +20,6 @@ import {
   REGISTERED_ACCOUNT_TYPES,
   TFSA_TYPE,
   queryAccountOwnerAndType,
-  queryActivitySummary,
   queryContributionAggregates,
   queryContributionRecords,
   queryInvestmentAccountIds,
@@ -117,26 +115,6 @@ export async function getInvestmentTransactions(
       fees: new Decimal(aggRow.fees).toNumber(),
       netDeposits: new Decimal(aggRow.netDeposits).toNumber(),
     },
-  };
-}
-
-export async function getActivitySummary(
-  userId: string,
-  year: number,
-  accountId?: string
-): Promise<InvestmentSummaryResponse> {
-  const row = await queryActivitySummary(userId, year, accountId);
-
-  const totalContributions = new Decimal(row.totalContributions);
-  const totalWithdrawals = new Decimal(row.totalWithdrawals);
-
-  return {
-    year,
-    dividendsReceived: new Decimal(row.dividendsReceived).toNumber(),
-    feesPaid: new Decimal(row.feesPaid).toNumber(),
-    netDeposits: totalContributions.minus(totalWithdrawals).toNumber(),
-    totalContributions: totalContributions.toNumber(),
-    totalWithdrawals: totalWithdrawals.toNumber(),
   };
 }
 

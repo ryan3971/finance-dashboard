@@ -17,11 +17,6 @@ export type InvestmentTransactionFilters = z.infer<
   typeof investmentTransactionFiltersSchema
 >;
 
-export const investmentSummaryQuerySchema = z.object({
-  year: z.coerce.number().int().min(2000).max(2100),
-  accountId: z.string().uuid().optional(),
-});
-
 export const contributionRoomQuerySchema = z.object({
   year: z.coerce.number().int().min(2000).max(2100),
 });

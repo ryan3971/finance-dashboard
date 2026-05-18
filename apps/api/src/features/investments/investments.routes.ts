@@ -3,12 +3,10 @@ import type { Request, Response } from 'express';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import {
   contributionRoomQuerySchema,
-  investmentSummaryQuerySchema,
   investmentTransactionFiltersSchema,
   monthlyBreakdownQuerySchema,
 } from '@finance/shared/schemas/investments';
 import {
-  getActivitySummary,
   getContributionRoom,
   getInvestmentTransactions,
   getMonthlyBreakdown,
@@ -21,13 +19,6 @@ router.use(requireAuth);
 router.get('/transactions', async (req: Request, res: Response) => {
   const filters = investmentTransactionFiltersSchema.parse(req.query);
   const result = await getInvestmentTransactions(getAuthUser(req).id, filters);
-  res.json(result);
-});
-
-// GET /api/v1/investments/summary
-router.get('/summary', async (req: Request, res: Response) => {
-  const { year, accountId } = investmentSummaryQuerySchema.parse(req.query);
-  const result = await getActivitySummary(getAuthUser(req).id, year, accountId);
   res.json(result);
 });
 

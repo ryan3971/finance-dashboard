@@ -45,13 +45,6 @@ export interface TransactionAggregatesDbRow {
   netDeposits: string;
 }
 
-export interface ActivitySummaryDbRow {
-  dividendsReceived: string;
-  feesPaid: string;
-  totalContributions: string;
-  totalWithdrawals: string;
-}
-
 export interface RegisteredAccountRow {
   id: string;
   name: string;
@@ -162,56 +155,6 @@ export async function queryTransactionAggregates(
     .where(where);
 
   return row ?? { dividends: '0', fees: '0', netDeposits: '0' };
-}
-
-export async function queryActivitySummary(
-  userId: string,
-  year: number,
-  accountId?: string
-): Promise<ActivitySummaryDbRow> {
-  const startDate = `${year}-01-01`;
-  const endDate = `${year + 1}-01-01`;
-
-  const [row] = await db
-    .select({
-      dividendsReceived: sql<string>`CAST(COALESCE(SUM(
-        CASE WHEN ${investmentTransactions.action} = 'dividend'
-        THEN ${investmentTransactions.amount}::numeric ELSE 0 END
-      ), 0) AS text)`,
-      feesPaid: sql<string>`CAST(COALESCE(SUM(
-        CASE WHEN ${investmentTransactions.action} = 'fee'
-        THEN -${investmentTransactions.amount}::numeric ELSE 0 END
-      ), 0) AS text)`,
-      totalContributions: sql<string>`CAST(COALESCE(SUM(
-        CASE WHEN ${investmentTransactions.action} = 'deposit'
-        THEN ${investmentTransactions.amount}::numeric ELSE 0 END
-      ), 0) AS text)`,
-      totalWithdrawals: sql<string>`CAST(COALESCE(SUM(
-        CASE WHEN ${investmentTransactions.action} = 'withdrawal'
-        THEN -${investmentTransactions.amount}::numeric ELSE 0 END
-      ), 0) AS text)`,
-    })
-    .from(investmentTransactions)
-    .innerJoin(accounts, eq(investmentTransactions.accountId, accounts.id))
-    .where(
-      and(
-        eq(accounts.userId, userId),
-        gte(investmentTransactions.date, startDate),
-        lt(investmentTransactions.date, endDate),
-        accountId !== undefined
-          ? eq(investmentTransactions.accountId, accountId)
-          : undefined,
-      )
-    );
-
-  return (
-    row ?? {
-      dividendsReceived: '0',
-      feesPaid: '0',
-      totalContributions: '0',
-      totalWithdrawals: '0',
-    }
-  );
 }
 
 export async function queryRegisteredAccounts(

@@ -20,7 +20,9 @@ export function ActivityStatsBar({ aggregates }: Props) {
       <span className="text-border-base">·</span>
       <span>
         Fees:{' '}
-        <span className="font-mono font-medium text-danger">{fmt(fees)}</span>
+        <span className={cn('font-mono font-medium', fees >= 0 ? 'text-danger' : 'text-positive')}>
+          {fmt(fees)}
+        </span>
       </span>
       <span className="text-border-base">·</span>
       <span>
