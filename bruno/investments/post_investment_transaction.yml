@@ -1,0 +1,30 @@
+info:
+  name: post_investment_transaction
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/investments/transactions"
+  body:
+    type: json
+    data: |-
+      {
+        "accountId": "replace-with-investment-account-uuid",
+        "date": "2026-01-15",
+        "action": "deposit",
+        "amount": 7000,
+        "currency": "CAD",
+        "description": "Employer RRSP contribution",
+        "activityType": "Employer contribution",
+        "note": "Q1 match"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ISO_DATE_REGEX } from '../constants';
 
 export const investmentTransactionFiltersSchema = z.object({
   accountId: z.string().uuid().optional(),
@@ -32,3 +33,21 @@ export const upsertContributionRoomSchema = z.object({
 });
 
 export type UpsertContributionRoomInput = z.infer<typeof upsertContributionRoomSchema>;
+
+export const createManualInvestmentTransactionSchema = z.object({
+  accountId:    z.string().uuid(),
+  date:         z.string().regex(ISO_DATE_REGEX),
+  action:       z.enum(['buy', 'sell', 'dividend', 'deposit', 'withdrawal', 'transfer', 'fee']),
+  symbol:       z.string().optional(),
+  description:  z.string().optional(),
+  quantity:     z.number().positive().optional(),
+  price:        z.number().positive().optional(),
+  amount:       z.number(),
+  currency:     z.string(),
+  activityType: z.string().optional(),
+  note:         z.string().optional(),
+});
+
+export type CreateManualInvestmentTransactionInput = z.infer<
+  typeof createManualInvestmentTransactionSchema
+>;

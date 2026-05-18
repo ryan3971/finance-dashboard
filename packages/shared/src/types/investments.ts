@@ -24,6 +24,7 @@ export interface InvestmentTransactionRow {
   currency: string;
   activityType: string | null;
   note: string | null;
+  source: string;
 }
 
 export interface PaginationMeta {

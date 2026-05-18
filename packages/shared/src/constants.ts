@@ -10,6 +10,9 @@ export const ACCOUNT_TYPES = [
 
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
+export const INVESTMENT_ACCOUNT_TYPES = ['tfsa', 'fhsa', 'rrsp', 'non-registered'] as const;
+export type InvestmentAccountType = (typeof INVESTMENT_ACCOUNT_TYPES)[number];
+
 export const ACCOUNT_TYPE_ORDER: Record<AccountType, number> = {
   chequing: 0,
   savings: 1,

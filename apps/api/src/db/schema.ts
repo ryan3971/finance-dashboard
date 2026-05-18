@@ -220,6 +220,7 @@ export const investmentTransactions = pgTable('investment_transactions', {
   activityType: text('activity_type'),
   compositeKey: text('composite_key').unique().notNull(),
   note: text('note'),
+  source: text('source').notNull().default('csv'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

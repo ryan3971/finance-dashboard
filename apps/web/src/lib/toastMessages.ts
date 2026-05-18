@@ -87,6 +87,9 @@ export const TOAST = {
   // Investments
   CONTRIBUTION_ROOM_SAVED: 'Contribution room updated',
   CONTRIBUTION_ROOM_SAVE_FAILED: 'Failed to update contribution room',
+  INVESTMENT_TRANSACTION_CREATED: 'Transaction added',
+  INVESTMENT_TRANSACTION_CREATE_FAILED: 'Failed to add transaction',
+  INVESTMENT_TRANSACTION_DUPLICATE: 'A transaction with identical fields already exists',
   // Account reset
   ACCOUNT_RESET: 'Account reset',
   ACCOUNT_RESET_FAILED: 'Failed to reset account. Please try again.',

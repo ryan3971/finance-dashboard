@@ -23,6 +23,7 @@ interface InvestmentTransactionBody {
   symbol: string | null;
   amount: number;
   currency: string;
+  source: string;
 }
 
 interface PaginationMeta {
@@ -594,6 +595,247 @@ describe('PUT /api/v1/investments/contribution-room/:accountId/:year', () => {
       .set(authHeader(accessToken));
 
     expect((res.body as ContributionRoomBody).accounts[0]?.roomCarriedIsEstimate).toBe(false);
+  });
+});
+
+// ─── POST /api/v1/investments/transactions ───────────────────────────────────
+
+describe('POST /api/v1/investments/transactions', () => {
+  const validBody = {
+    accountId:   '00000000-0000-0000-0000-000000000000', // replaced per test
+    date:        '2024-03-15',
+    action:      'deposit',
+    amount:      500,
+    currency:    'CAD',
+    description: 'Employer contribution',
+  };
+
+  it('returns 401 without auth', async () => {
+    const res = await request(app).post('/api/v1/investments/transactions').send(validBody);
+    expect(res.status).toBe(401);
+  });
+
+  it('creates a manual transaction and returns 201 with the correct shape', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: tfsaId, amount: 500 });
+
+    expect(res.status).toBe(201);
+    const body = res.body as InvestmentTransactionBody;
+    expect(body.id).toBeDefined();
+    expect(body.accountId).toBe(tfsaId);
+    expect(body.accountName).toBe('My TFSA');
+    expect(body.date).toBe('2024-03-15');
+    expect(body.action).toBe('deposit');
+    expect(body.rawAction).toBe('deposit');
+    expect(body.amount).toBe(500);
+    expect(body.currency).toBe('CAD');
+    expect(body.source).toBe('manual');
+  });
+
+  it('sets rawAction equal to action for manual entries', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: tfsaId, action: 'buy', amount: -600, currency: 'CAD' });
+
+    expect(res.status).toBe(201);
+    const body = res.body as InvestmentTransactionBody;
+    expect(body.action).toBe('buy');
+    expect(body.rawAction).toBe('buy');
+  });
+
+  it('stores optional fields when provided', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({
+        accountId:    tfsaId,
+        date:         '2024-05-01',
+        action:       'buy',
+        amount:       -1000,
+        currency:     'CAD',
+        symbol:       'VFV.TO',
+        description:  'Buy VFV',
+        quantity:     10,
+        price:        100,
+        activityType: 'Purchase',
+        note:         'Scheduled DCA',
+      });
+
+    expect(res.status).toBe(201);
+    const body = res.body as InvestmentTransactionBody;
+    expect(body.symbol).toBe('VFV.TO');
+    expect(body.amount).toBe(-1000);
+  });
+
+  it('returns 400 when accountId is missing', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ date: validBody.date, action: validBody.action, amount: validBody.amount, currency: validBody.currency });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when accountId is not a valid UUID', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: 'not-a-uuid' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when date is in wrong format', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: tfsaId, date: '15/03/2024' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when action is invalid', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: tfsaId, action: 'unknown' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when amount is missing', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ accountId: tfsaId, date: validBody.date, action: validBody.action, currency: validBody.currency });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 when accountId does not exist', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: '00000000-0000-0000-0000-000000000099' });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 403 when accountId belongs to another user', async () => {
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'post-inv-a@example.com'),
+      registerUser(app, 'post-inv-b@example.com'),
+    ]);
+    const accountA = await makeTfsaAccount(app, tokenA);
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(tokenB))
+      .send({ ...validBody, accountId: accountA });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 400 when accountId is a non-investment account type', async () => {
+    const { accessToken } = await registerUser(app);
+    const chequingId = await makeChequingAccount(app, accessToken);
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: chequingId });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 409 when the same transaction is submitted twice', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const body = { ...validBody, accountId: tfsaId };
+
+    const first = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send(body);
+    expect(first.status).toBe(201);
+
+    const second = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send(body);
+    expect(second.status).toBe(409);
+  });
+
+  it('appears in GET /transactions after creation', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: tfsaId });
+
+    const listRes = await request(app)
+      .get('/api/v1/investments/transactions')
+      .set(authHeader(accessToken));
+
+    expect(listRes.status).toBe(200);
+    const listBody = listRes.body as { data: InvestmentTransactionBody[] };
+    expect(listBody.data).toHaveLength(1);
+    expect(listBody.data[0]?.source).toBe('manual');
+  });
+
+  it('affects GET /summary totals after a deposit is created', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: tfsaId, amount: 3000 });
+
+    const summaryRes = await request(app)
+      .get('/api/v1/investments/summary')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(summaryRes.status).toBe(200);
+    const summaryBody = summaryRes.body as SummaryBody;
+    expect(summaryBody.totalContributions).toBe(3000);
+    expect(summaryBody.netDeposits).toBe(3000);
+  });
+
+  it('accepts a non-registered investment account (non-registered type)', async () => {
+    const { accessToken } = await registerUser(app);
+    const nonRegId = await createAccount(app, accessToken, {
+      name: 'TD Non-Reg',
+      type: 'non-registered',
+      institution: 'td',
+      isCredit: false,
+      currency: 'CAD',
+    });
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ ...validBody, accountId: nonRegId });
+
+    expect(res.status).toBe(201);
   });
 });
 

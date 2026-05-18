@@ -6,6 +6,7 @@ import type {
   InvestmentTransactionRow,
 } from '@finance/shared/types/investments';
 import type {
+  CreateManualInvestmentTransactionInput,
   InvestmentTransactionFilters,
   UpsertContributionRoomInput,
 } from '@finance/shared/schemas/investments';
@@ -23,6 +24,9 @@ import {
   type ContributionRecordDbRow,
 } from './investments.repository';
 import { InvestmentError, InvestmentErrorCode } from './investments.errors';
+import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
+import { TRANSACTION_SOURCE } from '@/lib/constants';
+import { insertInvestmentTransaction } from '@/pipelines/investments/investment-insert';
 
 interface PaginationMeta {
   page: number;
@@ -79,6 +83,7 @@ export async function getInvestmentTransactions(
     currency: row.currency,
     activityType: row.activityType,
     note: row.note,
+    source: row.source,
   }));
 
   const { page, pageSize } = filters;
@@ -200,6 +205,70 @@ export async function getContributionRoom(
   });
 
   return { year, accounts: summaries };
+}
+
+export async function createManualInvestmentTransaction(
+  userId: string,
+  input: CreateManualInvestmentTransactionInput
+): Promise<InvestmentTransactionRow> {
+  const account = await queryAccountOwnerAndType(input.accountId);
+
+  if (!account) {
+    throw new InvestmentError(InvestmentErrorCode.INVESTMENT_ACCOUNT_NOT_FOUND);
+  }
+
+  if (account.userId !== userId) {
+    throw new InvestmentError(InvestmentErrorCode.INVESTMENT_ACCOUNT_FORBIDDEN);
+  }
+
+  // Widen to string[] so TypeScript accepts the string argument to includes.
+  const investmentTypes: readonly string[] = INVESTMENT_ACCOUNT_TYPES;
+  if (!investmentTypes.includes(account.type)) {
+    throw new InvestmentError(InvestmentErrorCode.INVALID_ACCOUNT_TYPE_FOR_TRANSACTION);
+  }
+
+  const row = await insertInvestmentTransaction({
+    accountId:    input.accountId,
+    importId:     null,
+    date:         input.date,
+    action:       input.action,
+    rawAction:    input.action,
+    symbol:       input.symbol ?? null,
+    description:  input.description ?? null,
+    quantity:     input.quantity ?? null,
+    price:        input.price ?? null,
+    grossAmount:  null,
+    commission:   null,
+    amount:       input.amount,
+    currency:     input.currency,
+    activityType: input.activityType ?? null,
+    note:         input.note ?? null,
+    source:       TRANSACTION_SOURCE.MANUAL,
+  });
+
+  if (!row) {
+    throw new InvestmentError(InvestmentErrorCode.DUPLICATE_INVESTMENT_TRANSACTION);
+  }
+
+  return {
+    id:           row.id,
+    accountId:    row.accountId,
+    accountName:  account.name,
+    date:         row.date,
+    action:       row.action,
+    rawAction:    row.rawAction,
+    symbol:       row.symbol,
+    description:  row.description,
+    quantity:     row.quantity !== null ? new Decimal(row.quantity).toNumber() : null,
+    price:        row.price !== null ? new Decimal(row.price).toNumber() : null,
+    grossAmount:  null,
+    commission:   null,
+    amount:       new Decimal(row.amount).toNumber(),
+    currency:     row.currency,
+    activityType: row.activityType,
+    note:         row.note,
+    source:       row.source,
+  };
 }
 
 export async function upsertContributionRoom(

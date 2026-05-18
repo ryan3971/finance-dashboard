@@ -33,6 +33,7 @@ export interface InvestmentTransactionDbRow {
   currency: string;
   activityType: string | null;
   note: string | null;
+  source: string;
 }
 
 export interface ActivitySummaryDbRow {
@@ -98,6 +99,7 @@ export async function queryPaginatedTransactions(
         currency: investmentTransactions.currency,
         activityType: investmentTransactions.activityType,
         note: investmentTransactions.note,
+        source: investmentTransactions.source,
       })
       .from(investmentTransactions)
       .innerJoin(accounts, eq(investmentTransactions.accountId, accounts.id))
@@ -244,9 +246,9 @@ export async function queryContributionAggregates(
 
 export async function queryAccountOwnerAndType(
   accountId: string
-): Promise<{ userId: string; type: string } | undefined> {
+): Promise<{ userId: string; type: string; name: string } | undefined> {
   const [row] = await db
-    .select({ userId: accounts.userId, type: accounts.type })
+    .select({ userId: accounts.userId, type: accounts.type, name: accounts.name })
     .from(accounts)
     .where(eq(accounts.id, accountId));
   return row;

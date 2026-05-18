@@ -1,0 +1,25 @@
+info:
+  name: put_contribution_room
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: "{{localhost}}/api/v1/investments/contribution-room/replace-with-account-uuid/2026"
+  body:
+    type: json
+    data: |-
+      {
+        "annualLimit": 7000,
+        "roomCarried": 5000,
+        "roomCarriedConfirmed": false
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
