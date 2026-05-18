@@ -75,7 +75,6 @@ export function InvestmentsPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <h1 className="text-xl font-semibold text-content-primary">Investments</h1>
-          <YearSelector year={year} onChange={setYear} />
           <TabsList className="ml-auto">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -84,6 +83,10 @@ export function InvestmentsPage() {
 
         {/* Dashboard tab */}
         <TabsContent value="dashboard">
+          <div className="flex items-center gap-3 mb-6">
+            <YearSelector year={year} onChange={setYear} />
+          </div>
+
           {showDashboardSkeleton && <InvestmentSkeleton />}
 
           {!showDashboardSkeleton && (
