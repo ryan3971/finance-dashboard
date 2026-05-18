@@ -249,6 +249,20 @@ export interface MonthlyBreakdownDbRow {
   deployed: string;
 }
 
+export interface MonthlyBreakdownByAccountDbRow {
+  accountId: string;
+  month: number;
+  contributed: string;
+  deployed: string;
+}
+
+export interface InvestmentAccountDetailRow {
+  id: string;
+  name: string;
+  type: string;
+  institution: string;
+}
+
 export async function queryInvestmentAccountIds(userId: string): Promise<string[]> {
   const rows = await db
     .select({ id: accounts.id })
@@ -260,6 +274,25 @@ export async function queryInvestmentAccountIds(userId: string): Promise<string[
       )
     );
   return rows.map((r) => r.id);
+}
+
+export async function queryInvestmentAccountDetails(
+  userId: string
+): Promise<InvestmentAccountDetailRow[]> {
+  return db
+    .select({
+      id: accounts.id,
+      name: accounts.name,
+      type: accounts.type,
+      institution: accounts.institution,
+    })
+    .from(accounts)
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        inArray(accounts.type, [...INVESTMENT_ACCOUNT_TYPES]),
+      )
+    );
 }
 
 export async function queryMonthlyBreakdownRaw(
@@ -293,6 +326,43 @@ export async function queryMonthlyBreakdownRaw(
       )
     )
     .groupBy(sql`EXTRACT(MONTH FROM ${investmentTransactions.date})`);
+}
+
+export async function queryMonthlyBreakdownByAccount(
+  accountIds: string[],
+  year: number
+): Promise<MonthlyBreakdownByAccountDbRow[]> {
+  if (accountIds.length === 0) return [];
+
+  const startDate = `${year}-01-01`;
+  const endDate = `${year + 1}-01-01`;
+
+  return db
+    .select({
+      accountId: investmentTransactions.accountId,
+      month: sql<number>`EXTRACT(MONTH FROM ${investmentTransactions.date})::int`,
+      contributed: sql<string>`CAST(COALESCE(SUM(
+        CASE WHEN ${investmentTransactions.action} = 'deposit'
+        THEN ${investmentTransactions.amount}::numeric ELSE 0 END
+      ), 0) AS text)`,
+      deployed: sql<string>`CAST(COALESCE(SUM(
+        CASE WHEN ${investmentTransactions.action} IN ('buy', 'sell')
+        THEN ${investmentTransactions.amount}::numeric ELSE 0 END
+      ), 0) AS text)`,
+    })
+    .from(investmentTransactions)
+    .where(
+      and(
+        inArray(investmentTransactions.accountId, accountIds),
+        gte(investmentTransactions.date, startDate),
+        lt(investmentTransactions.date, endDate),
+        inArray(investmentTransactions.action, ['deposit', 'buy', 'sell']),
+      )
+    )
+    .groupBy(
+      investmentTransactions.accountId,
+      sql`EXTRACT(MONTH FROM ${investmentTransactions.date})`
+    );
 }
 
 export async function upsertContributionRoomRecord(

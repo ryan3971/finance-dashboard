@@ -15,7 +15,6 @@ import { InvestmentSkeleton } from './components/InvestmentSkeleton';
 import { InvestmentTransactionsTable } from './components/InvestmentTransactionsTable';
 import { ManualInvestmentTransactionPanel } from './components/ManualInvestmentTransactionPanel';
 import { MonthlyBreakdownTable } from './components/MonthlyBreakdownTable';
-import { YtdProgressSection } from './components/YtdProgressSection';
 import { useContributionRoom } from './hooks/useContributionRoom';
 import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
 import { useMonthlyBreakdown } from './hooks/useMonthlyBreakdown';
@@ -106,23 +105,6 @@ export function InvestmentsPage() {
                 <ContributionRoomCard data={roomData} isFetching={roomFetching} />
               )}
 
-              {breakdownData && roomData && (
-                <div
-                  className={cn(
-                    'transition-opacity duration-200',
-                    breakdownFetching && 'opacity-50'
-                  )}
-                >
-                  <YtdProgressSection
-                    months={breakdownData.months}
-                    selectedYear={year}
-                    currentYear={currentYear}
-                    currentMonth={currentMonth}
-                    accounts={roomData.accounts}
-                  />
-                </div>
-              )}
-
               {breakdownData && (
                 <div
                   className={cn(
@@ -131,8 +113,7 @@ export function InvestmentsPage() {
                   )}
                 >
                   <MonthlyBreakdownTable
-                    months={breakdownData.months}
-                    totals={breakdownData.totals}
+                    data={breakdownData}
                     currentMonth={currentMonth}
                     currentYear={currentYear}
                     selectedYear={year}

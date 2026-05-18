@@ -13,9 +13,33 @@ export interface MonthlyBreakdownTotals {
   target: number | null;
 }
 
+export interface AccountMonthlyBreakdownRow {
+  month: number;
+  contributed: number;
+  deployed: number;
+  uninvestedDelta: number;
+}
+
+export interface AccountMonthlyBreakdownTotals {
+  contributed: number;
+  deployed: number;
+  uninvestedDelta: number;
+}
+
+export interface AccountMonthlyBreakdown {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  institution: string;
+  annualLimit: number | null;
+  months: AccountMonthlyBreakdownRow[];
+  totals: AccountMonthlyBreakdownTotals;
+}
+
 export interface MonthlyBreakdownResponse {
   year: number;
   investmentsPercentage: number | null;
   months: MonthlyBreakdownRow[];
   totals: MonthlyBreakdownTotals;
+  accounts: AccountMonthlyBreakdown[];
 }

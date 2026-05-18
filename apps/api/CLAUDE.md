@@ -83,6 +83,8 @@ Key behaviours:
 
 `GET /api/v1/investments/summary?year=` — activity totals (dividends, fees, contributions, withdrawals, netDeposits) for a year.
 
+`GET /api/v1/investments/monthly-breakdown?year=` — combined 12-month breakdown (contributed, deployed, uninvestedDelta, target) plus an `accounts` array of per-account breakdowns. Each account entry includes `annualLimit` (from `contributionRecords`) and its own 12-month rows and totals. Account ordering: TFSA → RRSP → FHSA → non-registered.
+
 `GET /api/v1/investments/contribution-room?year=` — per-registered-account contribution room. Supports a TFSA carry-forward estimate from prior-year data.
 
 `PUT /api/v1/investments/contribution-room/:accountId/:year` — upsert the `annualLimit`, `roomCarried`, and `roomCarriedConfirmed` fields for a registered account. Returns 204.
