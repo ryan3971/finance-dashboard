@@ -22,9 +22,10 @@ import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
 import { useMonthlyBreakdown } from './hooks/useMonthlyBreakdown';
 
 export function InvestmentsPage() {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
+  const { currentYear, currentMonth } = useMemo(() => {
+    const now = new Date();
+    return { currentYear: now.getFullYear(), currentMonth: now.getMonth() + 1 };
+  }, []);
 
   const [year, setYear] = useState(() => currentYear);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -128,13 +129,20 @@ export function InvestmentsPage() {
               )}
 
               {breakdownData && roomData && (
-                <YtdProgressSection
-                  months={breakdownData.months}
-                  selectedYear={year}
-                  currentYear={currentYear}
-                  currentMonth={currentMonth}
-                  accounts={roomData.accounts}
-                />
+                <div
+                  className={cn(
+                    'transition-opacity duration-200',
+                    breakdownFetching && 'opacity-50'
+                  )}
+                >
+                  <YtdProgressSection
+                    months={breakdownData.months}
+                    selectedYear={year}
+                    currentYear={currentYear}
+                    currentMonth={currentMonth}
+                    accounts={roomData.accounts}
+                  />
+                </div>
               )}
 
               {breakdownData && (

@@ -321,7 +321,7 @@ export async function getMonthlyBreakdown(
     return { month, contributed, deployed, uninvestedDelta, target };
   });
 
-  const anyNullTarget = months.some((m) => m.target === null);
+  const anyNullTarget = investmentsPercentage === null || !hasIncomeEntries;
 
   const initial: MonthlyBreakdownTotals = {
     contributed: 0,

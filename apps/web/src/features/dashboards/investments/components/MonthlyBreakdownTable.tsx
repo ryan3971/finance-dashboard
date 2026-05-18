@@ -14,19 +14,24 @@ interface Props {
   readonly selectedYear: number;
 }
 
-function contributedColor(
-  contributed: number,
-  target: number | null,
+function isFutureMonth(
   month: number,
   currentMonth: number,
   currentYear: number,
   selectedYear: number
-): string {
-  if (target === null) return 'text-content-secondary';
-  const isFuture =
+): boolean {
+  return (
     selectedYear > currentYear ||
-    (selectedYear === currentYear && month > currentMonth);
-  if (isFuture) return 'text-content-secondary';
+    (selectedYear === currentYear && month > currentMonth)
+  );
+}
+
+function contributedColor(
+  contributed: number,
+  target: number | null,
+  isFuture: boolean
+): string {
+  if (target === null || isFuture) return 'text-content-secondary';
   return contributed >= target ? 'text-positive' : 'text-danger';
 }
 
@@ -53,20 +58,11 @@ function MonthRow({
   readonly currentYear: number;
   readonly selectedYear: number;
 }) {
-  const isFuture =
-    selectedYear > currentYear ||
-    (selectedYear === currentYear && row.month > currentMonth);
+  const isFuture = isFutureMonth(row.month, currentMonth, currentYear, selectedYear);
   const isCurrent = selectedYear === currentYear && row.month === currentMonth;
 
   const monthLabel = MONTH_LABELS[row.month - 1] ?? '';
-  const contribClass = contributedColor(
-    row.contributed,
-    row.target,
-    row.month,
-    currentMonth,
-    currentYear,
-    selectedYear
-  );
+  const contribClass = contributedColor(row.contributed, row.target, isFuture);
 
   return (
     <tr className="border-t border-border-subtle">
@@ -96,26 +92,8 @@ function MonthRow({
   );
 }
 
-function TotalsRow({
-  totals,
-  currentMonth,
-  currentYear,
-  selectedYear,
-}: {
-  readonly totals: MonthlyBreakdownTotals;
-  readonly currentMonth: number;
-  readonly currentYear: number;
-  readonly selectedYear: number;
-}) {
-  // month=0 is never > currentMonth, so the totals row is never "future".
-  const contribClass = contributedColor(
-    totals.contributed,
-    totals.target,
-    0,
-    currentMonth,
-    currentYear,
-    selectedYear
-  );
+function TotalsRow({ totals }: { readonly totals: MonthlyBreakdownTotals }) {
+  const contribClass = contributedColor(totals.contributed, totals.target, false);
 
   return (
     <tr className="border-t-2 border-border-base bg-surface-subtle font-semibold">
@@ -183,12 +161,7 @@ export function MonthlyBreakdownTable({
           ))}
         </tbody>
         <tfoot>
-          <TotalsRow
-            totals={totals}
-            currentMonth={currentMonth}
-            currentYear={currentYear}
-            selectedYear={selectedYear}
-          />
+          <TotalsRow totals={totals} />
         </tfoot>
       </table>
     </DataTable>

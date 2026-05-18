@@ -1344,14 +1344,21 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
 
   it('non-investment account transactions are not included', async () => {
     const { accessToken } = await registerUser(app);
-    // Create a chequing account — its transactions must not appear in the breakdown.
-    await makeChequingAccount(app, accessToken);
-    // Only create a TFSA to confirm the isolation is account-type based.
+    const chequingId = await makeChequingAccount(app, accessToken);
     const tfsaId = await makeTfsaAccount(app, accessToken);
+
     await investmentTransactionFixture(tfsaId, {
       date: '2024-02-01',
       action: 'deposit',
       amount: '750.00',
+    });
+    // Insert directly into investment_transactions for the chequing account,
+    // bypassing the API account-type guard. The breakdown must exclude it
+    // because queryInvestmentAccountIds only returns investment-type accounts.
+    await investmentTransactionFixture(chequingId, {
+      date: '2024-02-15',
+      action: 'deposit',
+      amount: '9999.00',
     });
 
     const res = await request(app)
@@ -1361,6 +1368,7 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
 
     expect(res.status).toBe(200);
     const body = res.body as MonthlyBreakdownBody;
+    // Only the TFSA transaction should count; the chequing row must be absent.
     expect(body.totals.contributed).toBe(750);
   });
 
