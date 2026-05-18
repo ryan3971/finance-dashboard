@@ -88,6 +88,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
       note:         undefined,
     });
     setTransferDirection('in');
+    onClose();
   }
 
   const serverError = mutation.error
@@ -181,21 +182,21 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
           </Select>
         </FormField>
 
+        {/* Description — required to ensure a unique compositeKey */}
+        <FormField label="Description *" error={errors.description?.message} labelSize="xs">
+          <Input
+            type="text"
+            placeholder="e.g. Employer RRSP contribution"
+            {...register('description')}
+          />
+        </FormField>
+
         {/* Symbol */}
         <FormField label="Symbol" error={errors.symbol?.message} labelSize="xs">
           <Input
             type="text"
             placeholder="e.g. VFV.TO"
             {...register('symbol')}
-          />
-        </FormField>
-
-        {/* Description */}
-        <FormField label="Description" error={errors.description?.message} labelSize="xs">
-          <Input
-            type="text"
-            placeholder="Optional description…"
-            {...register('description')}
           />
         </FormField>
 

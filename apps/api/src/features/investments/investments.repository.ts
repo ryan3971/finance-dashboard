@@ -33,6 +33,8 @@ export interface InvestmentTransactionDbRow {
   currency: string;
   activityType: string | null;
   note: string | null;
+  // Drizzle returns text columns as string. The service layer narrows this to
+  // InvestmentTransactionSource at the boundary where it maps to the response type.
   source: string;
 }
 

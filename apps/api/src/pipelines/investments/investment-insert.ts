@@ -1,6 +1,7 @@
 import { investmentTransactions } from '@/db/schema';
 import { db } from '@/db';
 import { buildCompositeKey } from '@/lib/composite-key';
+import type { InvestmentTransactionSource } from '@finance/shared/types/investments';
 
 export interface InvestmentTransactionInsert {
   accountId:    string;
@@ -20,7 +21,7 @@ export interface InvestmentTransactionInsert {
   currency:     string;
   activityType: string | null;
   note:         string | null;
-  source:       string;
+  source:       InvestmentTransactionSource;
 }
 
 /** All columns returned from .returning() — no JOIN, so accountName is absent. */
@@ -40,7 +41,10 @@ export interface InsertedInvestmentTransactionRow {
   currency:     string;
   activityType: string | null;
   note:         string | null;
-  source:       string;
+  // The CHECK constraint on investment_transactions.source guarantees this is
+  // always 'csv' | 'manual'. Drizzle cannot narrow text columns statically,
+  // so we cast once at this boundary.
+  source:       InvestmentTransactionSource;
 }
 
 /**
@@ -105,5 +109,9 @@ export async function insertInvestmentTransaction(
       source:       investmentTransactions.source,
     });
 
-  return row ?? null;
+  if (!row) return null;
+
+  // The DB CHECK constraint guarantees source is always 'csv' | 'manual'.
+  // Drizzle cannot narrow text columns statically, so we cast once here.
+  return { ...row, source: row.source as InvestmentTransactionSource };
 }

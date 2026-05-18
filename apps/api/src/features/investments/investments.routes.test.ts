@@ -601,17 +601,19 @@ describe('PUT /api/v1/investments/contribution-room/:accountId/:year', () => {
 // ─── POST /api/v1/investments/transactions ───────────────────────────────────
 
 describe('POST /api/v1/investments/transactions', () => {
-  const validBody = {
-    accountId:   '00000000-0000-0000-0000-000000000000', // replaced per test
+  // accountId is always provided explicitly per-test — no placeholder here.
+  const validFields = {
     date:        '2024-03-15',
     action:      'deposit',
     amount:      500,
     currency:    'CAD',
-    description: 'Employer contribution',
+    description: 'Employer RRSP contribution',
   };
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).post('/api/v1/investments/transactions').send(validBody);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .send({ accountId: '00000000-0000-0000-0000-000000000001', ...validFields });
     expect(res.status).toBe(401);
   });
 
@@ -622,7 +624,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: tfsaId, amount: 500 });
+      .send({ accountId: tfsaId, ...validFields });
 
     expect(res.status).toBe(201);
     const body = res.body as InvestmentTransactionBody;
@@ -644,7 +646,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: tfsaId, action: 'buy', amount: -600, currency: 'CAD' });
+      .send({ accountId: tfsaId, ...validFields, action: 'buy', amount: -600 });
 
     expect(res.status).toBe(201);
     const body = res.body as InvestmentTransactionBody;
@@ -665,8 +667,8 @@ describe('POST /api/v1/investments/transactions', () => {
         action:       'buy',
         amount:       -1000,
         currency:     'CAD',
-        symbol:       'VFV.TO',
         description:  'Buy VFV',
+        symbol:       'VFV.TO',
         quantity:     10,
         price:        100,
         activityType: 'Purchase',
@@ -684,7 +686,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ date: validBody.date, action: validBody.action, amount: validBody.amount, currency: validBody.currency });
+      .send(validFields);
     expect(res.status).toBe(400);
   });
 
@@ -693,7 +695,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: 'not-a-uuid' });
+      .send({ accountId: 'not-a-uuid', ...validFields });
     expect(res.status).toBe(400);
   });
 
@@ -703,7 +705,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: tfsaId, date: '15/03/2024' });
+      .send({ accountId: tfsaId, ...validFields, date: '15/03/2024' });
     expect(res.status).toBe(400);
   });
 
@@ -713,7 +715,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: tfsaId, action: 'unknown' });
+      .send({ accountId: tfsaId, ...validFields, action: 'unknown' });
     expect(res.status).toBe(400);
   });
 
@@ -723,7 +725,47 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ accountId: tfsaId, date: validBody.date, action: validBody.action, currency: validBody.currency });
+      .send({ accountId: tfsaId, date: validFields.date, action: validFields.action, currency: validFields.currency, description: validFields.description });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when amount is zero', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ accountId: tfsaId, ...validFields, amount: 0 });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when description is missing', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ accountId: tfsaId, date: validFields.date, action: validFields.action, amount: validFields.amount, currency: validFields.currency });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when description is empty', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ accountId: tfsaId, ...validFields, description: '' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when currency is not CAD or USD', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({ accountId: tfsaId, ...validFields, currency: 'EUR' });
     expect(res.status).toBe(400);
   });
 
@@ -732,7 +774,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: '00000000-0000-0000-0000-000000000099' });
+      .send({ accountId: '00000000-0000-0000-0000-000000000099', ...validFields });
     expect(res.status).toBe(404);
   });
 
@@ -746,7 +788,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(tokenB))
-      .send({ ...validBody, accountId: accountA });
+      .send({ accountId: accountA, ...validFields });
 
     expect(res.status).toBe(403);
   });
@@ -758,7 +800,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: chequingId });
+      .send({ accountId: chequingId, ...validFields });
 
     expect(res.status).toBe(400);
   });
@@ -766,18 +808,17 @@ describe('POST /api/v1/investments/transactions', () => {
   it('returns 409 when the same transaction is submitted twice', async () => {
     const { accessToken } = await registerUser(app);
     const tfsaId = await makeTfsaAccount(app, accessToken);
-    const body = { ...validBody, accountId: tfsaId };
 
     const first = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send(body);
+      .send({ accountId: tfsaId, ...validFields });
     expect(first.status).toBe(201);
 
     const second = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send(body);
+      .send({ accountId: tfsaId, ...validFields });
     expect(second.status).toBe(409);
   });
 
@@ -788,7 +829,7 @@ describe('POST /api/v1/investments/transactions', () => {
     await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: tfsaId });
+      .send({ accountId: tfsaId, ...validFields });
 
     const listRes = await request(app)
       .get('/api/v1/investments/transactions')
@@ -807,7 +848,7 @@ describe('POST /api/v1/investments/transactions', () => {
     await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: tfsaId, amount: 3000 });
+      .send({ accountId: tfsaId, ...validFields, amount: 3000 });
 
     const summaryRes = await request(app)
       .get('/api/v1/investments/summary')
@@ -833,7 +874,7 @@ describe('POST /api/v1/investments/transactions', () => {
     const res = await request(app)
       .post('/api/v1/investments/transactions')
       .set(authHeader(accessToken))
-      .send({ ...validBody, accountId: nonRegId });
+      .send({ accountId: nonRegId, ...validFields });
 
     expect(res.status).toBe(201);
   });

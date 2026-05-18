@@ -10,6 +10,7 @@ import type {
   InvestmentTransactionFilters,
   UpsertContributionRoomInput,
 } from '@finance/shared/schemas/investments';
+import type { InvestmentTransactionSource } from '@finance/shared/types/investments';
 import {
   REGISTERED_ACCOUNT_TYPES,
   TFSA_TYPE,
@@ -83,7 +84,8 @@ export async function getInvestmentTransactions(
     currency: row.currency,
     activityType: row.activityType,
     note: row.note,
-    source: row.source,
+    // The DB CHECK constraint guarantees 'csv' | 'manual'; Drizzle returns string.
+    source: row.source as InvestmentTransactionSource,
   }));
 
   const { page, pageSize } = filters;

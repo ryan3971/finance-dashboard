@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { investmentKeys } from '@/lib/queryKeys';
 import { TOAST } from '@/lib/toastMessages';
+import { getApiErrorMessage } from '@/lib/errors';
+import type { AxiosError } from 'axios';
 import type { CreateManualInvestmentTransactionInput } from '@finance/shared/schemas/investments';
 import type { InvestmentTransactionRow } from '@finance/shared/types/investments';
 
@@ -17,29 +18,29 @@ export function useCreateManualInvestmentTransaction() {
       );
       return data;
     },
-    onSuccess: (data) => {
-      const year = new Date(data.date).getFullYear();
-
+    onSuccess: () => {
       // Invalidate all transaction queries regardless of active filter combination.
       void queryClient.invalidateQueries({
         queryKey: ['investments', 'transactions'],
       });
-      // Activity summary totals (deposits affect netDeposits / totalContributions).
+      // Invalidate all summary and contribution-room queries regardless of which
+      // year is currently displayed. A transaction dated outside the active year
+      // (e.g. 2024 entry while viewing 2025) would leave summary cards stale if
+      // we only invalidated the year derived from data.date.
       void queryClient.invalidateQueries({
-        queryKey: investmentKeys.summary(year),
+        queryKey: ['investments', 'summary'],
       });
-      // Contribution room (deposits and withdrawals affect available room).
       void queryClient.invalidateQueries({
-        queryKey: investmentKeys.contributionRoom(year),
+        queryKey: ['investments', 'contribution-room'],
       });
 
       toast.success(TOAST.INVESTMENT_TRANSACTION_CREATED);
     },
-    onError: (err: { response?: { status?: number } }) => {
+    onError: (err: AxiosError) => {
       if (err.response?.status === 409) {
         toast.error(TOAST.INVESTMENT_TRANSACTION_DUPLICATE);
       } else {
-        toast.error(TOAST.INVESTMENT_TRANSACTION_CREATE_FAILED);
+        toast.error(getApiErrorMessage(err, TOAST.INVESTMENT_TRANSACTION_CREATE_FAILED));
       }
     },
   });
