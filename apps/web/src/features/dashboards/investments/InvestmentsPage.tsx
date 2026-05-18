@@ -57,6 +57,7 @@ export function InvestmentsPage() {
   const {
     data: roomData,
     isFetching: roomFetching,
+    isError: roomError,
   } = useContributionRoom(year);
 
   const {
@@ -104,6 +105,10 @@ export function InvestmentsPage() {
                 >
                   <ActivitySummaryCards data={summaryData} />
                 </div>
+              )}
+
+              {roomError && !roomData && (
+                <EmptyState variant="error" message="Failed to load contribution room data." />
               )}
 
               {roomData && (
