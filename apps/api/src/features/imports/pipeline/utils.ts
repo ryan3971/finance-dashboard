@@ -1,27 +1,8 @@
 import { assertDefined } from '@/lib/assert';
 
-/**
- * Normalise a transaction description for storage and CompositeKey generation.
- */
-export function normaliseDescription(raw: string): string {
-  return raw.trim().replace(/\s+/g, ' ').toLowerCase();
-}
-
-/**
- * Build the CompositeKey used for deduplication.
- * Format: {accountId}-{YYYY-MM-DD}-{normalised-description}-{amount}
- */
-export function buildCompositeKey(
-  accountId: string,
-  date: string,
-  description: string,
-  amount: number
-): string {
-  const normDesc = normaliseDescription(description)
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-');
-  return `${accountId}-${date}-${normDesc}-${amount.toFixed(2)}`;
-}
+// Re-exported so adapters within this feature can continue importing from utils
+// without needing to know where the canonical implementation lives.
+export { buildCompositeKey, normaliseDescription } from '@/lib/composite-key';
 
 /**
  * Parse a date string to ISO 8601 YYYY-MM-DD.

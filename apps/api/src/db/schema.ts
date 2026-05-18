@@ -220,10 +220,13 @@ export const investmentTransactions = pgTable('investment_transactions', {
   activityType: text('activity_type'),
   compositeKey: text('composite_key').unique().notNull(),
   note: text('note'),
+  source: text('source').notNull().default('csv'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (t) => [
+  check('investment_transactions_source_check', sql`${t.source} IN ('csv', 'manual')`),
+]);
 
 export const investmentSnapshots = pgTable('investment_snapshots', {
   id: uuid('id').primaryKey().defaultRandom(),

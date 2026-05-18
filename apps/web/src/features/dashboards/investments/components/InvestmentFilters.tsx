@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAccounts } from '@/hooks/useAccounts';
+import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
 
-const INVESTMENT_TYPES = new Set(['tfsa', 'rrsp', 'fhsa', 'non-registered']);
+const INVESTMENT_TYPES = new Set<string>(INVESTMENT_ACCOUNT_TYPES);
 const SYMBOL_DEBOUNCE_MS = 300;
 
 const ACTION_OPTIONS = [

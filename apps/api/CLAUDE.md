@@ -69,6 +69,24 @@ Drizzle generates migration filenames automatically — do not rename them. Run 
 
 Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles `DomainError` instances generically, and also catches `ZodError` (→ 400) and `multer.MulterError`. Route handlers do not need to catch these.
 
+### Investment transaction endpoints
+
+`GET /api/v1/investments/transactions` — paginated list of investment transactions for the authenticated user, with optional filters (`accountId`, `action`, `symbol`, `startDate`, `endDate`). Response includes `source: 'csv' | 'manual'` on each row.
+
+`POST /api/v1/investments/transactions` — create a manual investment transaction. Body validated against `createManualInvestmentTransactionSchema` (`packages/shared/src/schemas/investments.ts`). The client applies the sign to `amount` before posting; the API stores it as-is. `rawAction` is set equal to `action` by the service. Returns `201` with `InvestmentTransactionRow`.
+
+Key behaviours:
+- Account must belong to the authenticated user (→ 403) and must be an investment account type (tfsa, fhsa, rrsp, non-registered) (→ 400 `INVALID_ACCOUNT_TYPE_FOR_TRANSACTION`).
+- Duplicate detection uses `compositeKey` (same algorithm as the import pipeline). A collision returns 409 `DUPLICATE_INVESTMENT_TRANSACTION`.
+- `insertInvestmentTransaction` in `investments.repository.ts` is the single shared insert path used by both the import pipeline (`processInvestmentRow`) and manual entry. Do not add a second insert path.
+- `source` column on `investment_transactions` distinguishes provenance: `'csv'` for imported rows, `'manual'` for entries created via this endpoint.
+
+`GET /api/v1/investments/summary?year=` — activity totals (dividends, fees, contributions, withdrawals, netDeposits) for a year.
+
+`GET /api/v1/investments/contribution-room?year=` — per-registered-account contribution room. Supports a TFSA carry-forward estimate from prior-year data.
+
+`PUT /api/v1/investments/contribution-room/:accountId/:year` — upsert the `annualLimit`, `roomCarried`, and `roomCarriedConfirmed` fields for a registered account. Returns 204.
+
 ### Categorization rules endpoints
 
 `GET /api/v1/categorization-rules` — returns all rules for the authenticated user, ordered by priority descending. Each rule includes `matchType: 'substring' | 'wildcard'`.

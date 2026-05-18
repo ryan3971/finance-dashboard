@@ -3,6 +3,7 @@ import { useSearch } from '@tanstack/react-router';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { YearSelector } from '@/components/common/YearSelector';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { investmentTransactionFiltersSchema } from '@finance/shared/schemas/investments';
@@ -11,12 +12,14 @@ import { ContributionRoomCard } from './components/ContributionRoomCard';
 import { InvestmentFilters } from './components/InvestmentFilters';
 import { InvestmentSkeleton } from './components/InvestmentSkeleton';
 import { InvestmentTransactionsTable } from './components/InvestmentTransactionsTable';
+import { ManualInvestmentTransactionPanel } from './components/ManualInvestmentTransactionPanel';
 import { useContributionRoom } from './hooks/useContributionRoom';
 import { useInvestmentSummary } from './hooks/useInvestmentSummary';
 import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
 
 export function InvestmentsPage() {
   const [year, setYear] = useState(() => new Date().getFullYear());
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const search = useSearch({ from: '/dashboard/investments' });
 
@@ -95,7 +98,12 @@ export function InvestmentsPage() {
 
           {/* Activity filters */}
           <div className="space-y-4">
-            <h2 className="text-sm font-medium text-content-primary">Activity</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-content-primary">Activity</h2>
+              <Button size="sm" onClick={() => setIsPanelOpen(true)}>
+                Add Transaction
+              </Button>
+            </div>
             <InvestmentFilters
               filters={{
                 accountId: search.accountId,
@@ -114,6 +122,9 @@ export function InvestmentsPage() {
             page={filters.page}
           />
         </div>
+      )}
+      {isPanelOpen && (
+        <ManualInvestmentTransactionPanel onClose={() => setIsPanelOpen(false)} />
       )}
     </PageLayout>
   );

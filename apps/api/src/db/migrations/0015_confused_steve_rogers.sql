@@ -1,0 +1,1 @@
+ALTER TABLE "investment_transactions" ADD COLUMN "source" text DEFAULT 'csv' NOT NULL;

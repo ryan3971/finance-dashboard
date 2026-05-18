@@ -7,6 +7,9 @@ export type InvestmentAction =
   | 'transfer'
   | 'fee';
 
+/** Provenance of an investment transaction row. */
+export type InvestmentTransactionSource = 'csv' | 'manual';
+
 export interface InvestmentTransactionRow {
   id: string;
   accountId: string;
@@ -24,6 +27,7 @@ export interface InvestmentTransactionRow {
   currency: string;
   activityType: string | null;
   note: string | null;
+  source: InvestmentTransactionSource;
 }
 
 export interface PaginationMeta {
