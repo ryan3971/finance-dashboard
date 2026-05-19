@@ -9,7 +9,7 @@ import type {
   InvestmentTransactionFilters,
   UpsertContributionRoomInput,
 } from '@finance/shared/schemas/investments';
-import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
+import { INVESTMENT_ACCOUNT_TYPES, type InvestmentAccountType } from '@finance/shared/constants';
 
 export const REGISTERED_ACCOUNT_TYPES = ['tfsa', 'rrsp', 'fhsa'] as const;
 export type RegisteredAccountType = (typeof REGISTERED_ACCOUNT_TYPES)[number];
@@ -259,14 +259,16 @@ export interface MonthlyBreakdownByAccountDbRow {
 export interface InvestmentAccountDetailRow {
   id: string;
   name: string;
-  type: string;
+  // The WHERE inArray clause guarantees every returned row has an InvestmentAccountType.
+  // Drizzle cannot narrow text columns from WHERE predicates, so we cast once at the query boundary.
+  type: InvestmentAccountType;
   institution: string;
 }
 
 export async function queryInvestmentAccountDetails(
   userId: string
 ): Promise<InvestmentAccountDetailRow[]> {
-  return db
+  const rows = await db
     .select({
       id: accounts.id,
       name: accounts.name,
@@ -280,6 +282,7 @@ export async function queryInvestmentAccountDetails(
         inArray(accounts.type, [...INVESTMENT_ACCOUNT_TYPES]),
       )
     );
+  return rows as InvestmentAccountDetailRow[];
 }
 
 export async function queryMonthlyBreakdownRaw(

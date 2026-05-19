@@ -15,7 +15,7 @@ export interface InvestmentTransactionRow {
   accountId: string;
   accountName: string;
   date: string;
-  action: string;
+  action: InvestmentAction;
   rawAction: string;
   symbol: string | null;
   description: string | null;

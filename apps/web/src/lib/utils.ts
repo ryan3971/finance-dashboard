@@ -59,6 +59,17 @@ export function getYearDateRange(year: number) {
   return { start: `${year}-01-01`, end: `${year}-12-31` };
 }
 
+/**
+ * Converts an optional numeric RHF input to a number or undefined.
+ * Empty string (cleared field) or null/undefined → undefined (field omitted).
+ * Typed as string | null | undefined because RHF's setValueAs can receive non-string values.
+ */
+export function toOptionalNumber(v: string | null | undefined): number | undefined {
+  if (v === '' || v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return isNaN(n) ? undefined : n;
+}
+
 /** Formats an investment transaction amount with sign (+/-) and CAD currency. */
 export function fmtInvestmentAmount(amount: number): string {
   const abs = new Intl.NumberFormat('en-CA', {

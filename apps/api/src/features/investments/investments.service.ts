@@ -2,8 +2,10 @@ import Decimal from 'decimal.js';
 import type {
   AccountContributionSummary,
   ContributionRoomResponse,
+  InvestmentAction,
   InvestmentTransactionAggregates,
   InvestmentTransactionRow,
+  InvestmentTransactionSource,
 } from '@finance/shared/types/investments';
 import type {
   AccountMonthlyBreakdown,
@@ -18,7 +20,6 @@ import type {
   InvestmentTransactionFilters,
   UpsertContributionRoomInput,
 } from '@finance/shared/schemas/investments';
-import type { InvestmentTransactionSource } from '@finance/shared/types/investments';
 import {
   REGISTERED_ACCOUNT_TYPES,
   TFSA_TYPE,
@@ -88,7 +89,8 @@ export async function getInvestmentTransactions(
     accountId: row.accountId,
     accountName: row.accountName,
     date: row.date,
-    action: row.action,
+    // The insert pipeline and Zod validation guarantee a valid InvestmentAction; Drizzle returns string.
+    action: row.action as InvestmentAction,
     rawAction: row.rawAction,
     symbol: row.symbol,
     description: row.description,
@@ -258,7 +260,7 @@ export async function createManualInvestmentTransaction(
     accountId:    row.accountId,
     accountName:  account.name,
     date:         row.date,
-    action:       row.action,
+    action:       row.action as InvestmentAction,
     rawAction:    row.rawAction,
     symbol:       row.symbol,
     description:  row.description,

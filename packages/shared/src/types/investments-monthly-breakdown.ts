@@ -26,10 +26,12 @@ export interface AccountMonthlyBreakdownTotals {
   uninvestedDelta: number;
 }
 
+import type { InvestmentAccountType } from '../constants';
+
 export interface AccountMonthlyBreakdown {
   accountId: string;
   accountName: string;
-  accountType: string;
+  accountType: InvestmentAccountType;
   institution: string;
   annualLimit: number | null;
   months: AccountMonthlyBreakdownRow[];

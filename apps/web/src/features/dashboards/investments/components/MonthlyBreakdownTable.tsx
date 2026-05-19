@@ -110,7 +110,7 @@ function AllAccountsYtd({
         </span>
       </div>
       <ProgressBar pct={pct} colorClass={barColor} />
-      {projection !== null && (
+      {projection !== null && ytdContributed > 0 && (
         <p className="text-xs text-content-secondary">
           Projected year-end: {fmt(projection)}
         </p>
