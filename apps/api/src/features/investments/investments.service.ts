@@ -59,7 +59,8 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-// Derives the TFSA carry-forward room estimate from prior-year data (spec Section 3.2).
+// Estimates the TFSA room carried into the current year from prior-year records.
+// Formula: priorAnnualLimit + priorRoomCarried + priorWithdrawals − priorContributions.
 // Returns null when prior-year annualLimit is unknown — a partial estimate is worse than none.
 function estimateRoomCarried(
   priorRecord: ContributionRecordDbRow | undefined,
@@ -82,6 +83,10 @@ function estimateRoomCarried(
     .plus(priorWithdrawals)
     .minus(priorContributions)
     .toNumber();
+}
+
+function computeUninvestedDelta(contributed: number, deployed: number): number {
+  return new Decimal(contributed).plus(deployed).toNumber();
 }
 
 export async function getInvestmentTransactions(
@@ -186,8 +191,8 @@ export async function getContributionRoom(
       roomCarried = new Decimal(record.roomCarried).toNumber();
       roomCarriedIsEstimate = !record.roomCarriedConfirmed;
     } else if (account.type === TFSA_TYPE) {
-      // Derive an estimate from prior-year data (spec Section 3.2).
-      // Only when prior-year annualLimit is known — a partial estimate is worse than none.
+      // Estimate carry-forward: priorAnnualLimit + roomCarried + withdrawals − contributions.
+      // Skip when prior-year annualLimit is unknown — a partial estimate is worse than none.
       const estimate = estimateRoomCarried(
         priorRecordByAccount.get(account.id),
         priorAggByAccount.get(account.id)
@@ -278,16 +283,18 @@ export async function createManualInvestmentTransaction(
     description:  row.description,
     quantity:     row.quantity !== null ? new Decimal(row.quantity).toNumber() : null,
     price:        row.price !== null ? new Decimal(row.price).toNumber() : null,
-    grossAmount:  null,
-    commission:   null,
+    grossAmount:  row.grossAmount !== null ? new Decimal(row.grossAmount).toNumber() : null,
+    commission:   row.commission !== null ? new Decimal(row.commission).toNumber() : null,
     amount:       new Decimal(row.amount).toNumber(),
     currency:     row.currency,
     activityType: row.activityType,
     note:         row.note,
+    // insertInvestmentTransaction already narrows source to InvestmentTransactionSource.
     source:       row.source,
     riskLevel:    row.riskLevel as RiskLevel | null,
   };
 }
+
 
 const ACCOUNT_TYPE_RANK: Record<string, number> = { tfsa: 0, rrsp: 1, fhsa: 2 };
 
@@ -321,7 +328,7 @@ export async function getMonthlyBreakdown(
 
     const contributed = dbRow ? new Decimal(dbRow.contributed).toNumber() : 0;
     const deployed = dbRow ? new Decimal(dbRow.deployed).toNumber() : 0;
-    const uninvestedDelta = new Decimal(contributed).plus(deployed).toNumber();
+    const uninvestedDelta = computeUninvestedDelta(contributed, deployed);
 
     let target: number | null = null;
     if (investmentsPercentage !== null && hasIncomeEntries) {
@@ -380,7 +387,7 @@ export async function getMonthlyBreakdown(
         const row = perAccountByKey.get(`${account.id}:${month}`);
         const contributed = row ? new Decimal(row.contributed).toNumber() : 0;
         const deployed = row ? new Decimal(row.deployed).toNumber() : 0;
-        const uninvestedDelta = new Decimal(contributed).plus(deployed).toNumber();
+        const uninvestedDelta = computeUninvestedDelta(contributed, deployed);
         return { month, contributed, deployed, uninvestedDelta };
       }
     );
@@ -455,12 +462,16 @@ export async function getRiskBudget(
 
   const riskyBudget =
     riskyPercentage !== null
-      ? new Decimal(totalContributions).mul(riskyPercentage).div(100).toNumber()
+      ? new Decimal(totalContributions)
+          .times(riskyPercentage)
+          .dividedBy(100)
+          .toDecimalPlaces(2)
+          .toNumber()
       : null;
 
   const remaining =
     riskyBudget !== null
-      ? new Decimal(riskyBudget).minus(riskyInvested).toNumber()
+      ? new Decimal(riskyBudget).minus(riskyInvested).toDecimalPlaces(2).toNumber()
       : null;
 
   return { year, riskyPercentage, totalContributions, riskyBudget, riskyInvested, remaining };
