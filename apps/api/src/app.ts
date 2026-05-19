@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import { DomainError } from './lib/domain-error';
 import accountsMutationRouter from './features/accounts/accounts-mutation.routes';
 import accountsRouter from './features/accounts/accounts.routes';
 import incomeDashboardRouter from './features/dashboards/income/income.routes';
@@ -122,8 +123,15 @@ export function createApp() {
     snapshotDashboardRouter
   );
 
-  // The error handler must be registered before any other error middleware and after all controllers
-  Sentry.setupExpressErrorHandler(app);
+  // The error handler must be registered before any other error middleware and after all controllers.
+  // DomainErrors are intentional 4xx responses (business rule violations) — not server faults.
+  // Only capture 5xx errors and non-domain errors so expected client errors don't pollute Sentry.
+  Sentry.setupExpressErrorHandler(app, {
+    shouldHandleError(error) {
+      if (error instanceof DomainError) return error.httpStatus >= 500;
+      return true;
+    },
+  });
 
   // 404 handler — must come after all routes
   app.use((_req, res) => {
