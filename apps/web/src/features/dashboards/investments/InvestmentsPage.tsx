@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import type { InvestmentTransactionRow } from '@finance/shared/types/investments';
+import type { CreateManualInvestmentTransactionInput } from '@finance/shared/schemas/investments';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { YearSelector } from '@/components/common/YearSelector';
@@ -8,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { cn } from '@/lib/utils';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { investmentTransactionFiltersSchema } from '@finance/shared/schemas/investments';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { ActivityStatsBar } from './components/ActivityStatsBar';
 import { ContributionRoomCard } from './components/ContributionRoomCard';
 import { InvestmentFilters } from './components/InvestmentFilters';
@@ -27,12 +30,46 @@ export function InvestmentsPage() {
 
   const [year, setYear] = useState(() => currentYear);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<InvestmentTransactionRow | null>(null);
 
   const search = useSearch({ from: '/dashboard/investments' });
   const navigate = useNavigate({ from: '/dashboard/investments' });
 
   const activeTab = search.tab ?? 'dashboard';
   const isDashboardTab = activeTab === 'dashboard';
+
+  function buildDuplicateDefaults(row: InvestmentTransactionRow): {
+    values: Partial<CreateManualInvestmentTransactionInput>;
+    transferDirection: 'in' | 'out';
+  } {
+    return {
+      values: {
+        accountId:    row.accountId,
+        date:         row.date,
+        action:       row.action,
+        amount:       Math.abs(row.amount),
+        currency:     row.currency,
+        description:  row.description ?? '',
+        symbol:       row.symbol ?? undefined,
+        quantity:     row.quantity ?? undefined,
+        price:        row.price ?? undefined,
+        activityType: row.activityType ?? undefined,
+        note:         row.note ?? undefined,
+        riskLevel:    row.riskLevel ?? undefined,
+      },
+      transferDirection: row.amount >= 0 ? 'in' : 'out',
+    };
+  }
+
+  const handleDuplicate = useCallback((row: InvestmentTransactionRow) => {
+    setDuplicateSource(row);
+    setIsPanelOpen(true);
+  }, []);
+
+  const handleClosePanel = useCallback(() => {
+    setIsPanelOpen(false);
+    setDuplicateSource(null);
+  }, []);
 
   function handleTabChange(value: string) {
     if (value === 'dashboard' || value === 'activity') {
@@ -81,6 +118,8 @@ export function InvestmentsPage() {
 
   const showDashboardSkeleton = useDelayedPending(roomPending);
   const showActivitySkeleton = useDelayedPending(txPending);
+
+  const dup = duplicateSource ? buildDuplicateDefaults(duplicateSource) : null;
 
   return (
     <PageLayout>
@@ -155,8 +194,11 @@ export function InvestmentsPage() {
               )}
 
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-medium text-content-primary">Activity</h2>
-                <Button size="sm" onClick={() => setIsPanelOpen(true)}>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-medium text-content-primary">Activity</h2>
+                  <SectionHelp contentKey="investments.activity" />
+                </div>
+                <Button size="sm" onClick={() => { setDuplicateSource(null); setIsPanelOpen(true); }}>
                   Add Transaction
                 </Button>
               </div>
@@ -177,6 +219,7 @@ export function InvestmentsPage() {
                 response={txData}
                 isFetching={txFetching}
                 page={filters.page}
+                onDuplicate={handleDuplicate}
               />
             </div>
           )}
@@ -184,7 +227,11 @@ export function InvestmentsPage() {
       </Tabs>
 
       {isPanelOpen && (
-        <ManualInvestmentTransactionPanel onClose={() => setIsPanelOpen(false)} />
+        <ManualInvestmentTransactionPanel
+          onClose={handleClosePanel}
+          defaultValues={dup?.values}
+          initialTransferDirection={dup?.transferDirection}
+        />
       )}
     </PageLayout>
   );

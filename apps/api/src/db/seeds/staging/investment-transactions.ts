@@ -15,6 +15,8 @@ export interface StagingInvestmentTransaction {
   amount: string;
   currency: string;
   activityType?: string;
+  riskLevel?: 'regular' | 'risky';
+  source?: 'csv' | 'manual';
 }
 
 export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
@@ -37,6 +39,7 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     quantity: '50.000000', price: '120.0000', grossAmount: '6000.00', commission: '4.95',
     amount: '-6004.95', currency: 'CAD',
     activityType: 'Trades',
+    riskLevel: 'regular',
   },
   {
     accountName: 'Questrade TFSA',
@@ -47,6 +50,7 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     quantity: '20.000000', price: '42.0000', grossAmount: '840.00', commission: '4.95',
     amount: '-844.95', currency: 'CAD',
     activityType: 'Trades',
+    riskLevel: 'risky',
   },
   {
     accountName: 'Questrade TFSA',
@@ -93,6 +97,34 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
   },
   {
     accountName: 'Questrade TFSA',
+    monthsAgo: 10, day: 15,
+    action: 'deposit', rawAction: 'CON',
+    description: 'Mid-Year Top-Up',
+    amount: '1000.00', currency: 'CAD',
+    activityType: 'Deposits',
+  },
+  {
+    accountName: 'Questrade TFSA',
+    monthsAgo: 10, day: 20,
+    action: 'buy', rawAction: 'Buy',
+    symbol: 'VEQT',
+    description: 'Vanguard All-Equity ETF Portfolio',
+    quantity: '22.000000', price: '43.0000', grossAmount: '946.00', commission: '4.95',
+    amount: '-950.95', currency: 'CAD',
+    activityType: 'Trades',
+    riskLevel: 'risky',
+  },
+  {
+    accountName: 'Questrade TFSA',
+    monthsAgo: 9, day: 1,
+    action: 'dividend', rawAction: 'DIV',
+    symbol: 'VFV',
+    description: 'Vanguard FTSE Canada All Cap ETF — Dividend',
+    amount: '46.00', currency: 'CAD',
+    activityType: 'Dividends',
+  },
+  {
+    accountName: 'Questrade TFSA',
     monthsAgo: 8, day: 1,
     action: 'dividend', rawAction: 'DIV',
     symbol: 'VEQT',
@@ -109,12 +141,41 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     activityType: 'Fees',
   },
   {
+    // USD buy — demonstrates the Currency column toggle
+    accountName: 'Questrade TFSA',
+    monthsAgo: 7, day: 10,
+    action: 'buy', rawAction: 'Buy',
+    symbol: 'SPY',
+    description: 'SPDR S&P 500 ETF Trust',
+    quantity: '2.000000', price: '490.0000', grossAmount: '980.00', commission: '4.95',
+    amount: '-984.95', currency: 'USD',
+    activityType: 'Trades',
+    riskLevel: 'risky',
+  },
+  {
     accountName: 'Questrade TFSA',
     monthsAgo: 7, day: 15,
     action: 'deposit', rawAction: 'CON',
     description: 'Additional Contribution',
     amount: '2500.00', currency: 'CAD',
     activityType: 'Deposits',
+  },
+  {
+    accountName: 'Questrade TFSA',
+    monthsAgo: 6, day: 1,
+    action: 'dividend', rawAction: 'DIV',
+    symbol: 'VFV',
+    description: 'Vanguard FTSE Canada All Cap ETF — Dividend',
+    amount: '48.00', currency: 'CAD',
+    activityType: 'Dividends',
+  },
+  {
+    accountName: 'Questrade TFSA',
+    monthsAgo: 6, day: 28,
+    action: 'fee', rawAction: 'FCH',
+    description: 'Quarterly Management Fee',
+    amount: '-15.00', currency: 'CAD',
+    activityType: 'Fees',
   },
   {
     accountName: 'Questrade TFSA',
@@ -145,6 +206,18 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     quantity: '30.000000', price: '130.0000', grossAmount: '3900.00', commission: '4.95',
     amount: '-3904.95', currency: 'CAD',
     activityType: 'Trades',
+    riskLevel: 'regular',
+  },
+  {
+    accountName: 'Questrade TFSA',
+    monthsAgo: 3, day: 18,
+    action: 'buy', rawAction: 'Buy',
+    symbol: 'VEQT',
+    description: 'Vanguard All-Equity ETF Portfolio',
+    quantity: '35.000000', price: '44.0000', grossAmount: '1540.00', commission: '4.95',
+    amount: '-1544.95', currency: 'CAD',
+    activityType: 'Trades',
+    riskLevel: 'risky',
   },
   {
     accountName: 'Questrade TFSA',
@@ -164,6 +237,14 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     quantity: '5.000000', price: '45.0000', grossAmount: '225.00', commission: '4.95',
     amount: '220.05', currency: 'CAD',
     activityType: 'Trades',
+  },
+  {
+    accountName: 'Questrade TFSA',
+    monthsAgo: 0, day: 5,
+    action: 'fee', rawAction: 'FCH',
+    description: 'Quarterly Management Fee',
+    amount: '-15.00', currency: 'CAD',
+    activityType: 'Fees',
   },
   {
     accountName: 'Questrade TFSA',
@@ -193,6 +274,7 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     quantity: '200.000000', price: '43.0000', grossAmount: '8600.00', commission: '4.95',
     amount: '-8604.95', currency: 'CAD',
     activityType: 'Trades',
+    riskLevel: 'risky',
   },
   {
     accountName: 'Questrade RRSP',
@@ -222,6 +304,26 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
   },
   {
     accountName: 'Questrade RRSP',
+    monthsAgo: 10, day: 25,
+    action: 'buy', rawAction: 'Buy',
+    symbol: 'VXC',
+    description: 'Vanguard FTSE Global ex Canada ETF',
+    quantity: '75.000000', price: '44.0000', grossAmount: '3300.00', commission: '4.95',
+    amount: '-3304.95', currency: 'CAD',
+    activityType: 'Trades',
+    riskLevel: 'risky',
+  },
+  {
+    accountName: 'Questrade RRSP',
+    monthsAgo: 9, day: 1,
+    action: 'dividend', rawAction: 'DIV',
+    symbol: 'VXC',
+    description: 'Vanguard FTSE Global ex Canada ETF — Dividend',
+    amount: '188.00', currency: 'CAD',
+    activityType: 'Dividends',
+  },
+  {
+    accountName: 'Questrade RRSP',
     monthsAgo: 8, day: 1,
     action: 'dividend', rawAction: 'DIV',
     symbol: 'VXC',
@@ -238,6 +340,24 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     quantity: '100.000000', price: '42.0000', grossAmount: '4200.00', commission: '4.95',
     amount: '-4204.95', currency: 'CAD',
     activityType: 'Trades',
+    riskLevel: 'regular',
+  },
+  {
+    accountName: 'Questrade RRSP',
+    monthsAgo: 6, day: 1,
+    action: 'dividend', rawAction: 'DIV',
+    symbol: 'VXC',
+    description: 'Vanguard FTSE Global ex Canada ETF — Dividend',
+    amount: '192.00', currency: 'CAD',
+    activityType: 'Dividends',
+  },
+  {
+    accountName: 'Questrade RRSP',
+    monthsAgo: 6, day: 28,
+    action: 'fee', rawAction: 'FCH',
+    description: 'Quarterly Management Fee',
+    amount: '-15.00', currency: 'CAD',
+    activityType: 'Fees',
   },
   {
     accountName: 'Questrade RRSP',
@@ -269,6 +389,17 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
   },
   {
     accountName: 'Questrade RRSP',
+    monthsAgo: 3, day: 20,
+    action: 'buy', rawAction: 'Buy',
+    symbol: 'VXC',
+    description: 'Vanguard FTSE Global ex Canada ETF',
+    quantity: '110.000000', price: '45.0000', grossAmount: '4950.00', commission: '4.95',
+    amount: '-4954.95', currency: 'CAD',
+    activityType: 'Trades',
+    riskLevel: 'risky',
+  },
+  {
+    accountName: 'Questrade RRSP',
     monthsAgo: 2, day: 1,
     action: 'dividend', rawAction: 'DIV',
     symbol: 'VXC',
@@ -284,6 +415,19 @@ export const STAGING_INVESTMENT_TRANSACTIONS: StagingInvestmentTransaction[] = [
     description: 'Vanguard FTSE Canada All Cap ETF — Dividend',
     amount: '50.00', currency: 'CAD',
     activityType: 'Dividends',
+  },
+  {
+    // Manual entry — demonstrates source: 'manual' badge
+    accountName: 'Questrade RRSP',
+    monthsAgo: 2, day: 10,
+    action: 'buy', rawAction: 'Buy',
+    symbol: 'VCN',
+    description: 'Vanguard FTSE Canada All Cap ETF',
+    quantity: '50.000000', price: '43.5000', grossAmount: '2175.00', commission: '4.95',
+    amount: '-2179.95', currency: 'CAD',
+    activityType: 'Trades',
+    riskLevel: 'regular',
+    source: 'manual',
   },
   {
     accountName: 'Questrade RRSP',

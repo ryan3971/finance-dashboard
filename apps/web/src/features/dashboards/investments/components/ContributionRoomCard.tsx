@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import type { ContributionRoomResponse } from '@finance/shared/types/investments';
 import { ContributionRoomRow } from './ContributionRoomRow';
 
@@ -36,8 +37,9 @@ export function ContributionRoomCard({ data, isFetching }: Props) {
         isFetching && 'opacity-50'
       )}
     >
-      <div className="px-4 py-3 border-b border-border-subtle">
+      <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
         <h2 className="text-sm font-medium text-content-primary">Contribution Room</h2>
+        <SectionHelp contentKey="investments.contributionRoom" />
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full">

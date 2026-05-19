@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { cn, fmt, MONTH_LABELS } from '@/lib/utils';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { EmptyState } from '@/components/common/EmptyState';
 import type {
@@ -423,7 +424,10 @@ export function MonthlyBreakdownTable({
     <div className="bg-surface rounded-lg border border-border-base overflow-hidden">
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-content-primary">Monthly Breakdown</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-content-primary">Monthly Breakdown</h2>
+            <SectionHelp contentKey="investments.monthlyBreakdown" />
+          </div>
           {data.accounts.length > 0 && (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>

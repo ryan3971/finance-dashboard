@@ -363,6 +363,7 @@ export async function insertSeedUserConfig(
       wantsPercentage: STAGING_USER_CONFIG.wantsPercentage,
       investmentsPercentage: STAGING_USER_CONFIG.investmentsPercentage,
       emergencyFundTarget: STAGING_USER_CONFIG.emergencyFundTarget,
+      riskyPercentage: STAGING_USER_CONFIG.riskyPercentage,
     })
     .onConflictDoUpdate({
       target: userConfig.userId,
@@ -371,6 +372,7 @@ export async function insertSeedUserConfig(
         wantsPercentage: STAGING_USER_CONFIG.wantsPercentage,
         investmentsPercentage: STAGING_USER_CONFIG.investmentsPercentage,
         emergencyFundTarget: STAGING_USER_CONFIG.emergencyFundTarget,
+        riskyPercentage: STAGING_USER_CONFIG.riskyPercentage,
       },
     });
 }
@@ -429,6 +431,8 @@ export async function insertSeedInvestmentTransactions(
       currency: def.currency,
       activityType: def.activityType ?? null,
       compositeKey: `seed-inv-${def.accountName}-${i}`,
+      riskLevel: def.riskLevel ?? null,
+      source: def.source ?? 'csv',
     };
   });
 

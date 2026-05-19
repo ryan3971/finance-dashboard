@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { cn, fmt } from '@/lib/utils';
 import { TOAST } from '@/lib/toastMessages';
+import { SectionHelp } from '@/components/common/SectionHelp';
 import type { RiskBudgetResponse } from '@finance/shared/types/investments';
 import { useUpdateRiskSettings } from '../hooks/useRiskBudgetMutations';
 
@@ -142,7 +143,10 @@ export function RiskBudgetCard({ data, isFetching }: Props) {
       )}
     >
       <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
-        <h2 className="text-sm font-medium text-content-primary">Risk Budget</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-medium text-content-primary">Risk Budget</h2>
+          <SectionHelp contentKey="investments.riskBudget" />
+        </div>
         <PercentageEditor
           value={data.riskyPercentage}
           isEditing={isEditing}

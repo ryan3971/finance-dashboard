@@ -79,17 +79,19 @@ const InvestmentRow = memo(
     row,
     visible,
     onToggleRiskLevel,
+    onDuplicate,
   }: {
     readonly row: InvestmentTransactionRow;
     readonly visible: ToggleKey[];
     readonly onToggleRiskLevel: (id: string, next: RiskLevel) => void;
+    readonly onDuplicate?: (row: InvestmentTransactionRow) => void;
   }) {
     const isBuy = row.action === 'buy';
     const effectiveRiskLevel = row.riskLevel ?? 'regular';
     const nextRiskLevel: RiskLevel = effectiveRiskLevel === 'risky' ? 'regular' : 'risky';
 
     return (
-      <tr>
+      <tr className="group">
         <td className="td-cell font-mono">{row.date}</td>
         <td className="td-cell">{row.accountName}</td>
         <td className="td-cell">
@@ -145,13 +147,22 @@ const InvestmentRow = memo(
             {fmtInvestmentAmount(row.amount)}
           </span>
         </td>
+        <td className="td-cell text-right">
+          <button
+            onClick={() => onDuplicate?.(row)}
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-xs text-content-muted hover:text-content-primary"
+          >
+            Duplicate
+          </button>
+        </td>
       </tr>
     );
   },
-  // Custom comparator: re-render only when the row data, visible columns, or callback reference changes.
+  // Custom comparator: re-render only when the row data, visible columns, or callback references change.
   (prev, next) =>
     prev.row === next.row &&
     prev.onToggleRiskLevel === next.onToggleRiskLevel &&
+    prev.onDuplicate === next.onDuplicate &&
     prev.visible.length === next.visible.length &&
     prev.visible.every((k, i) => k === next.visible[i])
 );
@@ -162,9 +173,10 @@ interface Props {
   readonly response: InvestmentTransactionsResponse | undefined;
   readonly isFetching: boolean;
   readonly page: number;
+  readonly onDuplicate?: (row: InvestmentTransactionRow) => void;
 }
 
-export function InvestmentTransactionsTable({ response, isFetching, page }: Props) {
+export function InvestmentTransactionsTable({ response, isFetching, page, onDuplicate }: Props) {
   const navigate = useNavigate({ from: '/dashboard/investments' });
   const [visible, setVisible] = useState<ToggleKey[]>([]);
   const riskLevelMutation = useUpdateRiskLevel();
@@ -190,8 +202,8 @@ export function InvestmentTransactionsTable({ response, isFetching, page }: Prop
     void navigate({ search: (prev) => ({ ...prev, page: p }) });
   }
 
-  // Base column count: Date, Account, Action, Symbol, Description, Risk, Amount = 7
-  const baseColCount = 7;
+  // Base column count: Date, Account, Action, Symbol, Description, Risk, Amount, Actions = 8
+  const baseColCount = 8;
 
   return (
     <DataTable
@@ -226,6 +238,7 @@ export function InvestmentTransactionsTable({ response, isFetching, page }: Prop
             {visible.includes('activityType') && <th className="th-cell">Activity</th>}
             <th className="th-cell">Risk</th>
             <th className="th-cell text-right">Amount</th>
+            <th className="th-cell"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border-subtle">
@@ -245,6 +258,7 @@ export function InvestmentTransactionsTable({ response, isFetching, page }: Prop
                 row={row}
                 visible={visible}
                 onToggleRiskLevel={handleToggleRiskLevel}
+                onDuplicate={onDuplicate}
               />
             ))
           )}
