@@ -1,5 +1,7 @@
 export type RiskLevel = 'regular' | 'risky';
 
+export type InvestmentCurrency = 'CAD' | 'USD';
+
 export type InvestmentAction =
   | 'buy'
   | 'sell'
@@ -26,7 +28,7 @@ export interface InvestmentTransactionRow {
   grossAmount: number | null;
   commission: number | null;
   amount: number;
-  currency: string;
+  currency: InvestmentCurrency;
   activityType: string | null;
   note: string | null;
   source: InvestmentTransactionSource;

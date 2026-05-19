@@ -3,6 +3,7 @@ import type {
   AccountContributionSummary,
   ContributionRoomResponse,
   InvestmentAction,
+  InvestmentCurrency,
   InvestmentTransactionAggregates,
   InvestmentTransactionRow,
   InvestmentTransactionSource,
@@ -113,7 +114,8 @@ export async function getInvestmentTransactions(
     grossAmount: row.grossAmount !== null ? new Decimal(row.grossAmount).toNumber() : null,
     commission: row.commission !== null ? new Decimal(row.commission).toNumber() : null,
     amount: new Decimal(row.amount).toNumber(),
-    currency: row.currency,
+    // The DB CHECK constraint guarantees 'CAD' | 'USD'; Drizzle returns string.
+    currency: row.currency as InvestmentCurrency,
     activityType: row.activityType,
     note: row.note,
     // The DB CHECK constraint guarantees 'csv' | 'manual'; Drizzle returns string.
@@ -286,7 +288,8 @@ export async function createManualInvestmentTransaction(
     grossAmount:  row.grossAmount !== null ? new Decimal(row.grossAmount).toNumber() : null,
     commission:   row.commission !== null ? new Decimal(row.commission).toNumber() : null,
     amount:       new Decimal(row.amount).toNumber(),
-    currency:     row.currency,
+    // The DB CHECK constraint guarantees 'CAD' | 'USD'; Drizzle returns string.
+    currency:     row.currency as InvestmentCurrency,
     activityType: row.activityType,
     note:         row.note,
     // insertInvestmentTransaction already narrows source to InvestmentTransactionSource.

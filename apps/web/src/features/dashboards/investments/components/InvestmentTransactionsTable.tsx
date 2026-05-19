@@ -84,7 +84,7 @@ const InvestmentRow = memo(
     readonly row: InvestmentTransactionRow;
     readonly visible: ToggleKey[];
     readonly onToggleRiskLevel: (id: string, next: RiskLevel) => void;
-    readonly onDuplicate: (row: InvestmentTransactionRow) => void;
+    readonly onDuplicate?: (row: InvestmentTransactionRow) => void;
   }) {
     const isBuy = row.action === 'buy';
     const effectiveRiskLevel = row.riskLevel ?? 'regular';
@@ -149,8 +149,8 @@ const InvestmentRow = memo(
         </td>
         <td className="td-cell text-right">
           <button
-            onClick={() => onDuplicate(row)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-content-muted hover:text-content-primary"
+            onClick={() => onDuplicate?.(row)}
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-xs text-content-muted hover:text-content-primary"
           >
             Duplicate
           </button>
@@ -192,13 +192,6 @@ export function InvestmentTransactionsTable({ response, isFetching, page, onDupl
       riskLevelMutation.mutate({ id, body: { riskLevel: next } });
     },
     [riskLevelMutation]
-  );
-
-  const handleDuplicate = useCallback(
-    (row: InvestmentTransactionRow) => {
-      onDuplicate?.(row);
-    },
-    [onDuplicate]
   );
 
   const rows = response?.data ?? [];
@@ -265,7 +258,7 @@ export function InvestmentTransactionsTable({ response, isFetching, page, onDupl
                 row={row}
                 visible={visible}
                 onToggleRiskLevel={handleToggleRiskLevel}
-                onDuplicate={handleDuplicate}
+                onDuplicate={onDuplicate}
               />
             ))
           )}

@@ -46,9 +46,9 @@ export function InvestmentsPage() {
       values: {
         accountId:    row.accountId,
         date:         row.date,
-        action:       row.action as CreateManualInvestmentTransactionInput['action'],
+        action:       row.action,
         amount:       Math.abs(row.amount),
-        currency:     row.currency as 'CAD' | 'USD',
+        currency:     row.currency,
         description:  row.description ?? '',
         symbol:       row.symbol ?? undefined,
         quantity:     row.quantity ?? undefined,
@@ -66,10 +66,10 @@ export function InvestmentsPage() {
     setIsPanelOpen(true);
   }, []);
 
-  function handleClosePanel() {
+  const handleClosePanel = useCallback(() => {
     setIsPanelOpen(false);
     setDuplicateSource(null);
-  }
+  }, []);
 
   function handleTabChange(value: string) {
     if (value === 'dashboard' || value === 'activity') {
@@ -118,6 +118,8 @@ export function InvestmentsPage() {
 
   const showDashboardSkeleton = useDelayedPending(roomPending);
   const showActivitySkeleton = useDelayedPending(txPending);
+
+  const dup = duplicateSource ? buildDuplicateDefaults(duplicateSource) : null;
 
   return (
     <PageLayout>
@@ -224,16 +226,13 @@ export function InvestmentsPage() {
         </TabsContent>
       </Tabs>
 
-      {isPanelOpen && (() => {
-        const dup = duplicateSource ? buildDuplicateDefaults(duplicateSource) : null;
-        return (
-          <ManualInvestmentTransactionPanel
-            onClose={handleClosePanel}
-            defaultValues={dup?.values}
-            initialTransferDirection={dup?.transferDirection}
-          />
-        );
-      })()}
+      {isPanelOpen && (
+        <ManualInvestmentTransactionPanel
+          onClose={handleClosePanel}
+          defaultValues={dup?.values}
+          initialTransferDirection={dup?.transferDirection}
+        />
+      )}
     </PageLayout>
   );
 }
