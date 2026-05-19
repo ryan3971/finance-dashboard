@@ -5,11 +5,13 @@ import {
   contributionRoomQuerySchema,
   investmentTransactionFiltersSchema,
   monthlyBreakdownQuerySchema,
+  riskBudgetQuerySchema,
 } from '@finance/shared/schemas/investments';
 import {
   getContributionRoom,
   getInvestmentTransactions,
   getMonthlyBreakdown,
+  getRiskBudget,
 } from './investments.service';
 
 const router = Router();
@@ -33,6 +35,13 @@ router.get('/contribution-room', async (req: Request, res: Response) => {
 router.get('/monthly-breakdown', async (req: Request, res: Response) => {
   const { year } = monthlyBreakdownQuerySchema.parse(req.query);
   const result = await getMonthlyBreakdown(getAuthUser(req).id, year);
+  res.json(result);
+});
+
+// GET /api/v1/investments/risk-budget
+router.get('/risk-budget', async (req: Request, res: Response) => {
+  const { year } = riskBudgetQuerySchema.parse(req.query);
+  const result = await getRiskBudget(getAuthUser(req).id, year);
   res.json(result);
 });
 

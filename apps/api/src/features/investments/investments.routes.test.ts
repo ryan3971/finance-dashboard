@@ -1549,3 +1549,388 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
     expect(body.accounts).toHaveLength(0);
   });
 });
+
+// ─── GET /api/v1/investments/risk-budget ─────────────────────────────────────
+
+interface RiskBudgetBody {
+  year: number;
+  riskyPercentage: number | null;
+  totalContributions: number;
+  riskyBudget: number | null;
+  riskyInvested: number;
+  remaining: number | null;
+}
+
+describe('GET /api/v1/investments/risk-budget', () => {
+  it('returns 401 without auth', async () => {
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 when year is missing', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .set(authHeader(accessToken));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when year is not an integer', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 'abc' })
+      .set(authHeader(accessToken));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns null riskyBudget and remaining when riskyPercentage is not set', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '5000.00', date: '2024-03-01' });
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as RiskBudgetBody;
+    expect(body.year).toBe(2024);
+    expect(body.riskyPercentage).toBeNull();
+    expect(body.riskyBudget).toBeNull();
+    expect(body.remaining).toBeNull();
+    expect(body.totalContributions).toBe(5000);
+    expect(body.riskyInvested).toBe(0);
+  });
+
+  it('returns riskyInvested even when riskyPercentage is null', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '5000.00', date: '2024-01-01' });
+    const buyTx = await investmentTransactionFixture(tfsaId, { action: 'buy', amount: '-1000.00', date: '2024-02-01', symbol: 'VFV', riskLevel: 'risky' });
+    expect(buyTx.riskLevel).toBe('risky');
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as RiskBudgetBody;
+    expect(body.riskyPercentage).toBeNull();
+    expect(body.riskyInvested).toBe(1000);
+    expect(body.riskyBudget).toBeNull();
+    expect(body.remaining).toBeNull();
+  });
+
+  it('computes riskyBudget correctly as totalContributions × riskyPercentage / 100', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '10000.00', date: '2024-01-01' });
+    await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 20 });
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as RiskBudgetBody;
+    expect(body.riskyPercentage).toBe(20);
+    expect(body.totalContributions).toBe(10000);
+    expect(body.riskyBudget).toBe(2000);
+    expect(body.riskyInvested).toBe(0);
+    expect(body.remaining).toBe(2000);
+  });
+
+  it('computes riskyInvested as sum of ABS(amount) for risky buys only', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '10000.00', date: '2024-01-01' });
+    // Risky buy — should count
+    await investmentTransactionFixture(tfsaId, { action: 'buy', symbol: 'RISKY', amount: '-500.00', date: '2024-02-01', riskLevel: 'risky' });
+    // Regular buy (explicit) — should not count
+    await investmentTransactionFixture(tfsaId, { action: 'buy', symbol: 'REG', amount: '-300.00', date: '2024-03-01', riskLevel: 'regular' });
+    // Null riskLevel buy — should not count
+    await investmentTransactionFixture(tfsaId, { action: 'buy', symbol: 'NULL', amount: '-200.00', date: '2024-04-01', riskLevel: null });
+    // Risky deposit — should not count (not a buy)
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '100.00', date: '2024-05-01', riskLevel: 'risky' });
+
+    await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 10 });
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as RiskBudgetBody;
+    expect(body.riskyInvested).toBe(500);
+  });
+
+  it('remaining is negative when riskyInvested exceeds riskyBudget', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '1000.00', date: '2024-01-01' });
+    await investmentTransactionFixture(tfsaId, { action: 'buy', symbol: 'RISKY', amount: '-800.00', date: '2024-02-01', riskLevel: 'risky' });
+    await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 50 });
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as RiskBudgetBody;
+    // riskyBudget = 1000 * 50 / 100 = 500; riskyInvested = 800; remaining = -300
+    expect(body.riskyBudget).toBe(500);
+    expect(body.riskyInvested).toBe(800);
+    expect(body.remaining).toBe(-300);
+  });
+
+  it('does not include transactions from another user', async () => {
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'risk-budget-a@example.com'),
+      registerUser(app, 'risk-budget-b@example.com'),
+    ]);
+    const accountA = await makeTfsaAccount(app, tokenA);
+    const accountB = await makeTfsaAccount(app, tokenB);
+    await investmentTransactionFixture(accountA, { action: 'deposit', amount: '5000.00', date: '2024-01-01' });
+    await investmentTransactionFixture(accountB, { action: 'deposit', amount: '9999.00', date: '2024-01-01' });
+    await investmentTransactionFixture(accountB, { action: 'buy', symbol: 'X', amount: '-1000.00', date: '2024-02-01', riskLevel: 'risky' });
+
+    await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(tokenA))
+      .send({ riskyPercentage: 10 });
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(tokenA));
+
+    expect(res.status).toBe(200);
+    const body = res.body as RiskBudgetBody;
+    expect(body.totalContributions).toBe(5000);
+    expect(body.riskyInvested).toBe(0);
+  });
+});
+
+// ─── PATCH /api/v1/investments/risk-settings ─────────────────────────────────
+
+describe('PATCH /api/v1/investments/risk-settings', () => {
+  it('returns 401 without auth', async () => {
+    const res = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .send({ riskyPercentage: 20 });
+    expect(res.status).toBe(401);
+  });
+
+  it('updates riskyPercentage and subsequent GET /risk-budget reflects the change', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const patch = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 15 });
+    expect(patch.status).toBe(200);
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    expect((res.body as RiskBudgetBody).riskyPercentage).toBe(15);
+  });
+
+  it('returns 400 when riskyPercentage is below 0', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: -1 });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when riskyPercentage is above 100', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 101 });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when riskyPercentage is not an integer', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 10.5 });
+    expect(res.status).toBe(400);
+  });
+
+  it('accepts 0 and 100 as boundary values', async () => {
+    const { accessToken } = await registerUser(app);
+
+    const zero = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 0 });
+    expect(zero.status).toBe(200);
+
+    const hundred = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 100 });
+    expect(hundred.status).toBe(200);
+  });
+});
+
+// ─── PATCH /api/v1/investments/transactions/:id/risk-level ───────────────────
+
+describe('PATCH /api/v1/investments/transactions/:id/risk-level', () => {
+  it('returns 401 without auth', async () => {
+    const res = await request(app)
+      .patch('/api/v1/investments/transactions/00000000-0000-0000-0000-000000000001/risk-level')
+      .send({ riskLevel: 'risky' });
+    expect(res.status).toBe(401);
+  });
+
+  it('sets riskLevel to risky and is reflected in GET /risk-budget riskyInvested', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '5000.00', date: '2024-01-01' });
+    const tx = await investmentTransactionFixture(tfsaId, { action: 'buy', symbol: 'VFV', amount: '-600.00', date: '2024-02-01' });
+    await request(app).patch('/api/v1/investments/risk-settings').set(authHeader(accessToken)).send({ riskyPercentage: 20 });
+
+    const patch = await request(app)
+      .patch(`/api/v1/investments/transactions/${tx.id}/risk-level`)
+      .set(authHeader(accessToken))
+      .send({ riskLevel: 'risky' });
+    expect(patch.status).toBe(200);
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+    expect((res.body as RiskBudgetBody).riskyInvested).toBe(600);
+  });
+
+  it('toggling back to regular removes the transaction from riskyInvested', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    await investmentTransactionFixture(tfsaId, { action: 'deposit', amount: '5000.00', date: '2024-01-01' });
+    const tx = await investmentTransactionFixture(tfsaId, { action: 'buy', symbol: 'VFV', amount: '-600.00', date: '2024-02-01', riskLevel: 'risky' });
+    await request(app).patch('/api/v1/investments/risk-settings').set(authHeader(accessToken)).send({ riskyPercentage: 20 });
+
+    await request(app)
+      .patch(`/api/v1/investments/transactions/${tx.id}/risk-level`)
+      .set(authHeader(accessToken))
+      .send({ riskLevel: 'regular' });
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+    expect((res.body as RiskBudgetBody).riskyInvested).toBe(0);
+  });
+
+  it('returns 404 when the transaction does not exist', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .patch('/api/v1/investments/transactions/00000000-0000-0000-0000-000000000099/risk-level')
+      .set(authHeader(accessToken))
+      .send({ riskLevel: 'risky' });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 403 when the transaction belongs to another user', async () => {
+    const [{ accessToken: tokenA }, { accessToken: tokenB }] = await Promise.all([
+      registerUser(app, 'risk-level-a@example.com'),
+      registerUser(app, 'risk-level-b@example.com'),
+    ]);
+    const accountA = await makeTfsaAccount(app, tokenA);
+    const tx = await investmentTransactionFixture(accountA, { action: 'buy', symbol: 'VFV', amount: '-300.00', date: '2024-01-01' });
+
+    const res = await request(app)
+      .patch(`/api/v1/investments/transactions/${tx.id}/risk-level`)
+      .set(authHeader(tokenB))
+      .send({ riskLevel: 'risky' });
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 400 when riskLevel is an invalid value', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const tx = await investmentTransactionFixture(tfsaId, { action: 'buy', amount: '-100.00', date: '2024-01-01' });
+
+    const res = await request(app)
+      .patch(`/api/v1/investments/transactions/${tx.id}/risk-level`)
+      .set(authHeader(accessToken))
+      .send({ riskLevel: 'extreme' });
+    expect(res.status).toBe(400);
+  });
+});
+
+// ─── POST /api/v1/investments/transactions — riskLevel field ─────────────────
+
+describe('POST /api/v1/investments/transactions — riskLevel', () => {
+  it('stores riskLevel: risky when provided', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({
+        accountId:   tfsaId,
+        date:        '2024-05-01',
+        action:      'buy',
+        amount:      -500,
+        currency:    'CAD',
+        description: 'Risky buy',
+        symbol:      'GME',
+        riskLevel:   'risky',
+      });
+
+    expect(res.status).toBe(201);
+    const body = res.body as { riskLevel: string | null };
+    expect(body.riskLevel).toBe('risky');
+  });
+
+  it('riskLevel defaults to null when omitted', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .post('/api/v1/investments/transactions')
+      .set(authHeader(accessToken))
+      .send({
+        accountId:   tfsaId,
+        date:        '2024-05-01',
+        action:      'buy',
+        amount:      -500,
+        currency:    'CAD',
+        description: 'Regular buy',
+        symbol:      'VFV',
+      });
+
+    expect(res.status).toBe(201);
+    const body = res.body as { riskLevel: string | null };
+    expect(body.riskLevel).toBeNull();
+  });
+});

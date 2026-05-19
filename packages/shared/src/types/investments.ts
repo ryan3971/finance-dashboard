@@ -1,3 +1,5 @@
+export type RiskLevel = 'regular' | 'risky';
+
 export type InvestmentAction =
   | 'buy'
   | 'sell'
@@ -28,6 +30,7 @@ export interface InvestmentTransactionRow {
   activityType: string | null;
   note: string | null;
   source: InvestmentTransactionSource;
+  riskLevel: RiskLevel | null;
 }
 
 export interface PaginationMeta {
@@ -65,4 +68,13 @@ export interface AccountContributionSummary {
 export interface ContributionRoomResponse {
   year: number;
   accounts: AccountContributionSummary[];
+}
+
+export interface RiskBudgetResponse {
+  year: number;
+  riskyPercentage: number | null;
+  totalContributions: number;
+  riskyBudget: number | null;
+  riskyInvested: number;
+  remaining: number | null;
 }

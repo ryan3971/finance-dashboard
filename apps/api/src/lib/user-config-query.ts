@@ -11,6 +11,7 @@ export interface DashboardUserConfig {
   needsPercentage: number | null;
   wantsPercentage: number | null;
   investmentsPercentage: number | null;
+  riskyPercentage: number | null;
 }
 
 export async function queryDashboardUserConfig(
@@ -28,6 +29,7 @@ export async function queryDashboardUserConfig(
       needsPercentage: userConfig.needsPercentage,
       wantsPercentage: userConfig.wantsPercentage,
       investmentsPercentage: userConfig.investmentsPercentage,
+      riskyPercentage: userConfig.riskyPercentage,
     });
 
   assertDefined(row, 'Expected user config upsert to return a row');

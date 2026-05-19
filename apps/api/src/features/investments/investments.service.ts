@@ -6,6 +6,8 @@ import type {
   InvestmentTransactionAggregates,
   InvestmentTransactionRow,
   InvestmentTransactionSource,
+  RiskBudgetResponse,
+  RiskLevel,
 } from '@finance/shared/types/investments';
 import type {
   AccountMonthlyBreakdown,
@@ -18,12 +20,15 @@ import type {
 import type {
   CreateManualInvestmentTransactionInput,
   InvestmentTransactionFilters,
+  UpdateRiskLevelInput,
+  UpdateRiskSettingsInput,
   UpsertContributionRoomInput,
 } from '@finance/shared/schemas/investments';
 import {
   REGISTERED_ACCOUNT_TYPES,
   TFSA_TYPE,
   queryAccountOwnerAndType,
+  queryAnnualContributions,
   queryContributionAggregates,
   queryContributionRecords,
   queryInvestmentAccountDetails,
@@ -31,7 +36,11 @@ import {
   queryMonthlyBreakdownRaw,
   queryPaginatedTransactions,
   queryRegisteredAccounts,
+  queryRiskyInvested,
   queryTransactionAggregates,
+  queryTransactionById,
+  setTransactionRiskLevel,
+  updateRiskyPercentage,
   upsertContributionRoomRecord,
   type ContributionAggRow,
   type ContributionRecordDbRow,
@@ -104,6 +113,8 @@ export async function getInvestmentTransactions(
     note: row.note,
     // The DB CHECK constraint guarantees 'csv' | 'manual'; Drizzle returns string.
     source: row.source as InvestmentTransactionSource,
+    // Zod validation and the update endpoint guarantee 'regular' | 'risky' | null.
+    riskLevel: row.riskLevel as RiskLevel | null,
   }));
 
   const { page, pageSize } = filters;
@@ -249,6 +260,7 @@ export async function createManualInvestmentTransaction(
     activityType: input.activityType ?? null,
     note:         input.note ?? null,
     source:       TRANSACTION_SOURCE.MANUAL,
+    riskLevel:    input.riskLevel ?? null,
   });
 
   if (!row) {
@@ -273,6 +285,7 @@ export async function createManualInvestmentTransaction(
     activityType: row.activityType,
     note:         row.note,
     source:       row.source,
+    riskLevel:    row.riskLevel as RiskLevel | null,
   };
 }
 
@@ -424,4 +437,56 @@ export async function upsertContributionRoom(
   }
 
   await upsertContributionRoomRecord(accountId, year, body);
+}
+
+export async function getRiskBudget(
+  userId: string,
+  year: number
+): Promise<RiskBudgetResponse> {
+  const [config, contribResult, riskyResult] = await Promise.all([
+    queryDashboardUserConfig(userId),
+    queryAnnualContributions(userId, year),
+    queryRiskyInvested(userId, year),
+  ]);
+
+  const { riskyPercentage } = config;
+  const totalContributions = new Decimal(contribResult.totalContributions).toNumber();
+  const riskyInvested = new Decimal(riskyResult.riskyInvested).toNumber();
+
+  const riskyBudget =
+    riskyPercentage !== null
+      ? new Decimal(totalContributions).mul(riskyPercentage).div(100).toNumber()
+      : null;
+
+  const remaining =
+    riskyBudget !== null
+      ? new Decimal(riskyBudget).minus(riskyInvested).toNumber()
+      : null;
+
+  return { year, riskyPercentage, totalContributions, riskyBudget, riskyInvested, remaining };
+}
+
+export async function updateRiskSettings(
+  userId: string,
+  { riskyPercentage }: UpdateRiskSettingsInput
+): Promise<void> {
+  await updateRiskyPercentage(userId, riskyPercentage);
+}
+
+export async function updateTransactionRiskLevel(
+  userId: string,
+  transactionId: string,
+  { riskLevel }: UpdateRiskLevelInput
+): Promise<void> {
+  const row = await queryTransactionById(transactionId);
+
+  if (!row) {
+    throw new InvestmentError(InvestmentErrorCode.INVESTMENT_TRANSACTION_NOT_FOUND);
+  }
+
+  if (row.accountUserId !== userId) {
+    throw new InvestmentError(InvestmentErrorCode.INVESTMENT_ACCOUNT_FORBIDDEN);
+  }
+
+  await setTransactionRiskLevel(transactionId, riskLevel);
 }

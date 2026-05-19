@@ -3,6 +3,7 @@ import {
   accounts,
   contributionRecords,
   investmentTransactions,
+  userConfig,
 } from '@/db/schema';
 import { db } from '@/db';
 import type {
@@ -37,6 +38,7 @@ export interface InvestmentTransactionDbRow {
   // Drizzle returns text columns as string. The service layer narrows this to
   // InvestmentTransactionSource at the boundary where it maps to the response type.
   source: string;
+  riskLevel: string | null;
 }
 
 export interface TransactionAggregatesDbRow {
@@ -102,6 +104,7 @@ export async function queryPaginatedTransactions(
         activityType: investmentTransactions.activityType,
         note: investmentTransactions.note,
         source: investmentTransactions.source,
+        riskLevel: investmentTransactions.riskLevel,
       })
       .from(investmentTransactions)
       .innerJoin(accounts, eq(investmentTransactions.accountId, accounts.id))
@@ -353,6 +356,96 @@ export async function queryMonthlyBreakdownByAccount(
       investmentTransactions.accountId,
       sql`EXTRACT(MONTH FROM ${investmentTransactions.date})`
     );
+}
+
+export async function queryAnnualContributions(
+  userId: string,
+  year: number
+): Promise<{ totalContributions: string }> {
+  const startDate = `${year}-01-01`;
+  const endDate = `${year + 1}-01-01`;
+
+  const [row] = await db
+    .select({
+      totalContributions: sql<string>`CAST(COALESCE(SUM(
+        CASE WHEN ${investmentTransactions.action} = 'deposit'
+        THEN ${investmentTransactions.amount}::numeric ELSE 0 END
+      ), 0) AS text)`,
+    })
+    .from(investmentTransactions)
+    .innerJoin(accounts, eq(investmentTransactions.accountId, accounts.id))
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        inArray(accounts.type, [...INVESTMENT_ACCOUNT_TYPES]),
+        gte(investmentTransactions.date, startDate),
+        lt(investmentTransactions.date, endDate),
+      )
+    );
+
+  return row ?? { totalContributions: '0' };
+}
+
+export async function queryRiskyInvested(
+  userId: string,
+  year: number
+): Promise<{ riskyInvested: string }> {
+  const startDate = `${year}-01-01`;
+  const endDate = `${year + 1}-01-01`;
+
+  const [row] = await db
+    .select({
+      riskyInvested: sql<string>`CAST(COALESCE(SUM(
+        CASE WHEN ${investmentTransactions.action} = 'buy'
+          AND ${investmentTransactions.riskLevel} = 'risky'
+        THEN ABS(${investmentTransactions.amount}::numeric) ELSE 0 END
+      ), 0) AS text)`,
+    })
+    .from(investmentTransactions)
+    .innerJoin(accounts, eq(investmentTransactions.accountId, accounts.id))
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        gte(investmentTransactions.date, startDate),
+        lt(investmentTransactions.date, endDate),
+      )
+    );
+
+  return row ?? { riskyInvested: '0' };
+}
+
+export async function queryTransactionById(
+  transactionId: string
+): Promise<{ accountUserId: string } | undefined> {
+  const [row] = await db
+    .select({ accountUserId: accounts.userId })
+    .from(investmentTransactions)
+    .innerJoin(accounts, eq(investmentTransactions.accountId, accounts.id))
+    .where(eq(investmentTransactions.id, transactionId));
+  return row;
+}
+
+export async function setTransactionRiskLevel(
+  transactionId: string,
+  riskLevel: string
+): Promise<void> {
+  await db
+    .update(investmentTransactions)
+    .set({ riskLevel })
+    .where(eq(investmentTransactions.id, transactionId));
+}
+
+export async function updateRiskyPercentage(
+  userId: string,
+  riskyPercentage: number
+): Promise<void> {
+  await db
+    .insert(userConfig)
+    .values({ userId, riskyPercentage })
+    .onConflictDoUpdate({
+      target: userConfig.userId,
+      set: { riskyPercentage },
+    });
 }
 
 export async function upsertContributionRoomRecord(

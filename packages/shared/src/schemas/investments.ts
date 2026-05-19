@@ -45,6 +45,7 @@ export const createManualInvestmentTransactionSchema = z.object({
   currency:     z.enum(['CAD', 'USD']),
   activityType: z.string().optional(),
   note:         z.string().optional(),
+  riskLevel:    z.enum(['regular', 'risky']).optional(),
 });
 
 export type CreateManualInvestmentTransactionInput = z.infer<
@@ -54,3 +55,18 @@ export type CreateManualInvestmentTransactionInput = z.infer<
 export const monthlyBreakdownQuerySchema = z.object({
   year: z.coerce.number().int().min(2000).max(2100),
 });
+
+export const riskBudgetQuerySchema = z.object({
+  year: z.coerce.number().int().min(2000).max(2100),
+});
+export type RiskBudgetQuery = z.infer<typeof riskBudgetQuerySchema>;
+
+export const updateRiskSettingsSchema = z.object({
+  riskyPercentage: z.number().int().min(0).max(100),
+});
+export type UpdateRiskSettingsInput = z.infer<typeof updateRiskSettingsSchema>;
+
+export const updateRiskLevelSchema = z.object({
+  riskLevel: z.enum(['regular', 'risky']),
+});
+export type UpdateRiskLevelInput = z.infer<typeof updateRiskLevelSchema>;
