@@ -22,6 +22,7 @@ export interface InvestmentTransactionInsert {
   activityType: string | null;
   note:         string | null;
   source:       InvestmentTransactionSource;
+  riskLevel?:   string | null;
 }
 
 /** All columns returned from .returning() — no JOIN, so accountName is absent. */
@@ -45,6 +46,7 @@ export interface InsertedInvestmentTransactionRow {
   // always 'csv' | 'manual'. Drizzle cannot narrow text columns statically,
   // so we cast once at this boundary.
   source:       InvestmentTransactionSource;
+  riskLevel:    string | null;
 }
 
 /**
@@ -87,6 +89,7 @@ export async function insertInvestmentTransaction(
       activityType: input.activityType,
       note:         input.note,
       source:       input.source,
+      riskLevel:    input.riskLevel ?? null,
       compositeKey,
     })
     .onConflictDoNothing()
@@ -107,6 +110,7 @@ export async function insertInvestmentTransaction(
       activityType: investmentTransactions.activityType,
       note:         investmentTransactions.note,
       source:       investmentTransactions.source,
+      riskLevel:    investmentTransactions.riskLevel,
     });
 
   if (!row) return null;

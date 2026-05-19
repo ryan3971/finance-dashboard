@@ -275,6 +275,7 @@ export const userConfig = pgTable('user_config', {
   needsPercentage: integer('needs_percentage'),
   wantsPercentage: integer('wants_percentage'),
   investmentsPercentage: integer('investments_percentage'),
+  riskyPercentage: integer('risky_percentage'),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

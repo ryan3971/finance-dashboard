@@ -24,6 +24,9 @@ const SYMBOL_ACTIONS = new Set(['buy', 'sell', 'dividend']);
 // Actions where quantity / price per unit are meaningful.
 const TRADE_ACTIONS = new Set(['buy', 'sell']);
 
+// Actions where risk level classification applies.
+const RISK_LEVEL_ACTIONS = new Set(['buy']);
+
 interface Props {
   readonly onClose: () => void;
 }
@@ -61,6 +64,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
   const isTransfer    = watchedAction === 'transfer';
   const showSymbol    = SYMBOL_ACTIONS.has(watchedAction);
   const showTrade     = TRADE_ACTIONS.has(watchedAction);
+  const showRiskLevel = RISK_LEVEL_ACTIONS.has(watchedAction);
 
   // Clear fields that become hidden when the action changes, so stale values
   // are never silently submitted.
@@ -70,7 +74,8 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
       setValue('quantity', undefined);
       setValue('price', undefined);
     }
-  }, [watchedAction, showSymbol, showTrade, setValue]);
+    if (!showRiskLevel) setValue('riskLevel', undefined);
+  }, [watchedAction, showSymbol, showTrade, showRiskLevel, setValue]);
 
   async function onSubmit(values: CreateManualInvestmentTransactionInput) {
     const rawAmount = Math.abs(values.amount);
@@ -96,6 +101,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
       price:        undefined,
       activityType: undefined,
       note:         undefined,
+      riskLevel:    undefined,
     });
     setTransferDirection('in');
     onClose();
@@ -231,6 +237,16 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
               />
             </FormField>
           </>
+        )}
+
+        {/* Risk level — only relevant for buy */}
+        {showRiskLevel && (
+          <FormField label="Risk level" error={errors.riskLevel?.message} labelSize="xs">
+            <Select {...register('riskLevel')}>
+              <option value="regular">Regular (default)</option>
+              <option value="risky">Risky</option>
+            </Select>
+          </FormField>
         )}
 
         {/* Activity type */}

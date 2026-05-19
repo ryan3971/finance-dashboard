@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge } from '@/components/ui/Badge';
 import { DataTable } from '@/components/ui/DataTable';
@@ -8,7 +8,9 @@ import { cn, fmtInvestmentAmount } from '@/lib/utils';
 import type {
   InvestmentTransactionRow,
   InvestmentTransactionsResponse,
+  RiskLevel,
 } from '@finance/shared/types/investments';
+import { useUpdateRiskLevel } from '../hooks/useRiskBudgetMutations';
 
 // ─── Action badge ─────────────────────────────────────────────────────────────
 
@@ -76,10 +78,16 @@ const InvestmentRow = memo(
   function InvestmentRow({
     row,
     visible,
+    onToggleRiskLevel,
   }: {
     readonly row: InvestmentTransactionRow;
     readonly visible: ToggleKey[];
+    readonly onToggleRiskLevel: (id: string, next: RiskLevel) => void;
   }) {
+    const isBuy = row.action === 'buy';
+    const effectiveRiskLevel = row.riskLevel ?? 'regular';
+    const nextRiskLevel: RiskLevel = effectiveRiskLevel === 'risky' ? 'regular' : 'risky';
+
     return (
       <tr>
         <td className="td-cell font-mono">{row.date}</td>
@@ -115,6 +123,23 @@ const InvestmentRow = memo(
         {visible.includes('activityType') && (
           <td className="td-cell text-content-muted">{row.activityType ?? '—'}</td>
         )}
+        <td className="td-cell">
+          {isBuy ? (
+            <span className="group">
+              <button
+                onClick={() => onToggleRiskLevel(row.id, nextRiskLevel)}
+                className="focus:outline-none"
+                aria-label={`Mark as ${nextRiskLevel}`}
+              >
+                <Badge variant={effectiveRiskLevel === 'risky' ? 'warning' : 'neutral'}>
+                  {effectiveRiskLevel}
+                </Badge>
+              </button>
+            </span>
+          ) : (
+            <span className="text-content-muted text-sm">—</span>
+          )}
+        </td>
         <td className="td-cell text-right">
           <span className={cn('font-mono text-sm font-medium', actionAmountClass(row.action))}>
             {fmtInvestmentAmount(row.amount)}
@@ -123,10 +148,10 @@ const InvestmentRow = memo(
       </tr>
     );
   },
-  // Custom comparator: re-render only when the row data or visible columns change.
-  // visible is a ToggleKey[] so we compare element-by-element.
+  // Custom comparator: re-render only when the row data, visible columns, or callback reference changes.
   (prev, next) =>
     prev.row === next.row &&
+    prev.onToggleRiskLevel === next.onToggleRiskLevel &&
     prev.visible.length === next.visible.length &&
     prev.visible.every((k, i) => k === next.visible[i])
 );
@@ -142,12 +167,20 @@ interface Props {
 export function InvestmentTransactionsTable({ response, isFetching, page }: Props) {
   const navigate = useNavigate({ from: '/dashboard/investments' });
   const [visible, setVisible] = useState<ToggleKey[]>([]);
+  const riskLevelMutation = useUpdateRiskLevel();
 
   function toggleCol(key: ToggleKey) {
     setVisible((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   }
+
+  const handleToggleRiskLevel = useCallback(
+    (id: string, next: RiskLevel) => {
+      riskLevelMutation.mutate({ id, body: { riskLevel: next } });
+    },
+    [riskLevelMutation]
+  );
 
   const rows = response?.data ?? [];
   const pagination = response?.pagination;
@@ -156,6 +189,9 @@ export function InvestmentTransactionsTable({ response, isFetching, page }: Prop
   function setPage(p: number) {
     void navigate({ search: (prev) => ({ ...prev, page: p }) });
   }
+
+  // Base column count: Date, Account, Action, Symbol, Description, Risk, Amount = 7
+  const baseColCount = 7;
 
   return (
     <DataTable
@@ -188,13 +224,14 @@ export function InvestmentTransactionsTable({ response, isFetching, page }: Prop
             )}
             {visible.includes('currency') && <th className="th-cell">Currency</th>}
             {visible.includes('activityType') && <th className="th-cell">Activity</th>}
+            <th className="th-cell">Risk</th>
             <th className="th-cell text-right">Amount</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border-subtle">
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6 + visible.length} className="py-12">
+              <td colSpan={baseColCount + visible.length} className="py-12">
                 <EmptyState
                   message="No investment transactions found."
                   hint="Import a Questrade CSV to get started."
@@ -203,7 +240,12 @@ export function InvestmentTransactionsTable({ response, isFetching, page }: Prop
             </tr>
           ) : (
             rows.map((row) => (
-              <InvestmentRow key={row.id} row={row} visible={visible} />
+              <InvestmentRow
+                key={row.id}
+                row={row}
+                visible={visible}
+                onToggleRiskLevel={handleToggleRiskLevel}
+              />
             ))
           )}
         </tbody>

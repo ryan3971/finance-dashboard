@@ -15,9 +15,11 @@ import { InvestmentSkeleton } from './components/InvestmentSkeleton';
 import { InvestmentTransactionsTable } from './components/InvestmentTransactionsTable';
 import { ManualInvestmentTransactionPanel } from './components/ManualInvestmentTransactionPanel';
 import { MonthlyBreakdownTable } from './components/MonthlyBreakdownTable';
+import { RiskBudgetCard } from './components/RiskBudgetCard';
 import { useContributionRoom } from './hooks/useContributionRoom';
 import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
 import { useMonthlyBreakdown } from './hooks/useMonthlyBreakdown';
+import { useRiskBudget } from './hooks/useRiskBudget';
 
 export function InvestmentsPage() {
   const [currentYear] = useState(() => new Date().getFullYear());
@@ -66,6 +68,11 @@ export function InvestmentsPage() {
   } = useMonthlyBreakdown(year, { enabled: isDashboardTab });
 
   const {
+    data: riskBudgetData,
+    isFetching: riskBudgetFetching,
+  } = useRiskBudget(year, { enabled: isDashboardTab });
+
+  const {
     data: txData,
     isPending: txPending,
     isFetching: txFetching,
@@ -107,6 +114,13 @@ export function InvestmentsPage() {
 
               {roomData && (
                 <ContributionRoomCard data={roomData} isFetching={roomFetching} />
+              )}
+
+              {riskBudgetData && (
+                <RiskBudgetCard
+                  data={riskBudgetData}
+                  isFetching={riskBudgetFetching}
+                />
               )}
 
               {breakdownData && (
