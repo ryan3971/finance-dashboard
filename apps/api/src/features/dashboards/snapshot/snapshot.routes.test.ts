@@ -822,4 +822,111 @@ describe('GET /api/v1/dashboard/snapshot', () => {
 
     expect(res.status).toBe(400);
   });
+
+  it('deducts investment contributions from spendingIncome', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(1),
+      amount: '5000.00',
+      isIncome: true,
+    });
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '-500.00',
+      isIncome: false,
+      isInvestmentContribution: true,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.monthlyIncome.income).toBe(5000);
+    expect(body.monthlyIncome.actualInvestments).toBe(500);
+    expect(body.monthlyIncome.spendingIncome).toBe(4500);
+  });
+
+  it('excludes investment contributions from monthlyExpenses', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(10),
+      amount: '-300.00',
+      isIncome: false,
+      needWant: 'Want',
+    });
+    // Contribution that is NOT also a transfer — must be excluded from expenses
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(11),
+      amount: '-500.00',
+      isIncome: false,
+      isTransfer: false,
+      isInvestmentContribution: true,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.monthlyExpenses.total).toBe(300);
+    expect(body.monthlyIncome.actualInvestments).toBe(500);
+  });
+
+  it('does not double-count a contribution that is also a transfer', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(1),
+      amount: '4000.00',
+      isIncome: true,
+    });
+    // Transfer to investment account — flagged as both transfer and contribution
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(5),
+      amount: '-1000.00',
+      isIncome: false,
+      isTransfer: true,
+      isInvestmentContribution: true,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    // Income unaffected by transfers
+    expect(body.monthlyIncome.income).toBe(4000);
+    // Contribution counted exactly once
+    expect(body.monthlyIncome.actualInvestments).toBe(1000);
+    expect(body.monthlyIncome.spendingIncome).toBe(3000);
+    // Expenses do not include the transfer/contribution
+    expect(body.monthlyExpenses.total).toBe(0);
+  });
 });

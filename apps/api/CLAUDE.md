@@ -112,6 +112,16 @@ Implementation notes:
 - The service (`applyRulesToUncategorized`) loads rules once via `loadRules(userId)`, then groups matching transactions by their categorization outcome fingerprint to issue one `inArray` UPDATE per unique outcome — avoiding one query per transaction.
 - `needWant` is coerced to `null` for income transactions at the service layer, matching the behaviour of `patchTransaction`.
 
+### PATCH /api/v1/transactions/:id
+
+Accepted body fields: `categoryId`, `subcategoryId`, `needWant`, `note`, `createRule`, `isInvestmentContribution`. All optional.
+
+`isInvestmentContribution: boolean` — marks a transaction as an outgoing investment contribution (e.g. a bank debit to Questrade). When true, the transaction is:
+- Included in `monthlyIncome.actualInvestments` on the snapshot, reducing `spendingIncome`.
+- Excluded from `monthlyExpenses` totals (in addition to the existing `isTransfer` exclusion) to prevent double-counting.
+
+This flag is independent of `isTransfer`. A contribution that is also detected as a transfer will be handled correctly — it is excluded from income already via the transfer path and excluded from expenses via both the transfer and contribution filters.
+
 ### Rule suggestions endpoints
 
 `GET /api/v1/rule-suggestions` — returns all `pending` suggestions for the authenticated user, ordered by confidence descending. Suggestions are generated automatically during import when the AI categorizes a transaction with `categorySource = 'ai'` (see `maybeSuggestRule` in `import.service.ts`). Deduplication is enforced by a partial unique index on `(user_id, lower(suggested_keyword)) WHERE status = 'pending'`.

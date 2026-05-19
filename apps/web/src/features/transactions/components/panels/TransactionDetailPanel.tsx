@@ -63,7 +63,7 @@ function TagsField({ tags }: { readonly tags: Tag[] }) {
 }
 
 function ExtraDetailsSection({ transaction }: { readonly transaction: Transaction }) {
-  if (!transaction.isTransfer && !transaction.rebalancingGroupId) return null;
+  if (!transaction.isTransfer && !transaction.rebalancingGroupId && !transaction.isInvestmentContribution) return null;
 
   const linkedAccount = transaction.transferMatchAccountName ?? transaction.transferPairAccountName;
   const linkedName =
@@ -93,6 +93,14 @@ function ExtraDetailsSection({ transaction }: { readonly transaction: Transactio
               </div>
             )}
           </>
+        )}
+        {transaction.isInvestmentContribution && (
+          <div>
+            <dt className="text-xs text-content-muted">Investment Contribution</dt>
+            <dd className="text-sm text-content-primary mt-0.5">
+              <Badge variant="success" rounded="sm">Contribution</Badge>
+            </dd>
+          </div>
         )}
         {transaction.rebalancingGroupId && (
           <div>

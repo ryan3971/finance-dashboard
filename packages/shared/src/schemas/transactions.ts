@@ -73,6 +73,7 @@ export const patchTransactionSchema = z.object({
   needWant: needWantSchema.nullable().optional(),
   note: z.string().max(FIELD_LIMITS.NOTE_MAX).nullable().optional(),
   createRule: z.boolean().optional(),
+  isInvestmentContribution: z.boolean().optional(),
 });
 
 export type PatchTransactionFormValues = z.infer<typeof patchTransactionSchema>;
@@ -107,6 +108,7 @@ export const transactionResponseSchema = z.object({
   transferPairSourceName: z.string().nullable(),
   transferPairAccountName: z.string().nullable(),
   isIncome: z.boolean(),
+  isInvestmentContribution: z.boolean(),
   flaggedForReview: z.boolean(),
   categorySource: categorySourceSchema.nullable(),
   note: z.string().nullable(),

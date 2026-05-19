@@ -111,6 +111,34 @@ export async function queryCurrentMonthIncome(
   return row?.total ?? '0';
 }
 
+export async function queryMonthlyInvestmentContributions(
+  userId: string,
+  year: number,
+  month: number
+): Promise<string> {
+  const { startDate, endDate } = monthDateRange(year, month);
+
+  const [row] = await db
+    .select({
+      total:
+        sql<string>`CAST(COALESCE(SUM(-${transactions.amount}), 0) AS text)`.as(
+          'total'
+        ),
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        eq(transactions.isInvestmentContribution, true),
+        gte(transactions.date, startDate),
+        lt(transactions.date, endDate)
+      )
+    );
+
+  return row?.total ?? '0';
+}
+
 export async function queryCurrentMonthExpenses(
   userId: string,
   year: number,
@@ -135,6 +163,7 @@ export async function queryCurrentMonthExpenses(
         eq(accounts.userId, userId),
         eq(transactions.isIncome, false),
         eq(transactions.isTransfer, false),
+        eq(transactions.isInvestmentContribution, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)
       )

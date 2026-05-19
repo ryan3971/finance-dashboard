@@ -75,6 +75,7 @@ export interface TransactionResponse {
   needWant: string | null;
   isTransfer: boolean;
   isIncome: boolean;
+  isInvestmentContribution: boolean;
   flaggedForReview: boolean;
   categorySource: string | null;
   note: string | null;

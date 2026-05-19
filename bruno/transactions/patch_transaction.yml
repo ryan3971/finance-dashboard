@@ -18,7 +18,8 @@ http:
         "subcategoryId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
         "needWant": "Need",
         "note": "Monthly groceries",
-        "createRule": true
+        "createRule": true,
+        "isInvestmentContribution": false
       }
   auth:
     type: bearer

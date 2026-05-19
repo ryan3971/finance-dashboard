@@ -21,6 +21,7 @@ interface TransactionRow {
   isTransfer: boolean;
   transferPairId: string | null;
   isIncome: boolean;
+  isInvestmentContribution: boolean;
   flaggedForReview: boolean;
   compositeKey: string;
   note: string | null;
