@@ -1,31 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
 import {
   createManualInvestmentTransactionSchema,
   type CreateManualInvestmentTransactionInput,
 } from '@finance/shared/schemas/investments';
 import { useAccounts } from '@/hooks/useAccounts';
+import { toOptionalNumber } from '@/lib/utils';
 import { useCreateManualInvestmentTransaction } from '../hooks/useCreateManualInvestmentTransaction';
+import { INVESTMENT_ACTION_OPTIONS, INVESTMENT_TYPES_SET } from '../constants';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { cn } from '@/lib/utils';
-import { getApiErrorMessage } from '@/lib/errors';
-
-const INVESTMENT_TYPES_SET = new Set<string>(INVESTMENT_ACCOUNT_TYPES);
-
-const ACTION_OPTIONS = [
-  { value: 'buy',        label: 'Buy' },
-  { value: 'sell',       label: 'Sell' },
-  { value: 'deposit',    label: 'Deposit' },
-  { value: 'withdrawal', label: 'Withdrawal' },
-  { value: 'dividend',   label: 'Dividend' },
-  { value: 'transfer',   label: 'Transfer' },
-  { value: 'fee',        label: 'Fee' },
-] as const;
 
 // Actions where cash flows out → stored as a negative amount.
 const CASH_OUT_ACTIONS = new Set(['buy', 'fee', 'withdrawal']);
@@ -36,25 +24,16 @@ const SYMBOL_ACTIONS = new Set(['buy', 'sell', 'dividend']);
 // Actions where quantity / price per unit are meaningful.
 const TRADE_ACTIONS = new Set(['buy', 'sell']);
 
-/**
- * Convert an optional numeric input to the value Zod expects.
- * Empty string → undefined (field omitted). Non-empty → Number.
- * Avoids the valueAsNumber pitfall where clearing an input sends NaN,
- * which Zod's z.number() rejects even when the field is .optional().
- */
-function toOptionalNumber(v: string): number | undefined {
-  if (v === '' || v === null || v === undefined) return undefined;
-  const n = Number(v);
-  return isNaN(n) ? undefined : n;
-}
-
 interface Props {
   readonly onClose: () => void;
 }
 
 export function ManualInvestmentTransactionPanel({ onClose }: Props) {
   const { data: allAccounts } = useAccounts();
-  const investmentAccounts = allAccounts?.filter((a) => INVESTMENT_TYPES_SET.has(a.type)) ?? [];
+  const investmentAccounts = useMemo(
+    () => allAccounts?.filter((a) => INVESTMENT_TYPES_SET.has(a.type)) ?? [],
+    [allAccounts]
+  );
 
   const mutation = useCreateManualInvestmentTransaction();
 
@@ -122,10 +101,6 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
     onClose();
   }
 
-  const serverError = mutation.error
-    ? getApiErrorMessage(mutation.error, 'Failed to add transaction')
-    : null;
-
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-surface border-l border-border-base shadow-xl overflow-y-auto z-40 flex flex-col">
       {/* Header */}
@@ -164,7 +139,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
         {/* Action */}
         <FormField label="Action" error={errors.action?.message} labelSize="xs">
           <Select {...register('action')}>
-            {ACTION_OPTIONS.map((o) => (
+            {INVESTMENT_ACTION_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </Select>
@@ -275,10 +250,6 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
             {...register('note')}
           />
         </FormField>
-
-        {serverError && (
-          <p className="text-xs text-danger">{serverError}</p>
-        )}
 
         <div className="flex gap-2 pt-2">
           <Button type="submit" disabled={mutation.isPending} size="md">

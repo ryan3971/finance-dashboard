@@ -15,16 +15,13 @@ import { InvestmentSkeleton } from './components/InvestmentSkeleton';
 import { InvestmentTransactionsTable } from './components/InvestmentTransactionsTable';
 import { ManualInvestmentTransactionPanel } from './components/ManualInvestmentTransactionPanel';
 import { MonthlyBreakdownTable } from './components/MonthlyBreakdownTable';
-import { YtdProgressSection } from './components/YtdProgressSection';
 import { useContributionRoom } from './hooks/useContributionRoom';
 import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
 import { useMonthlyBreakdown } from './hooks/useMonthlyBreakdown';
 
 export function InvestmentsPage() {
-  const { currentYear, currentMonth } = useMemo(() => {
-    const now = new Date();
-    return { currentYear: now.getFullYear(), currentMonth: now.getMonth() + 1 };
-  }, []);
+  const [currentYear] = useState(() => new Date().getFullYear());
+  const [currentMonth] = useState(() => new Date().getMonth() + 1);
 
   const [year, setYear] = useState(() => currentYear);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -33,6 +30,7 @@ export function InvestmentsPage() {
   const navigate = useNavigate({ from: '/dashboard/investments' });
 
   const activeTab = search.tab ?? 'dashboard';
+  const isDashboardTab = activeTab === 'dashboard';
 
   function handleTabChange(value: string) {
     if (value === 'dashboard' || value === 'activity') {
@@ -59,12 +57,13 @@ export function InvestmentsPage() {
     isPending: roomPending,
     isFetching: roomFetching,
     isError: roomError,
-  } = useContributionRoom(year);
+  } = useContributionRoom(year, { enabled: isDashboardTab });
 
   const {
     data: breakdownData,
     isFetching: breakdownFetching,
-  } = useMonthlyBreakdown(year);
+    isError: breakdownError,
+  } = useMonthlyBreakdown(year, { enabled: isDashboardTab });
 
   const {
     data: txData,
@@ -102,25 +101,12 @@ export function InvestmentsPage() {
                 <EmptyState variant="error" message="Failed to load contribution room data." />
               )}
 
-              {roomData && (
-                <ContributionRoomCard data={roomData} isFetching={roomFetching} />
+              {breakdownError && !breakdownData && (
+                <EmptyState variant="error" message="Failed to load monthly breakdown data." />
               )}
 
-              {breakdownData && roomData && (
-                <div
-                  className={cn(
-                    'transition-opacity duration-200',
-                    breakdownFetching && 'opacity-50'
-                  )}
-                >
-                  <YtdProgressSection
-                    months={breakdownData.months}
-                    selectedYear={year}
-                    currentYear={currentYear}
-                    currentMonth={currentMonth}
-                    accounts={roomData.accounts}
-                  />
-                </div>
+              {roomData && (
+                <ContributionRoomCard data={roomData} isFetching={roomFetching} />
               )}
 
               {breakdownData && (
@@ -130,9 +116,10 @@ export function InvestmentsPage() {
                     breakdownFetching && 'opacity-50'
                   )}
                 >
+                  {/* key={year} resets the internal tab state when the year changes */}
                   <MonthlyBreakdownTable
-                    months={breakdownData.months}
-                    totals={breakdownData.totals}
+                    key={year}
+                    data={breakdownData}
                     currentMonth={currentMonth}
                     currentYear={currentYear}
                     selectedYear={year}

@@ -1292,7 +1292,7 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
     });
     // Insert directly into investment_transactions for the chequing account,
     // bypassing the API account-type guard. The breakdown must exclude it
-    // because queryInvestmentAccountIds only returns investment-type accounts.
+    // because queryInvestmentAccountDetails only returns investment-type accounts.
     await investmentTransactionFixture(chequingId, {
       date: '2024-02-15',
       action: 'deposit',
@@ -1321,5 +1321,231 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
     const body = res.body as MonthlyBreakdownBody;
     expect(body.months).toHaveLength(12);
     expect(body.months.map((m) => m.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  // ─── accounts array ────────────────────────────────────────────────────────
+
+  interface AccountMonthlyBreakdownBody {
+    accountId: string;
+    accountName: string;
+    accountType: string;
+    institution: string;
+    annualLimit: number | null;
+    months: { month: number; contributed: number; deployed: number; uninvestedDelta: number }[];
+    totals: { contributed: number; deployed: number; uninvestedDelta: number };
+  }
+
+  interface MonthlyBreakdownBodyWithAccounts extends MonthlyBreakdownBody {
+    accounts: AccountMonthlyBreakdownBody[];
+  }
+
+  it('returns empty accounts array when user has no investment accounts', async () => {
+    const { accessToken } = await registerUser(app);
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts).toEqual([]);
+  });
+
+  it('returns one account entry per investment account', async () => {
+    const { accessToken } = await registerUser(app);
+    await makeTfsaAccount(app, accessToken);
+    await makeRrspAccount(app, accessToken);
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts).toHaveLength(2);
+  });
+
+  it('orders accounts: tfsa → rrsp → fhsa → non-registered regardless of creation order', async () => {
+    const { accessToken } = await registerUser(app);
+    // Create in reverse order to prove sorting is applied.
+    await createAccount(app, accessToken, {
+      name: 'My Non-Reg',
+      type: 'non-registered',
+      institution: 'td',
+      isCredit: false,
+      currency: 'CAD',
+    });
+    await createAccount(app, accessToken, {
+      name: 'My FHSA',
+      type: 'fhsa',
+      institution: 'questrade',
+      isCredit: false,
+      currency: 'CAD',
+    });
+    await makeRrspAccount(app, accessToken);
+    await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts).toHaveLength(4);
+    expect(body.accounts[0]?.accountType).toBe('tfsa');
+    expect(body.accounts[1]?.accountType).toBe('rrsp');
+    expect(body.accounts[2]?.accountType).toBe('fhsa');
+    expect(body.accounts[3]?.accountType).toBe('non-registered');
+  });
+
+  it('includes accountName and institution on each account entry', async () => {
+    const { accessToken } = await registerUser(app);
+    await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts[0]).toMatchObject({
+      accountName: 'My TFSA',
+      accountType: 'tfsa',
+      institution: 'questrade',
+    });
+  });
+
+  it('annualLimit is null when no contribution record exists for the year', async () => {
+    const { accessToken } = await registerUser(app);
+    await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts[0]?.annualLimit).toBeNull();
+  });
+
+  it('annualLimit reflects the contribution record for the year', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await makeTfsaAccount(app, accessToken);
+
+    await db.insert(contributionRecords).values({
+      accountId,
+      taxYear: 2024,
+      annualLimit: '7000.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts[0]?.annualLimit).toBe(7000);
+  });
+
+  it('returns 12 zero-filled months per account when that account has no transactions', async () => {
+    const { accessToken } = await registerUser(app);
+    await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    const account = body.accounts[0];
+    expect(account?.months).toHaveLength(12);
+    expect(account?.months.every((m) => m.contributed === 0)).toBe(true);
+    expect(account?.months.every((m) => m.deployed === 0)).toBe(true);
+    expect(account?.months.map((m) => m.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it('isolates per-account data: each account sees only its own transactions', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+    const rrspId = await makeRrspAccount(app, accessToken);
+
+    await investmentTransactionFixture(tfsaId, {
+      date: '2024-03-01',
+      action: 'deposit',
+      amount: '500.00',
+    });
+    await investmentTransactionFixture(rrspId, {
+      date: '2024-03-01',
+      action: 'deposit',
+      amount: '1000.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+
+    const tfsa = body.accounts.find((a) => a.accountType === 'tfsa');
+    const rrsp = body.accounts.find((a) => a.accountType === 'rrsp');
+
+    expect(tfsa?.totals.contributed).toBe(500);
+    expect(rrsp?.totals.contributed).toBe(1000);
+    expect(tfsa?.months.find((m) => m.month === 3)?.contributed).toBe(500);
+    expect(rrsp?.months.find((m) => m.month === 3)?.contributed).toBe(1000);
+  });
+
+  it('computes uninvestedDelta correctly per account', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    await investmentTransactionFixture(tfsaId, {
+      date: '2024-05-01',
+      action: 'deposit',
+      amount: '1000.00',
+    });
+    await investmentTransactionFixture(tfsaId, {
+      date: '2024-05-10',
+      action: 'buy',
+      symbol: 'VFV',
+      amount: '-800.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    const tfsa = body.accounts.find((a) => a.accountType === 'tfsa');
+    const may = tfsa?.months.find((m) => m.month === 5);
+    expect(may?.contributed).toBe(1000);
+    expect(may?.deployed).toBe(-800);
+    expect(may?.uninvestedDelta).toBe(200);
+    expect(tfsa?.totals.uninvestedDelta).toBe(200);
+  });
+
+  it('does not include accounts from another user', async () => {
+    const { accessToken: token1 } = await registerUser(app, 'breakdown-accounts-a@example.com');
+    const { accessToken: token2 } = await registerUser(app, 'breakdown-accounts-b@example.com');
+    await makeTfsaAccount(app, token2);
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(token1));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    expect(body.accounts).toHaveLength(0);
   });
 });

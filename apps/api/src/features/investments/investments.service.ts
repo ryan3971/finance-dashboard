@@ -2,10 +2,15 @@ import Decimal from 'decimal.js';
 import type {
   AccountContributionSummary,
   ContributionRoomResponse,
+  InvestmentAction,
   InvestmentTransactionAggregates,
   InvestmentTransactionRow,
+  InvestmentTransactionSource,
 } from '@finance/shared/types/investments';
 import type {
+  AccountMonthlyBreakdown,
+  AccountMonthlyBreakdownRow,
+  AccountMonthlyBreakdownTotals,
   MonthlyBreakdownResponse,
   MonthlyBreakdownRow,
   MonthlyBreakdownTotals,
@@ -15,14 +20,14 @@ import type {
   InvestmentTransactionFilters,
   UpsertContributionRoomInput,
 } from '@finance/shared/schemas/investments';
-import type { InvestmentTransactionSource } from '@finance/shared/types/investments';
 import {
   REGISTERED_ACCOUNT_TYPES,
   TFSA_TYPE,
   queryAccountOwnerAndType,
   queryContributionAggregates,
   queryContributionRecords,
-  queryInvestmentAccountIds,
+  queryInvestmentAccountDetails,
+  queryMonthlyBreakdownByAccount,
   queryMonthlyBreakdownRaw,
   queryPaginatedTransactions,
   queryRegisteredAccounts,
@@ -84,7 +89,8 @@ export async function getInvestmentTransactions(
     accountId: row.accountId,
     accountName: row.accountName,
     date: row.date,
-    action: row.action,
+    // The insert pipeline and Zod validation guarantee a valid InvestmentAction; Drizzle returns string.
+    action: row.action as InvestmentAction,
     rawAction: row.rawAction,
     symbol: row.symbol,
     description: row.description,
@@ -254,7 +260,7 @@ export async function createManualInvestmentTransaction(
     accountId:    row.accountId,
     accountName:  account.name,
     date:         row.date,
-    action:       row.action,
+    action:       row.action as InvestmentAction,
     rawAction:    row.rawAction,
     symbol:       row.symbol,
     description:  row.description,
@@ -270,22 +276,30 @@ export async function createManualInvestmentTransaction(
   };
 }
 
+const ACCOUNT_TYPE_RANK: Record<string, number> = { tfsa: 0, rrsp: 1, fhsa: 2 };
+
 export async function getMonthlyBreakdown(
   userId: string,
   year: number
 ): Promise<MonthlyBreakdownResponse> {
-  const [accountIds, config, incomeResult] = await Promise.all([
-    queryInvestmentAccountIds(userId),
+  const [accountDetails, config, incomeResult] = await Promise.all([
+    queryInvestmentAccountDetails(userId),
     queryDashboardUserConfig(userId),
     resolveMonthlyIncome(userId, year),
   ]);
 
-  const rawRows = await queryMonthlyBreakdownRaw(accountIds, year);
+  const accountIds = accountDetails.map((a) => a.id);
+
+  const [rawRows, perAccountRows, contribRecs] = await Promise.all([
+    queryMonthlyBreakdownRaw(accountIds, year),
+    queryMonthlyBreakdownByAccount(accountIds, year),
+    queryContributionRecords(accountIds, year),
+  ]);
 
   const investmentsPercentage = config.investmentsPercentage;
   const { months: monthlyIncome, hasEntries: hasIncomeEntries } = incomeResult;
 
-  // Index DB rows by month for O(1) lookup.
+  // Index combined DB rows by month for O(1) lookup.
   const dbByMonth = new Map(rawRows.map((r) => [r.month, r]));
 
   const months: MonthlyBreakdownRow[] = Array.from({ length: MONTHS_IN_YEAR }, (_, i) => {
@@ -327,11 +341,63 @@ export async function getMonthlyBreakdown(
       : null,
   }), initial);
 
+  // Index per-account rows by "accountId:month" for O(1) lookup.
+  const perAccountByKey = new Map(
+    perAccountRows.map((r) => [`${r.accountId}:${r.month}`, r])
+  );
+
+  // Index contribution records by accountId.
+  const contribByAccount = new Map(contribRecs.map((r) => [r.accountId, r]));
+
+  const sortedAccounts = [...accountDetails].sort(
+    (a, b) => (ACCOUNT_TYPE_RANK[a.type] ?? 3) - (ACCOUNT_TYPE_RANK[b.type] ?? 3)
+  );
+
+  const accounts: AccountMonthlyBreakdown[] = sortedAccounts.map((account) => {
+    const contribRec = contribByAccount.get(account.id);
+    const annualLimit =
+      contribRec?.annualLimit !== null && contribRec?.annualLimit !== undefined
+        ? new Decimal(contribRec.annualLimit).toNumber()
+        : null;
+
+    const accountMonths: AccountMonthlyBreakdownRow[] = Array.from(
+      { length: MONTHS_IN_YEAR },
+      (_, i) => {
+        const month = i + 1;
+        const row = perAccountByKey.get(`${account.id}:${month}`);
+        const contributed = row ? new Decimal(row.contributed).toNumber() : 0;
+        const deployed = row ? new Decimal(row.deployed).toNumber() : 0;
+        const uninvestedDelta = new Decimal(contributed).plus(deployed).toNumber();
+        return { month, contributed, deployed, uninvestedDelta };
+      }
+    );
+
+    const accountTotals = accountMonths.reduce<AccountMonthlyBreakdownTotals>(
+      (acc, m) => ({
+        contributed: new Decimal(acc.contributed).plus(m.contributed).toNumber(),
+        deployed: new Decimal(acc.deployed).plus(m.deployed).toNumber(),
+        uninvestedDelta: new Decimal(acc.uninvestedDelta).plus(m.uninvestedDelta).toNumber(),
+      }),
+      { contributed: 0, deployed: 0, uninvestedDelta: 0 }
+    );
+
+    return {
+      accountId: account.id,
+      accountName: account.name,
+      accountType: account.type,
+      institution: account.institution,
+      annualLimit,
+      months: accountMonths,
+      totals: accountTotals,
+    };
+  });
+
   return {
     year,
     investmentsPercentage,
     months,
     totals,
+    accounts,
   };
 }
 

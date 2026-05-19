@@ -1,20 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAccounts } from '@/hooks/useAccounts';
-import { INVESTMENT_ACCOUNT_TYPES } from '@finance/shared/constants';
+import { INVESTMENT_ACTION_OPTIONS, INVESTMENT_TYPES_SET } from '../constants';
 
-const INVESTMENT_TYPES = new Set<string>(INVESTMENT_ACCOUNT_TYPES);
 const SYMBOL_DEBOUNCE_MS = 300;
 
 const ACTION_OPTIONS = [
   { value: '', label: 'All actions' },
-  { value: 'buy', label: 'Buy' },
-  { value: 'sell', label: 'Sell' },
-  { value: 'dividend', label: 'Dividend' },
-  { value: 'deposit', label: 'Deposit' },
-  { value: 'withdrawal', label: 'Withdrawal' },
-  { value: 'transfer', label: 'Transfer' },
-  { value: 'fee', label: 'Fee' },
+  ...INVESTMENT_ACTION_OPTIONS,
 ];
 
 interface FilterState {
@@ -32,7 +25,10 @@ interface Props {
 export function InvestmentFilters({ filters }: Props) {
   const navigate = useNavigate({ from: '/dashboard/investments' });
   const { data: allAccounts } = useAccounts();
-  const investmentAccounts = allAccounts?.filter((a) => INVESTMENT_TYPES.has(a.type)) ?? [];
+  const investmentAccounts = useMemo(
+    () => allAccounts?.filter((a) => INVESTMENT_TYPES_SET.has(a.type)) ?? [],
+    [allAccounts]
+  );
 
   const [symbolInput, setSymbolInput] = useState(filters.symbol ?? '');
 

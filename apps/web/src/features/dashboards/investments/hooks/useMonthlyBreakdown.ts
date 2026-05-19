@@ -5,7 +5,7 @@ import type { MonthlyBreakdownResponse } from '@finance/shared/types/investments
 
 const STALE_TIME_MS = 5 * 60 * 1000;
 
-export function useMonthlyBreakdown(year: number) {
+export function useMonthlyBreakdown(year: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: investmentKeys.monthlyBreakdown(year),
     queryFn: async () => {
@@ -17,5 +17,6 @@ export function useMonthlyBreakdown(year: number) {
     },
     staleTime: STALE_TIME_MS,
     placeholderData: keepPreviousData,
+    enabled: options?.enabled ?? true,
   });
 }
