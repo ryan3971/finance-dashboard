@@ -155,58 +155,49 @@ export function RiskBudgetCard({ data, isFetching }: Props) {
         />
       </div>
 
-      <div className="px-4 py-4">
-        {!hasPercentage && data.riskyInvested === 0 && (
-          <p className="text-sm text-content-muted">
-            Set a risky investment percentage to track your risk budget.
-          </p>
-        )}
-
-        {!hasPercentage && data.riskyInvested > 0 && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-content-secondary">Invested</span>
+      {!hasPercentage && (
+        <div className="px-4 py-4">
+          {data.riskyInvested > 0 ? (
+            <p className="text-sm text-content-muted">
+              Invested:{' '}
               <span className="font-mono font-medium text-content-primary">
                 {fmt(data.riskyInvested)}
               </span>
-            </div>
-            <p className="text-xs text-content-muted">
-              Set a risky investment percentage above to track your budget.
+              {' — '}set a percentage above to track your budget.
+            </p>
+          ) : (
+            <p className="text-sm text-content-muted">
+              Set a risky investment percentage to track your risk budget.
+            </p>
+          )}
+        </div>
+      )}
+
+      {hasPercentage && (
+        <div className="grid grid-cols-3 divide-x divide-border-subtle">
+          <div className="px-4 py-4">
+            <p className="text-xs text-content-muted mb-1">Available</p>
+            <p className="text-base font-mono font-medium text-content-primary">
+              {fmt(data.riskyBudget ?? 0)}
             </p>
           </div>
-        )}
-
-        {hasPercentage && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-content-secondary">Available</span>
-              <span className="font-mono font-medium text-content-primary">
-                {fmt(data.riskyBudget ?? 0)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-content-secondary">Invested</span>
-              <span className="font-mono font-medium text-content-primary">
-                {fmt(data.riskyInvested)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-content-secondary">Remaining</span>
-              <span
-                className={cn(
-                  'font-mono font-medium',
-                  isOverBudget ? 'text-danger' : 'text-positive'
-                )}
-              >
-                {fmt(data.remaining ?? 0)}
-                {isOverBudget && (
-                  <span className="ml-1 text-xs font-normal">over budget</span>
-                )}
-              </span>
-            </div>
+          <div className="px-4 py-4">
+            <p className="text-xs text-content-muted mb-1">Invested</p>
+            <p className="text-base font-mono font-medium text-content-primary">
+              {fmt(data.riskyInvested)}
+            </p>
           </div>
-        )}
-      </div>
+          <div className="px-4 py-4">
+            <p className="text-xs text-content-muted mb-1">Remaining</p>
+            <p className={cn('text-base font-mono font-medium', isOverBudget ? 'text-danger' : 'text-positive')}>
+              {fmt(data.remaining ?? 0)}
+            </p>
+            {isOverBudget && (
+              <p className="text-xs text-danger mt-0.5">over budget</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
