@@ -407,4 +407,128 @@ export const helpContent = {
       },
     ],
   },
+  // ── Investments ──────────────────────────────────────────────────────────────
+
+  'investments.contributionRoom': {
+    title: 'Contribution Room',
+    body: 'Tracks your remaining registered contribution room for TFSA, RRSP, and FHSA accounts for the selected year.',
+    sections: [
+      {
+        heading: 'Annual limit',
+        description:
+          'The maximum you can contribute to this account type in the tax year. For TFSA, this is set by the CRA each year. Click the pencil icon on any row to enter or update your limit.',
+      },
+      {
+        heading: 'Room carried',
+        description:
+          'Unused contribution room carried forward from prior years. For TFSA, this is estimated automatically from last year\'s limit when you haven\'t confirmed the current amount — look for the "Est." label.',
+      },
+      {
+        heading: 'Available room',
+        description:
+          'How much you can still contribute: annual limit plus room carried, minus contributions made so far, plus any withdrawals (TFSA only). Turns red when you\'ve exceeded your room.',
+      },
+      {
+        heading: 'Contributions and withdrawals',
+        description:
+          'Derived automatically from deposit and withdrawal transactions in your investment accounts for the selected year. No manual entry needed — add or import transactions to keep these current.',
+      },
+    ],
+  },
+
+  'investments.riskBudget': {
+    title: 'Risk Budget',
+    body: 'Tracks how much of your annual contributions are allocated to higher-risk positions, relative to a configurable target percentage.',
+    sections: [
+      {
+        heading: 'Risky %',
+        description:
+          'The share of your total annual contributions you\'re targeting for higher-risk investments. Click the pencil icon to set or update this percentage. Once set, the budget and remaining figures are calculated automatically.',
+      },
+      {
+        heading: 'Risky budget',
+        description:
+          'Total annual contributions multiplied by the risky percentage. This is your spending limit for higher-risk positions.',
+      },
+      {
+        heading: 'Risky invested',
+        description:
+          'The total cost of all buy transactions classified as "risky" for the year. Click any buy row\'s risk badge in the Activity tab to toggle it between Regular and Risky.',
+      },
+      {
+        heading: 'Remaining',
+        description:
+          'Budget minus invested. Turns red when you\'ve exceeded your risky budget. A negative remaining means your risky exposure is above the target percentage.',
+      },
+    ],
+  },
+
+  'investments.monthlyBreakdown': {
+    title: 'Monthly Breakdown',
+    body: 'A month-by-month view of contribution and deployment activity across all investment accounts for the selected year.',
+    sections: [
+      {
+        heading: 'Contributed',
+        description:
+          'The total deposited into investment accounts in each month. This counts deposit transactions only — transfers and other action types are excluded.',
+      },
+      {
+        heading: 'Deployed',
+        description:
+          'Net buy/sell activity for the month: buys are negative, sells are positive. A negative deployed figure means more was invested than liquidated.',
+      },
+      {
+        heading: 'Uninvested',
+        description:
+          'Contributed minus deployed. A positive amount (shown in amber) means cash is sitting in the account that hasn\'t been put to work yet.',
+      },
+      {
+        heading: 'Annual limit progress',
+        description:
+          'The YTD progress bar compares total contributions so far against the combined annual limit of all registered accounts. Limits must be entered in the Contribution Room card for this to appear.',
+      },
+      {
+        heading: 'Per-account tabs',
+        description:
+          'Switch to a specific account to see its monthly breakdown and YTD progress in isolation. Future months in the current year are shown but greyed out.',
+      },
+    ],
+  },
+
+  'investments.activity': {
+    title: 'Activity',
+    body: 'The full history of investment transactions across all accounts, with filtering and manual entry.',
+    sections: [
+      {
+        heading: 'Stats bar',
+        description:
+          'Shows totals for the current filtered view: dividends received, fees paid, and net deposits (contributions minus withdrawals). All three update when filters are applied.',
+      },
+      {
+        heading: 'Filters',
+        description:
+          'Narrow the list by account, action type, symbol, or date range. Multiple filters apply together. Clear individual filters using the × on each chip.',
+      },
+      {
+        heading: 'Column visibility',
+        description:
+          'Use the toggle buttons above the table to show or hide optional columns: Qty, Price, Gross, Commission, Currency, and Activity type. Hidden by default to keep the table compact.',
+      },
+      {
+        heading: 'Risk classification',
+        description:
+          'Buy transactions have a clickable risk badge. Click it to toggle between Regular and Risky. Risky buys count toward your Risk Budget. All other action types are unclassified.',
+      },
+      {
+        heading: 'Manual transactions',
+        description:
+          'Use Add Transaction to record a buy, sell, deposit, or any other activity that wasn\'t captured by a CSV import. Manual entries are marked with a "manual" source badge.',
+      },
+      {
+        heading: 'Duplicate',
+        description:
+          'Hover any row and click Duplicate to open the Add Transaction panel pre-filled with the same values. Useful for recurring manual entries or correcting a mis-entered transaction.',
+      },
+    ],
+  },
 } satisfies Record<string, HelpEntry>;

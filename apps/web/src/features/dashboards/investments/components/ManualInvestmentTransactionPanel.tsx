@@ -29,9 +29,11 @@ const RISK_LEVEL_ACTIONS = new Set(['buy']);
 
 interface Props {
   readonly onClose: () => void;
+  readonly defaultValues?: Partial<CreateManualInvestmentTransactionInput>;
+  readonly initialTransferDirection?: 'in' | 'out';
 }
 
-export function ManualInvestmentTransactionPanel({ onClose }: Props) {
+export function ManualInvestmentTransactionPanel({ onClose, defaultValues, initialTransferDirection }: Props) {
   const { data: allAccounts } = useAccounts();
   const investmentAccounts = useMemo(
     () => allAccounts?.filter((a) => INVESTMENT_TYPES_SET.has(a.type)) ?? [],
@@ -41,7 +43,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
   const mutation = useCreateManualInvestmentTransaction();
 
   // Transfer-direction is not part of the Zod schema; it only drives the sign.
-  const [transferDirection, setTransferDirection] = useState<'in' | 'out'>('in');
+  const [transferDirection, setTransferDirection] = useState<'in' | 'out'>(initialTransferDirection ?? 'in');
 
   const {
     register,
@@ -52,7 +54,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
     formState: { errors },
   } = useForm<CreateManualInvestmentTransactionInput>({
     resolver: zodResolver(createManualInvestmentTransactionSchema),
-    defaultValues: {
+    defaultValues: defaultValues ?? {
       accountId: '',
       date:      new Date().toISOString().split('T')[0],
       action:    'deposit',
@@ -112,7 +114,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-border-subtle">
         <h2 className="text-sm font-medium text-content-primary">
-          Add Investment Transaction
+          {defaultValues ? 'Duplicate Transaction' : 'Add Investment Transaction'}
         </h2>
         <button
           onClick={onClose}
