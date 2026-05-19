@@ -1,18 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { investmentKeys } from '@/lib/queryKeys';
 import { TOAST } from '@/lib/toastMessages';
 import type { UpdateRiskLevelInput, UpdateRiskSettingsInput } from '@finance/shared/schemas/investments';
 
-export function useUpdateRiskSettings(year: number) {
+export function useUpdateRiskSettings() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: UpdateRiskSettingsInput) => {
       await api.patch('/investments/risk-settings', body);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: investmentKeys.riskBudget(year) });
+      void queryClient.invalidateQueries({ queryKey: ['investments', 'risk-budget'] });
       toast.success(TOAST.RISK_SETTINGS_SAVED);
     },
     onError: () => toast.error(TOAST.RISK_SETTINGS_SAVE_FAILED),

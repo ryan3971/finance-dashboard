@@ -406,6 +406,7 @@ export async function queryRiskyInvested(
     .where(
       and(
         eq(accounts.userId, userId),
+        inArray(accounts.type, [...INVESTMENT_ACCOUNT_TYPES]),
         gte(investmentTransactions.date, startDate),
         lt(investmentTransactions.date, endDate),
       )

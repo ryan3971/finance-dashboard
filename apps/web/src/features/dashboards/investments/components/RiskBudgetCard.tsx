@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { cn, fmt } from '@/lib/utils';
+import { TOAST } from '@/lib/toastMessages';
 import type { RiskBudgetResponse } from '@finance/shared/types/investments';
 import { useUpdateRiskSettings } from '../hooks/useRiskBudgetMutations';
 
@@ -101,14 +103,13 @@ function PercentageEditor({
 
 interface Props {
   readonly data: RiskBudgetResponse;
-  readonly year: number;
   readonly isFetching: boolean;
 }
 
-export function RiskBudgetCard({ data, year, isFetching }: Props) {
+export function RiskBudgetCard({ data, isFetching }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
-  const mutation = useUpdateRiskSettings(year);
+  const mutation = useUpdateRiskSettings();
 
   function startEdit() {
     setEditValue(data.riskyPercentage?.toString() ?? '');
@@ -123,6 +124,7 @@ export function RiskBudgetCard({ data, year, isFetching }: Props) {
   function handleSave() {
     const num = parseInt(editValue, 10);
     if (isNaN(num) || num < 0 || num > 100) {
+      toast.error(TOAST.RISK_SETTINGS_SAVE_FAILED);
       cancelEdit();
       return;
     }

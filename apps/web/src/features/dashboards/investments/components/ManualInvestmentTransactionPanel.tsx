@@ -243,7 +243,7 @@ export function ManualInvestmentTransactionPanel({ onClose }: Props) {
         {showRiskLevel && (
           <FormField label="Risk level" error={errors.riskLevel?.message} labelSize="xs">
             <Select {...register('riskLevel')}>
-              <option value="">Regular (default)</option>
+              <option value="regular">Regular (default)</option>
               <option value="risky">Risky</option>
             </Select>
           </FormField>

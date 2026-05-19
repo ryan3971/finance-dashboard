@@ -119,7 +119,6 @@ export function InvestmentsPage() {
               {riskBudgetData && (
                 <RiskBudgetCard
                   data={riskBudgetData}
-                  year={year}
                   isFetching={riskBudgetFetching}
                 />
               )}
