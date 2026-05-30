@@ -116,6 +116,11 @@ export function useTransactionColumns({
                     </span>
                   )}
                 </span>
+                {tx.isInvestmentContribution && (
+                  <Badge variant="success" rounded="sm" className="shrink-0">
+                    Investment
+                  </Badge>
+                )}
                 {tx.rebalancingGroupId !== null && (
                   <Badge variant="neutral" rounded="sm" className="shrink-0">
                     {tx.rebalancingRole === 'source' ? 'Source' : 'Offset'}

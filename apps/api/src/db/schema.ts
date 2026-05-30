@@ -165,6 +165,7 @@ export const transactions = pgTable(
     transferPairId: uuid('transfer_pair_id'),
     transferMatchId: uuid('transfer_match_id'),
     isIncome: boolean('is_income').notNull().default(false),
+    isInvestmentContribution: boolean('is_investment_contribution').notNull().default(false),
     flaggedForReview: boolean('flagged_for_review').notNull().default(false),
     compositeKey: text('composite_key').unique().notNull(),
     note: text('note'),

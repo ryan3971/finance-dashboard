@@ -5,6 +5,7 @@ import { queryDashboardUserConfig } from '@/lib/user-config-query';
 import {
   queryAccountBalances,
   queryCurrentMonthIncome,
+  queryMonthlyInvestmentContributions,
   queryCurrentMonthExpenses,
   queryAnticipatedForMonth,
   queryLastUploadedAt,
@@ -41,6 +42,7 @@ router.get('/snapshot', async (req: Request, res: Response) => {
   const [
     accountRows,
     incomeTotal,
+    investmentContributionsTotal,
     expenseRows,
     anticipatedRows,
     config,
@@ -49,6 +51,7 @@ router.get('/snapshot', async (req: Request, res: Response) => {
   ] = await Promise.all([
     queryAccountBalances(userId),
     queryCurrentMonthIncome(userId, year, month),
+    queryMonthlyInvestmentContributions(userId, year, month),
     queryCurrentMonthExpenses(userId, year, month),
     queryAnticipatedForMonth(userId, year, month),
     queryDashboardUserConfig(userId),
@@ -62,6 +65,7 @@ router.get('/snapshot', async (req: Request, res: Response) => {
     buildSnapshotResponse(
       accountRows,
       incomeTotal,
+      investmentContributionsTotal,
       expenseRows,
       anticipatedRows,
       config,

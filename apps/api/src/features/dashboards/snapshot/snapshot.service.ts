@@ -68,15 +68,11 @@ function buildExpensesColumns(
   };
 }
 
-// Investment tracking is deferred — actual investment transactions are not yet
-// queried. actualInvestments is always zero until the feature ships, at which
-// point only the repository query needs to be added; the response shape and
-// downstream callers are already stable.
 function buildMonthlyIncome(
   grossIncome: Decimal,
+  actualInvestments: Decimal,
   percentages: Percentages | null
 ): SnapshotMonthlyIncome {
-  const actualInvestments = new Decimal(0);
   const spendingIncome = grossIncome.minus(actualInvestments);
 
   if (spendingIncome.isZero() || percentages === null) {
@@ -175,6 +171,7 @@ function buildExpectedSpendingIncome(
 export function buildSnapshotResponse(
   accountRows: AccountBalanceRow[],
   incomeTotal: string,
+  investmentContributionsTotal: string,
   expenseRows: ExpenseNeedWantRow[],
   anticipatedRows: AnticipatedRow[],
   config: SnapshotConfig,
@@ -232,7 +229,8 @@ export function buildSnapshotResponse(
   const incomeExclusion =
     adjustments.incomeByMonth.get(month) ?? new Decimal(0);
   const grossIncome = new Decimal(incomeTotal).minus(incomeExclusion);
-  const monthlyIncome = buildMonthlyIncome(grossIncome, percentages);
+  const actualInvestments = new Decimal(investmentContributionsTotal);
+  const monthlyIncome = buildMonthlyIncome(grossIncome, actualInvestments, percentages);
 
   // ── Monthly expenses ────────────────────────────────────────────────────────
   const baseExpenses = buildExpensesColumns(expenseRows);

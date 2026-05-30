@@ -430,7 +430,7 @@ export async function insertSeedInvestmentTransactions(
       amount: def.amount,
       currency: def.currency,
       activityType: def.activityType ?? null,
-      compositeKey: `seed-inv-${def.accountName}-${i}`,
+      compositeKey: `seed-inv-${accountId}-${i}`,
       riskLevel: def.riskLevel ?? null,
       source: def.source ?? 'csv',
     };

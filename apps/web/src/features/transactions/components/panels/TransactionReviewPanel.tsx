@@ -71,6 +71,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
       needWant: transaction.needWant ?? null,
       note: transaction.note ?? '',
       createRule: false,
+      isInvestmentContribution: transaction.isInvestmentContribution,
     },
   });
 
@@ -89,6 +90,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
           needWant: values.needWant ?? null,
           note: values.note || null,
           createRule: values.createRule ?? false,
+          isInvestmentContribution: values.isInvestmentContribution ?? false,
         },
       });
       onClose();
@@ -287,6 +289,13 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
           <input type="checkbox" {...register('createRule')} />
           <span className="label-xs">
             Save as rule — apply this category to similar transactions in future imports
+          </span>
+        </label>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" {...register('isInvestmentContribution')} />
+          <span className="label-xs">
+            Investment contribution — deduct from spending income on the snapshot
           </span>
         </label>
 
