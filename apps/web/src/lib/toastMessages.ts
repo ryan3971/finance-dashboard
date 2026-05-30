@@ -84,6 +84,16 @@ export const TOAST = {
   CONFIG_ALLOCATIONS_SAVE_FAILED: 'Failed to save preferences. Please try again.',
   CONFIG_EMERGENCY_FUND_SAVED: 'Emergency fund target saved',
   CONFIG_EMERGENCY_FUND_SAVE_FAILED: 'Failed to save emergency fund target. Please try again.',
+  // Investments
+  CONTRIBUTION_ROOM_SAVED: 'Contribution room updated',
+  CONTRIBUTION_ROOM_SAVE_FAILED: 'Failed to update contribution room',
+  INVESTMENT_TRANSACTION_CREATED: 'Transaction added',
+  INVESTMENT_TRANSACTION_CREATE_FAILED: 'Failed to add transaction',
+  INVESTMENT_TRANSACTION_DUPLICATE: 'A transaction with identical fields already exists',
+  RISK_SETTINGS_SAVED: 'Risk budget updated',
+  RISK_SETTINGS_SAVE_FAILED: 'Failed to update risk budget',
+  RISK_LEVEL_UPDATED: 'Risk level updated',
+  RISK_LEVEL_UPDATE_FAILED: 'Failed to update risk level',
   // Account reset
   ACCOUNT_RESET: 'Account reset',
   ACCOUNT_RESET_FAILED: 'Failed to reset account. Please try again.',

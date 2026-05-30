@@ -165,6 +165,7 @@ export const transactions = pgTable(
     transferPairId: uuid('transfer_pair_id'),
     transferMatchId: uuid('transfer_match_id'),
     isIncome: boolean('is_income').notNull().default(false),
+    isInvestmentContribution: boolean('is_investment_contribution').notNull().default(false),
     flaggedForReview: boolean('flagged_for_review').notNull().default(false),
     compositeKey: text('composite_key').unique().notNull(),
     note: text('note'),
@@ -220,10 +221,13 @@ export const investmentTransactions = pgTable('investment_transactions', {
   activityType: text('activity_type'),
   compositeKey: text('composite_key').unique().notNull(),
   note: text('note'),
+  source: text('source').notNull().default('csv'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (t) => [
+  check('investment_transactions_source_check', sql`${t.source} IN ('csv', 'manual')`),
+]);
 
 export const investmentSnapshots = pgTable('investment_snapshots', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -239,24 +243,23 @@ export const investmentSnapshots = pgTable('investment_snapshots', {
     .notNull(),
 });
 
-export const contributionRecords = pgTable('contribution_records', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  accountId: uuid('account_id')
-    .references(() => accounts.id)
-    .notNull(),
-  taxYear: integer('tax_year').notNull(),
-  annualLimit: numeric('annual_limit', { precision: 12, scale: 2 }),
-  contributions: numeric('contributions', { precision: 12, scale: 2 })
-    .notNull()
-    .default('0'),
-  withdrawals: numeric('withdrawals', { precision: 12, scale: 2 })
-    .notNull()
-    .default('0'),
-  roomCarried: numeric('room_carried', { precision: 12, scale: 2 }),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const contributionRecords = pgTable(
+  'contribution_records',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    accountId: uuid('account_id')
+      .references(() => accounts.id)
+      .notNull(),
+    taxYear: integer('tax_year').notNull(),
+    annualLimit: numeric('annual_limit', { precision: 12, scale: 2 }),
+    roomCarried: numeric('room_carried', { precision: 12, scale: 2 }),
+    roomCarriedConfirmed: boolean('room_carried_confirmed').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [unique().on(t.accountId, t.taxYear)]
+);
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -273,6 +276,7 @@ export const userConfig = pgTable('user_config', {
   needsPercentage: integer('needs_percentage'),
   wantsPercentage: integer('wants_percentage'),
   investmentsPercentage: integer('investments_percentage'),
+  riskyPercentage: integer('risky_percentage'),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

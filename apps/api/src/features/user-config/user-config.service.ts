@@ -5,7 +5,9 @@ import {
   anticipatedBudgetMonths,
   categories,
   categorizationRules,
+  contributionRecords,
   imports,
+  investmentTransactions,
   rebalancingGroups,
   tags,
   transactions,
@@ -98,6 +100,12 @@ async function deleteAllUserData(
     await tx
       .delete(transactions)
       .where(inArray(transactions.accountId, accountIds));
+    await tx
+      .delete(investmentTransactions)
+      .where(inArray(investmentTransactions.accountId, accountIds));
+    await tx
+      .delete(contributionRecords)
+      .where(inArray(contributionRecords.accountId, accountIds));
   }
   // Delete in FK dependency order: children before parents
   await tx.delete(imports).where(eq(imports.userId, userId));

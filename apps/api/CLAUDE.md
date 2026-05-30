@@ -69,6 +69,24 @@ Drizzle generates migration filenames automatically — do not rename them. Run 
 
 Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles `DomainError` instances generically, and also catches `ZodError` (→ 400) and `multer.MulterError`. Route handlers do not need to catch these.
 
+### Investment transaction endpoints
+
+`GET /api/v1/investments/transactions` — paginated list of investment transactions for the authenticated user, with optional filters (`accountId`, `action`, `symbol`, `startDate`, `endDate`). Response includes `source: 'csv' | 'manual'` on each row.
+
+`POST /api/v1/investments/transactions` — create a manual investment transaction. Body validated against `createManualInvestmentTransactionSchema` (`packages/shared/src/schemas/investments.ts`). The client applies the sign to `amount` before posting; the API stores it as-is. `rawAction` is set equal to `action` by the service. Returns `201` with `InvestmentTransactionRow`.
+
+Key behaviours:
+- Account must belong to the authenticated user (→ 403) and must be an investment account type (tfsa, fhsa, rrsp, non-registered) (→ 400 `INVALID_ACCOUNT_TYPE_FOR_TRANSACTION`).
+- Duplicate detection uses `compositeKey` (same algorithm as the import pipeline). A collision returns 409 `DUPLICATE_INVESTMENT_TRANSACTION`.
+- `insertInvestmentTransaction` in `investments.repository.ts` is the single shared insert path used by both the import pipeline (`processInvestmentRow`) and manual entry. Do not add a second insert path.
+- `source` column on `investment_transactions` distinguishes provenance: `'csv'` for imported rows, `'manual'` for entries created via this endpoint.
+
+`GET /api/v1/investments/monthly-breakdown?year=` — combined 12-month breakdown (contributed, deployed, uninvestedDelta, target) plus an `accounts` array of per-account breakdowns. Each account entry includes `annualLimit` (from `contributionRecords`) and its own 12-month rows and totals. Account ordering: TFSA → RRSP → FHSA → non-registered.
+
+`GET /api/v1/investments/contribution-room?year=` — per-registered-account contribution room. Supports a TFSA carry-forward estimate from prior-year data.
+
+`PUT /api/v1/investments/contribution-room/:accountId/:year` — upsert the `annualLimit`, `roomCarried`, and `roomCarriedConfirmed` fields for a registered account. Returns 204.
+
 ### Categorization rules endpoints
 
 `GET /api/v1/categorization-rules` — returns all rules for the authenticated user, ordered by priority descending. Each rule includes `matchType: 'substring' | 'wildcard'`.
@@ -91,6 +109,16 @@ Implementation notes:
 - The route is defined **before** `/:id` routes in `transactions-mutation.routes.ts` so Express does not match the literal string `apply-rules` as a transaction id.
 - The service (`applyRulesToUncategorized`) loads rules once via `loadRules(userId)`, then groups matching transactions by their categorization outcome fingerprint to issue one `inArray` UPDATE per unique outcome — avoiding one query per transaction.
 - `needWant` is coerced to `null` for income transactions at the service layer, matching the behaviour of `patchTransaction`.
+
+### PATCH /api/v1/transactions/:id
+
+Accepted body fields: `categoryId`, `subcategoryId`, `needWant`, `note`, `createRule`, `isInvestmentContribution`. All optional.
+
+`isInvestmentContribution: boolean` — marks a transaction as an outgoing investment contribution (e.g. a bank debit to Questrade). When true, the transaction is:
+- Included in `monthlyIncome.actualInvestments` on the snapshot, reducing `spendingIncome`.
+- Excluded from `monthlyExpenses` totals (in addition to the existing `isTransfer` exclusion) to prevent double-counting.
+
+This flag is independent of `isTransfer`. A contribution that is also detected as a transfer will be handled correctly — it is excluded from income already via the transfer path and excluded from expenses via both the transfer and contribution filters.
 
 ### Rule suggestions endpoints
 

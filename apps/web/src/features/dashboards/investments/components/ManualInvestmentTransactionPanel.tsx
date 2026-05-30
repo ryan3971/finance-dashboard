@@ -1,0 +1,283 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  createManualInvestmentTransactionSchema,
+  type CreateManualInvestmentTransactionInput,
+} from '@finance/shared/schemas/investments';
+import { useAccounts } from '@/hooks/useAccounts';
+import { toOptionalNumber } from '@/lib/utils';
+import { useCreateManualInvestmentTransaction } from '../hooks/useCreateManualInvestmentTransaction';
+import { INVESTMENT_ACTION_OPTIONS, INVESTMENT_TYPES_SET } from '../constants';
+import { Button } from '@/components/ui/Button';
+import { FormField } from '@/components/common/FormField';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { cn } from '@/lib/utils';
+
+// Actions where cash flows out → stored as a negative amount.
+const CASH_OUT_ACTIONS = new Set(['buy', 'fee', 'withdrawal']);
+
+// Actions where symbol is meaningful.
+const SYMBOL_ACTIONS = new Set(['buy', 'sell', 'dividend']);
+
+// Actions where quantity / price per unit are meaningful.
+const TRADE_ACTIONS = new Set(['buy', 'sell']);
+
+// Actions where risk level classification applies.
+const RISK_LEVEL_ACTIONS = new Set(['buy']);
+
+interface Props {
+  readonly onClose: () => void;
+  readonly defaultValues?: Partial<CreateManualInvestmentTransactionInput>;
+  readonly initialTransferDirection?: 'in' | 'out';
+}
+
+export function ManualInvestmentTransactionPanel({ onClose, defaultValues, initialTransferDirection }: Props) {
+  const { data: allAccounts } = useAccounts();
+  const investmentAccounts = useMemo(
+    () => allAccounts?.filter((a) => INVESTMENT_TYPES_SET.has(a.type)) ?? [],
+    [allAccounts]
+  );
+
+  const mutation = useCreateManualInvestmentTransaction();
+
+  // Transfer-direction is not part of the Zod schema; it only drives the sign.
+  const [transferDirection, setTransferDirection] = useState<'in' | 'out'>(initialTransferDirection ?? 'in');
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateManualInvestmentTransactionInput>({
+    resolver: zodResolver(createManualInvestmentTransactionSchema),
+    defaultValues: defaultValues ?? {
+      accountId: '',
+      date:      new Date().toISOString().split('T')[0],
+      action:    'deposit',
+      currency:  'CAD',
+    },
+  });
+
+  const watchedAction = useWatch({ control, name: 'action' });
+  const isTransfer    = watchedAction === 'transfer';
+  const showSymbol    = SYMBOL_ACTIONS.has(watchedAction);
+  const showTrade     = TRADE_ACTIONS.has(watchedAction);
+  const showRiskLevel = RISK_LEVEL_ACTIONS.has(watchedAction);
+
+  // Clear fields that become hidden when the action changes, so stale values
+  // are never silently submitted.
+  useEffect(() => {
+    if (!showSymbol) setValue('symbol', undefined);
+    if (!showTrade) {
+      setValue('quantity', undefined);
+      setValue('price', undefined);
+    }
+    if (!showRiskLevel) setValue('riskLevel', undefined);
+  }, [watchedAction, showSymbol, showTrade, showRiskLevel, setValue]);
+
+  async function onSubmit(values: CreateManualInvestmentTransactionInput) {
+    const rawAmount = Math.abs(values.amount);
+
+    let signedAmount: number;
+    if (isTransfer) {
+      signedAmount = transferDirection === 'out' ? -rawAmount : rawAmount;
+    } else {
+      signedAmount = CASH_OUT_ACTIONS.has(values.action) ? -rawAmount : rawAmount;
+    }
+
+    await mutation.mutateAsync({ ...values, amount: signedAmount });
+
+    reset({
+      accountId:    '',
+      date:         new Date().toISOString().split('T')[0],
+      action:       'deposit',
+      amount:       undefined,
+      currency:     'CAD',
+      description:  undefined,
+      symbol:       undefined,
+      quantity:     undefined,
+      price:        undefined,
+      activityType: undefined,
+      note:         undefined,
+      riskLevel:    undefined,
+    });
+    setTransferDirection('in');
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-y-0 right-0 w-96 bg-surface border-l border-border-base shadow-xl overflow-y-auto z-40 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-border-subtle">
+        <h2 className="text-sm font-medium text-content-primary">
+          {defaultValues ? 'Duplicate Transaction' : 'Add Investment Transaction'}
+        </h2>
+        <button
+          onClick={onClose}
+          className="text-content-muted hover:text-content-secondary text-sm"
+          aria-label="Close panel"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form
+        onSubmit={(e) => { void handleSubmit(onSubmit)(e); }}
+        className="flex flex-col flex-1 px-4 py-4 space-y-4"
+      >
+        {/* Account — filtered to investment account types */}
+        <FormField label="Account" error={errors.accountId?.message} labelSize="xs">
+          <Select {...register('accountId')}>
+            <option value="">Select account…</option>
+            {investmentAccounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </Select>
+        </FormField>
+
+        {/* Date */}
+        <FormField label="Date" error={errors.date?.message} labelSize="xs">
+          <Input type="date" {...register('date')} />
+        </FormField>
+
+        {/* Action */}
+        <FormField label="Action" error={errors.action?.message} labelSize="xs">
+          <Select {...register('action')}>
+            {INVESTMENT_ACTION_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </Select>
+        </FormField>
+
+        {/* Transfer direction — visible only when action = transfer */}
+        {isTransfer && (
+          <fieldset className="border-0 p-0 m-0">
+            <legend className="label-xs">Direction</legend>
+            <div className="flex gap-2 mt-1">
+              {(['in', 'out'] as const).map((dir) => (
+                <button
+                  key={dir}
+                  type="button"
+                  onClick={() => setTransferDirection(dir)}
+                  className={cn(
+                    'px-3 py-1 text-xs rounded border transition-colors capitalize',
+                    transferDirection === dir
+                      ? 'bg-content-primary text-white border-content-primary'
+                      : 'border-border-strong text-content-secondary hover:bg-surface-subtle',
+                  )}
+                >
+                  {dir}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
+        {/* Amount — user always enters a positive value; sign is applied in onSubmit */}
+        <FormField label="Amount (positive)" error={errors.amount?.message} labelSize="xs">
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="e.g. 500.00"
+            {...register('amount', { valueAsNumber: true })}
+          />
+        </FormField>
+
+        {/* Currency */}
+        <FormField label="Currency" error={errors.currency?.message} labelSize="xs">
+          <Select {...register('currency')}>
+            <option value="CAD">CAD</option>
+            <option value="USD">USD</option>
+          </Select>
+        </FormField>
+
+        {/* Description — required to ensure a unique compositeKey */}
+        <FormField label="Description *" error={errors.description?.message} labelSize="xs">
+          <Input
+            type="text"
+            placeholder="e.g. Employer RRSP contribution"
+            {...register('description')}
+          />
+        </FormField>
+
+        {/* Symbol — only relevant for buy, sell, dividend */}
+        {showSymbol && (
+          <FormField label="Symbol" error={errors.symbol?.message} labelSize="xs">
+            <Input
+              type="text"
+              placeholder="e.g. VFV.TO"
+              {...register('symbol')}
+            />
+          </FormField>
+        )}
+
+        {/* Quantity + Price — only relevant for buy / sell */}
+        {showTrade && (
+          <>
+            <FormField label="Quantity" error={errors.quantity?.message} labelSize="xs">
+              <Input
+                type="number"
+                step="any"
+                min="0"
+                placeholder="e.g. 10"
+                {...register('quantity', { setValueAs: toOptionalNumber })}
+              />
+            </FormField>
+
+            <FormField label="Price per unit" error={errors.price?.message} labelSize="xs">
+              <Input
+                type="number"
+                step="0.0001"
+                min="0"
+                placeholder="e.g. 100.00"
+                {...register('price', { setValueAs: toOptionalNumber })}
+              />
+            </FormField>
+          </>
+        )}
+
+        {/* Risk level — only relevant for buy */}
+        {showRiskLevel && (
+          <FormField label="Risk level" error={errors.riskLevel?.message} labelSize="xs">
+            <Select {...register('riskLevel')}>
+              <option value="regular">Regular (default)</option>
+              <option value="risky">Risky</option>
+            </Select>
+          </FormField>
+        )}
+
+        {/* Activity type */}
+        <FormField label="Activity type" error={errors.activityType?.message} labelSize="xs">
+          <Input
+            type="text"
+            placeholder="e.g. Employer contribution"
+            {...register('activityType')}
+          />
+        </FormField>
+
+        {/* Note */}
+        <FormField label="Note" error={errors.note?.message} labelSize="xs">
+          <Input
+            type="text"
+            placeholder="Optional note…"
+            {...register('note')}
+          />
+        </FormField>
+
+        <div className="flex gap-2 pt-2">
+          <Button type="submit" disabled={mutation.isPending} size="md">
+            {mutation.isPending ? 'Adding…' : 'Add Transaction'}
+          </Button>
+          <Button variant="secondary" size="md" type="button" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

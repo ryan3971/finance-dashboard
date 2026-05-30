@@ -1,0 +1,1 @@
+ALTER TABLE "user_config" ADD COLUMN "risky_percentage" integer;

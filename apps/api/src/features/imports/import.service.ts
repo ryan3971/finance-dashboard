@@ -1,7 +1,6 @@
 import {
   accounts,
   imports,
-  investmentTransactions,
   ruleSuggestions,
   transactions,
 } from '@/db/schema';
@@ -24,11 +23,11 @@ import type {
   RawInvestmentTransaction,
   RawTransaction,
 } from '@finance/shared/types/adapters';
-import { buildCompositeKey } from './pipeline/utils';
 import { db } from '@/db';
 import { detectTransfers } from '@/pipelines/transfer-detection/transfer-detection.service';
 import { assertDefined } from '@/lib/assert';
 import { IMPORT_STATUS, KEYWORD_SLICE_LENGTH, TRANSACTION_SOURCE } from '@/lib/constants';
+import { insertInvestmentTransaction } from '@/pipelines/investments/investment-insert';
 import { CATEGORY_SOURCE } from '@finance/shared/constants';
 import { logger } from '@/middleware/logger';
 import type { Logger } from 'pino';
@@ -368,42 +367,24 @@ async function processInvestmentRow(
   importId: string,
   result: ImportResult
 ): Promise<void> {
-  const compositeKey = buildCompositeKey(
+  const inserted = await insertInvestmentTransaction({
     accountId,
-    raw.date,
-    raw.rawDescription,
-    raw.netAmount
-  );
-
-  // onConflictDoNothing handles duplicate investment rows via compositeKey
-  const [inserted] = await db
-    .insert(investmentTransactions)
-    .values({
-      accountId,
-      importId,
-      date: raw.date,
-      action: raw.action,
-      rawAction: raw.rawAction,
-      symbol: raw.symbol ?? null,
-      description: raw.rawDescription,
-      quantity:
-        raw.quantity !== null && raw.quantity !== undefined
-          ? String(raw.quantity)
-          : null,
-      price:
-        raw.price !== null && raw.price !== undefined
-          ? String(raw.price)
-          : null,
-      grossAmount: String(raw.grossAmount),
-      commission: String(raw.commission),
-      amount: String(raw.netAmount),
-      currency: raw.currency,
-      riskLevel: null,
-      activityType: raw.activityType,
-      compositeKey,
-    })
-    .onConflictDoNothing()
-    .returning({ id: investmentTransactions.id });
+    importId,
+    date:         raw.date,
+    action:       raw.action,
+    rawAction:    raw.rawAction,
+    symbol:       raw.symbol ?? null,
+    description:  raw.rawDescription,
+    quantity:     raw.quantity ?? null,
+    price:        raw.price ?? null,
+    grossAmount:  raw.grossAmount,
+    commission:   raw.commission,
+    amount:       raw.netAmount,
+    currency:     raw.currency,
+    activityType: raw.activityType,
+    note:         null,
+    source:       TRANSACTION_SOURCE.CSV,
+  });
 
   if (inserted) result.importedCount++;
   else result.duplicateCount++;

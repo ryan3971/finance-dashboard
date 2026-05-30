@@ -1,0 +1,1 @@
+ALTER TABLE "investment_transactions" ADD CONSTRAINT "investment_transactions_source_check" CHECK ("investment_transactions"."source" IN ('csv', 'manual'));

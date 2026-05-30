@@ -5,6 +5,8 @@ import {
   insertSeedAccounts,
   insertSeedBudgetEntries,
   insertSeedCategories,
+  insertSeedContributionRecords,
+  insertSeedInvestmentTransactions,
   insertSeedRebalancingGroups,
   insertSeedRules,
   insertSeedTags,
@@ -37,6 +39,8 @@ export async function loadSampleData(userId: string): Promise<void> {
     await insertSeedRebalancingGroups(userId, txIdByKey, tx);
     await insertSeedUserConfig(userId, tx);
     await insertSeedTags(userId, txIdByKey, tx);
+    await insertSeedInvestmentTransactions(accountIds, tx);
+    await insertSeedContributionRecords(accountIds, tx);
     return ids;
   });
 

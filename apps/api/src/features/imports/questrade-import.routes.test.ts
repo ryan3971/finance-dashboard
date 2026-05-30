@@ -1,6 +1,3 @@
-// IGNORE THIS FILE FOR NOW
-
-/*
 import * as fs from 'fs';
 import * as path from 'path';
 import { investmentTransactions, transactions } from '@/db/schema';
@@ -9,7 +6,7 @@ import {
   cleanDatabase,
   createAccount,
   type ImportSummaryResponse,
-  registerAndGetToken,
+  registerUser,
 } from '../../testing/test-helpers';
 import { createApp } from '@/app';
 import { db } from '@/db';
@@ -27,11 +24,13 @@ let tfsaAccountId: string;
 beforeEach(async () => {
   await cleanDatabase();
 
-  accessToken = await registerAndGetToken(app, 'questrade-test@example.com');
+  ({ accessToken } = await registerUser(app, 'questrade-test@example.com'));
   tfsaAccountId = await createAccount(app, accessToken, {
     name: 'Questrade TFSA',
     type: 'tfsa',
     institution: 'questrade',
+    isCredit: false,
+    currency: 'CAD',
   });
 });
 
@@ -141,4 +140,3 @@ describe('Questrade CSV import end-to-end', () => {
     expect(body.duplicateCount).toBe(20);
   });
 });
-*/

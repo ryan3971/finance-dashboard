@@ -117,7 +117,7 @@ features/dashboards/
   expenses/
   snapshot/
   ytd/
-  investments/   (placeholder — not yet built)
+  investments/
 ```
 
 `features/anticipated-budget/` is a top-level feature (not under dashboards).

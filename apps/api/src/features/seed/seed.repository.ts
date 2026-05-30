@@ -8,6 +8,8 @@ import {
   anticipatedBudgetMonths,
   categories,
   categorizationRules,
+  contributionRecords,
+  investmentTransactions,
   rebalancingGroupTransactions,
   rebalancingGroups,
   tags,
@@ -21,6 +23,8 @@ import {
   STAGING_ANTICIPATED_BUDGET_MONTHS,
 } from '@/db/seeds/staging/anticipated-budget';
 import { STAGING_CATEGORIES } from '@/db/seeds/staging/categories';
+import { STAGING_CONTRIBUTION_RECORDS } from '@/db/seeds/staging/contribution-records';
+import { STAGING_INVESTMENT_TRANSACTIONS } from '@/db/seeds/staging/investment-transactions';
 import { STAGING_REBALANCING_GROUPS } from '@/db/seeds/staging/rebalancing-groups';
 import { STAGING_RULES } from '@/db/seeds/staging/rules';
 import { STAGING_TAG_APPLICATIONS, STAGING_TAGS } from '@/db/seeds/staging/tags';
@@ -359,6 +363,7 @@ export async function insertSeedUserConfig(
       wantsPercentage: STAGING_USER_CONFIG.wantsPercentage,
       investmentsPercentage: STAGING_USER_CONFIG.investmentsPercentage,
       emergencyFundTarget: STAGING_USER_CONFIG.emergencyFundTarget,
+      riskyPercentage: STAGING_USER_CONFIG.riskyPercentage,
     })
     .onConflictDoUpdate({
       target: userConfig.userId,
@@ -367,6 +372,7 @@ export async function insertSeedUserConfig(
         wantsPercentage: STAGING_USER_CONFIG.wantsPercentage,
         investmentsPercentage: STAGING_USER_CONFIG.investmentsPercentage,
         emergencyFundTarget: STAGING_USER_CONFIG.emergencyFundTarget,
+        riskyPercentage: STAGING_USER_CONFIG.riskyPercentage,
       },
     });
 }
@@ -401,4 +407,54 @@ export async function insertSeedTags(
   if (applicationValues.length > 0) {
     await tx.insert(transactionTags).values(applicationValues);
   }
+}
+
+export async function insertSeedInvestmentTransactions(
+  accountIds: Record<string, string>,
+  tx: DbTransaction
+): Promise<void> {
+  const values = STAGING_INVESTMENT_TRANSACTIONS.map((def, i) => {
+    const accountId = accountIds[def.accountName];
+    assertDefined(accountId, `No account found for investment seed name '${def.accountName}'`);
+    return {
+      accountId,
+      date: resolveDate(def.monthsAgo, def.day),
+      action: def.action,
+      rawAction: def.rawAction,
+      symbol: def.symbol ?? null,
+      description: def.description,
+      quantity: def.quantity ?? null,
+      price: def.price ?? null,
+      grossAmount: def.grossAmount ?? null,
+      commission: def.commission ?? null,
+      amount: def.amount,
+      currency: def.currency,
+      activityType: def.activityType ?? null,
+      compositeKey: `seed-inv-${accountId}-${i}`,
+      riskLevel: def.riskLevel ?? null,
+      source: def.source ?? 'csv',
+    };
+  });
+
+  await tx.insert(investmentTransactions).values(values);
+}
+
+export async function insertSeedContributionRecords(
+  accountIds: Record<string, string>,
+  tx: DbTransaction
+): Promise<void> {
+  const currentYear = new Date().getFullYear();
+  const values = STAGING_CONTRIBUTION_RECORDS.map((def) => {
+    const accountId = accountIds[def.accountName];
+    assertDefined(accountId, `No account found for contribution record seed name '${def.accountName}'`);
+    return {
+      accountId,
+      taxYear: currentYear - def.yearsAgo,
+      annualLimit: def.annualLimit,
+      roomCarried: def.roomCarried,
+      roomCarriedConfirmed: def.roomCarriedConfirmed,
+    };
+  });
+
+  await tx.insert(contributionRecords).values(values).onConflictDoNothing();
 }

@@ -3,4 +3,5 @@ export const STAGING_USER_CONFIG = {
   wantsPercentage: 30,
   investmentsPercentage: 20,
   emergencyFundTarget: '10000.00',
+  riskyPercentage: 30,
 };

@@ -1,0 +1,243 @@
+import { useCallback, useMemo, useState } from 'react';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import type { InvestmentTransactionRow } from '@finance/shared/types/investments';
+import type { CreateManualInvestmentTransactionInput } from '@finance/shared/schemas/investments';
+import { EmptyState } from '@/components/common/EmptyState';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { YearSelector } from '@/components/common/YearSelector';
+import { Button } from '@/components/ui/Button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { cn } from '@/lib/utils';
+import { useDelayedPending } from '@/hooks/useDelayedPending';
+import { investmentTransactionFiltersSchema } from '@finance/shared/schemas/investments';
+import { SectionHelp } from '@/components/common/SectionHelp';
+import { ActivityStatsBar } from './components/ActivityStatsBar';
+import { ContributionRoomCard } from './components/ContributionRoomCard';
+import { InvestmentFilters } from './components/InvestmentFilters';
+import { InvestmentSkeleton } from './components/InvestmentSkeleton';
+import { InvestmentTransactionsTable } from './components/InvestmentTransactionsTable';
+import { ManualInvestmentTransactionPanel } from './components/ManualInvestmentTransactionPanel';
+import { MonthlyBreakdownTable } from './components/MonthlyBreakdownTable';
+import { RiskBudgetCard } from './components/RiskBudgetCard';
+import { useContributionRoom } from './hooks/useContributionRoom';
+import { useInvestmentTransactions } from './hooks/useInvestmentTransactions';
+import { useMonthlyBreakdown } from './hooks/useMonthlyBreakdown';
+import { useRiskBudget } from './hooks/useRiskBudget';
+
+export function InvestmentsPage() {
+  const [currentYear] = useState(() => new Date().getFullYear());
+  const [currentMonth] = useState(() => new Date().getMonth() + 1);
+
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<InvestmentTransactionRow | null>(null);
+
+  const search = useSearch({ from: '/dashboard/investments' });
+  const navigate = useNavigate({ from: '/dashboard/investments' });
+
+  const year = search.year ?? currentYear;
+
+  function setYear(y: number) {
+    void navigate({ search: (prev) => ({ ...prev, year: y }) });
+  }
+
+  const activeTab = search.tab ?? 'dashboard';
+  const isDashboardTab = activeTab === 'dashboard';
+
+  function buildDuplicateDefaults(row: InvestmentTransactionRow): {
+    values: Partial<CreateManualInvestmentTransactionInput>;
+    transferDirection: 'in' | 'out';
+  } {
+    return {
+      values: {
+        accountId:    row.accountId,
+        date:         row.date,
+        action:       row.action,
+        amount:       Math.abs(row.amount),
+        currency:     row.currency,
+        description:  row.description ?? '',
+        symbol:       row.symbol ?? undefined,
+        quantity:     row.quantity ?? undefined,
+        price:        row.price ?? undefined,
+        activityType: row.activityType ?? undefined,
+        note:         row.note ?? undefined,
+        riskLevel:    row.riskLevel ?? undefined,
+      },
+      transferDirection: row.amount >= 0 ? 'in' : 'out',
+    };
+  }
+
+  const handleDuplicate = useCallback((row: InvestmentTransactionRow) => {
+    setDuplicateSource(row);
+    setIsPanelOpen(true);
+  }, []);
+
+  const handleClosePanel = useCallback(() => {
+    setIsPanelOpen(false);
+    setDuplicateSource(null);
+  }, []);
+
+  function handleTabChange(value: string) {
+    if (value === 'dashboard' || value === 'activity') {
+      void navigate({ search: (prev) => ({ ...prev, tab: value }) });
+    }
+  }
+
+  const { accountId, action, symbol, startDate, endDate, page } = search;
+  const filters = useMemo(
+    () =>
+      investmentTransactionFiltersSchema.parse({
+        accountId,
+        action,
+        symbol,
+        startDate,
+        endDate,
+        page: page ?? 1,
+      }),
+    [accountId, action, symbol, startDate, endDate, page]
+  );
+
+  const {
+    data: roomData,
+    isPending: roomPending,
+    isFetching: roomFetching,
+    isError: roomError,
+  } = useContributionRoom(year, { enabled: isDashboardTab });
+
+  const {
+    data: breakdownData,
+    isFetching: breakdownFetching,
+    isError: breakdownError,
+  } = useMonthlyBreakdown(year, { enabled: isDashboardTab });
+
+  const {
+    data: riskBudgetData,
+    isFetching: riskBudgetFetching,
+  } = useRiskBudget(year, { enabled: isDashboardTab });
+
+  const {
+    data: txData,
+    isPending: txPending,
+    isFetching: txFetching,
+    isError: txError,
+  } = useInvestmentTransactions(filters);
+
+  const showDashboardSkeleton = useDelayedPending(roomPending);
+  const showActivitySkeleton = useDelayedPending(txPending);
+
+  const dup = duplicateSource ? buildDuplicateDefaults(duplicateSource) : null;
+
+  return (
+    <PageLayout>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-xl font-semibold text-content-primary">Investments</h1>
+          <TabsList className="ml-auto">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Dashboard tab */}
+        <TabsContent value="dashboard">
+          <div className="flex items-center gap-3 mb-6">
+            <YearSelector year={year} onChange={setYear} />
+          </div>
+
+          {showDashboardSkeleton && <InvestmentSkeleton />}
+
+          {!showDashboardSkeleton && (
+            <div className="space-y-6">
+              {roomError && !roomData && (
+                <EmptyState variant="error" message="Failed to load contribution room data." />
+              )}
+
+              {breakdownError && !breakdownData && (
+                <EmptyState variant="error" message="Failed to load monthly breakdown data." />
+              )}
+
+              {roomData && (
+                <ContributionRoomCard data={roomData} isFetching={roomFetching} />
+              )}
+
+              {riskBudgetData && (
+                <RiskBudgetCard
+                  data={riskBudgetData}
+                  isFetching={riskBudgetFetching}
+                />
+              )}
+
+              {breakdownData && (
+                <div
+                  className={cn(
+                    'transition-opacity duration-200',
+                    breakdownFetching && 'opacity-50'
+                  )}
+                >
+                  {/* key={year} resets the internal tab state when the year changes */}
+                  <MonthlyBreakdownTable
+                    key={year}
+                    data={breakdownData}
+                    currentMonth={currentMonth}
+                    currentYear={currentYear}
+                    selectedYear={year}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Activity tab */}
+        <TabsContent value="activity">
+          {showActivitySkeleton && <InvestmentSkeleton />}
+
+          {!showActivitySkeleton && (
+            <div className="space-y-4">
+              {txError && !txData && (
+                <EmptyState variant="error" message="Failed to load investment transactions." />
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-medium text-content-primary">Activity</h2>
+                  <SectionHelp contentKey="investments.activity" />
+                </div>
+                <Button size="sm" onClick={() => { setDuplicateSource(null); setIsPanelOpen(true); }}>
+                  Add Transaction
+                </Button>
+              </div>
+
+              <InvestmentFilters
+                filters={{
+                  accountId: search.accountId,
+                  action: search.action,
+                  symbol: search.symbol,
+                  startDate: search.startDate,
+                  endDate: search.endDate,
+                }}
+              />
+
+              <ActivityStatsBar aggregates={txData?.aggregates} />
+
+              <InvestmentTransactionsTable
+                response={txData}
+                isFetching={txFetching}
+                page={filters.page}
+                onDuplicate={handleDuplicate}
+              />
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {isPanelOpen && (
+        <ManualInvestmentTransactionPanel
+          onClose={handleClosePanel}
+          defaultValues={dup?.values}
+          initialTransferDirection={dup?.transferDirection}
+        />
+      )}
+    </PageLayout>
+  );
+}

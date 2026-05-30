@@ -562,6 +562,84 @@ describe('PATCH /api/v1/transactions/:id', () => {
 
     expect(res.status).toBe(400);
   });
+
+  it('marks a transaction as an investment contribution', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+    const txn = await transactionFixture(accountId, {
+      amount: '-500.00',
+      isInvestmentContribution: false,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ isInvestmentContribution: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: txn.id,
+      isInvestmentContribution: true,
+    });
+  });
+
+  it('unmarks an investment contribution', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+    const txn = await transactionFixture(accountId, {
+      amount: '-500.00',
+      isInvestmentContribution: true,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ isInvestmentContribution: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: txn.id,
+      isInvestmentContribution: false,
+    });
+  });
+
+  it('coerces isInvestmentContribution to false for income transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+    const txn = await transactionFixture(accountId, {
+      amount: '2000.00',
+      isIncome: true,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ isInvestmentContribution: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: txn.id,
+      isInvestmentContribution: false,
+    });
+  });
 });
 
 // ── POST /api/v1/transactions ─────────────────────────────────────────────────

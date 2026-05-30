@@ -1,0 +1,17 @@
+info:
+  name: get_contribution_room
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{localhost}}/api/v1/investments/contribution-room?year=2026"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
