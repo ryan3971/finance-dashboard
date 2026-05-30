@@ -130,6 +130,7 @@ export async function queryMonthlyInvestmentContributions(
     .where(
       and(
         eq(accounts.userId, userId),
+        eq(transactions.isIncome, false),
         eq(transactions.isInvestmentContribution, true),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)

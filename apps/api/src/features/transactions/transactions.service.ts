@@ -285,8 +285,9 @@ export async function patchTransaction(
   if (input.needWant !== undefined)
     updateData.needWant = txn.isIncome ? null : input.needWant;
   if (input.note !== undefined) updateData.note = input.note;
+  // isInvestmentContribution is only valid on expenses — silently coerce to false for income transactions
   if (input.isInvestmentContribution !== undefined)
-    updateData.isInvestmentContribution = input.isInvestmentContribution;
+    updateData.isInvestmentContribution = txn.isIncome ? false : input.isInvestmentContribution;
 
   await db.transaction(async (tx) => {
     await tx.update(transactions).set(updateData).where(eq(transactions.id, id));

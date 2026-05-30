@@ -929,4 +929,33 @@ describe('GET /api/v1/dashboard/snapshot', () => {
     // Expenses do not include the transfer/contribution
     expect(body.monthlyExpenses.total).toBe(0);
   });
+
+  it('ignores isInvestmentContribution flag on income transactions', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (
+      await accountFixture(user.id, {
+        name: 'Chequing',
+        type: 'chequing',
+        institution: 'td',
+      })
+    ).id;
+
+    // Income transaction incorrectly flagged as a contribution
+    await transactionFixture(accountId, {
+      date: currentMonthDateStr(1),
+      amount: '3000.00',
+      isIncome: true,
+      isInvestmentContribution: true,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/snapshot')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    const body = res.body as SnapshotBody;
+    expect(res.status).toBe(200);
+    expect(body.monthlyIncome.income).toBe(3000);
+    expect(body.monthlyIncome.actualInvestments).toBe(0);
+    expect(body.monthlyIncome.spendingIncome).toBe(3000);
+  });
 });
