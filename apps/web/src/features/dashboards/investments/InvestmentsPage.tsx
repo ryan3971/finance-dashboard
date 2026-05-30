@@ -28,12 +28,17 @@ export function InvestmentsPage() {
   const [currentYear] = useState(() => new Date().getFullYear());
   const [currentMonth] = useState(() => new Date().getMonth() + 1);
 
-  const [year, setYear] = useState(() => currentYear);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [duplicateSource, setDuplicateSource] = useState<InvestmentTransactionRow | null>(null);
 
   const search = useSearch({ from: '/dashboard/investments' });
   const navigate = useNavigate({ from: '/dashboard/investments' });
+
+  const year = search.year ?? currentYear;
+
+  function setYear(y: number) {
+    void navigate({ search: (prev) => ({ ...prev, year: y }) });
+  }
 
   const activeTab = search.tab ?? 'dashboard';
   const isDashboardTab = activeTab === 'dashboard';

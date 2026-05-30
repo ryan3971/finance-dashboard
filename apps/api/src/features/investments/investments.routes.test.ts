@@ -188,7 +188,7 @@ describe('GET /api/v1/investments/transactions', () => {
     expect(body.data[0]?.action).toBe('dividend');
   });
 
-  it('filters by symbol case-insensitively', async () => {
+  it('filters by symbol (exact, case-insensitive)', async () => {
     const { accessToken } = await registerUser(app);
     const accountId = await makeTfsaAccount(app, accessToken);
     await investmentTransactionFixture(accountId, {
@@ -685,6 +685,18 @@ describe('PUT /api/v1/investments/contribution-room/:accountId/:year', () => {
       .set(authHeader(accessToken));
 
     expect((res.body as ContributionRoomBody).accounts[0]?.roomCarriedIsEstimate).toBe(false);
+  });
+
+  it('returns 400 when body is empty (no fields provided)', async () => {
+    const { accessToken } = await registerUser(app);
+    const tfsaId = await makeTfsaAccount(app, accessToken);
+
+    const res = await request(app)
+      .put(`/api/v1/investments/contribution-room/${tfsaId}/2024`)
+      .set(authHeader(accessToken))
+      .send({});
+
+    expect(res.status).toBe(400);
   });
 });
 
@@ -1548,6 +1560,42 @@ describe('GET /api/v1/investments/monthly-breakdown', () => {
     const body = res.body as MonthlyBreakdownBodyWithAccounts;
     expect(body.accounts).toHaveLength(0);
   });
+
+  it('non-registered account contributions and deployments are included in per-account totals', async () => {
+    const { accessToken } = await registerUser(app);
+    const nonRegId = await createAccount(app, accessToken, {
+      name: 'TD Non-Reg',
+      type: 'non-registered',
+      institution: 'td',
+      isCredit: false,
+      currency: 'CAD',
+    });
+    await investmentTransactionFixture(nonRegId, {
+      date: '2024-07-01',
+      action: 'deposit',
+      amount: '2000.00',
+    });
+    await investmentTransactionFixture(nonRegId, {
+      date: '2024-07-10',
+      action: 'buy',
+      symbol: 'VFV',
+      amount: '-1500.00',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/investments/monthly-breakdown')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+
+    expect(res.status).toBe(200);
+    const body = res.body as MonthlyBreakdownBodyWithAccounts;
+    const nonReg = body.accounts.find((a) => a.accountType === 'non-registered');
+    expect(nonReg).toBeDefined();
+    expect(nonReg?.totals.contributed).toBe(2000);
+    expect(nonReg?.totals.deployed).toBe(-1500);
+    expect(nonReg?.totals.uninvestedDelta).toBe(500);
+    expect(nonReg?.annualLimit).toBeNull();
+  });
 });
 
 // ─── GET /api/v1/investments/risk-budget ─────────────────────────────────────
@@ -1745,7 +1793,7 @@ describe('PATCH /api/v1/investments/risk-settings', () => {
       .patch('/api/v1/investments/risk-settings')
       .set(authHeader(accessToken))
       .send({ riskyPercentage: 15 });
-    expect(patch.status).toBe(200);
+    expect(patch.status).toBe(204);
 
     const res = await request(app)
       .get('/api/v1/investments/risk-budget')
@@ -1790,13 +1838,34 @@ describe('PATCH /api/v1/investments/risk-settings', () => {
       .patch('/api/v1/investments/risk-settings')
       .set(authHeader(accessToken))
       .send({ riskyPercentage: 0 });
-    expect(zero.status).toBe(200);
+    expect(zero.status).toBe(204);
 
     const hundred = await request(app)
       .patch('/api/v1/investments/risk-settings')
       .set(authHeader(accessToken))
       .send({ riskyPercentage: 100 });
-    expect(hundred.status).toBe(200);
+    expect(hundred.status).toBe(204);
+  });
+
+  it('writing the same value twice is idempotent', async () => {
+    const { accessToken } = await registerUser(app);
+
+    await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 25 });
+
+    const second = await request(app)
+      .patch('/api/v1/investments/risk-settings')
+      .set(authHeader(accessToken))
+      .send({ riskyPercentage: 25 });
+    expect(second.status).toBe(204);
+
+    const res = await request(app)
+      .get('/api/v1/investments/risk-budget')
+      .query({ year: 2024 })
+      .set(authHeader(accessToken));
+    expect((res.body as RiskBudgetBody).riskyPercentage).toBe(25);
   });
 });
 

@@ -251,23 +251,23 @@ export async function createManualInvestmentTransaction(
   }
 
   const row = await insertInvestmentTransaction({
-    accountId:    input.accountId,
-    importId:     null,
-    date:         input.date,
-    action:       input.action,
-    rawAction:    input.action,
-    symbol:       input.symbol ?? null,
-    description:  input.description ?? null,
-    quantity:     input.quantity ?? null,
-    price:        input.price ?? null,
-    grossAmount:  null,
-    commission:   null,
-    amount:       input.amount,
-    currency:     input.currency,
+    accountId: input.accountId,
+    importId: null,
+    date: input.date,
+    action: input.action,
+    rawAction: input.action,
+    symbol: input.symbol ?? null,
+    description: input.description ?? null,
+    quantity: input.quantity ?? null,
+    price: input.price ?? null,
+    grossAmount: null,
+    commission: null,
+    amount: input.amount,
+    currency: input.currency,
     activityType: input.activityType ?? null,
-    note:         input.note ?? null,
-    source:       TRANSACTION_SOURCE.MANUAL,
-    riskLevel:    input.riskLevel ?? null,
+    note: input.note ?? null,
+    source: TRANSACTION_SOURCE.MANUAL,
+    riskLevel: input.riskLevel ?? null,
   });
 
   if (!row) {
@@ -275,26 +275,26 @@ export async function createManualInvestmentTransaction(
   }
 
   return {
-    id:           row.id,
-    accountId:    row.accountId,
-    accountName:  account.name,
-    date:         row.date,
-    action:       row.action as InvestmentAction,
-    rawAction:    row.rawAction,
-    symbol:       row.symbol,
-    description:  row.description,
-    quantity:     row.quantity !== null ? new Decimal(row.quantity).toNumber() : null,
-    price:        row.price !== null ? new Decimal(row.price).toNumber() : null,
-    grossAmount:  row.grossAmount !== null ? new Decimal(row.grossAmount).toNumber() : null,
-    commission:   row.commission !== null ? new Decimal(row.commission).toNumber() : null,
-    amount:       new Decimal(row.amount).toNumber(),
+    id: row.id,
+    accountId: row.accountId,
+    accountName: account.name,
+    date: row.date,
+    action: row.action as InvestmentAction,
+    rawAction: row.rawAction,
+    symbol: row.symbol,
+    description: row.description,
+    quantity: row.quantity !== null ? new Decimal(row.quantity).toNumber() : null,
+    price: row.price !== null ? new Decimal(row.price).toNumber() : null,
+    grossAmount: row.grossAmount !== null ? new Decimal(row.grossAmount).toNumber() : null,
+    commission: row.commission !== null ? new Decimal(row.commission).toNumber() : null,
+    amount: new Decimal(row.amount).toNumber(),
     // The DB CHECK constraint guarantees 'CAD' | 'USD'; Drizzle returns string.
-    currency:     row.currency as InvestmentCurrency,
+    currency: row.currency as InvestmentCurrency,
     activityType: row.activityType,
-    note:         row.note,
+    note: row.note,
     // insertInvestmentTransaction already narrows source to InvestmentTransactionSource.
-    source:       row.source,
-    riskLevel:    row.riskLevel as RiskLevel | null,
+    source: row.source,
+    riskLevel: row.riskLevel as RiskLevel | null,
   };
 }
 

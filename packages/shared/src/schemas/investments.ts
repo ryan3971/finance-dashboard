@@ -21,11 +21,19 @@ export const contributionRoomQuerySchema = z.object({
   year: z.coerce.number().int().min(2000).max(2100),
 });
 
-export const upsertContributionRoomSchema = z.object({
-  annualLimit: z.number().positive().optional(),
-  roomCarried: z.number().nonnegative().optional(),
-  roomCarriedConfirmed: z.boolean().optional(),
-});
+export const upsertContributionRoomSchema = z
+  .object({
+    annualLimit: z.number().positive().optional(),
+    roomCarried: z.number().nonnegative().optional(),
+    roomCarriedConfirmed: z.boolean().optional(),
+  })
+  .refine(
+    (d) =>
+      d.annualLimit !== undefined ||
+      d.roomCarried !== undefined ||
+      d.roomCarriedConfirmed !== undefined,
+    { message: 'At least one field must be provided' }
+  );
 
 export type UpsertContributionRoomInput = z.infer<typeof upsertContributionRoomSchema>;
 

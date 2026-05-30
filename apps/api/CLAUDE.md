@@ -81,8 +81,6 @@ Key behaviours:
 - `insertInvestmentTransaction` in `investments.repository.ts` is the single shared insert path used by both the import pipeline (`processInvestmentRow`) and manual entry. Do not add a second insert path.
 - `source` column on `investment_transactions` distinguishes provenance: `'csv'` for imported rows, `'manual'` for entries created via this endpoint.
 
-`GET /api/v1/investments/summary?year=` — activity totals (dividends, fees, contributions, withdrawals, netDeposits) for a year.
-
 `GET /api/v1/investments/monthly-breakdown?year=` — combined 12-month breakdown (contributed, deployed, uninvestedDelta, target) plus an `accounts` array of per-account breakdowns. Each account entry includes `annualLimit` (from `contributionRecords`) and its own 12-month rows and totals. Account ordering: TFSA → RRSP → FHSA → non-registered.
 
 `GET /api/v1/investments/contribution-room?year=` — per-registered-account contribution room. Supports a TFSA carry-forward estimate from prior-year data.

@@ -134,6 +134,7 @@ const ytdDashboardRoute = createRoute({
 
 const investmentsSearchSchema = z.object({
   tab: z.enum(['dashboard', 'activity']).optional(),
+  year: z.number().int().optional(),
   accountId: z.string().optional(),
   action: z.string().optional(),
   symbol: z.string().optional(),

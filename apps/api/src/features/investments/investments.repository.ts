@@ -69,13 +69,12 @@ export interface ContributionAggRow {
   withdrawals: string;
 }
 
-export async function queryPaginatedTransactions(
+function buildTransactionWhereClause(
   userId: string,
-  filters: InvestmentTransactionFilters
-): Promise<{ rows: InvestmentTransactionDbRow[]; total: number }> {
-  const { accountId, action, symbol, startDate, endDate, page, pageSize } = filters;
-
-  const where = and(
+  filters: Pick<InvestmentTransactionFilters, 'accountId' | 'action' | 'symbol' | 'startDate' | 'endDate'>
+) {
+  const { accountId, action, symbol, startDate, endDate } = filters;
+  return and(
     eq(accounts.userId, userId),
     accountId !== undefined ? eq(investmentTransactions.accountId, accountId) : undefined,
     action !== undefined ? eq(investmentTransactions.action, action) : undefined,
@@ -83,6 +82,14 @@ export async function queryPaginatedTransactions(
     startDate !== undefined ? gte(investmentTransactions.date, startDate) : undefined,
     endDate !== undefined ? lte(investmentTransactions.date, endDate) : undefined,
   );
+}
+
+export async function queryPaginatedTransactions(
+  userId: string,
+  filters: InvestmentTransactionFilters
+): Promise<{ rows: InvestmentTransactionDbRow[]; total: number }> {
+  const { page, pageSize } = filters;
+  const where = buildTransactionWhereClause(userId, filters);
 
   const [rows, [countRow]] = await Promise.all([
     db
@@ -127,16 +134,7 @@ export async function queryTransactionAggregates(
   userId: string,
   filters: InvestmentTransactionFilters
 ): Promise<TransactionAggregatesDbRow> {
-  const { accountId, action, symbol, startDate, endDate } = filters;
-
-  const where = and(
-    eq(accounts.userId, userId),
-    accountId !== undefined ? eq(investmentTransactions.accountId, accountId) : undefined,
-    action !== undefined ? eq(investmentTransactions.action, action) : undefined,
-    symbol !== undefined ? ilike(investmentTransactions.symbol, symbol) : undefined,
-    startDate !== undefined ? gte(investmentTransactions.date, startDate) : undefined,
-    endDate !== undefined ? lte(investmentTransactions.date, endDate) : undefined,
-  );
+  const where = buildTransactionWhereClause(userId, filters);
 
   const [row] = await db
     .select({

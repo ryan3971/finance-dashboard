@@ -29,7 +29,7 @@ router.post('/transactions', async (req: Request, res: Response) => {
 router.patch('/risk-settings', async (req: Request, res: Response) => {
   const body = updateRiskSettingsSchema.parse(req.body);
   await updateRiskSettings(getAuthUser(req).id, body);
-  res.status(200).json({ ok: true });
+  res.status(204).send();
 });
 
 const transactionRiskLevelParamsSchema = z.object({
