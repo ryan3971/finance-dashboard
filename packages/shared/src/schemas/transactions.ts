@@ -123,5 +123,6 @@ export const transactionResponseSchema = z.object({
   tags: z.array(tagResponseSchema),
   rebalancingGroupId: z.string().uuid().nullable(),
   rebalancingRole: z.enum(['source', 'offset']).nullable(),
+  rebalancingGroupStatus: z.enum(['open', 'resolved']).nullable(),
 });
 export type Transaction = z.infer<typeof transactionResponseSchema>;
