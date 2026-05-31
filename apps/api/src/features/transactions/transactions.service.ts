@@ -7,7 +7,7 @@ import {
   transactions,
   transactionTags,
 } from '@/db/schema';
-import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
@@ -207,7 +207,7 @@ export async function listTransactions(
       eq(rebalancingGroupTransactions.transactionId, transactions.id)
     )
     .where(and(...conditions))
-    .orderBy(desc(transactions.date), desc(transactions.createdAt))
+    .orderBy(desc(transactions.date), desc(transactions.createdAt), asc(transactions.id))
     .limit(limit)
     .offset(offset);
 
