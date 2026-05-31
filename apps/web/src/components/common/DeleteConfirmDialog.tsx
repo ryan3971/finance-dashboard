@@ -44,7 +44,7 @@ export function DeleteConfirmDialog({
             Cancel
           </Button>
           <Button
-            variant="warning"
+            variant="danger"
             size="sm"
             disabled={isPending}
             onClick={onConfirm}

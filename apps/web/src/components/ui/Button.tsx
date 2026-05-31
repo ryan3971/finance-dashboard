@@ -1,6 +1,6 @@
 import React from 'react';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'warning';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'warning' | 'danger';
 type Size = 'sm' | 'md';
 
 const variantClasses: Record<Variant, string> = {
@@ -11,6 +11,8 @@ const variantClasses: Record<Variant, string> = {
   ghost: 'text-content-secondary hover:text-content-primary',
   warning:
     'bg-warning-action text-white hover:bg-amber-700 disabled:opacity-50',
+  danger:
+    'bg-danger text-white hover:bg-red-700 disabled:opacity-50',
 };
 
 const sizeClasses: Record<Size, string> = {

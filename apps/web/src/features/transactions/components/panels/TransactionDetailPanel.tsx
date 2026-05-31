@@ -148,8 +148,9 @@ export function TransactionDetailPanel({ transaction, onClose }: Props) {
         </span>
         <div className="flex items-center gap-2 shrink-0">
           <Button
-            variant="warning"
+            variant="danger"
             size="sm"
+            disabled={deleteTransaction.isPending}
             onClick={() => setShowConfirm(true)}
           >
             Delete

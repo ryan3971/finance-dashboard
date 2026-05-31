@@ -312,7 +312,7 @@ export function TransactionTablePane({
               Cancel
             </Button>
             <Button
-              variant="warning"
+              variant="danger"
               size="md"
               disabled={deleteTransaction.isPending}
               onClick={() => {
