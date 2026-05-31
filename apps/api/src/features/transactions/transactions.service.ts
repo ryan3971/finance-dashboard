@@ -276,7 +276,8 @@ export async function patchTransaction(
   if (input.categoryId !== undefined) {
     updateData.categoryId = input.categoryId;
     if (input.categoryId === null) {
-      // Clearing the category — reset to uncategorized state
+      // subcategoryId and needWant are forced here so the independent branches
+      // below cannot override the reset even if the caller sends them together.
       updateData.subcategoryId = null;
       updateData.needWant = null;
       updateData.categorySource = CATEGORY_SOURCE.DEFAULT;

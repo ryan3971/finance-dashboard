@@ -676,6 +676,14 @@ describe('PATCH /api/v1/transactions/:id', () => {
     expect(body.categorySource).toBe('default');
     expect(body.flaggedForReview).toBe(true);
     expect(body.retroactivelyApplied).toBe(0);
+
+    // categoryConfidence is an internal column excluded from the API response —
+    // verify it was cleared via a direct DB read.
+    const [row] = await db
+      .select({ categoryConfidence: transactions.categoryConfidence })
+      .from(transactions)
+      .where(eq(transactions.id, txn.id));
+    expect(row?.categoryConfidence).toBeNull();
   });
 
   it('returns 404 for unknown id', async () => {
