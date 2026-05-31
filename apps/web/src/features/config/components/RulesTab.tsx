@@ -306,10 +306,10 @@ export function RulesTab() {
     closeModal();
 
     const categoryChanged =
-      input.categoryId !== original.categoryId ||
-      input.subcategoryId !== original.subcategoryId ||
-      input.needWant !== original.needWant ||
-      input.flagForReview !== original.flagForReview;
+      (input.categoryId !== undefined && input.categoryId !== original.categoryId) ||
+      (input.subcategoryId !== undefined && input.subcategoryId !== original.subcategoryId) ||
+      (input.needWant !== undefined && input.needWant !== original.needWant) ||
+      (input.flagForReview !== undefined && input.flagForReview !== original.flagForReview);
     if (categoryChanged) {
       setReapplyRuleId(original.id);
     }

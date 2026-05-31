@@ -48,8 +48,9 @@ async function fetchOwnedRule(
 }
 
 export async function getRule(id: string, userId: string) {
-  await fetchOwnedRule(id, userId);
-  const [rule] = await ruleSelect().where(eq(categorizationRules.id, id)).limit(1);
+  const [rule] = await ruleSelect()
+    .where(and(eq(categorizationRules.id, id), eq(categorizationRules.userId, userId)))
+    .limit(1);
   if (!rule) throw new RuleError(RuleErrorCode.NOT_FOUND);
   return rule;
 }
@@ -125,18 +126,20 @@ export async function reapplyRule(id: string, userId: string): Promise<number> {
   const total = incomeIds.length + expenseIds.length;
   if (total === 0) return 0;
 
-  if (incomeIds.length > 0) {
-    await db
-      .update(transactions)
-      .set({ ...sharedValues, needWant: null })
-      .where(inArray(transactions.id, incomeIds));
-  }
-  if (expenseIds.length > 0) {
-    await db
-      .update(transactions)
-      .set({ ...sharedValues, needWant: rule.needWant })
-      .where(inArray(transactions.id, expenseIds));
-  }
+  await db.transaction(async (tx) => {
+    if (incomeIds.length > 0) {
+      await tx
+        .update(transactions)
+        .set({ ...sharedValues, needWant: null })
+        .where(inArray(transactions.id, incomeIds));
+    }
+    if (expenseIds.length > 0) {
+      await tx
+        .update(transactions)
+        .set({ ...sharedValues, needWant: rule.needWant })
+        .where(inArray(transactions.id, expenseIds));
+    }
+  });
 
   return total;
 }
