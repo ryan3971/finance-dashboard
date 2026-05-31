@@ -1,6 +1,6 @@
 import { CONFIDENCE } from '@/lib/constants';
 import { CATEGORY_SOURCE } from '@finance/shared/constants';
-import { desc, eq, isNull, or } from 'drizzle-orm';
+import { desc, eq, isNull } from 'drizzle-orm';
 import type { CategorizationResult } from './pipeline.types';
 import { categorizationRules } from '@/db/schema';
 import { db } from '@/db';
@@ -14,8 +14,16 @@ export type LoadedRule = Omit<Rule, 'createdAt'>;
  * transactions and pass the result to `applyRules` to avoid an N+1 query.
  */
 export async function loadRules(userId: string | null): Promise<LoadedRule[]> {
+  // Only load the user's own rules. System rules (userId = null) are copied to
+  // each user at registration with category IDs remapped to their user-owned
+  // copies. Including system rules here alongside user copies causes
+  // non-deterministic categorisation: both match the same keyword at the same
+  // priority, so whichever DB row is returned first wins — sometimes the system
+  // rule fires and stores a system category UUID that the frontend cannot
+  // resolve via getCategoryTree(userId). New system rules should be propagated
+  // to existing users via a seeder backfill, not mixed in here.
   const conditions = userId
-    ? or(eq(categorizationRules.userId, userId), isNull(categorizationRules.userId))
+    ? eq(categorizationRules.userId, userId)
     : isNull(categorizationRules.userId);
 
   return db

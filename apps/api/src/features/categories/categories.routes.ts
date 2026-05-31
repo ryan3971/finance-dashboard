@@ -4,6 +4,7 @@ import {
   deleteCategory,
   getCategoryTree,
   renameCategory,
+  repairSystemCategoryLinks,
 } from './categories.service';
 import { createCategorySchema, patchCategorySchema } from '@finance/shared/schemas/categories';
 import { getAuthUser, requireAuth } from '@/lib/auth';
@@ -41,6 +42,16 @@ router.delete('/:id', async (req: Request<{ id: string }>, res: Response) => {
   const { id } = idParamsSchema.parse(req.params);
   await deleteCategory(id, getAuthUser(req).id);
   res.status(204).send();
+});
+
+// POST /api/v1/categories/repair
+// One-time repair: remaps any transaction categoryId/subcategoryId values that
+// point at system category UUIDs (userId = null) to the equivalent user-owned
+// category UUIDs. This corrects data written before the loadRules bug was fixed.
+// Safe to call multiple times — returns { updated: 0 } once the data is clean.
+router.post('/repair', async (req: Request, res: Response) => {
+  const result = await repairSystemCategoryLinks(getAuthUser(req).id);
+  res.json(result);
 });
 
 export default router;

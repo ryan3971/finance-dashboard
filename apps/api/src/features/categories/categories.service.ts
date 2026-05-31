@@ -1,4 +1,4 @@
-import { count, eq } from 'drizzle-orm';
+import { count, eq, inArray, isNull, or } from 'drizzle-orm';
 import { assertDefined } from '@/lib/assert';
 import { categories, categorizationRules, transactions } from '@/db/schema';
 import { db, type DbTransaction } from '@/db';
@@ -163,6 +163,110 @@ export async function renameCategory(
   };
 
   return tx ? execute(tx) : db.transaction(execute);
+}
+
+/**
+ * Repairs transactions that were categorised by a system rule before the
+ * loadRules bug was fixed. System rules (userId = null) and user-rule copies
+ * (userId = user's id) were both loaded simultaneously; when the system rule
+ * fired first it stored a system category UUID that getCategoryTree never
+ * returns, causing a blank category display in the review panel.
+ *
+ * This function remaps every affected transaction's categoryId/subcategoryId
+ * from the system UUID to the user's equivalent UUID (matched by name and
+ * hierarchy), then returns the number of transactions updated.
+ *
+ * Safe to call multiple times — subsequent calls will find no affected rows
+ * once the data is clean.
+ */
+export async function repairSystemCategoryLinks(userId: string): Promise<{ updated: number }> {
+  const sysCats = await db
+    .select({ id: categories.id, name: categories.name, parentId: categories.parentId })
+    .from(categories)
+    .where(isNull(categories.userId));
+
+  const userCats = await db
+    .select({ id: categories.id, name: categories.name, parentId: categories.parentId })
+    .from(categories)
+    .where(eq(categories.userId, userId));
+
+  // Build system UUID → user UUID map (same logic as seedUserRules)
+  const idMap = new Map<string, string>();
+
+  const sysTop = sysCats.filter((c) => c.parentId === null);
+  const sysSubs = sysCats.filter(
+    (c): c is typeof c & { parentId: string } => c.parentId !== null
+  );
+  const userTop = userCats.filter((c) => c.parentId === null);
+  const userSubs = userCats.filter(
+    (c): c is typeof c & { parentId: string } => c.parentId !== null
+  );
+
+  for (const sys of sysTop) {
+    const match = userTop.find((u) => u.name === sys.name);
+    if (match) idMap.set(sys.id, match.id);
+  }
+  for (const sys of sysSubs) {
+    const userParentId = idMap.get(sys.parentId);
+    if (!userParentId) continue;
+    const match = userSubs.find((u) => u.name === sys.name && u.parentId === userParentId);
+    if (match) idMap.set(sys.id, match.id);
+  }
+
+  if (idMap.size === 0) return { updated: 0 };
+
+  const systemIds = [...idMap.keys()];
+
+  // Find all transactions for this user whose categoryId or subcategoryId
+  // still points at a system UUID.
+  const affected = await db
+    .select({
+      id: transactions.id,
+      categoryId: transactions.categoryId,
+      subcategoryId: transactions.subcategoryId,
+    })
+    .from(transactions)
+    .where(
+      or(
+        inArray(transactions.categoryId, systemIds),
+        inArray(transactions.subcategoryId, systemIds)
+      )
+    );
+
+  if (affected.length === 0) return { updated: 0 };
+
+  // Group by resolved (categoryId, subcategoryId) pair to issue one UPDATE
+  // per unique outcome rather than one per transaction.
+  interface Outcome { categoryId: string | null; subcategoryId: string | null; ids: string[] }
+  const byOutcome = new Map<string, Outcome>();
+
+  for (const tx of affected) {
+    const newCategoryId = tx.categoryId ? (idMap.get(tx.categoryId) ?? tx.categoryId) : null;
+    const newSubcategoryId = tx.subcategoryId
+      ? (idMap.get(tx.subcategoryId) ?? tx.subcategoryId)
+      : null;
+    const key = `${newCategoryId ?? ''}|${newSubcategoryId ?? ''}`;
+
+    const existing = byOutcome.get(key);
+    if (existing) {
+      existing.ids.push(tx.id);
+    } else {
+      byOutcome.set(key, { categoryId: newCategoryId, subcategoryId: newSubcategoryId, ids: [tx.id] });
+    }
+  }
+
+  let updated = 0;
+  await db.transaction(async (tx) => {
+    for (const { categoryId: newCategoryId, subcategoryId: newSubcategoryId, ids } of byOutcome.values()) {
+      await tx
+        .update(transactions)
+        .set({ categoryId: newCategoryId, subcategoryId: newSubcategoryId })
+        .where(inArray(transactions.id, ids));
+      updated += ids.length;
+    }
+  });
+
+  return { updated };
 }
 
 export async function deleteCategory(
