@@ -262,6 +262,37 @@ describe('GET /api/v1/dashboard/expenses', () => {
     expect(aug?.total).toBe(0);
   });
 
+  it('excludes investment contribution transactions', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
+    });
+
+    await transactionFixture(accountId, {
+      date: '2025-09-01',
+      amount: '-400.00',
+      needWant: 'Need',
+      isInvestmentContribution: true,
+    });
+    await transactionFixture(accountId, {
+      date: '2025-09-15',
+      amount: '-100.00',
+      needWant: 'Need',
+      isInvestmentContribution: false,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/expenses?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as ExpensesBody;
+    const sep = body.months.find((m) => m.month === 9);
+    expect(sep?.need).toBe(100);
+    expect(sep?.total).toBe(100);
+    expect(body.annualTotal).toBe(100);
+  });
+
   it('isolates data between users', async () => {
     const { accessToken: accessTokenA } = await registerUser(
       app,
@@ -466,6 +497,33 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
     expect(res.status).toBe(200);
     const body = res.body as CategoriesBody;
     expect(body.rows).toEqual([]);
+  });
+
+  it('excludes investment contribution transactions', async () => {
+    const { accessToken } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
+    });
+
+    await transactionFixture(accountId, {
+      date: '2025-07-10',
+      amount: '-300.00',
+      isInvestmentContribution: true,
+    });
+    await transactionFixture(accountId, {
+      date: '2025-07-20',
+      amount: '-50.00',
+      isInvestmentContribution: false,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/expenses/categories?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as CategoriesBody;
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0]?.total).toBe(50);
   });
 
   it('isolates data between users', async () => {

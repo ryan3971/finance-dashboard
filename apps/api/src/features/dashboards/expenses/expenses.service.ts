@@ -49,6 +49,7 @@ export async function queryMonthlyExpenses(
         eq(accounts.userId, userId),
         eq(transactions.isIncome, false),
         eq(transactions.isTransfer, false),
+        eq(transactions.isInvestmentContribution, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)
       )
@@ -148,6 +149,7 @@ export async function queryExpensesByCategory(
         eq(accounts.userId, userId),
         eq(transactions.isIncome, false),
         eq(transactions.isTransfer, false),
+        eq(transactions.isInvestmentContribution, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate)
       )
