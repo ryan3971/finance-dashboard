@@ -173,8 +173,14 @@ export async function detectTransfers(
 
 /**
  * Run transfer detection across all unmatched transactions for a user.
- * Fetches every transaction with isTransfer = false and passes them all to
- * detectTransfers, then returns the number of unique pairs found.
+ * Only considers transactions that have not yet been flagged — already-flagged
+ * pairs (flaggedForReview = true) are excluded so repeated runs return the
+ * count of genuinely new pairs rather than re-counting existing ones.
+ *
+ * Note: description-only candidates (no matched amount pair, confidence =
+ * 'medium') are flagged for review but have no matchedTransactionId, so they
+ * do not contribute to the returned pair count.  The count reflects only pairs
+ * where both sides were successfully linked.
  */
 export async function detectAllTransfers(
   userId: string
@@ -182,7 +188,13 @@ export async function detectAllTransfers(
   const rows = await db
     .select({ id: transactions.id })
     .from(transactions)
-    .where(and(eq(transactions.isTransfer, false), ownedByUser(userId)));
+    .where(
+      and(
+        eq(transactions.isTransfer, false),
+        eq(transactions.flaggedForReview, false),
+        ownedByUser(userId)
+      )
+    );
 
   if (rows.length === 0) return { matched: 0 };
 
@@ -308,7 +320,7 @@ export async function dismissTransferFlag(
   if (txn.transferMatchId) {
     await db
       .update(transactions)
-      .set({ transferMatchId: null })
+      .set({ transferMatchId: null, flaggedForReview: false })
       .where(eq(transactions.id, txn.transferMatchId));
   }
 
