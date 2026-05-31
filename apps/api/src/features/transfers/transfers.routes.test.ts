@@ -441,6 +441,63 @@ describe('POST /api/v1/transfers/detect-all', () => {
     expect(second.body).toMatchObject({ matched: 0 });
   });
 
+  it('skips transactions categorized by a rule (categorySource = rule)', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    // Simulates: these transactions were previously flagged, then a categorization
+    // rule ran on them, setting flaggedForReview = false and categorySource = 'rule'.
+    // detect-all must not re-flag them.
+    await transactionFixture(accountA.id, {
+      description: 'e-transfer to savings',
+      amount: '-500.00',
+      date: '2024-03-01',
+      flaggedForReview: false,
+      categorySource: 'rule',
+    });
+    await transactionFixture(accountB.id, {
+      description: 'e-transfer from chequing',
+      amount: '500.00',
+      date: '2024-03-01',
+      flaggedForReview: false,
+      categorySource: 'rule',
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
+  it('skips transactions manually categorized by the user (categorySource = manual)', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    await transactionFixture(accountA.id, {
+      description: 'e-transfer to savings',
+      amount: '-600.00',
+      date: '2024-03-01',
+      flaggedForReview: false,
+      categorySource: 'manual',
+    });
+    await transactionFixture(accountB.id, {
+      description: 'e-transfer from chequing',
+      amount: '600.00',
+      date: '2024-03-01',
+      flaggedForReview: false,
+      categorySource: 'manual',
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
   it('skips transactions already confirmed as transfers', async () => {
     const auth = await registerUser(app);
     const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });

@@ -1,10 +1,10 @@
-import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, lte, notInArray, or, sql } from 'drizzle-orm';
 import Decimal from 'decimal.js';
 import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
 import { transactions } from '@/db/schema';
-import { TRANSFER_KEYWORDS } from '@finance/shared/constants';
+import { CATEGORY_SOURCE, TRANSFER_KEYWORDS } from '@finance/shared/constants';
 import { TransferError, TransferErrorCode } from './transfer-detection.errors';
 
 export interface TransferCandidate {
@@ -173,9 +173,18 @@ export async function detectTransfers(
 
 /**
  * Run transfer detection across all unmatched transactions for a user.
- * Only considers transactions that have not yet been flagged — already-flagged
- * pairs (flaggedForReview = true) are excluded so repeated runs return the
- * count of genuinely new pairs rather than re-counting existing ones.
+ *
+ * Eligible transactions must satisfy all three conditions:
+ *   1. Not already a confirmed transfer (isTransfer = false)
+ *   2. Not already flagged as a transfer candidate (flaggedForReview = false)
+ *   3. Not already explicitly categorized by the user or their rules
+ *      (categorySource NOT IN ('manual', 'rule'))
+ *
+ * Condition 3 is necessary because both patchTransaction and applyRules clear
+ * flaggedForReview as a side-effect of categorization.  Without it, a transaction
+ * that was previously flagged as a transfer candidate, categorized by a rule, and
+ * thereby had its flaggedForReview cleared would be re-detected on the next scan.
+ * Excluding manual/rule-sourced transactions respects the user's explicit decision.
  *
  * Note: description-only candidates (no matched amount pair, confidence =
  * 'medium') are flagged for review but have no matchedTransactionId, so they
@@ -192,6 +201,13 @@ export async function detectAllTransfers(
       and(
         eq(transactions.isTransfer, false),
         eq(transactions.flaggedForReview, false),
+        or(
+          notInArray(transactions.categorySource, [
+            CATEGORY_SOURCE.MANUAL,
+            CATEGORY_SOURCE.RULE,
+          ]),
+          isNull(transactions.categorySource)
+        ),
         ownedByUser(userId)
       )
     );
