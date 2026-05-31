@@ -207,7 +207,7 @@ export async function listTransactions(
       eq(rebalancingGroupTransactions.transactionId, transactions.id)
     )
     .where(and(...conditions))
-    .orderBy(desc(transactions.date))
+    .orderBy(desc(transactions.date), desc(transactions.createdAt))
     .limit(limit)
     .offset(offset);
 
