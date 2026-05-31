@@ -243,6 +243,49 @@ describe('GET /api/v1/dashboard/ytd', () => {
     expect(mar?.netSpendingIncome).toBe(700);
   });
 
+  it('excludes investment contribution transactions from expenses', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = (await accountFixture(user.id)).id;
+
+    // Apr 2024: $3000 income, $500 contribution (excluded from expenses), $200 regular expense
+    // expenses should be 200, netSpendingIncome should be 3000 - 200 = 2800
+    await transactionFixture(accountId, {
+      date: '2024-04-01',
+      amount: '3000.00',
+      isIncome: true,
+    });
+    await transactionFixture(accountId, {
+      date: '2024-04-10',
+      amount: '-500.00',
+      isIncome: false,
+      isInvestmentContribution: true,
+    });
+    await transactionFixture(accountId, {
+      date: '2024-04-15',
+      amount: '-200.00',
+      isIncome: false,
+      isInvestmentContribution: false,
+      needWant: 'Need',
+    });
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/ytd?year=2024')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+
+    interface YtdMonthBody {
+      month: number;
+      spendingIncome: number;
+      expenses: number;
+      netSpendingIncome: number;
+    }
+    const apr = (res.body as { months: YtdMonthBody[] }).months.find((m) => m.month === 4);
+    expect(apr?.spendingIncome).toBe(3000);
+    expect(apr?.expenses).toBe(200);
+    expect(apr?.netSpendingIncome).toBe(2800);
+  });
+
   it('excludes transfer transactions from income and expenses', async () => {
     const { accessToken, user } = await registerUser(app);
     const accountId = (await accountFixture(user.id)).id;
