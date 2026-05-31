@@ -151,7 +151,7 @@ export function TransactionsTable({
                     'cursor-pointer hover:bg-surface-subtle',
                     reviewable && 'bg-warning-bg',
                     (row.original.isTransfer || row.original.isInvestmentContribution) && 'opacity-60',
-                    (row.original.rebalancingGroupStatus === 'resolved') && 'opacity-50',
+                    row.original.rebalancingGroupStatus === 'resolved' && 'opacity-50',
                   )}
                   onClick={() => {
                     if (expandedPanel?.id === row.original.id && expandedPanel.mode !== 'detail') return;
