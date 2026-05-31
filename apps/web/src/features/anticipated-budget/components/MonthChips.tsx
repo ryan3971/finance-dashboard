@@ -20,7 +20,7 @@ function MonthChip({ monthData, onSave, onRemove, isSaving }: MonthChipProps) {
   }
 
   function handleSave() {
-    if (value.trim() === '' || value === '0' || value === '0.00') {
+    if (value.trim() === '') {
       onRemove();
     } else {
       onSave(value.trim());

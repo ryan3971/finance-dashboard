@@ -454,6 +454,30 @@ describe('PUT /api/v1/anticipated-budget/:id/months/:month', () => {
     expect(june).toMatchObject({ month: 6, amount: 2500, isOverride: true });
   });
 
+  it('allows saving 0 as a month override (salary month with no income)', async () => {
+    const { accessToken } = await registerUser(app);
+    const create = await request(app)
+      .post('/api/v1/anticipated-budget')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(baseEntry);
+    expect(create.status).toBe(201);
+    const { id } = create.body as { id: string };
+
+    const put = await request(app)
+      .put(`/api/v1/anticipated-budget/${id}/months/2`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ amount: '0' });
+    expect(put.status).toBe(204);
+
+    const list = await request(app)
+      .get('/api/v1/anticipated-budget?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(list.status).toBe(200);
+    const [entry] = list.body as [AnticipatedBudgetEntry];
+    const feb = entry.months.find((m) => m.month === 2);
+    expect(feb).toMatchObject({ month: 2, amount: 0, isOverride: true });
+  });
+
   it('returns 400 for a month below the allowed range', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)
