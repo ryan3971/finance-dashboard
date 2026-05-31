@@ -326,11 +326,12 @@ Differs from `components/common/` (domain-agnostic) and `features/transactions/c
 
 ### Component State Conventions
 
-| State               | Convention                                                          |
-| ------------------- | ------------------------------------------------------------------- |
-| Inactive / archived | `opacity-50` on the row                                             |
-| Transfer (neutral)  | `opacity-60` on the row                                             |
-| Flagged for review  | `bg-warning-bg` on the row                                          |
+| State                       | Convention                                                          |
+| --------------------------- | ------------------------------------------------------------------- |
+| Inactive / archived         | `opacity-50` on the row                                             |
+| Transfer (neutral)          | `opacity-60` on the row                                             |
+| Investment contribution     | `opacity-60` on the row                                             |
+| Flagged for review          | `bg-warning-bg` on the row                                          |
 | Editing (inline)    | Replace display span with `<Input>` + Save/Cancel inline            |
 | Loading / pending   | Disable button with `mutation.isPending`; `<Skeleton>` for lists    |
 | Empty               | `<EmptyState>` centered with `py-12`                                |
@@ -480,6 +481,7 @@ Always use `AmountCell` (or equivalent logic):
 
 - `flaggedForReview` — needs categorization; row gets `bg-warning-bg`
 - `isTransfer` — internal transfer, excluded from totals; row gets `opacity-60`
+- `isInvestmentContribution` — excluded from expense totals; row gets `opacity-60`
 - Transfer candidate — `flaggedForReview && description matches TRANSFER_KEYWORDS` — shows confirm/dismiss UI in review panel
 
 ### Import Result Summary
