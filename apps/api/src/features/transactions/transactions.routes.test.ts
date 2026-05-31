@@ -632,6 +632,60 @@ describe('PATCH /api/v1/transactions/:id', () => {
     expect((res.body as { retroactivelyApplied: number }).retroactivelyApplied).toBe(0);
   });
 
+  it('clears a category and resets to uncategorized state', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const account = await accountFixture(user.id);
+
+    const parentId = await createCategory(app, accessToken, {
+      name: 'Dining',
+      isIncome: false,
+    });
+    const subcategoryId = await createCategory(app, accessToken, {
+      name: 'Restaurants',
+      parentId,
+    });
+
+    const txn = await transactionFixture(account.id, {
+      categoryId: parentId,
+      subcategoryId,
+      categorySource: 'manual',
+      needWant: 'Want',
+      flaggedForReview: false,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ categoryId: null });
+
+    expect(res.status).toBe(200);
+    interface ClearedBody {
+      id: string;
+      categoryId: null;
+      subcategoryId: null;
+      needWant: null;
+      categorySource: string;
+      flaggedForReview: boolean;
+      retroactivelyApplied: number;
+    }
+    const body = res.body as ClearedBody;
+    expect(body.id).toBe(txn.id);
+    expect(body.categoryId).toBeNull();
+    expect(body.subcategoryId).toBeNull();
+    expect(body.needWant).toBeNull();
+    expect(body.categorySource).toBe('default');
+    expect(body.flaggedForReview).toBe(true);
+    expect(body.retroactivelyApplied).toBe(0);
+
+    // categoryConfidence is an internal column excluded from the API response —
+    // verify it was cleared via a direct DB read.
+    const [row] = await db
+      .select({ categoryConfidence: transactions.categoryConfidence })
+      .from(transactions)
+      .where(eq(transactions.id, txn.id));
+    expect(row?.categoryConfidence).toBeNull();
+  });
+
   it('returns 404 for unknown id', async () => {
     const { accessToken } = await registerUser(app);
     const res = await request(app)
