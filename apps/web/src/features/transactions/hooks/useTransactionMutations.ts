@@ -1,10 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { CreateTransactionInput } from '@finance/shared/schemas/transactions';
+import type { CreateTransactionInput, Transaction } from '@finance/shared/schemas/transactions';
 import type { PatchTransactionInput } from '@finance/shared/types/transactions';
+import type { Category } from '@finance/shared/types/categories';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
-import { dashboardKeys, transactionKeys } from '@/lib/queryKeys';
+import { categoryKeys, dashboardKeys, transactionKeys } from '@/lib/queryKeys';
+import type { TransactionsResponse } from '@/features/transactions/hooks/useTransactions';
+
+type PatchTransactionResponse = Pick<
+  Transaction,
+  | 'id'
+  | 'categoryId'
+  | 'subcategoryId'
+  | 'needWant'
+  | 'note'
+  | 'flaggedForReview'
+  | 'categorySource'
+  | 'isInvestmentContribution'
+> & { retroactivelyApplied: number };
 
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
@@ -32,12 +46,49 @@ export function usePatchTransaction() {
       id: string;
       input: PatchTransactionInput;
     }) => {
-      const { data } = await api.patch<{ retroactivelyApplied: number }>(`/transactions/${id}`, input);
+      const { data } = await api.patch<PatchTransactionResponse>(`/transactions/${id}`, input);
       return data;
     },
     onSuccess: (data, { input }) => {
-      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      if (data.retroactivelyApplied > 0) {
+        // Multiple transactions changed by retroactive rule application; a full
+        // refetch is the only way to pick up all the updated rows.
+        void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      } else {
+        // Only this transaction changed. Update the row in-place across all
+        // cached list pages so its position is preserved.
+        const cats = queryClient.getQueryData<Category[]>(categoryKeys.all()) ?? [];
+        const cat = cats.find((c) => c.id === data.categoryId);
+        const sub = cat?.subcategories.find((s) => s.id === data.subcategoryId);
+
+        queryClient.setQueriesData<TransactionsResponse>(
+          { queryKey: ['transactions', 'list'] },
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              data: old.data.map((tx) =>
+                tx.id !== data.id
+                  ? tx
+                  : {
+                      ...tx,
+                      categoryId: data.categoryId,
+                      categoryName: cat?.name ?? null,
+                      subcategoryId: data.subcategoryId,
+                      subcategoryName: sub?.name ?? null,
+                      needWant: data.needWant,
+                      note: data.note,
+                      flaggedForReview: data.flaggedForReview,
+                      categorySource: data.categorySource,
+                      isInvestmentContribution: data.isInvestmentContribution,
+                    }
+              ),
+            };
+          }
+        );
+      }
       void queryClient.invalidateQueries({ queryKey: dashboardKeys.all() });
+
       const n = data.retroactivelyApplied;
       const message =
         input.createRule && n > 0

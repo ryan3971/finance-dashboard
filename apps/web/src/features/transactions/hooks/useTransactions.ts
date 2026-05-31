@@ -10,7 +10,7 @@ export interface PaginationInfo {
   totalPages: number;
 }
 
-interface TransactionsResponse {
+export interface TransactionsResponse {
   data: Transaction[];
   pagination: PaginationInfo;
 }
