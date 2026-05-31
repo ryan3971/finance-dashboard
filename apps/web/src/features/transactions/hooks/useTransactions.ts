@@ -12,6 +12,7 @@ export interface PaginationInfo {
 
 interface TransactionsResponse {
   data: Transaction[];
+  flaggedTotal: number;
   pagination: PaginationInfo;
 }
 
