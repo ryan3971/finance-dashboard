@@ -86,17 +86,17 @@ export async function acceptSuggestion(
     const rule = await createRule(
       userId,
       {
-        keyword:       input.keyword       ?? suggestion.suggestedKeyword,
-        categoryId:    input.categoryId    !== undefined ? input.categoryId    : suggestion.categoryId,
-        subcategoryId: input.subcategoryId !== undefined ? input.subcategoryId : suggestion.subcategoryId,
-        needWant:      resolvedNeedWant,
-        priority:      input.priority  ?? AUTO_RULE_PRIORITY,
-        matchType:     input.matchType ?? 'substring',
+        keyword: input.keyword ?? suggestion.suggestedKeyword,
+        categoryId: input.categoryId === undefined ? suggestion.categoryId : input.categoryId,
+        subcategoryId: input.subcategoryId === undefined ? suggestion.subcategoryId : input.subcategoryId,
+        needWant: resolvedNeedWant,
+        priority: input.priority ?? AUTO_RULE_PRIORITY,
+        matchType: input.matchType ?? 'substring',
         // Suggestions are never created for flagForReview-only rules, so
         // there is no valid path where accepting a suggestion should produce
         // a flag-for-review rule. Hard-coding false is intentional.
         flagForReview: false,
-        sourceName:    suggestion.suggestedKeyword,
+        sourceName: suggestion.suggestedKeyword,
       },
       tx
     );
@@ -104,12 +104,12 @@ export async function acceptSuggestion(
     const retroactivelyApplied = await applyRuleRetroactively(
       tx,
       {
-        keyword:      rule.keyword,
-        matchType:    rule.matchType,
-        categoryId:   rule.categoryId,
+        keyword: rule.keyword,
+        matchType: rule.matchType,
+        categoryId: rule.categoryId,
         subcategoryId: rule.subcategoryId,
-        needWant:     rule.needWant ?? null,
-        sourceName:   rule.sourceName,
+        needWant: rule.needWant,
+        sourceName: rule.sourceName,
         flagForReview: rule.flagForReview,
       },
       userId
