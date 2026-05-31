@@ -1,6 +1,10 @@
 import type React from 'react';
+import { useState } from 'react';
 import { AmountCell } from '@/features/transactions/components/table/AmountCell';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
+import { useDeleteTransaction } from '@/features/transactions/hooks/useTransactionMutations';
 import { DEFAULT_TAG_COLOR } from '@finance/shared/constants';
 import type { Tag, Transaction } from '@finance/shared/schemas/transactions';
 
@@ -120,6 +124,9 @@ type DetailField =
   | { label: string; render: () => React.ReactNode };
 
 export function TransactionDetailPanel({ transaction, onClose }: Props) {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const deleteTransaction = useDeleteTransaction();
+
   const accountDisplay = transaction.accountInstitution
     ? `${transaction.accountName} · ${transaction.accountInstitution}`
     : transaction.accountName;
@@ -139,13 +146,22 @@ export function TransactionDetailPanel({ transaction, onClose }: Props) {
         <span className="text-sm font-medium text-content-primary truncate pr-4">
           {transaction.sourceName ?? transaction.description}
         </span>
-        <button
-          onClick={onClose}
-          className="shrink-0 text-content-muted hover:text-content-primary transition-colors"
-          aria-label="Close detail panel"
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="warning"
+            size="sm"
+            onClick={() => setShowConfirm(true)}
+          >
+            Delete
+          </Button>
+          <button
+            onClick={onClose}
+            className="text-content-muted hover:text-content-primary transition-colors"
+            aria-label="Close detail panel"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
@@ -160,6 +176,22 @@ export function TransactionDetailPanel({ transaction, onClose }: Props) {
       </dl>
 
       <ExtraDetailsSection transaction={transaction} />
+
+      <DeleteConfirmDialog
+        open={showConfirm}
+        title="Delete transaction?"
+        description="This action cannot be undone."
+        isPending={deleteTransaction.isPending}
+        onConfirm={() => {
+          deleteTransaction.mutate(transaction.id, {
+            onSuccess: () => {
+              setShowConfirm(false);
+              onClose();
+            },
+          });
+        }}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }
