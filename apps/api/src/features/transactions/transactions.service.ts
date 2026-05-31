@@ -275,14 +275,25 @@ export async function patchTransaction(
 
   if (input.categoryId !== undefined) {
     updateData.categoryId = input.categoryId;
-    updateData.categorySource = CATEGORY_SOURCE.MANUAL;
-    updateData.categoryConfidence = CONFIDENCE.MANUAL;
-    updateData.flaggedForReview = false;
+    if (input.categoryId === null) {
+      // Clearing the category — reset to uncategorized state
+      updateData.subcategoryId = null;
+      updateData.needWant = null;
+      updateData.categorySource = CATEGORY_SOURCE.DEFAULT;
+      updateData.categoryConfidence = null;
+      updateData.flaggedForReview = true;
+    } else {
+      updateData.categorySource = CATEGORY_SOURCE.MANUAL;
+      updateData.categoryConfidence = CONFIDENCE.MANUAL;
+      updateData.flaggedForReview = false;
+    }
   }
-  if (input.subcategoryId !== undefined)
+  // Skip independent subcategoryId / needWant patches when categoryId is being cleared
+  // (the clearing branch above already zeros them out)
+  if (input.subcategoryId !== undefined && input.categoryId !== null)
     updateData.subcategoryId = input.subcategoryId;
   // needWant is only valid on expenses — silently coerce to null for income transactions
-  if (input.needWant !== undefined)
+  if (input.needWant !== undefined && input.categoryId !== null)
     updateData.needWant = txn.isIncome ? null : input.needWant;
   if (input.note !== undefined) updateData.note = input.note;
   // isInvestmentContribution is only valid on expenses — silently coerce to false for income transactions

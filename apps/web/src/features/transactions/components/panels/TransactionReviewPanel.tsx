@@ -243,6 +243,18 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
             onSubcategoryChange={(id) => subcategoryField.onChange(id || null)}
             isIncome={parseAmount(transaction.amount) > 0}
           />
+          {watchedCategoryId && (
+            <button
+              type="button"
+              className="mt-1 text-xs text-content-muted hover:text-danger transition-colors"
+              onClick={() => {
+                categoryField.onChange(null);
+                subcategoryField.onChange(null);
+              }}
+            >
+              Remove category
+            </button>
+          )}
         </FormField>
 
         <fieldset className="border-0 p-0 m-0">
