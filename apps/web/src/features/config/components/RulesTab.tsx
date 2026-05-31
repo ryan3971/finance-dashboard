@@ -2,13 +2,20 @@ import { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 import { DataTable } from '@/components/ui/DataTable';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
-import { useCreateRule, useDeleteRule, useRules, useUpdateRule } from '../hooks/useRules';
+import { useCreateRule, useDeleteRule, useReapplyRule, useRules, useUpdateRule } from '../hooks/useRules';
 import { useRuleSuggestions } from '../hooks/useRuleSuggestions';
 import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import type { Rule } from '@finance/shared/types/rules';
@@ -232,12 +239,15 @@ export function RulesTab() {
   const showSkeleton = useDelayedPending(isPending);
   const update = useUpdateRule();
   const create = useCreateRule();
+  const reapply = useReapplyRule();
 
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('priority-desc');
   const [groupByCategory, setGroupByCategory] = useState(false);
   // null = closed, 'create' = creating new, Rule = editing that rule
   const [modalState, setModalState] = useState<null | 'create' | Rule>(null);
+  // rule ID awaiting reapply confirmation after an edit
+  const [reapplyRuleId, setReapplyRuleId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     if (!rules) return [];
@@ -291,8 +301,18 @@ export function RulesTab() {
 
   async function handleUpdate(input: PatchRuleInput) {
     if (modalState === null || modalState === 'create') return;
-    await update.mutateAsync({ id: modalState.id, input });
+    const original = modalState;
+    await update.mutateAsync({ id: original.id, input });
     closeModal();
+
+    const categoryChanged =
+      (input.categoryId !== undefined && input.categoryId !== original.categoryId) ||
+      (input.subcategoryId !== undefined && input.subcategoryId !== original.subcategoryId) ||
+      (input.needWant !== undefined && input.needWant !== original.needWant) ||
+      (input.flagForReview !== undefined && input.flagForReview !== original.flagForReview);
+    if (categoryChanged) {
+      setReapplyRuleId(original.id);
+    }
   }
 
   if (showSkeleton) {
@@ -408,6 +428,40 @@ export function RulesTab() {
           onCreate={handleCreate}
           onUpdate={handleUpdate}
         />
+      )}
+
+      {/* Reapply confirmation */}
+      {reapplyRuleId !== null && (
+        <Dialog open onOpenChange={(open) => { if (!open) setReapplyRuleId(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Apply rule to transactions?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-content-secondary">
+              Apply the updated categorization to all matching transactions, including those
+              already categorized by a rule? Your manual categorizations won't be changed.
+            </p>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setReapplyRuleId(null)}
+                disabled={reapply.isPending}
+              >
+                Skip
+              </Button>
+              <Button
+                type="button"
+                disabled={reapply.isPending}
+                onClick={() => {
+                  reapply.mutate(reapplyRuleId, { onSettled: () => setReapplyRuleId(null) });
+                }}
+              >
+                {reapply.isPending ? 'Applying…' : 'Apply'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

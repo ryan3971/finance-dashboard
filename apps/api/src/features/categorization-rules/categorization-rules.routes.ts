@@ -3,6 +3,7 @@ import {
   createRule,
   deleteRule,
   listRules,
+  reapplyRule,
   updateRule,
 } from './categorization-rules.service';
 import { getAuthUser, requireAuth } from '@/lib/auth';
@@ -31,6 +32,13 @@ router.patch('/:id', async (req: Request<{ id: string }>, res: Response) => {
   const input = patchRuleSchema.parse(req.body);
   const updated = await updateRule(id, getAuthUser(req).id, input);
   res.json(updated);
+});
+
+// POST /api/v1/categorization-rules/:id/reapply
+router.post('/:id/reapply', async (req: Request<{ id: string }>, res: Response) => {
+  const { id } = idParamsSchema.parse(req.params);
+  const applied = await reapplyRule(id, getAuthUser(req).id);
+  res.json({ applied });
 });
 
 // DELETE /api/v1/categorization-rules/:id
