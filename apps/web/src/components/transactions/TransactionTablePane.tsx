@@ -30,6 +30,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { cn, parseAmount } from '@/lib/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
+import { Search } from 'lucide-react';
 
 interface TransactionTablePaneProps {
   // Changing this value resets internal filter/page state without unmounting the component.
@@ -106,6 +107,12 @@ export function TransactionTablePane({
   });
   const [localFilters, setLocalFilters] = useState<FilterState>(resetFilters);
   const [localPage, setLocalPage] = useState(1);
+
+  // Debounced search: local input drives debouncedSearch which is sent to the API.
+  const [debouncedSearch, setDebouncedSearch] = useState(
+    filterState?.search ?? resetFilters.search
+  );
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel | null>(
     null
   );
@@ -196,6 +203,24 @@ export function TransactionTablePane({
     setExpandedPanel(null);
   }
 
+  function handleSearchChange(value: string) {
+    const next = { ...activeFilters, search: value };
+    if (isFilterControlled) {
+      onFilterChange?.(next);
+    } else {
+      setLocalFilters(next);
+      if (!isPageControlled) setLocalPage(1);
+      onFilterChange?.(next);
+    }
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
+  }
+
+  // Keep debouncedSearch in sync when controlled search changes (e.g. browser nav).
+  useEffect(() => {
+    if (isFilterControlled) setDebouncedSearch(filterState.search);
+  }, [isFilterControlled, filterState?.search]);
+
   function handlePageChange(newPage: number) {
     if (isPageControlled) {
       onPageChange?.(newPage);
@@ -216,6 +241,7 @@ export function TransactionTablePane({
     flagged: activeFilters.flaggedOnly || undefined,
     isTransfer: activeFilters.isTransfer || undefined,
     tagIds: activeFilters.tagIds.length > 0 ? activeFilters.tagIds : undefined,
+    search: debouncedSearch || undefined,
     // presetFilters always win — spread last so they override user-editable fields
     ...presetFilters,
     page: activePage,
@@ -266,7 +292,17 @@ export function TransactionTablePane({
 
   return (
     <div className={className}>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-content-muted pointer-events-none" />
+          <input
+            type="search"
+            placeholder="Search transactions…"
+            value={activeFilters.search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="select-base w-full pl-8 pr-3"
+          />
+        </div>
         <TransactionFilters
           filters={activeFilters}
           onChange={handleFilterChange}

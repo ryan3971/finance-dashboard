@@ -61,6 +61,7 @@ export const transactionFiltersSchema = z.object({
   tagIds: z
     .union([z.array(z.string()), z.string().transform((v) => [v])])
     .optional(),
+  search: z.string().optional(),
 });
 
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;
@@ -74,6 +75,13 @@ export const patchTransactionSchema = z.object({
   note: z.string().max(FIELD_LIMITS.NOTE_MAX).nullable().optional(),
   createRule: z.boolean().optional(),
   isInvestmentContribution: z.boolean().optional(),
+  date: z.string().regex(ISO_DATE_REGEX, 'Date must be YYYY-MM-DD').optional(),
+  amount: z.coerce
+    .number({ invalid_type_error: 'Must be a number' })
+    .refine((v) => v !== 0, 'Cannot be zero')
+    .optional(),
+  description: z.string().min(1, 'Required').max(FIELD_LIMITS.NOTE_MAX).optional(),
+  isIncome: z.boolean().optional(),
 });
 
 export type PatchTransactionFormValues = z.infer<typeof patchTransactionSchema>;

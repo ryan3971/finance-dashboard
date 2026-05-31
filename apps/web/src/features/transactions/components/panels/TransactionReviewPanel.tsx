@@ -1,6 +1,5 @@
 import {
   FIELD_LIMITS,
-  NEED_WANT_OPTIONS,
 } from '@finance/shared/constants';
 import {
   patchTransactionSchema,
@@ -72,6 +71,10 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
       note: transaction.note ?? '',
       createRule: false,
       isInvestmentContribution: transaction.isInvestmentContribution,
+      date: transaction.date,
+      amount: parseAmount(transaction.amount),
+      description: transaction.description,
+      isIncome: transaction.isIncome,
     },
   });
 
@@ -91,6 +94,12 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
           note: values.note || null,
           createRule: values.createRule ?? false,
           isInvestmentContribution: values.isInvestmentContribution ?? false,
+          ...(mode === 'edit' && {
+            date: values.date,
+            amount: values.amount,
+            description: values.description || undefined,
+            isIncome: values.isIncome,
+          }),
         },
       });
       onClose();
@@ -150,12 +159,44 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
         </button>
       </div>
 
-      {/* Context bar — edit mode only */}
-      {mode === 'edit' && (
+      {/* Context bar — read-only summary in review mode */}
+      {mode === 'review' && (
         <div className="flex items-center gap-4 pb-2 border-b border-info-border">
           <AmountCell amount={transaction.amount} isTransfer={transaction.isTransfer} />
           <span className="text-xs text-content-muted">{formatDate(transaction.date)}</span>
           <span className="text-xs text-content-muted">{transaction.accountName}</span>
+        </div>
+      )}
+
+      {/* Editable core fields — edit mode only */}
+      {mode === 'edit' && (
+        <div className="grid grid-cols-2 gap-3 pb-2 border-b border-info-border">
+          <FormField label="Date" labelSize="xs" error={errors.date?.message}>
+            <input type="date" className="select-base w-full" {...register('date')} />
+          </FormField>
+          <FormField label="Amount" labelSize="xs" error={errors.amount?.message}>
+            <input
+              type="number"
+              step="0.01"
+              className="select-base w-full"
+              {...register('amount')}
+            />
+          </FormField>
+          <div className="col-span-2">
+            <FormField label="Description" labelSize="xs" error={errors.description?.message}>
+              <input
+                type="text"
+                className="select-base w-full"
+                maxLength={FIELD_LIMITS.NOTE_MAX}
+                {...register('description')}
+              />
+            </FormField>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer col-span-2">
+            <input type="checkbox" {...register('isIncome')} />
+            <span className="label-xs">Income transaction</span>
+          </label>
+          <span className="text-xs text-content-muted col-span-2">{transaction.accountName}</span>
         </div>
       )}
 
@@ -264,7 +305,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
             name="needWant"
             render={({ field }) => (
               <div className="flex gap-2 mt-1">
-                {NEED_WANT_OPTIONS.map((opt) => (
+                {(['Need', 'Want'] as const).map((opt) => (
                   <button
                     key={opt}
                     type="button"
@@ -274,9 +315,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
                       field.value === opt
                         ? opt === 'Need'
                           ? 'bg-info text-white border-info'
-                          : opt === 'Want'
-                          ? 'bg-accent text-white border-accent'
-                          : 'bg-content-primary text-white border-content-primary'
+                          : 'bg-accent text-white border-accent'
                         : 'border-border-strong text-content-secondary hover:bg-surface-subtle',
                     )}
                   >

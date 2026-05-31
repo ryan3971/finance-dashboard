@@ -7,7 +7,7 @@ import {
   transactions,
   transactionTags,
 } from '@/db/schema';
-import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
@@ -38,6 +38,7 @@ export interface TransactionFilters {
   isIncome?: boolean;
   isTransfer?: boolean;
   tagIds?: string[];
+  search?: string;
 }
 
 export interface PaginationParams {
@@ -159,6 +160,15 @@ export async function listTransactions(
       .from(transactionTags)
       .where(inArray(transactionTags.tagId, filters.tagIds));
     baseConditions.push(inArray(transactions.id, tagSubquery));
+  }
+  if (filters.search) {
+    const like = `%${filters.search}%`;
+    const searchCondition = or(
+      ilike(transactions.description, like),
+      ilike(transactions.sourceName, like),
+      ilike(transactions.note, like),
+    );
+    if (searchCondition) baseConditions.push(searchCondition);
   }
 
   const conditions = filters.flagged
@@ -319,6 +329,17 @@ export async function patchTransaction(
   // isInvestmentContribution is only valid on expenses — silently coerce to false for income transactions
   if (input.isInvestmentContribution !== undefined)
     updateData.isInvestmentContribution = txn.isIncome ? false : input.isInvestmentContribution;
+  if (input.date !== undefined) updateData.date = input.date;
+  if (input.amount !== undefined) updateData.amount = String(input.amount);
+  if (input.description !== undefined) updateData.description = input.description;
+  if (input.isIncome !== undefined) {
+    updateData.isIncome = input.isIncome;
+    // Flipping to income clears expense-only fields
+    if (input.isIncome) {
+      updateData.needWant = null;
+      updateData.isInvestmentContribution = false;
+    }
+  }
 
   let retroactivelyApplied = 0;
 

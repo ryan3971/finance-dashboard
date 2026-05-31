@@ -348,6 +348,74 @@ describe('GET /api/v1/transactions', () => {
     expect(res.status).toBe(400);
   });
 
+  // ── search filter ─────────────────────────────────────────────────────────
+
+  it('filters by description via search', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    await transactionFixture(account.id, { description: 'Amazon Prime', date: '2025-01-01' });
+    await transactionFixture(account.id, { description: 'Netflix Monthly', date: '2025-01-02' });
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .query({ search: 'amazon' })
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as PaginatedResponse<{ description: string }>;
+    expect(body.pagination.total).toBe(1);
+    expect(body.data[0]?.description).toBe('Amazon Prime');
+  });
+
+  it('filters by sourceName via search', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    await transactionFixture(account.id, {
+      description: 'RAW DESC',
+      sourceName: 'Netflix',
+      date: '2025-01-01',
+    });
+    await transactionFixture(account.id, { description: 'Other', date: '2025-01-02' });
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .query({ search: 'Netflix' })
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as PaginatedResponse<{ id: string }>;
+    expect(body.pagination.total).toBe(1);
+  });
+
+  it('filters by note via search', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    await transactionFixture(account.id, { description: 'A', note: 'work expense', date: '2025-01-01' });
+    await transactionFixture(account.id, { description: 'B', date: '2025-01-02' });
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .query({ search: 'work' })
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as PaginatedResponse<{ id: string }>;
+    expect(body.pagination.total).toBe(1);
+  });
+
+  it('returns empty results when search does not match', async () => {
+    const { accessToken } = await setupWithImport();
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .query({ search: 'zzznomatch' })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as PaginatedResponse<{ id: string }>;
+    expect(body.pagination.total).toBe(0);
+  });
+
   it('amounts are negative for charges', async () => {
     // 2026-03-14 has exactly one charge: TIM HORTONS #412 (CSV: 12.00 → DB: -12.00)
     const { accessToken } = await setupWithImport();
@@ -887,6 +955,86 @@ describe('PATCH /api/v1/transactions/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       id: txn.id,
+      isInvestmentContribution: false,
+    });
+  });
+
+  // ── edit core fields ────────────────────────────────────────────────────────
+
+  it('updates the date of a transaction', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, { date: '2025-01-01' });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ date: '2025-06-15' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: txn.id, date: '2025-06-15' });
+  });
+
+  it('updates the amount of a transaction', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, { amount: '-10.00' });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ amount: -99.50 });
+
+    expect(res.status).toBe(200);
+    expect(Number((res.body as { amount: string }).amount)).toBeCloseTo(-99.50, 2);
+  });
+
+  it('rejects a zero amount', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id);
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ amount: 0 });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('updates the description of a transaction', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, { description: 'Old desc' });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ description: 'New desc' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: txn.id, description: 'New desc' });
+  });
+
+  it('flipping isIncome to true clears needWant and isInvestmentContribution', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, {
+      isIncome: false,
+      needWant: 'Need',
+      isInvestmentContribution: true,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ isIncome: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: txn.id,
+      isIncome: true,
+      needWant: null,
       isInvestmentContribution: false,
     });
   });

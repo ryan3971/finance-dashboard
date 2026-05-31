@@ -12,6 +12,7 @@ export interface FilterState {
   readonly flaggedOnly: boolean;
   readonly isTransfer: boolean;
   readonly tagIds: string[];
+  readonly search: string;
 }
 
 export const EMPTY_FILTER_STATE: FilterState = {
@@ -25,4 +26,5 @@ export const EMPTY_FILTER_STATE: FilterState = {
   flaggedOnly: false,
   isTransfer: false,
   tagIds: [],
+  search: '',
 };

@@ -35,6 +35,7 @@ router.get('/', async (req: Request, res: Response) => {
     isIncome,
     isTransfer,
     tagIds,
+    search,
     page,
     limit,
   } = listQuerySchema.parse(req.query);
@@ -53,6 +54,7 @@ router.get('/', async (req: Request, res: Response) => {
       isIncome,
       isTransfer,
       tagIds,
+      search,
     },
     { page, limit }
   );
