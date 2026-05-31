@@ -18,7 +18,7 @@ import { accountFixture } from '@/testing/fixtures/account.fixture';
 import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { categorizationRules, transactions } from '@/db/schema';
+import { categorizationRules, rebalancingGroups, rebalancingGroupTransactions, transactions } from '@/db/schema';
 
 const app = createApp();
 
@@ -606,6 +606,95 @@ describe('GET /api/v1/transactions', () => {
       transferPairDescription: 'Transfer In',
       transferPairSourceName: null,
       transferPairAccountName: 'Savings',
+    });
+  });
+
+  it('returns rebalancingGroupStatus=open for a transaction in an open group', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, { amount: '-80.00', description: 'Dinner' });
+
+    const [group] = await db
+      .insert(rebalancingGroups)
+      .values({ userId: auth.user.id, label: 'Dinner split', status: 'open' })
+      .returning({ id: rebalancingGroups.id });
+    if (!group) throw new Error('rebalancing group insert returned no row');
+    await db
+      .insert(rebalancingGroupTransactions)
+      .values({ groupId: group.id, transactionId: txn.id, role: 'source' });
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    interface TxRow { id: string; rebalancingGroupId: string | null; rebalancingRole: string | null; rebalancingGroupStatus: string | null }
+    const body = res.body as PaginatedResponse<TxRow>;
+    const row = body.data.find((t) => t.id === txn.id);
+    expect(row).toMatchObject({
+      rebalancingGroupId: group.id,
+      rebalancingRole: 'source',
+      rebalancingGroupStatus: 'open',
+    });
+  });
+
+  it('returns rebalancingGroupStatus=resolved for a transaction in a resolved group', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const source = await transactionFixture(account.id, { amount: '-80.00', description: 'Dinner' });
+    const offset = await transactionFixture(account.id, { amount: '40.00', description: 'Repayment', isIncome: true });
+
+    const [group] = await db
+      .insert(rebalancingGroups)
+      .values({ userId: auth.user.id, label: 'Dinner split', status: 'resolved' })
+      .returning({ id: rebalancingGroups.id });
+    if (!group) throw new Error('rebalancing group insert returned no row');
+    await db
+      .insert(rebalancingGroupTransactions)
+      .values([
+        { groupId: group.id, transactionId: source.id, role: 'source' },
+        { groupId: group.id, transactionId: offset.id, role: 'offset' },
+      ]);
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    interface TxRow { id: string; rebalancingGroupId: string | null; rebalancingRole: string | null; rebalancingGroupStatus: string | null }
+    const body = res.body as PaginatedResponse<TxRow>;
+
+    const sourceRow = body.data.find((t) => t.id === source.id);
+    expect(sourceRow).toMatchObject({
+      rebalancingGroupId: group.id,
+      rebalancingRole: 'source',
+      rebalancingGroupStatus: 'resolved',
+    });
+
+    const offsetRow = body.data.find((t) => t.id === offset.id);
+    expect(offsetRow).toMatchObject({
+      rebalancingGroupId: group.id,
+      rebalancingRole: 'offset',
+      rebalancingGroupStatus: 'resolved',
+    });
+  });
+
+  it('returns rebalancingGroupStatus=null for a transaction not in any group', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id);
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    interface TxRow { id: string; rebalancingGroupId: string | null; rebalancingGroupStatus: string | null }
+    const body = res.body as PaginatedResponse<TxRow>;
+    const row = body.data.find((t) => t.id === txn.id);
+    expect(row).toMatchObject({
+      rebalancingGroupId: null,
+      rebalancingGroupStatus: null,
     });
   });
 });

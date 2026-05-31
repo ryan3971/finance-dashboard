@@ -329,6 +329,7 @@ Differs from `components/common/` (domain-agnostic) and `features/transactions/c
 | State                       | Convention                                                          |
 | --------------------------- | ------------------------------------------------------------------- |
 | Inactive / archived         | `opacity-50` on the row                                             |
+| Resolved rebalancing group  | `opacity-50` on the row                                             |
 | Transfer (neutral)          | `opacity-60` on the row                                             |
 | Investment contribution     | `opacity-60` on the row                                             |
 | Flagged for review          | `bg-warning-bg` on the row                                          |
