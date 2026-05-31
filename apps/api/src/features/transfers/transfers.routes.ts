@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getAuthUser, requireAuth } from '@/lib/auth';
 import {
   confirmTransfer,
+  detectAllTransfers,
   dismissTransferFlag,
   unmarkTransfer,
 } from '@/pipelines/transfer-detection/transfer-detection.service';
@@ -19,6 +20,12 @@ const transferSchema = z.object({
   (data) => data.pairedTransactionId === undefined || data.pairedTransactionId !== data.transactionId,
   { message: 'pairedTransactionId must differ from transactionId' }
 );
+
+// POST /api/v1/transfers/detect-all
+router.post('/detect-all', async (req: Request, res: Response) => {
+  const result = await detectAllTransfers(getAuthUser(req).id);
+  res.json(result);
+});
 
 // POST /api/v1/transfers/confirm
 router.post('/confirm', async (req: Request, res: Response) => {

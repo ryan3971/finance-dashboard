@@ -263,6 +263,43 @@ describe('POST /api/v1/transfers/dismiss', () => {
     expect(updated?.isTransfer).toBe(false);
   });
 
+  it('returns 204 and also clears flaggedForReview on the paired transaction', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    const txnA = await transactionFixture(accountA.id, {
+      amount: '-100.00',
+      flaggedForReview: true,
+    });
+    const txnB = await transactionFixture(accountB.id, {
+      amount: '100.00',
+      flaggedForReview: true,
+    });
+    // Link the pair bidirectionally as detectTransfers would
+    await db
+      .update(transactions)
+      .set({ transferMatchId: txnB.id })
+      .where(eq(transactions.id, txnA.id));
+    await db
+      .update(transactions)
+      .set({ transferMatchId: txnA.id })
+      .where(eq(transactions.id, txnB.id));
+
+    const res = await request(app)
+      .post('/api/v1/transfers/dismiss')
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ transactionId: txnA.id });
+
+    expect(res.status).toBe(204);
+
+    const [updatedA, updatedB] = await Promise.all([
+      getTransaction(app, auth.accessToken, txnA.id),
+      getTransaction(app, auth.accessToken, txnB.id),
+    ]);
+    expect(updatedA?.flaggedForReview).toBe(false);
+    expect(updatedB?.flaggedForReview).toBe(false);
+  });
+
   it('returns 204 and leaves isTransfer unchanged when dismissing an already-confirmed transfer', async () => {
     const auth = await registerUser(app);
     const account = await accountFixture(auth.user.id);
@@ -289,6 +326,144 @@ describe('POST /api/v1/transfers/dismiss', () => {
       .set('Authorization', `Bearer ${otherAuth.accessToken}`)
       .send({ transactionId: txnA.id });
     expect(res.status).toBe(404);
+  });
+});
+
+// ── POST /api/v1/transfers/detect-all ────────────────────────────────────────
+
+describe('POST /api/v1/transfers/detect-all', () => {
+  it('returns 401 without an auth token', async () => {
+    const res = await request(app).post('/api/v1/transfers/detect-all');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns { matched: 0 } when the user has no transactions', async () => {
+    const auth = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
+  it('returns { matched: 0 } when no transfer pairs can be found', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    await transactionFixture(account.id, { amount: '-50.00' });
+    await transactionFixture(account.id, { amount: '-75.00' });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
+  it('returns { matched: 1 } and flags both transactions when a pair is detected', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    const txnA = await transactionFixture(accountA.id, {
+      description: 'e-transfer to savings',
+      amount: '-200.00',
+      date: '2024-03-01',
+    });
+    const txnB = await transactionFixture(accountB.id, {
+      description: 'e-transfer from chequing',
+      amount: '200.00',
+      date: '2024-03-01',
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 1 });
+
+    interface TxnWithMatch { flaggedForReview: boolean; transferMatchId: string | null }
+    const [rawA, rawB] = await Promise.all([
+      getTransaction(app, auth.accessToken, txnA.id),
+      getTransaction(app, auth.accessToken, txnB.id),
+    ]);
+    const updatedA = rawA as unknown as TxnWithMatch;
+    const updatedB = rawB as unknown as TxnWithMatch;
+    expect(updatedA?.flaggedForReview).toBe(true);
+    expect(updatedA?.transferMatchId).toBe(txnB.id);
+    expect(updatedB?.flaggedForReview).toBe(true);
+    expect(updatedB?.transferMatchId).toBe(txnA.id);
+  });
+
+  it('does not match transactions belonging to a different user', async () => {
+    const authA = await registerUser(app);
+    const authB = await registerUser(app, 'other@example.com');
+    const acctA = await accountFixture(authA.user.id);
+    const acctB = await accountFixture(authB.user.id);
+    await transactionFixture(acctA.id, { description: 'e-transfer', amount: '-100.00', date: '2024-03-01' });
+    await transactionFixture(acctB.id, { description: 'e-transfer', amount: '100.00', date: '2024-03-01' });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${authA.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
+  it('returns { matched: 0 } on a second run when all pairs are already flagged', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    await transactionFixture(accountA.id, {
+      description: 'e-transfer to savings',
+      amount: '-400.00',
+      date: '2024-03-01',
+    });
+    await transactionFixture(accountB.id, {
+      description: 'e-transfer from chequing',
+      amount: '400.00',
+      date: '2024-03-01',
+    });
+
+    // First run — should detect one pair
+    const first = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+    expect(first.status).toBe(200);
+    expect(first.body).toMatchObject({ matched: 1 });
+
+    // Second run — both transactions are now flaggedForReview, so they are excluded
+    const second = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+    expect(second.status).toBe(200);
+    expect(second.body).toMatchObject({ matched: 0 });
+  });
+
+  it('skips transactions already confirmed as transfers', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    await transactionFixture(accountA.id, {
+      description: 'e-transfer',
+      amount: '-300.00',
+      date: '2024-03-01',
+      isTransfer: true,
+    });
+    await transactionFixture(accountB.id, {
+      description: 'e-transfer',
+      amount: '300.00',
+      date: '2024-03-01',
+      isTransfer: true,
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
   });
 });
 

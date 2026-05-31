@@ -15,12 +15,13 @@ import type { Transaction } from '@finance/shared/schemas/transactions';
 import { useCallback, useMemo, useState } from 'react';
 import api from '@/lib/api';
 import { PAGINATION } from '@finance/shared/constants';
-import { useApplyRules } from '@/features/transactions/hooks/useTransactionMutations';
+import { useApplyRules, useDetectAllTransfers } from '@/features/transactions/hooks/useTransactionMutations';
 
 export function TransactionsPage() {
   const search = useSearch({ from: '/' });
   const navigate = useNavigate({ from: '/' });
   const applyRules = useApplyRules();
+  const detectTransfers = useDetectAllTransfers();
   const [isExporting, setIsExporting] = useState(false);
   const [addPanelOpen, setAddPanelOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo | undefined>();
@@ -167,6 +168,14 @@ export function TransactionsPage() {
               onClick={() => applyRules.mutate()}
             >
               {applyRules.isPending ? 'Applying…' : 'Apply Rules'}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={detectTransfers.isPending}
+              onClick={() => detectTransfers.mutate()}
+            >
+              {detectTransfers.isPending ? 'Detecting…' : 'Detect Transfers'}
             </Button>
             <Button size="sm" onClick={() => setAddPanelOpen(true)}>
               Add Transaction

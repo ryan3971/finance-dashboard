@@ -12,6 +12,7 @@ export const TOAST = {
   TRANSFER_DISMISS_FAILED: 'Failed to dismiss transfer',
   TRANSFER_UNMARKED: 'Transfer removed',
   TRANSFER_UNMARK_FAILED: 'Failed to remove transfer',
+  TRANSFER_DETECT_ALL_FAILED: 'Failed to run transfer detection',
   // Accounts
   ACCOUNT_CREATED: 'Account created',
   ACCOUNT_CREATE_FAILED: 'Failed to create account',
