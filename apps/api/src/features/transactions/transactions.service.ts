@@ -261,9 +261,15 @@ export async function listTransactions(
   assertDefined(countRow, 'Expected count row');
   assertDefined(flaggedCountRow, 'Expected flagged count row');
 
+  // When the flagged filter is active, conditions already includes
+  // flaggedForReview = true, so both count queries return the same result.
+  // We still run both in parallel (cheapest path at this data scale) and
+  // simply read from flaggedCountRow in all cases.
+  const flaggedTotal = Number(flaggedCountRow.count);
+
   return {
     data,
-    flaggedTotal: Number(flaggedCountRow.count),
+    flaggedTotal,
     pagination: {
       page,
       limit,

@@ -415,6 +415,89 @@ describe('GET /api/v1/transactions', () => {
     expect(res.status).toBe(400);
   });
 
+  // ── flaggedTotal ────────────────────────────────────────────────────────────
+
+  it('flaggedTotal reflects the global flagged count when no flag filter is applied', async () => {
+    // Use fixtures to directly control flaggedForReview so the count is deterministic
+    // regardless of which system rules are active in the test DB.
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    await transactionFixture(account.id, { flaggedForReview: true, date: '2025-01-01' });
+    await transactionFixture(account.id, { flaggedForReview: true, date: '2025-01-02' });
+    await transactionFixture(account.id, { flaggedForReview: false, date: '2025-01-03' });
+
+    const res = await request(app)
+      .get('/api/v1/transactions')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    interface Body {
+      flaggedTotal: number;
+      pagination: { total: number };
+    }
+    const body = res.body as Body;
+    expect(body.pagination.total).toBe(3);  // all 3 returned
+    expect(body.flaggedTotal).toBe(2);       // only the 2 flagged ones
+  });
+
+  it('flaggedTotal equals pagination.total when the flagged filter is active', async () => {
+    // When ?flagged=true all matching rows are flagged, so flaggedTotal must
+    // equal pagination.total.
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    await transactionFixture(account.id, { flaggedForReview: true });
+    await transactionFixture(account.id, { flaggedForReview: true });
+    await transactionFixture(account.id, { flaggedForReview: false });
+
+    const res = await request(app)
+      .get('/api/v1/transactions?flagged=true')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    interface Body { flaggedTotal: number; pagination: { total: number } }
+    const body = res.body as Body;
+    expect(body.pagination.total).toBe(2);
+    expect(body.flaggedTotal).toBe(2);
+    expect(body.flaggedTotal).toBe(body.pagination.total);
+  });
+
+  it('flaggedTotal respects other active filters', async () => {
+    // flaggedTotal must be computed within the current filter scope — here
+    // scoped to a specific account — so filters from one account don't bleed
+    // into the count for another.
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Account A' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Account B' });
+
+    // Account A: 2 flagged + 1 not flagged
+    await transactionFixture(accountA.id, { flaggedForReview: true });
+    await transactionFixture(accountA.id, { flaggedForReview: true });
+    await transactionFixture(accountA.id, { flaggedForReview: false });
+
+    // Account B: 0 flagged
+    await transactionFixture(accountB.id, { flaggedForReview: false });
+
+    interface Body { flaggedTotal: number; pagination: { total: number } }
+
+    const resA = await request(app)
+      .get(`/api/v1/transactions?accountId=${accountA.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(resA.status).toBe(200);
+    const bodyA = resA.body as Body;
+    expect(bodyA.pagination.total).toBe(3);
+    expect(bodyA.flaggedTotal).toBe(2);
+
+    const resB = await request(app)
+      .get(`/api/v1/transactions?accountId=${accountB.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(resB.status).toBe(200);
+    const bodyB = resB.body as Body;
+    expect(bodyB.pagination.total).toBe(1);
+    expect(bodyB.flaggedTotal).toBe(0);
+  });
+
   it('returns transferPair fields when a paired transfer exists', async () => {
     const auth = await registerUser(app);
     const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
