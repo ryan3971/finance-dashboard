@@ -121,44 +121,49 @@ export async function listTransactions(
   const { page, limit } = pagination;
   const offset = (page - 1) * limit;
 
-  const conditions = [eq(accounts.userId, userId)];
+  // baseConditions holds all filters except `flagged` so that flaggedTotal
+  // can be computed independently of whether the user has the flag filter on.
+  const baseConditions = [eq(accounts.userId, userId)];
 
   if (filters.accountId)
-    conditions.push(eq(transactions.accountId, filters.accountId));
+    baseConditions.push(eq(transactions.accountId, filters.accountId));
   if (filters.month) {
     const parts = filters.month.split('-');
     const year = parseInt(parts[0] ?? '0', 10);
     const mon = parseInt(parts[1] ?? '0', 10);
     const monthStr = String(mon).padStart(2, '0');
     const lastDay = new Date(year, mon, 0).getDate();
-    conditions.push(gte(transactions.date, `${year}-${monthStr}-01`));
-    conditions.push(lte(transactions.date, `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`));
+    baseConditions.push(gte(transactions.date, `${year}-${monthStr}-01`));
+    baseConditions.push(lte(transactions.date, `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`));
   } else {
     if (filters.startDate)
-      conditions.push(gte(transactions.date, filters.startDate));
+      baseConditions.push(gte(transactions.date, filters.startDate));
     if (filters.endDate)
-      conditions.push(lte(transactions.date, filters.endDate));
+      baseConditions.push(lte(transactions.date, filters.endDate));
   }
   if (filters.categoryId === 'none')
-    conditions.push(isNull(transactions.categoryId));
+    baseConditions.push(isNull(transactions.categoryId));
   else if (filters.categoryId)
-    conditions.push(eq(transactions.categoryId, filters.categoryId));
-  if (filters.flagged) conditions.push(eq(transactions.flaggedForReview, true));
+    baseConditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.subcategoryId)
-    conditions.push(eq(transactions.subcategoryId, filters.subcategoryId));
+    baseConditions.push(eq(transactions.subcategoryId, filters.subcategoryId));
   if (filters.needWant)
-    conditions.push(eq(transactions.needWant, filters.needWant));
+    baseConditions.push(eq(transactions.needWant, filters.needWant));
   if (filters.isIncome !== undefined)
-    conditions.push(eq(transactions.isIncome, filters.isIncome));
+    baseConditions.push(eq(transactions.isIncome, filters.isIncome));
   if (filters.isTransfer !== undefined)
-    conditions.push(eq(transactions.isTransfer, filters.isTransfer));
+    baseConditions.push(eq(transactions.isTransfer, filters.isTransfer));
   if (filters.tagIds?.length) {
     const tagSubquery = db
       .select({ transactionId: transactionTags.transactionId })
       .from(transactionTags)
       .where(inArray(transactionTags.tagId, filters.tagIds));
-    conditions.push(inArray(transactions.id, tagSubquery));
+    baseConditions.push(inArray(transactions.id, tagSubquery));
   }
+
+  const conditions = filters.flagged
+    ? [...baseConditions, eq(transactions.flaggedForReview, true)]
+    : baseConditions;
 
   const rows = await db
     .select({
@@ -241,21 +246,35 @@ export async function listTransactions(
 
   const data = rows.map((r) => ({ ...r, tags: tagsByTxn[r.id] ?? [] }));
 
-  const [countRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(transactions)
-    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
-    .where(and(...conditions));
+  const [[countRow], [flaggedCountRow]] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+      .where(and(...conditions)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+      .where(and(...baseConditions, eq(transactions.flaggedForReview, true))),
+  ]);
   assertDefined(countRow, 'Expected count row');
-  const { count } = countRow;
+  assertDefined(flaggedCountRow, 'Expected flagged count row');
+
+  // When the flagged filter is active, conditions already includes
+  // flaggedForReview = true, so both count queries return the same result.
+  // We still run both in parallel (cheapest path at this data scale) and
+  // simply read from flaggedCountRow in all cases.
+  const flaggedTotal = Number(flaggedCountRow.count);
 
   return {
     data,
+    flaggedTotal,
     pagination: {
       page,
       limit,
-      total: Number(count),
-      totalPages: Math.ceil(Number(count) / limit),
+      total: Number(countRow.count),
+      totalPages: Math.ceil(Number(countRow.count) / limit),
     },
   };
 }

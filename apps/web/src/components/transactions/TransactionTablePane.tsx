@@ -227,14 +227,7 @@ export function TransactionTablePane({
     onDataLoadRef.current = onDataLoad;
   });
   useEffect(() => {
-    // NOTE: flaggedCount reflects the current page only, not the total across all
-    // pages. For an accurate total, the API would need to return a flaggedTotal in
-    // the pagination envelope. Until then, the "needs review" badge in
-    // TransactionsPage is page-scoped and may undercount when paginating.
-    const flaggedCount = (data?.data ?? []).filter(
-      (t) => t.flaggedForReview
-    ).length;
-    onDataLoadRef.current?.(data?.pagination, flaggedCount);
+    onDataLoadRef.current?.(data?.pagination, data?.flaggedTotal ?? 0);
   }, [data]);
 
   const showSkeleton = useDelayedPending(isPending);
