@@ -32,12 +32,18 @@ export function usePatchTransaction() {
       id: string;
       input: PatchTransactionInput;
     }) => {
-      await api.patch<unknown>(`/transactions/${id}`, input);
+      const { data } = await api.patch<{ retroactivelyApplied: number }>(`/transactions/${id}`, input);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, { input }) => {
       void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
       void queryClient.invalidateQueries({ queryKey: dashboardKeys.all() });
-      toast.success(TOAST.TRANSACTION_UPDATED);
+      const n = data.retroactivelyApplied;
+      const message =
+        input.createRule && n > 0
+          ? `Transaction updated, rule applied to ${n} other transaction${n === 1 ? '' : 's'}`
+          : TOAST.TRANSACTION_UPDATED;
+      toast.success(message);
     },
     onError: () => toast.error(TOAST.TRANSACTION_UPDATE_FAILED),
   });

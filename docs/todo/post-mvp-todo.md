@@ -26,6 +26,7 @@
 - How does updating a category affect the transactions that are already categorized with it? Do they get updated to reflect the new category name, or do they stay the same? If they stay the same, it could lead to confusion and inconsistency in the data. It would be better if updating a category also updated all transactions that are categorized with it to reflect the new category name (similar to transactiopns, an update button). Also, though, categories can;t be updated, currently.
 - Can't remove/uncategorized something once it has a category applied to it. It would be good to have an option to remove a category from a transaction or to uncategorize it, especially if the user realizes that a transaction was categorized incorrectly or if they want to change the category for some reason.
 - Category/subcategory does not show when selecting a transaction for review, or editing a rule. THe fields should autopopulate with the current category/subcategory of the transaction, so the user can see what it is currently categorized as and make changes if necessary.
+- The category icons aren't being used for anything right now
 
 ## Transactions
 ### General

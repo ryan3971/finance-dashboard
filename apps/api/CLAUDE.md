@@ -120,11 +120,20 @@ Accepted body fields: `categoryId`, `subcategoryId`, `needWant`, `note`, `create
 
 This flag is independent of `isTransfer`. A contribution that is also detected as a transfer will be handled correctly — it is excluded from income already via the transfer path and excluded from expenses via both the transfer and contribution filters.
 
+### Retroactive rule application
+
+When a rule is created via `POST /rule-suggestions/:id/accept` or via `PATCH /transactions/:id` with `createRule: true` (and no existing rule for the same keyword), `applyRuleRetroactively` is called within the **same DB transaction** as rule creation. It applies the same candidate filter as the bulk apply-rules endpoint (`categorySource IN ('default', 'ai')`, non-transfer) but scoped to the single new rule. Both endpoints return `retroactivelyApplied: number` alongside their normal response fields.
+
+- `applyRuleRetroactively(tx, rule, userId)` is exported from `transactions.service.ts` and imported by `rule-suggestions.service.ts` to keep transaction logic in one place.
+- `RetroactiveRule` is the exported interface for the rule parameter — a subset of `LoadedRule` fields sufficient for matching and categorization.
+- For `patchTransaction`: if a rule already existed for the keyword, `retroactivelyApplied` is `0` (no new rule created, no retroactive work done).
+- The patched transaction itself is excluded from retroactive candidates because its `categorySource` is set to `'manual'` before `applyRuleRetroactively` runs.
+
 ### Rule suggestions endpoints
 
 `GET /api/v1/rule-suggestions` — returns all `pending` suggestions for the authenticated user, ordered by confidence descending. Suggestions are generated automatically during import when the AI categorizes a transaction with `categorySource = 'ai'` (see `maybeSuggestRule` in `import.service.ts`). Deduplication is enforced by a partial unique index on `(user_id, lower(suggested_keyword)) WHERE status = 'pending'`.
 
-`POST /api/v1/rule-suggestions/:id/accept` — body overrides are optional; omitting uses the suggestion's stored values. Coerces `needWant = 'NA'` → `null` before calling `createRule`. Runs in a DB transaction. Returns `201` with the created rule.
+`POST /api/v1/rule-suggestions/:id/accept` — body overrides are optional; omitting uses the suggestion's stored values. Coerces `needWant = 'NA'` → `null` before calling `createRule`. Runs in a DB transaction. After the rule is created, calls `applyRuleRetroactively` (exported from `transactions.service.ts`) to immediately update all eligible transactions (`categorySource IN ('default', 'ai')`, non-transfer) that match the new rule's keyword. Returns `201` with `{ ...ruleFields, retroactivelyApplied: number }`.
 
 `POST /api/v1/rule-suggestions/:id/dismiss` — marks `status = 'dismissed'`. Returns `204`.
 

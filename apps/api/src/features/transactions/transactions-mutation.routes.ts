@@ -39,12 +39,12 @@ router.post('/apply-rules', async (req: Request, res: Response) => {
 router.patch('/:id', async (req: Request, res: Response) => {
   const input = patchTransactionSchema.parse(req.body);
   const { id } = transactionParamsSchema.parse(req.params);
-  const updated = await patchTransaction(id, getAuthUser(req).id, input);
-  if (!updated) {
+  const result = await patchTransaction(id, getAuthUser(req).id, input);
+  if (!result) {
     res.status(404).json({ error: 'Transaction not found' });
     return;
   }
-  res.json(updated);
+  res.json({ ...result.transaction, retroactivelyApplied: result.retroactivelyApplied });
 });
 
 // ─── DELETE /api/v1/transactions/:id ─────────────────────────────────────────

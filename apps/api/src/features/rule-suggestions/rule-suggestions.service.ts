@@ -3,6 +3,7 @@ import { categories, ruleSuggestions } from '@/db/schema';
 import { db } from '@/db';
 import { and, desc, eq } from 'drizzle-orm';
 import { createRule } from '@/features/categorization-rules/categorization-rules.service';
+import { applyRuleRetroactively } from '@/features/transactions/transactions.service';
 import { AUTO_RULE_PRIORITY } from '@/lib/constants';
 import type { AcceptSuggestionInput } from '@finance/shared/types/rule-suggestions';
 import { RuleSuggestionError, RuleSuggestionErrorCode } from './rule-suggestions.errors';
@@ -85,19 +86,33 @@ export async function acceptSuggestion(
     const rule = await createRule(
       userId,
       {
-        keyword:       input.keyword       ?? suggestion.suggestedKeyword,
-        categoryId:    input.categoryId    !== undefined ? input.categoryId    : suggestion.categoryId,
-        subcategoryId: input.subcategoryId !== undefined ? input.subcategoryId : suggestion.subcategoryId,
-        needWant:      resolvedNeedWant,
-        priority:      input.priority  ?? AUTO_RULE_PRIORITY,
-        matchType:     input.matchType ?? 'substring',
+        keyword: input.keyword ?? suggestion.suggestedKeyword,
+        categoryId: input.categoryId === undefined ? suggestion.categoryId : input.categoryId,
+        subcategoryId: input.subcategoryId === undefined ? suggestion.subcategoryId : input.subcategoryId,
+        needWant: resolvedNeedWant,
+        priority: input.priority ?? AUTO_RULE_PRIORITY,
+        matchType: input.matchType ?? 'substring',
         // Suggestions are never created for flagForReview-only rules, so
         // there is no valid path where accepting a suggestion should produce
         // a flag-for-review rule. Hard-coding false is intentional.
         flagForReview: false,
-        sourceName:    suggestion.suggestedKeyword,
+        sourceName: suggestion.suggestedKeyword,
       },
       tx
+    );
+
+    const retroactivelyApplied = await applyRuleRetroactively(
+      tx,
+      {
+        keyword: rule.keyword,
+        matchType: rule.matchType,
+        categoryId: rule.categoryId,
+        subcategoryId: rule.subcategoryId,
+        needWant: rule.needWant,
+        sourceName: rule.sourceName,
+        flagForReview: rule.flagForReview,
+      },
+      userId
     );
 
     await tx
@@ -105,7 +120,7 @@ export async function acceptSuggestion(
       .set({ status: 'accepted' })
       .where(eq(ruleSuggestions.id, id));
 
-    return rule;
+    return { rule, retroactivelyApplied };
   });
 }
 
