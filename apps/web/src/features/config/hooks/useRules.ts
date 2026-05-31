@@ -1,4 +1,4 @@
-import { ruleKeys } from '@/lib/queryKeys';
+import { ruleKeys, transactionKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { TOAST } from '@/lib/toastMessages';
@@ -43,6 +43,26 @@ export function useDeleteRule() {
       toast.success(TOAST.RULE_DELETED);
     },
     onError: (err) => toast.error(getApiErrorMessage(err, TOAST.RULE_DELETE_FAILED)),
+  });
+}
+
+export function useReapplyRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<{ applied: number }>(`/categorization-rules/${id}/reapply`);
+      return data;
+    },
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      const n = data.applied;
+      toast.success(
+        n === 0
+          ? 'No matching transactions found'
+          : `Rule applied to ${n} transaction${n === 1 ? '' : 's'}`
+      );
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, TOAST.RULE_REAPPLY_FAILED)),
   });
 }
 

@@ -1,8 +1,11 @@
 import { alias } from 'drizzle-orm/pg-core';
-import { categorizationRules, categories } from '@/db/schema';
+import { accounts, categorizationRules, categories, transactions } from '@/db/schema';
 import { db, type DbTransaction } from '@/db';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
+import { CATEGORY_SOURCE } from '@finance/shared/constants';
+import { CONFIDENCE } from '@/lib/constants';
+import { applyRules, type LoadedRule } from '@/pipelines/categorization/rules-engine';
 import { RuleError, RuleErrorCode } from './categorization-rules.errors';
 
 const cat = alias(categories, 'cat');
@@ -42,6 +45,100 @@ async function fetchOwnedRule(
   if (!row) throw new RuleError(RuleErrorCode.NOT_FOUND);
   if (row.userId !== userId) throw new RuleError(RuleErrorCode.FORBIDDEN);
   return row;
+}
+
+export async function getRule(id: string, userId: string) {
+  await fetchOwnedRule(id, userId);
+  const [rule] = await ruleSelect().where(eq(categorizationRules.id, id)).limit(1);
+  if (!rule) throw new RuleError(RuleErrorCode.NOT_FOUND);
+  return rule;
+}
+
+/**
+ * Re-applies an owned rule to all eligible transactions, including those already
+ * categorized by a rule. Called after the user edits a rule's categorization fields
+ * and explicitly requests the change to propagate to existing matches.
+ *
+ * Manual categorizations and transfers are never touched.
+ * Returns the number of transactions updated.
+ */
+export async function reapplyRule(id: string, userId: string): Promise<number> {
+  const rule = await getRule(id, userId);
+
+  const candidates = await db
+    .select({
+      id: transactions.id,
+      description: transactions.description,
+      isIncome: transactions.isIncome,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(
+      and(
+        eq(accounts.userId, userId),
+        eq(transactions.isTransfer, false),
+        inArray(transactions.categorySource, [
+          CATEGORY_SOURCE.DEFAULT,
+          CATEGORY_SOURCE.AI,
+          CATEGORY_SOURCE.RULE,
+        ])
+      )
+    );
+
+  if (candidates.length === 0) return 0;
+
+  const loadedRule: LoadedRule = {
+    id: rule.id,
+    userId,
+    keyword: rule.keyword,
+    matchType: rule.matchType,
+    categoryId: rule.categoryId,
+    subcategoryId: rule.subcategoryId,
+    needWant: rule.needWant,
+    sourceName: rule.sourceName,
+    flagForReview: rule.flagForReview,
+    priority: rule.priority,
+  };
+
+  const sharedValues = {
+    categoryId: rule.flagForReview ? null : rule.categoryId,
+    subcategoryId: rule.flagForReview ? null : rule.subcategoryId,
+    sourceName: rule.sourceName,
+    categorySource: CATEGORY_SOURCE.RULE,
+    categoryConfidence: String(CONFIDENCE.RULE),
+    flaggedForReview: rule.flagForReview,
+    updatedAt: new Date(),
+  };
+
+  const incomeIds: string[] = [];
+  const expenseIds: string[] = [];
+
+  for (const candidate of candidates) {
+    if (!applyRules(candidate.description, [loadedRule])) continue;
+    if (candidate.isIncome) {
+      incomeIds.push(candidate.id);
+    } else {
+      expenseIds.push(candidate.id);
+    }
+  }
+
+  const total = incomeIds.length + expenseIds.length;
+  if (total === 0) return 0;
+
+  if (incomeIds.length > 0) {
+    await db
+      .update(transactions)
+      .set({ ...sharedValues, needWant: null })
+      .where(inArray(transactions.id, incomeIds));
+  }
+  if (expenseIds.length > 0) {
+    await db
+      .update(transactions)
+      .set({ ...sharedValues, needWant: rule.needWant })
+      .where(inArray(transactions.id, expenseIds));
+  }
+
+  return total;
 }
 
 export async function listRules(userId: string) {

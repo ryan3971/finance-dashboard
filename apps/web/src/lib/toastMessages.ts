@@ -43,6 +43,7 @@ export const TOAST = {
   RULE_CREATE_FAILED: 'Failed to create rule',
   RULE_UPDATED: 'Rule updated',
   RULE_UPDATE_FAILED: 'Failed to update rule',
+  RULE_REAPPLY_FAILED: 'Failed to re-apply rule',
   RULE_DELETED: 'Rule deleted',
   RULE_DELETE_FAILED: 'Failed to delete rule',
   // Rule suggestions
