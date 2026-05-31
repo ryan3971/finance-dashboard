@@ -118,6 +118,26 @@ export function useDismissTransfer() {
   });
 }
 
+export function useDetectAllTransfers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ matched: number }>('/transfers/detect-all');
+      return data;
+    },
+    onSuccess: ({ matched }) => {
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: dashboardKeys.all() });
+      const message =
+        matched === 0
+          ? 'No new transfer pairs found'
+          : `Found ${matched} transfer pair${matched === 1 ? '' : 's'}`;
+      toast.success(message);
+    },
+    onError: () => toast.error(TOAST.TRANSFER_DETECT_ALL_FAILED),
+  });
+}
+
 export function useApplyRules() {
   const queryClient = useQueryClient();
   return useMutation({

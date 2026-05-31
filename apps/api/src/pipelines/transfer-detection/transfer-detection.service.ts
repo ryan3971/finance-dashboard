@@ -172,6 +172,39 @@ export async function detectTransfers(
 }
 
 /**
+ * Run transfer detection across all unmatched transactions for a user.
+ * Fetches every transaction with isTransfer = false and passes them all to
+ * detectTransfers, then returns the number of unique pairs found.
+ */
+export async function detectAllTransfers(
+  userId: string
+): Promise<{ matched: number }> {
+  const rows = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(and(eq(transactions.isTransfer, false), ownedByUser(userId)));
+
+  if (rows.length === 0) return { matched: 0 };
+
+  const candidates = await detectTransfers(
+    rows.map((r) => r.id),
+    userId
+  );
+
+  // When both sides of a pair are in the input, detectTransfers emits a
+  // candidate for each side. De-duplicate by sorting the two IDs into a key.
+  const pairSet = new Set<string>();
+  for (const c of candidates) {
+    if (c.matchedTransactionId !== null) {
+      const key = [c.transactionId, c.matchedTransactionId].sort().join(':');
+      pairSet.add(key);
+    }
+  }
+
+  return { matched: pairSet.size };
+}
+
+/**
  * Confirm a transfer — marks the transaction (and its pair, if known) as a
  * transfer and links them via transfer_pair_id.
  */

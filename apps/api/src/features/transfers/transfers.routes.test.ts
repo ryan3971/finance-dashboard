@@ -292,6 +292,114 @@ describe('POST /api/v1/transfers/dismiss', () => {
   });
 });
 
+// ── POST /api/v1/transfers/detect-all ────────────────────────────────────────
+
+describe('POST /api/v1/transfers/detect-all', () => {
+  it('returns 401 without an auth token', async () => {
+    const res = await request(app).post('/api/v1/transfers/detect-all');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns { matched: 0 } when the user has no transactions', async () => {
+    const auth = await registerUser(app);
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
+  it('returns { matched: 0 } when no transfer pairs can be found', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    await transactionFixture(account.id, { amount: '-50.00' });
+    await transactionFixture(account.id, { amount: '-75.00' });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
+  it('returns { matched: 1 } and flags both transactions when a pair is detected', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    const txnA = await transactionFixture(accountA.id, {
+      description: 'e-transfer to savings',
+      amount: '-200.00',
+      date: '2024-03-01',
+    });
+    const txnB = await transactionFixture(accountB.id, {
+      description: 'e-transfer from chequing',
+      amount: '200.00',
+      date: '2024-03-01',
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 1 });
+
+    interface TxnWithMatch { flaggedForReview: boolean; transferMatchId: string | null }
+    const [rawA, rawB] = await Promise.all([
+      getTransaction(app, auth.accessToken, txnA.id),
+      getTransaction(app, auth.accessToken, txnB.id),
+    ]);
+    const updatedA = rawA as unknown as TxnWithMatch;
+    const updatedB = rawB as unknown as TxnWithMatch;
+    expect(updatedA?.flaggedForReview).toBe(true);
+    expect(updatedA?.transferMatchId).toBe(txnB.id);
+    expect(updatedB?.flaggedForReview).toBe(true);
+    expect(updatedB?.transferMatchId).toBe(txnA.id);
+  });
+
+  it('does not match transactions belonging to a different user', async () => {
+    const authA = await registerUser(app);
+    const authB = await registerUser(app, 'other@example.com');
+    const acctA = await accountFixture(authA.user.id);
+    const acctB = await accountFixture(authB.user.id);
+    await transactionFixture(acctA.id, { description: 'e-transfer', amount: '-100.00', date: '2024-03-01' });
+    await transactionFixture(acctB.id, { description: 'e-transfer', amount: '100.00', date: '2024-03-01' });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${authA.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+
+  it('skips transactions already confirmed as transfers', async () => {
+    const auth = await registerUser(app);
+    const accountA = await accountFixture(auth.user.id, { name: 'Chequing' });
+    const accountB = await accountFixture(auth.user.id, { name: 'Savings' });
+    await transactionFixture(accountA.id, {
+      description: 'e-transfer',
+      amount: '-300.00',
+      date: '2024-03-01',
+      isTransfer: true,
+    });
+    await transactionFixture(accountB.id, {
+      description: 'e-transfer',
+      amount: '300.00',
+      date: '2024-03-01',
+      isTransfer: true,
+    });
+
+    const res = await request(app)
+      .post('/api/v1/transfers/detect-all')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ matched: 0 });
+  });
+});
+
 // ── POST /api/v1/transfers/unmark ─────────────────────────────────────────────
 
 describe('POST /api/v1/transfers/unmark', () => {
