@@ -2,6 +2,7 @@ import {
   accounts,
   categories,
   categorizationRules,
+  rebalancingGroups,
   rebalancingGroupTransactions,
   tags,
   transactions,
@@ -198,6 +199,7 @@ export async function listTransactions(
       subcategoryName: subcategories.name,
       rebalancingGroupId: rebalancingGroupTransactions.groupId,
       rebalancingRole: rebalancingGroupTransactions.role,
+      rebalancingGroupStatus: rebalancingGroups.status,
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -211,6 +213,7 @@ export async function listTransactions(
       rebalancingGroupTransactions,
       eq(rebalancingGroupTransactions.transactionId, transactions.id)
     )
+    .leftJoin(rebalancingGroups, eq(rebalancingGroups.id, rebalancingGroupTransactions.groupId))
     .where(and(...conditions))
     .orderBy(desc(transactions.date), desc(transactions.createdAt), asc(transactions.id))
     .limit(limit)
