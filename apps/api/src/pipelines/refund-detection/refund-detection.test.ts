@@ -167,6 +167,35 @@ describe('detectRefunds', () => {
     expect(groups).toHaveLength(2);
   });
 
+  it('pairs each charge with the closest credit when the same amount recurs monthly', async () => {
+    const { auth, account } = await setup();
+    // Monthly bank fee + refund pattern: same amount, same account, recurring
+    const janCharge = await transactionFixture(account.id, { amount: '-50.00', date: '2024-01-15' });
+    const janRefund = await transactionFixture(account.id, { amount: '50.00',  date: '2024-01-20' });
+    const febCharge = await transactionFixture(account.id, { amount: '-50.00', date: '2024-02-15' });
+    const febRefund = await transactionFixture(account.id, { amount: '50.00',  date: '2024-02-20' });
+
+    const result = await detectRefunds(auth.user.id);
+    expect(result).toEqual({ created: 2 });
+
+    const groups = await getRefundGroups(auth.user.id);
+    expect(groups).toHaveLength(2);
+
+    // Verify each group pairs the charge and refund from the same month.
+    for (const group of groups) {
+      const members = await getGroupMembers(group.id);
+      const source = members.find((m) => m.role === 'source');
+      const offset = members.find((m) => m.role === 'offset');
+      expect(source).toBeDefined();
+      expect(offset).toBeDefined();
+      const isJanPair =
+        source?.transactionId === janCharge.id && offset?.transactionId === janRefund.id;
+      const isFebPair =
+        source?.transactionId === febCharge.id && offset?.transactionId === febRefund.id;
+      expect(isJanPair || isFebPair).toBe(true);
+    }
+  });
+
   it('does not expose transactions belonging to another user', async () => {
     const { auth } = await setup();
     const otherAuth = await registerUser(app, 'other@example.com');

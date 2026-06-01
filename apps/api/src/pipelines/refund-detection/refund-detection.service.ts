@@ -108,15 +108,24 @@ export async function detectRefunds(userId: string): Promise<{ created: number }
     const windowStart = offsetDate(txn.date, -windowDays);
     const windowEnd = offsetDate(txn.date, windowDays);
 
-    const match = pairPool.find(
-      (m) =>
-        !matchedIds.has(m.id) &&
-        m.id !== txn.id &&
-        m.accountId === txn.accountId &&
-        m.amount === inverseAmount &&
-        m.date >= windowStart &&
-        m.date <= windowEnd
-    );
+    // Pick the temporally closest candidate to avoid pairing a charge with the
+    // wrong month's refund when the same amount recurs on a regular schedule.
+    const txnTime = new Date(txn.date).getTime();
+    const match = pairPool
+      .filter(
+        (m) =>
+          !matchedIds.has(m.id) &&
+          m.id !== txn.id &&
+          m.accountId === txn.accountId &&
+          m.amount === inverseAmount &&
+          m.date >= windowStart &&
+          m.date <= windowEnd
+      )
+      .sort((a, b) => {
+        const distA = Math.abs(new Date(a.date).getTime() - txnTime);
+        const distB = Math.abs(new Date(b.date).getTime() - txnTime);
+        return distA - distB;
+      })[0];
 
     if (!match) continue;
 
