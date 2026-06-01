@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { accounts, rebalancingGroupTransactions, rebalancingGroups, transactions, userConfig } from '@/db/schema';
 import { REFUND_DETECTION_WINDOW_DAYS } from '@finance/shared/constants';
 import type { RebalancingStatus } from '@finance/shared/types/rebalancing';
+import { assertDefined } from '@/lib/assert';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -137,7 +138,7 @@ export async function detectRefunds(userId: string): Promise<{ created: number }
         })
         .returning({ id: rebalancingGroups.id });
 
-      if (!group) return;
+      assertDefined(group, 'Expected insert to return the new refund group');
 
       await tx.insert(rebalancingGroupTransactions).values([
         { groupId: group.id, transactionId: chargeId, role: 'source' },

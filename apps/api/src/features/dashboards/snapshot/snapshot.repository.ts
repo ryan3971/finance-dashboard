@@ -9,6 +9,7 @@ import {
 import { db } from '@/db';
 import { MONTHS_IN_YEAR } from '@finance/shared/constants';
 import { IMPORT_STATUS } from '@/lib/constants';
+import { resolvedRefundExclusion } from '@/pipelines/refund-detection/refund-exclusion';
 
 export interface AccountBalanceRow {
   id: string;
@@ -105,7 +106,7 @@ export async function queryCurrentMonthIncome(
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate),
-        sql`${transactions.id} NOT IN (SELECT rgt.transaction_id FROM rebalancing_group_transactions rgt JOIN rebalancing_groups rg ON rg.id = rgt.group_id WHERE rg.type = 'refund' AND rg.status = 'resolved')`
+        resolvedRefundExclusion(userId)
       )
     );
 
@@ -168,7 +169,7 @@ export async function queryCurrentMonthExpenses(
         eq(transactions.isInvestmentContribution, false),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate),
-        sql`${transactions.id} NOT IN (SELECT rgt.transaction_id FROM rebalancing_group_transactions rgt JOIN rebalancing_groups rg ON rg.id = rgt.group_id WHERE rg.type = 'refund' AND rg.status = 'resolved')`
+        resolvedRefundExclusion(userId)
       )
     )
     .groupBy(transactions.needWant);

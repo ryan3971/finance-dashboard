@@ -7,6 +7,8 @@ import {
 import { createApp } from '@/app';
 import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
 import request from 'supertest';
+import { db } from '@/db';
+import { rebalancingGroupTransactions, rebalancingGroups } from '@/db/schema';
 
 const DEFAULT_ACCOUNT_DATA = {
   name: 'Chequing',
@@ -243,5 +245,56 @@ describe('GET /api/v1/dashboard/income', () => {
     expect(
       (res.body as { months: { total: number }[] }).months.every((m) => m.total === 0)
     ).toBe(true);
+  });
+});
+
+// ─── Refund group exclusion ───────────────────────────────────────────────────
+
+describe('Refund group exclusion from income', () => {
+  it('excludes income-side transactions in a resolved refund group', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      ...DEFAULT_ACCOUNT_DATA,
+    });
+
+    // An unrelated income transaction that should still appear
+    await transactionFixture(accountId, {
+      date: '2025-07-15',
+      amount: '3000.00',
+      isIncome: true,
+    });
+
+    // A refund pair where the credit is classified as income
+    const credit = await transactionFixture(accountId, {
+      date: '2025-07-01',
+      amount: '50.00',
+      isIncome: true,
+    });
+    const charge = await transactionFixture(accountId, {
+      date: '2025-06-28',
+      amount: '-50.00',
+      isIncome: false,
+    });
+
+    const [group] = await db
+      .insert(rebalancingGroups)
+      .values({ userId: user.id, label: 'Refund', type: 'refund', status: 'resolved' })
+      .returning();
+    const groupId = group?.id;
+    expect(groupId).toBeDefined();
+    await db.insert(rebalancingGroupTransactions).values([
+      { groupId: groupId as string, transactionId: charge.id, role: 'source' },
+      { groupId: groupId as string, transactionId: credit.id, role: 'offset' },
+    ]);
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/income?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { months: { month: number; total: number }[] };
+    const july = body.months.find((m) => m.month === 7);
+    // Only the unrelated $3000 income should count; the $50 credit in the resolved refund group is excluded
+    expect(july?.total).toBe(3000);
   });
 });
