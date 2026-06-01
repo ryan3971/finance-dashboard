@@ -203,6 +203,11 @@ export const helpContent = {
           'Each categorized transaction shows how its category was assigned: Rule (matched a categorization rule on import), AI (assigned by the AI categorization model), or Manual (set by you directly). Badges appear in the transaction detail panel.',
       },
       {
+        heading: 'Search',
+        description:
+          'Type in the search box above the table to filter transactions by description, source name, or note. The list updates after a short pause as you type. Search works alongside all other filters and is included when you export to CSV.',
+      },
+      {
         heading: 'Filters',
         description:
           'Open the Filters panel to narrow the list by account, month or date range, category, Need/Want classification, tags, transfer status, or review status. Active filters are shown as a count badge on the Filters button. Use Clear all to reset all filters at once.',
@@ -215,7 +220,12 @@ export const helpContent = {
       {
         heading: 'Editing and duplicating',
         description:
-          'Open any transaction to edit its category, Need/Want classification, note, or transfer status. Use Duplicate to quickly create a copy — useful for recurring manual entries.',
+          'Click a transaction to open the detail panel, then choose Review or Edit. Review mode is for assigning a category to flagged transactions. Edit mode lets you change any field: date, amount, description, income/expense classification, category, Need/Want, note, and transfer or investment-contribution status. Use Duplicate to quickly create a copy — useful for recurring manual entries.',
+      },
+      {
+        heading: 'Need / Want',
+        description:
+          'Classifies an expense transaction as a need or a want, driving the needs/wants splits on the dashboard. Select Need or Want in the edit panel; leaving both unselected means the transaction is unclassified. Income transactions do not carry a Need/Want classification.',
       },
       {
         heading: 'Transfers',
