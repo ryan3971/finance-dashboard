@@ -83,6 +83,8 @@ export const TOAST = {
   REFUND_CONFIRM_FAILED: 'Failed to confirm refund',
   REFUND_DISMISSED: 'Refund dismissed',
   REFUND_DISMISS_FAILED: 'Failed to dismiss refund',
+  REFUND_DELETED: 'Refund deleted',
+  REFUND_DELETE_FAILED: 'Failed to delete refund',
   // Sample data
   SAMPLE_DATA_LOADED: 'Sample data loaded',
   SAMPLE_DATA_CONFLICT: 'Reset your account before loading sample data',

@@ -211,3 +211,17 @@ export function useDismissRefund() {
     onError: () => toast.error(TOAST.REFUND_DISMISS_FAILED),
   });
 }
+
+export function useDeleteRefundGroup() {
+  const invalidate = useInvalidateGroupsAndDashboards();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      await api.delete(`/rebalancing/groups/${groupId}`);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success(TOAST.REFUND_DELETED);
+    },
+    onError: () => toast.error(TOAST.REFUND_DELETE_FAILED),
+  });
+}

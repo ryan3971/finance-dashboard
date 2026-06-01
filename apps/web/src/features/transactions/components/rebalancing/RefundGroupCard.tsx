@@ -1,9 +1,20 @@
+import { useState } from 'react';
+
 import type { RebalancingGroup } from '@finance/shared/types/rebalancing';
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 import { cn, fmt, MONTH_LABELS, parseAmount } from '@/lib/utils';
 import {
   useConfirmRefund,
+  useDeleteRefundGroup,
   useDismissRefund,
 } from '@/features/transactions/hooks/useRebalancingMutations';
 
@@ -61,68 +72,120 @@ export function RefundGroupCard({
 }: {
   readonly group: RebalancingGroup;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const confirmRefund = useConfirmRefund();
   const dismissRefund = useDismissRefund();
+  const deleteRefundGroup = useDeleteRefundGroup();
 
   const isResolved = group.status === 'resolved';
-  const anyPending = confirmRefund.isPending || dismissRefund.isPending;
+  const anyPending =
+    confirmRefund.isPending || dismissRefund.isPending || deleteRefundGroup.isPending;
 
   const source = group.transactions.find((t) => t.role === 'source');
   const offset = group.transactions.find((t) => t.role === 'offset');
 
+  function handleDeleteConfirm() {
+    deleteRefundGroup.mutate(group.id, {
+      onSuccess: () => setConfirmDelete(false),
+    });
+  }
+
   return (
-    <div className={cn('bg-surface rounded-lg border border-border-base overflow-hidden', isResolved && 'opacity-50')}>
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-content-primary">
-            {group.label}
-          </span>
-          <Badge variant={isResolved ? 'success' : 'warning'} rounded="sm">
-            {isResolved ? 'Confirmed' : 'Pending'}
-          </Badge>
-        </div>
-        {!isResolved && (
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={anyPending}
-              onClick={() => confirmRefund.mutate(group.id)}
-            >
-              {confirmRefund.isPending ? '…' : 'Confirm'}
-            </Button>
+    <>
+      <div className={cn('bg-surface rounded-lg border border-border-base overflow-hidden', isResolved && 'opacity-50')}>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-content-primary">
+              {group.label}
+            </span>
+            <Badge variant={isResolved ? 'success' : 'warning'} rounded="sm">
+              {isResolved ? 'Confirmed' : 'Pending'}
+            </Badge>
+          </div>
+          {!isResolved ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={anyPending}
+                onClick={() => confirmRefund.mutate(group.id)}
+              >
+                {confirmRefund.isPending ? '…' : 'Confirm'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={anyPending}
+                onClick={() => dismissRefund.mutate(group.id)}
+              >
+                {dismissRefund.isPending ? '…' : 'Dismiss'}
+              </Button>
+            </div>
+          ) : (
             <Button
               size="sm"
               variant="ghost"
               disabled={anyPending}
-              onClick={() => dismissRefund.mutate(group.id)}
+              onClick={() => setConfirmDelete(true)}
             >
-              {dismissRefund.isPending ? '…' : 'Dismiss'}
+              Delete
             </Button>
-          </div>
+          )}
+        </div>
+
+        {/* Transactions */}
+        {source && (
+          <RefundTransactionRow
+            label="Charge"
+            date={source.date}
+            description={source.description}
+            accountName={source.accountName}
+            amount={source.amount}
+          />
+        )}
+        {offset && (
+          <RefundTransactionRow
+            label="Credit"
+            date={offset.date}
+            description={offset.description}
+            accountName={offset.accountName}
+            amount={offset.amount}
+          />
         )}
       </div>
 
-      {/* Transactions */}
-      {source && (
-        <RefundTransactionRow
-          label="Charge"
-          date={source.date}
-          description={source.description}
-          accountName={source.accountName}
-          amount={source.amount}
-        />
-      )}
-      {offset && (
-        <RefundTransactionRow
-          label="Credit"
-          date={offset.date}
-          description={offset.description}
-          accountName={offset.accountName}
-          amount={offset.amount}
-        />
-      )}
-    </div>
+      {/* Delete confirmation dialog */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete refund?</DialogTitle>
+            <DialogDescription>
+              "{group.label}" will be permanently deleted and the transactions
+              will be included in dashboard totals again. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setConfirmDelete(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="warning"
+              size="md"
+              disabled={deleteRefundGroup.isPending}
+              onClick={handleDeleteConfirm}
+            >
+              {deleteRefundGroup.isPending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
