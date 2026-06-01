@@ -108,11 +108,23 @@ export function TransactionTablePane({
   const [localFilters, setLocalFilters] = useState<FilterState>(resetFilters);
   const [localPage, setLocalPage] = useState(1);
 
-  // Debounced search: local input drives debouncedSearch which is sent to the API.
+  // localSearchInput: what the text input displays — updated immediately on every keystroke.
+  // debouncedSearch:  what is sent to the API and (in controlled mode) written to the URL.
+  // Separating them prevents the URL from updating on every character while the query debounces.
+  const [localSearchInput, setLocalSearchInput] = useState(
+    filterState?.search ?? resetFilters.search
+  );
   const [debouncedSearch, setDebouncedSearch] = useState(
     filterState?.search ?? resetFilters.search
   );
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cancel any pending debounce on unmount to avoid state updates on an unmounted component.
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, []);
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel | null>(
     null
   );
@@ -190,6 +202,16 @@ export function TransactionTablePane({
   }
 
   function handleFilterChange(newFilters: FilterState) {
+    // If search was cleared externally (e.g. "Clear all" in the filter popover),
+    // sync the visible input and cancel any pending debounce immediately.
+    if (newFilters.search !== activeFilters.search) {
+      setLocalSearchInput(newFilters.search);
+      setDebouncedSearch(newFilters.search);
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+    }
     if (isFilterControlled) {
       onFilterChange?.(newFilters);
     } else {
@@ -204,21 +226,31 @@ export function TransactionTablePane({
   }
 
   function handleSearchChange(value: string) {
-    const next = { ...activeFilters, search: value };
-    if (isFilterControlled) {
-      onFilterChange?.(next);
-    } else {
-      setLocalFilters(next);
-      if (!isPageControlled) setLocalPage(1);
-      onFilterChange?.(next);
-    }
+    setLocalSearchInput(value); // immediate — keeps the input responsive
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
+      // Defer URL / filter-state updates to the debounce boundary so the URL
+      // does not update on every keystroke.
+      const next = { ...activeFilters, search: value };
+      if (isFilterControlled) {
+        onFilterChange?.(next);
+      } else {
+        setLocalFilters(next);
+        if (!isPageControlled) setLocalPage(1);
+        onFilterChange?.(next);
+      }
+    }, 300);
   }
 
-  // Keep debouncedSearch in sync when controlled search changes (e.g. browser nav).
+  // When the controlled search param changes (e.g. browser back/forward), sync both
+  // the visible input and the debounced query value immediately — no debounce needed
+  // since this is an external navigation event, not a user keystroke.
   useEffect(() => {
-    if (isFilterControlled) setDebouncedSearch(filterState.search);
+    if (isFilterControlled) {
+      setLocalSearchInput(filterState.search);
+      setDebouncedSearch(filterState.search);
+    }
   }, [isFilterControlled, filterState?.search]);
 
   function handlePageChange(newPage: number) {
@@ -298,7 +330,7 @@ export function TransactionTablePane({
           <input
             type="search"
             placeholder="Search transactions…"
-            value={activeFilters.search}
+            value={localSearchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="select-base w-full pl-8 pr-3"
           />

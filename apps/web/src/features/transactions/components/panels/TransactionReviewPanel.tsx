@@ -1,6 +1,4 @@
-import {
-  FIELD_LIMITS,
-} from '@finance/shared/constants';
+import { FIELD_LIMITS } from '@finance/shared/constants';
 import {
   patchTransactionSchema,
   type PatchTransactionFormValues,
@@ -187,7 +185,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
               <input
                 type="text"
                 className="select-base w-full"
-                maxLength={FIELD_LIMITS.NOTE_MAX}
+                maxLength={FIELD_LIMITS.TRANSACTION_DESCRIPTION_MAX}
                 {...register('description')}
               />
             </FormField>

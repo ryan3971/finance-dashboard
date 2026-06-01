@@ -321,23 +321,29 @@ export async function patchTransaction(
       updateData.flaggedForReview = false;
     }
   }
+  // Resolve the effective isIncome value (new intent if provided, otherwise the current DB value)
+  // so all expense-only field coercions use the correct post-update state, not the stale DB value.
+  // This matters when the caller sends isIncome in the same request as needWant or
+  // isInvestmentContribution (e.g. flipping income→expense while also setting needWant).
+  const effectiveIsIncome = input.isIncome !== undefined ? input.isIncome : txn.isIncome;
+
   // Skip independent subcategoryId / needWant patches when categoryId is being cleared
   // (the clearing branch above already zeros them out)
   if (input.subcategoryId !== undefined && input.categoryId !== null)
     updateData.subcategoryId = input.subcategoryId;
   // needWant is only valid on expenses — silently coerce to null for income transactions
   if (input.needWant !== undefined && input.categoryId !== null)
-    updateData.needWant = txn.isIncome ? null : input.needWant;
+    updateData.needWant = effectiveIsIncome ? null : input.needWant;
   if (input.note !== undefined) updateData.note = input.note;
   // isInvestmentContribution is only valid on expenses — silently coerce to false for income transactions
   if (input.isInvestmentContribution !== undefined)
-    updateData.isInvestmentContribution = txn.isIncome ? false : input.isInvestmentContribution;
+    updateData.isInvestmentContribution = effectiveIsIncome ? false : input.isInvestmentContribution;
   if (input.date !== undefined) updateData.date = input.date;
   if (input.amount !== undefined) updateData.amount = String(input.amount);
   if (input.description !== undefined) updateData.description = input.description;
   if (input.isIncome !== undefined) {
     updateData.isIncome = input.isIncome;
-    // Flipping to income clears expense-only fields
+    // Flipping to income clears expense-only fields not already handled above
     if (input.isIncome) {
       updateData.needWant = null;
       updateData.isInvestmentContribution = false;

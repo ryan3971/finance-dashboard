@@ -5,6 +5,8 @@ import {
   ISO_DATE_REGEX,
   NEED_WANT_OPTIONS,
 } from '../constants';
+// FIELD_LIMITS.TRANSACTION_DESCRIPTION_MAX is the authoritative cap for the description column.
+// NOTE_MAX governs the note column only. Do not conflate them.
 import { z } from 'zod';
 
 // ─── Transaction Schemas ─────────────────────────────────────────────────────────────────
@@ -15,7 +17,7 @@ export const createTransactionSchema = z
   .object({
     accountId: z.string().uuid('Select an account'),
     date: z.string().regex(ISO_DATE_REGEX, 'Date must be YYYY-MM-DD'),
-    description: z.string().min(1, 'Required').max(FIELD_LIMITS.NOTE_MAX),
+    description: z.string().min(1, 'Required').max(FIELD_LIMITS.TRANSACTION_DESCRIPTION_MAX),
     amount: z.coerce
       .number({ invalid_type_error: 'Must be a number' })
       .refine((v) => v !== 0, 'Cannot be zero'),
@@ -80,7 +82,7 @@ export const patchTransactionSchema = z.object({
     .number({ invalid_type_error: 'Must be a number' })
     .refine((v) => v !== 0, 'Cannot be zero')
     .optional(),
-  description: z.string().min(1, 'Required').max(FIELD_LIMITS.NOTE_MAX).optional(),
+  description: z.string().min(1, 'Required').max(FIELD_LIMITS.TRANSACTION_DESCRIPTION_MAX).optional(),
   isIncome: z.boolean().optional(),
 });
 

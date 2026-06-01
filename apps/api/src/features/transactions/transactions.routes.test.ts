@@ -370,7 +370,7 @@ describe('GET /api/v1/transactions', () => {
   it('filters by sourceName via search', async () => {
     const auth = await registerUser(app);
     const account = await accountFixture(auth.user.id);
-    await transactionFixture(account.id, {
+    const target = await transactionFixture(account.id, {
       description: 'RAW DESC',
       sourceName: 'Netflix',
       date: '2025-01-01',
@@ -383,8 +383,27 @@ describe('GET /api/v1/transactions', () => {
       .set('Authorization', `Bearer ${auth.accessToken}`);
 
     expect(res.status).toBe(200);
-    const body = res.body as PaginatedResponse<{ id: string }>;
+    const body = res.body as PaginatedResponse<{ id: string; sourceName: string }>;
     expect(body.pagination.total).toBe(1);
+    expect(body.data[0]?.id).toBe(target.id);
+    expect(body.data[0]?.sourceName).toBe('Netflix');
+  });
+
+  it('treats LIKE special characters in search as literals', async () => {
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    // A literal "%" in the description should not act as a SQL wildcard
+    await transactionFixture(account.id, { description: '100% Organic', date: '2025-01-01' });
+    await transactionFixture(account.id, { description: 'Regular Store', date: '2025-01-02' });
+
+    const exactRes = await request(app)
+      .get('/api/v1/transactions')
+      .query({ search: '100%' })
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(exactRes.status).toBe(200);
+    // Drizzle parameterizes the pattern, so "100%" only matches the row containing "100%"
+    expect((exactRes.body as PaginatedResponse<{ id: string }>).pagination.total).toBe(1);
   });
 
   it('filters by note via search', async () => {
@@ -1103,6 +1122,26 @@ describe('PATCH /api/v1/transactions/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ id: txn.id, description: 'New desc' });
+  });
+
+  it('flipping isIncome to false in the same call as needWant uses the new income value for coercion', async () => {
+    // Regression: prior to the effectiveIsIncome fix, needWant was silently nulled
+    // because the coercion checked txn.isIncome (true) instead of input.isIncome (false).
+    const auth = await registerUser(app);
+    const account = await accountFixture(auth.user.id);
+    const txn = await transactionFixture(account.id, {
+      isIncome: true,
+      amount: '2000.00',
+      needWant: null,
+    });
+
+    const res = await request(app)
+      .patch(`/api/v1/transactions/${txn.id}`)
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ isIncome: false, needWant: 'Need' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: txn.id, isIncome: false, needWant: 'Need' });
   });
 
   it('flipping isIncome to true clears needWant and isInvestmentContribution', async () => {
