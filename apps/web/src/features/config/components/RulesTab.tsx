@@ -109,7 +109,7 @@ function RuleRow({
         {rule.flagForReview ? (
           <span className="text-xs font-medium text-warning">Flag for review</span>
         ) : (
-          rule.needWant ?? '—'
+          (rule.needWant && rule.needWant !== 'NA') ? rule.needWant : '—'
         )}
       </td>
       <td className="px-3 py-2">

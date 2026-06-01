@@ -1,7 +1,7 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FIELD_LIMITS, NEED_WANT_OPTIONS, RULE_PRIORITY_DEFAULT } from '@finance/shared/constants';
+import { FIELD_LIMITS, RULE_PRIORITY_DEFAULT } from '@finance/shared/constants';
 import type { Rule } from '@finance/shared/types/rules';
 import type { CreateRuleInput, PatchRuleInput } from '@finance/shared/schemas/rules';
 import { Button } from '@/components/ui/Button';
@@ -25,7 +25,7 @@ const ruleFormSchema = z.object({
   categoryId: z.string(),
   subcategoryId: z.string(),
   priority: z.number().int().finite(),
-  needWant: z.enum(NEED_WANT_OPTIONS).or(z.literal('')),
+  needWant: z.enum(['Need', 'Want']).or(z.literal('')),
   flagForReview: z.boolean(),
 });
 
@@ -79,7 +79,7 @@ export function RuleEditModal({ rule, initialValues, onClose, onCreate, onUpdate
           categoryId:    rule.categoryId ?? '',
           subcategoryId: rule.subcategoryId ?? '',
           priority:      rule.priority,
-          needWant:      rule.needWant ?? '',
+          needWant:      (rule.needWant && rule.needWant !== 'NA') ? rule.needWant : '',
           flagForReview: rule.flagForReview,
         }
       : {
@@ -204,7 +204,8 @@ export function RuleEditModal({ rule, initialValues, onClose, onCreate, onUpdate
                   <SegmentedControl
                     options={[
                       { value: '' as const, label: '—' },
-                      ...NEED_WANT_OPTIONS.map((opt) => ({ value: opt, label: opt })),
+                      { value: 'Need' as const, label: 'Need' },
+                      { value: 'Want' as const, label: 'Want' },
                     ]}
                     value={field.value}
                     onChange={field.onChange}
