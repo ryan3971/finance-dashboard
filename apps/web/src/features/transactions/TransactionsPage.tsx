@@ -47,6 +47,7 @@ export function TransactionsPage() {
       flaggedOnly: search.flaggedOnly ?? false,
       isTransfer: search.isTransfer ?? false,
       tagIds: search.tagIds ?? [],
+      search: search.search ?? '',
     }),
     [
       search.accountId,
@@ -59,6 +60,7 @@ export function TransactionsPage() {
       search.flaggedOnly,
       search.isTransfer,
       search.tagIds,
+      search.search,
     ]
   );
   const page = search.page ?? 1;
@@ -76,6 +78,7 @@ export function TransactionsPage() {
         flaggedOnly: newFilters.flaggedOnly || undefined,
         isTransfer: newFilters.isTransfer || undefined,
         tagIds: newFilters.tagIds.length > 0 ? newFilters.tagIds : undefined,
+        search: newFilters.search || undefined,
         page: undefined,
       },
     });
@@ -110,6 +113,7 @@ export function TransactionsPage() {
             flagged: filters.flaggedOnly || undefined,
             isTransfer: filters.isTransfer || undefined,
             tagIds: filters.tagIds.length > 0 ? filters.tagIds : undefined,
+            search: filters.search || undefined,
             limit: PAGINATION.EXPORT_LIMIT,
           },
         }

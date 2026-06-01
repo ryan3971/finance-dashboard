@@ -13,7 +13,7 @@ export interface SeedRule {
 
 // Format: { keyword, sourceName, category, subcategory, needWant, flagForReview, priority, matchType }
 // keyword       — case-insensitive contains match against transaction description (substring) or glob pattern (wildcard)
-// needWant      — 'Need' | 'Want' | 'NA' | null
+// needWant      — 'Need' | 'Want' | null
 // flagForReview — true to flag the transaction for manual review without assigning a category
 // priority      — higher wins when multiple rules match (default 0)
 // matchType     — 'substring' (default) | 'wildcard' (* = any chars, ? = one char; pattern is anchored)
@@ -43,7 +43,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Transfer',
     category: 'Transfer',
     subcategory: 'Credit Card Payment',
-    needWant: 'NA',
+    needWant: null,
     priority: 10,
   },
   {
@@ -51,7 +51,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Transfer',
     category: 'Transfer',
     subcategory: 'Personal Transfer',
-    needWant: 'NA',
+    needWant: null,
     priority: 10,
   },
   {
@@ -59,7 +59,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Payment',
     category: 'Transfer',
     subcategory: 'Credit Card Payment',
-    needWant: 'NA',
+    needWant: null,
     priority: 10,
   },
   {
@@ -67,7 +67,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Payment',
     category: 'Transfer',
     subcategory: 'Credit Card Payment',
-    needWant: 'NA',
+    needWant: null,
     priority: 10,
   },
   {
@@ -75,7 +75,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Payment',
     category: 'Transfer',
     subcategory: 'Credit Card Payment',
-    needWant: 'NA',
+    needWant: null,
     priority: 10,
   },
 
@@ -85,7 +85,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Prodigy Education',
     category: 'Salary',
     subcategory: 'Paycheque',
-    needWant: 'NA',
+    needWant: null,
     priority: 5,
   },
   {
@@ -93,7 +93,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Mobile Deposit',
     category: 'Other Income',
     subcategory: 'Misc',
-    needWant: 'NA',
+    needWant: null,
     priority: 5,
   },
   {
@@ -101,7 +101,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Government',
     category: 'Government',
     subcategory: 'GST Credit',
-    needWant: 'NA',
+    needWant: null,
     priority: 5,
   },
   {
@@ -109,7 +109,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Bank',
     category: 'Finance',
     subcategory: 'Bank Fees',
-    needWant: 'NA',
+    needWant: null,
     priority: 5,
   },
   {
@@ -117,7 +117,7 @@ export const RULES: SeedRule[] = [
     sourceName: 'Manulife',
     category: 'Government',
     subcategory: 'Benefits',
-    needWant: 'NA',
+    needWant: null,
     priority: 5,
   },
 

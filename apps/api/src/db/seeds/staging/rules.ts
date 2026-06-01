@@ -9,7 +9,7 @@ export const STAGING_RULES: SeedRule[] = [
     sourceName: 'Bill Payment',
     category: 'Transfer',
     subcategory: 'Credit Card Payment',
-    needWant: 'NA',
+    needWant: null,
     priority: 10,
   },
 
@@ -19,7 +19,7 @@ export const STAGING_RULES: SeedRule[] = [
     sourceName: 'Employer',
     category: 'Salary',
     subcategory: 'Paycheque',
-    needWant: 'NA',
+    needWant: null,
     priority: 5,
   },
   {
@@ -27,7 +27,7 @@ export const STAGING_RULES: SeedRule[] = [
     sourceName: 'Government',
     category: 'Government',
     subcategory: 'GST Credit',
-    needWant: 'NA',
+    needWant: null,
     priority: 5,
   },
 

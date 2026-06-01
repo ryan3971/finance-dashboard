@@ -37,6 +37,7 @@ const transactionsSearchSchema = z.object({
   flaggedOnly: z.boolean().optional(),
   isTransfer: z.boolean().optional(),
   tagIds: z.array(z.string()).optional(),
+  search: z.string().optional(),
   page: z.number().int().positive().optional(),
 });
 

@@ -8,7 +8,7 @@ import {
   transactions,
   transactionTags,
 } from '@/db/schema';
-import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { TransactionError, TransactionErrorCode } from './transactions.errors';
 import {
@@ -39,6 +39,7 @@ export interface TransactionFilters {
   isIncome?: boolean;
   isTransfer?: boolean;
   tagIds?: string[];
+  search?: string;
 }
 
 export interface PaginationParams {
@@ -148,7 +149,9 @@ export async function listTransactions(
     baseConditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.subcategoryId)
     baseConditions.push(eq(transactions.subcategoryId, filters.subcategoryId));
-  if (filters.needWant)
+  if (filters.needWant === 'NA')
+    baseConditions.push(isNull(transactions.needWant));
+  else if (filters.needWant)
     baseConditions.push(eq(transactions.needWant, filters.needWant));
   if (filters.isIncome !== undefined)
     baseConditions.push(eq(transactions.isIncome, filters.isIncome));
@@ -160,6 +163,16 @@ export async function listTransactions(
       .from(transactionTags)
       .where(inArray(transactionTags.tagId, filters.tagIds));
     baseConditions.push(inArray(transactions.id, tagSubquery));
+  }
+  if (filters.search) {
+    const escaped = filters.search.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const like = `%${escaped}%`;
+    const searchCondition = or(
+      ilike(transactions.description, like),
+      ilike(transactions.sourceName, like),
+      ilike(transactions.note, like),
+    );
+    if (searchCondition) baseConditions.push(searchCondition);
   }
 
   const conditions = filters.flagged
@@ -311,17 +324,34 @@ export async function patchTransaction(
       updateData.flaggedForReview = false;
     }
   }
+  // Resolve the effective isIncome value (new intent if provided, otherwise the current DB value)
+  // so all expense-only field coercions use the correct post-update state, not the stale DB value.
+  // This matters when the caller sends isIncome in the same request as needWant or
+  // isInvestmentContribution (e.g. flipping income→expense while also setting needWant).
+  const effectiveIsIncome = input.isIncome !== undefined ? input.isIncome : txn.isIncome;
+
   // Skip independent subcategoryId / needWant patches when categoryId is being cleared
   // (the clearing branch above already zeros them out)
   if (input.subcategoryId !== undefined && input.categoryId !== null)
     updateData.subcategoryId = input.subcategoryId;
   // needWant is only valid on expenses — silently coerce to null for income transactions
   if (input.needWant !== undefined && input.categoryId !== null)
-    updateData.needWant = txn.isIncome ? null : input.needWant;
+    updateData.needWant = effectiveIsIncome ? null : input.needWant;
   if (input.note !== undefined) updateData.note = input.note;
   // isInvestmentContribution is only valid on expenses — silently coerce to false for income transactions
   if (input.isInvestmentContribution !== undefined)
-    updateData.isInvestmentContribution = txn.isIncome ? false : input.isInvestmentContribution;
+    updateData.isInvestmentContribution = effectiveIsIncome ? false : input.isInvestmentContribution;
+  if (input.date !== undefined) updateData.date = input.date;
+  if (input.amount !== undefined) updateData.amount = String(input.amount);
+  if (input.description !== undefined) updateData.description = input.description;
+  if (input.isIncome !== undefined) {
+    updateData.isIncome = input.isIncome;
+    // Flipping to income clears expense-only fields not already handled above
+    if (input.isIncome) {
+      updateData.needWant = null;
+      updateData.isInvestmentContribution = false;
+    }
+  }
 
   let retroactivelyApplied = 0;
 

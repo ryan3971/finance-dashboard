@@ -214,7 +214,7 @@ export function TransactionFilters({ filters, onChange, resetFilters = EMPTY_FIL
                 <option value="">All</option>
                 <option value="Need">Need</option>
                 <option value="Want">Want</option>
-                <option value="NA">N/A</option>
+                <option value="NA">Not set</option>
               </Select>
             </div>
 

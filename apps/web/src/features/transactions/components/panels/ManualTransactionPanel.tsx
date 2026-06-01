@@ -1,7 +1,6 @@
 import {
   DEFAULT_TAG_COLOR,
   FIELD_LIMITS,
-  NEED_WANT_OPTIONS,
   type NeedWant,
 } from '@finance/shared/constants';
 import {
@@ -65,7 +64,7 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
       amount: initialValues?.amount,
       categoryId: initialValues?.categoryId ?? null,
       subcategoryId: initialValues?.subcategoryId ?? null,
-      needWant: initialValues?.needWant ?? 'NA',
+      needWant: (initialValues?.needWant && initialValues.needWant !== 'NA') ? initialValues.needWant : null,
       note: initialValues?.note ?? '',
     },
   });
@@ -92,7 +91,7 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
         amount: undefined,
         categoryId: null,
         subcategoryId: null,
-        needWant: 'NA',
+        needWant: null,
         note: '',
       });
       resetTags();
@@ -178,19 +177,17 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
             name="needWant"
             render={({ field }) => (
               <div className="flex gap-2 mt-1">
-                {NEED_WANT_OPTIONS.map((opt) => (
+                {(['Need', 'Want'] as const).map((opt) => (
                   <button
                     key={opt}
                     type="button"
-                    onClick={() => field.onChange(opt)}
+                    onClick={() => field.onChange(field.value === opt ? null : opt)}
                     className={cn(
                       'px-3 py-1 text-xs rounded border transition-colors',
                       field.value === opt
                         ? opt === 'Need'
                           ? 'bg-info text-white border-info'
-                          : opt === 'Want'
-                          ? 'bg-accent text-white border-accent'
-                          : 'bg-content-primary text-white border-content-primary'
+                          : 'bg-accent text-white border-accent'
                         : 'border-border-strong text-content-secondary hover:bg-surface-subtle',
                     )}
                   >

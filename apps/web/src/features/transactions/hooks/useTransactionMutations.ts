@@ -50,12 +50,18 @@ export function usePatchTransaction() {
       return data;
     },
     onSuccess: (data, { input }) => {
-      if (data.retroactivelyApplied > 0) {
-        // Multiple transactions changed by retroactive rule application; a full
-        // refetch is the only way to pick up all the updated rows.
+      const touchesCoreFields =
+        input.date !== undefined ||
+        input.amount !== undefined ||
+        input.description !== undefined ||
+        input.isIncome !== undefined;
+
+      if (data.retroactivelyApplied > 0 || touchesCoreFields) {
+        // Full refetch: either multiple rows changed (retroactive rule) or the
+        // sort-affecting core fields changed (date, amount, description, isIncome).
         void queryClient.invalidateQueries({ queryKey: transactionKeys.all() });
       } else {
-        // Only this transaction changed. Update the row in-place across all
+        // Only categorization fields changed — update the row in-place across all
         // cached list pages so its position is preserved.
         const cats = queryClient.getQueryData<Category[]>(categoryKeys.all()) ?? [];
         const cat = cats.find((c) => c.id === data.categoryId);
