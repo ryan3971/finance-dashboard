@@ -64,7 +64,7 @@ export function ManualTransactionPanel({ initialValues, onClose }: Props) {
       amount: initialValues?.amount,
       categoryId: initialValues?.categoryId ?? null,
       subcategoryId: initialValues?.subcategoryId ?? null,
-      needWant: initialValues?.needWant ?? null,
+      needWant: (initialValues?.needWant && initialValues.needWant !== 'NA') ? initialValues.needWant : null,
       note: initialValues?.note ?? '',
     },
   });

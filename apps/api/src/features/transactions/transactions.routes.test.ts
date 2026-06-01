@@ -402,7 +402,9 @@ describe('GET /api/v1/transactions', () => {
       .set('Authorization', `Bearer ${auth.accessToken}`);
 
     expect(exactRes.status).toBe(200);
-    // Drizzle parameterizes the pattern, so "100%" only matches the row containing "100%"
+    // PostgreSQL treats % as a wildcard even in a parameterized ILIKE — the pattern becomes
+    // %100%%, which matches any string containing "100". Only "100% Organic" qualifies here;
+    // "Regular Store" does not contain "100" so it is still correctly excluded.
     expect((exactRes.body as PaginatedResponse<{ id: string }>).pagination.total).toBe(1);
   });
 
