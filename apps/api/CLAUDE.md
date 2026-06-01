@@ -23,7 +23,7 @@ Other top-level directories:
 - `db/` — Drizzle schema, migrations. `db/seeders/` contains the seeding scripts; `db/seeds/` holds the seed data organized by environment (`staging/`, `system/`, `test/`)
 - `middleware/` — Global error handler (catches `DomainError`, `ZodError`, and `multer` errors) and Pino logger (`httpLogger` request middleware, `closeFileLog()` for graceful shutdown drain)
 - `lib/` — Config loader, JWT helpers, `requireAuth` middleware and `getAuthUser` helper (`auth.ts`), API-only constants (`constants.ts`), reusable Zod schemas (`common-schemas.ts`)
-- `pipelines/` — Cross-feature logic: `categorization/` (AI + rules engine), `rebalancing/` (adjustment computation for dashboard services), `transfer-detection/`
+- `pipelines/` — Cross-feature logic: `categorization/` (AI + rules engine), `rebalancing/` (adjustment computation for dashboard services), `transfer-detection/`, `refund-detection/`
 - `routes/` — Health check route
 - `scripts/` — Environment scripts: `dev.ts`, `staging.ts`, `production.ts`, and seed/backfill utilities
 - `testing/` — Vitest setup, shared test helpers, fixtures, seeders, seeds, and sample CSV files
@@ -138,6 +138,16 @@ When a rule is created via `POST /rule-suggestions/:id/accept` or via `PATCH /tr
 `POST /api/v1/rule-suggestions/:id/dismiss` — marks `status = 'dismissed'`. Returns `204`.
 
 Both mutating endpoints return `409` if the suggestion is already accepted or dismissed.
+
+### Refund detection endpoints
+
+`POST /api/v1/rebalancing/detect-refunds` — scans all eligible same-account transactions for inverse-amount pairs within the user's configured `refundDetectionWindowDays` (default 90, falls back to `REFUND_DETECTION_WINDOW_DAYS` constant if not set). Returns `{ created: number }`. For each matched pair, creates an **open rebalancing group** with `type = 'refund'`, the charge as `role = 'source'`, and the credit as `role = 'offset'`. This route is placed before `/:id` routes in `rebalancing.routes.ts` to prevent Express matching the literal string `detect-refunds` as an id. Detection is idempotent — transactions already in any group are excluded from candidacy.
+
+**Rebalancing group `type` field:** `rebalancing_groups.type` is either `'rebalancing'` (investment rebalancing, the historical default) or `'refund'`. All existing endpoints (`GET /groups`, `POST /groups`, `PATCH /groups/:id`, `DELETE /groups/:id`, `POST /groups/:id/transactions`, `DELETE /groups/:id/transactions/:txId`) work transparently for both types.
+
+**Dashboard exclusion for refund groups:** Resolved refund groups are excluded from all dashboard aggregates via a NOT IN subquery (`transaction.id NOT IN (SELECT ... WHERE rg.type = 'refund' AND rg.status = 'resolved')`). This is applied at the DB query layer in expenses, income, snapshot, and ytd services — both sides of the pair (charge + credit) are excluded entirely. Investment rebalancing groups use the proportional adjustment pipeline in `rebalancing-adjustments.ts` instead. The adjustment pipeline filters `type = 'rebalancing'` only, so refund groups never enter it.
+
+**Detection window in user_config:** `transferDetectionWindowDays` and `refundDetectionWindowDays` are nullable integers on `user_config`. When null, the detection pipelines fall back to the shared constants (`TRANSFER_DETECTION_WINDOW_DAYS = 3`, `REFUND_DETECTION_WINDOW_DAYS = 90`). The `PATCH /api/v1/user-config` endpoint accepts both fields.
 
 ### SSE streaming routes
 

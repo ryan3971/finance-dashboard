@@ -277,6 +277,8 @@ export const userConfig = pgTable('user_config', {
   wantsPercentage: integer('wants_percentage'),
   investmentsPercentage: integer('investments_percentage'),
   riskyPercentage: integer('risky_percentage'),
+  transferDetectionWindowDays: integer('transfer_detection_window_days'),
+  refundDetectionWindowDays: integer('refund_detection_window_days'),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -324,6 +326,7 @@ export const rebalancingGroups = pgTable(
       .references(() => users.id)
       .notNull(),
     label: text('label').notNull(),
+    type: text('type').notNull().default('rebalancing'),
     status: text('status').notNull().default('open'),
     myShareOverride: numeric('my_share_override', { precision: 12, scale: 2 }),
     flaggedForReview: boolean('flagged_for_review').notNull().default(false),
@@ -335,6 +338,10 @@ export const rebalancingGroups = pgTable(
     check(
       'rebalancing_groups_status_check',
       sql`${t.status} IN ('open', 'resolved')`
+    ),
+    check(
+      'rebalancing_groups_type_check',
+      sql`${t.type} IN ('rebalancing', 'refund')`
     ),
   ]
 );

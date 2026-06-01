@@ -26,6 +26,7 @@ interface GroupTransaction {
 interface RebalancingGroup {
   id: string;
   label: string;
+  type: 'rebalancing' | 'refund';
   status: 'open' | 'resolved';
   myShareOverride: number | null;
   flaggedForReview: boolean;
@@ -793,5 +794,101 @@ describe('GET /api/v1/transactions — rebalancing fields', () => {
     expect(sourceTxn?.rebalancingRole).toBe('source');
     expect(unrelatedTxn?.rebalancingGroupId).toBeNull();
     expect(unrelatedTxn?.rebalancingRole).toBeNull();
+  });
+});
+
+// ─── POST /api/v1/rebalancing/detect-refunds ──────────────────────────────────
+
+describe('POST /api/v1/rebalancing/detect-refunds', () => {
+  it('returns 401 without an auth token', async () => {
+    const res = await request(app).post('/api/v1/rebalancing/detect-refunds');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns { created: 0 } when no matching pairs exist', async () => {
+    const { auth } = await setup();
+    const res = await request(app)
+      .post('/api/v1/rebalancing/detect-refunds')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect((res.body as { created: number }).created).toBe(0);
+  });
+
+  it('returns { created: N } and creates refund groups for matching pairs', async () => {
+    const { auth, account } = await setup();
+    await transactionFixture(account.id, { amount: '-75.00', date: '2024-03-01' });
+    await transactionFixture(account.id, { amount: '75.00', date: '2024-03-10' });
+
+    const res = await request(app)
+      .post('/api/v1/rebalancing/detect-refunds')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect((res.body as { created: number }).created).toBe(1);
+
+    // Groups should be visible in the groups list with type = 'refund'
+    const listRes = await request(app)
+      .get('/api/v1/rebalancing/groups')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    const body = listRes.body as GroupsResponse;
+    expect(body.groups).toHaveLength(1);
+    expect(body.groups[0]?.type).toBe('refund');
+    expect(body.groups[0]?.status).toBe('open');
+    expect(body.groups[0]?.transactions).toHaveLength(2);
+  });
+
+  it('is idempotent — second run returns { created: 0 }', async () => {
+    const { auth, account } = await setup();
+    await transactionFixture(account.id, { amount: '-40.00', date: '2024-04-01' });
+    await transactionFixture(account.id, { amount: '40.00', date: '2024-04-05' });
+
+    await request(app)
+      .post('/api/v1/rebalancing/detect-refunds')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    const second = await request(app)
+      .post('/api/v1/rebalancing/detect-refunds')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    expect((second.body as { created: number }).created).toBe(0);
+  });
+});
+
+// ─── type field on groups ─────────────────────────────────────────────────────
+
+describe('type field on rebalancing groups', () => {
+  it('defaults to "rebalancing" when type is omitted on create', async () => {
+    const { auth, account } = await setup();
+    const txn = await transactionFixture(account.id);
+    const group = await createGroup(auth.accessToken, txn.id);
+    expect(group.type).toBe('rebalancing');
+  });
+
+  it('accepts type "refund" on create and returns it in the response', async () => {
+    const { auth, account } = await setup();
+    const txn = await transactionFixture(account.id);
+    const res = await request(app)
+      .post('/api/v1/rebalancing/groups')
+      .set('Authorization', `Bearer ${auth.accessToken}`)
+      .send({ label: 'Refund Test', type: 'refund', initialTransactionId: txn.id, role: 'source' });
+
+    expect(res.status).toBe(201);
+    expect((res.body as RebalancingGroup).type).toBe('refund');
+  });
+
+  it('GET /groups includes type field on every group', async () => {
+    const { auth, account } = await setup();
+    const txn = await transactionFixture(account.id);
+    await createGroup(auth.accessToken, txn.id);
+
+    const res = await request(app)
+      .get('/api/v1/rebalancing/groups')
+      .set('Authorization', `Bearer ${auth.accessToken}`);
+
+    const body = res.body as GroupsResponse;
+    expect(body.groups[0]).toHaveProperty('type');
+    expect(body.groups[0]?.type).toBe('rebalancing');
   });
 });

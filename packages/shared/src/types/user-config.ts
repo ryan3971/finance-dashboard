@@ -5,5 +5,7 @@ export interface UserConfig {
   needsPercentage: number | null;
   wantsPercentage: number | null;
   investmentsPercentage: number | null;
+  transferDetectionWindowDays: number | null;
+  refundDetectionWindowDays: number | null;
   updatedAt: string;
 }

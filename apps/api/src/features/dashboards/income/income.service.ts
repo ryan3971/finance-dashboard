@@ -48,7 +48,8 @@ export async function queryMonthlyIncome(
         eq(transactions.isIncome, true),
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
-        lt(transactions.date, endDate)
+        lt(transactions.date, endDate),
+        sql`${transactions.id} NOT IN (SELECT rgt.transaction_id FROM rebalancing_group_transactions rgt JOIN rebalancing_groups rg ON rg.id = rgt.group_id WHERE rg.type = 'refund' AND rg.status = 'resolved')`
       )
     )
     .groupBy(monthExpr);

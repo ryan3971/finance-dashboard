@@ -17,6 +17,7 @@ import {
   removeGroupTransaction,
   updateGroup,
 } from './rebalancing.service';
+import { detectRefunds } from '@/pipelines/refund-detection/refund-detection.service';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,6 +25,12 @@ router.use(requireAuth);
 const memberParamsSchema = z.object({
   id: z.string().uuid(),
   transactionId: z.string().uuid(),
+});
+
+// POST /api/v1/rebalancing/detect-refunds
+router.post('/detect-refunds', async (req: Request, res: Response) => {
+  const result = await detectRefunds(getAuthUser(req).id);
+  res.json(result);
 });
 
 // GET /api/v1/rebalancing/groups

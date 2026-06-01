@@ -14,6 +14,8 @@ export const updateUserConfigSchema = z.object({
     )
     .optional(),
   emergencyFundTarget: z.number().min(0).nullable().optional(),
+  transferDetectionWindowDays: z.number().int().min(1).nullable().optional(),
+  refundDetectionWindowDays: z.number().int().min(1).nullable().optional(),
 });
 
 export type UpdateUserConfigInput = z.infer<typeof updateUserConfigSchema>;

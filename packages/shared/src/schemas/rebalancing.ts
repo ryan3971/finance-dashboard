@@ -6,6 +6,7 @@ export const createRebalancingGroupSchema = z.object({
     .string()
     .min(1, 'Label is required')
     .max(REBALANCING_GROUP_LABEL_MAX),
+  type: z.enum(['rebalancing', 'refund']).optional().default('rebalancing'),
   initialTransactionId: z.string().uuid(),
   role: z.enum(['source', 'offset']),
   myShareOverride: z.number().positive().optional(),

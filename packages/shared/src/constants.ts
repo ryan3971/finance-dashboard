@@ -81,6 +81,9 @@ export const PAGINATION = {
 
 export const REBALANCING_GROUP_LABEL_MAX = 100;
 
+export const TRANSFER_DETECTION_WINDOW_DAYS = 3;
+export const REFUND_DETECTION_WINDOW_DAYS = 90;
+
 export const CATEGORY_SOURCE_OPTIONS = ['rule', 'ai', 'manual', 'default'] as const;
 
 // Object form so API code can use CATEGORY_SOURCE.RULE instead of the raw string.

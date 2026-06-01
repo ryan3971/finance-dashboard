@@ -26,6 +26,8 @@ const configColumns = {
   needsPercentage: userConfig.needsPercentage,
   wantsPercentage: userConfig.wantsPercentage,
   investmentsPercentage: userConfig.investmentsPercentage,
+  transferDetectionWindowDays: userConfig.transferDetectionWindowDays,
+  refundDetectionWindowDays: userConfig.refundDetectionWindowDays,
   updatedAt: userConfig.updatedAt,
 };
 
@@ -65,6 +67,14 @@ export async function updateUserConfig(
       input.emergencyFundTarget === null || input.emergencyFundTarget === 0
         ? null
         : String(input.emergencyFundTarget);
+  }
+
+  if (input.transferDetectionWindowDays !== undefined) {
+    patch.transferDetectionWindowDays = input.transferDetectionWindowDays;
+  }
+
+  if (input.refundDetectionWindowDays !== undefined) {
+    patch.refundDetectionWindowDays = input.refundDetectionWindowDays;
   }
 
   if (Object.keys(patch).length === 0) return existing;
