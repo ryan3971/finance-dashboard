@@ -17,7 +17,7 @@ import { FormField } from '@/components/common/FormField';
 import { Input } from '@/components/ui/Input';
 import type { Transaction } from '@finance/shared/schemas/transactions';
 import { cn, parseAmount } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 interface Props {
@@ -59,6 +59,7 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<PatchTransactionFormValues>({
     resolver: zodResolver(patchTransactionSchema),
@@ -79,6 +80,11 @@ export function TransactionReviewPanel({ transaction, onClose, mode = 'review' }
   const { field: categoryField } = useController({ control, name: 'categoryId' });
   const { field: subcategoryField } = useController({ control, name: 'subcategoryId' });
   const watchedCategoryId = useWatch({ control, name: 'categoryId' });
+  const watchedIsIncome = useWatch({ control, name: 'isIncome' });
+
+  useEffect(() => {
+    if (watchedIsIncome) setValue('needWant', null);
+  }, [watchedIsIncome, setValue]);
 
   async function onSubmit(values: PatchTransactionFormValues) {
     setServerError(null);

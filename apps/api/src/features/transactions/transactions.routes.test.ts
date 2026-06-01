@@ -389,23 +389,23 @@ describe('GET /api/v1/transactions', () => {
     expect(body.data[0]?.sourceName).toBe('Netflix');
   });
 
-  it('treats LIKE special characters in search as literals', async () => {
+  it('escapes % and _ in search so they are not treated as wildcards', async () => {
     const auth = await registerUser(app);
     const account = await accountFixture(auth.user.id);
-    // A literal "%" in the description should not act as a SQL wildcard
     await transactionFixture(account.id, { description: '100% Organic', date: '2025-01-01' });
-    await transactionFixture(account.id, { description: 'Regular Store', date: '2025-01-02' });
+    // Contains "100" but not the literal "%" — would match an unescaped %100%% pattern
+    // but must be excluded when % is correctly escaped to \%.
+    await transactionFixture(account.id, { description: '100 things', date: '2025-01-02' });
 
-    const exactRes = await request(app)
+    const res = await request(app)
       .get('/api/v1/transactions')
       .query({ search: '100%' })
       .set('Authorization', `Bearer ${auth.accessToken}`);
 
-    expect(exactRes.status).toBe(200);
-    // PostgreSQL treats % as a wildcard even in a parameterized ILIKE — the pattern becomes
-    // %100%%, which matches any string containing "100". Only "100% Organic" qualifies here;
-    // "Regular Store" does not contain "100" so it is still correctly excluded.
-    expect((exactRes.body as PaginatedResponse<{ id: string }>).pagination.total).toBe(1);
+    expect(res.status).toBe(200);
+    // After escaping, the ILIKE pattern is %100\%%, which only matches strings
+    // containing the literal text "100%". "100 things" is excluded.
+    expect((res.body as PaginatedResponse<{ id: string }>).pagination.total).toBe(1);
   });
 
   it('filters by note via search', async () => {

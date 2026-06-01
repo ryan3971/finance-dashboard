@@ -149,7 +149,9 @@ export async function listTransactions(
     baseConditions.push(eq(transactions.categoryId, filters.categoryId));
   if (filters.subcategoryId)
     baseConditions.push(eq(transactions.subcategoryId, filters.subcategoryId));
-  if (filters.needWant)
+  if (filters.needWant === 'NA')
+    baseConditions.push(isNull(transactions.needWant));
+  else if (filters.needWant)
     baseConditions.push(eq(transactions.needWant, filters.needWant));
   if (filters.isIncome !== undefined)
     baseConditions.push(eq(transactions.isIncome, filters.isIncome));
@@ -163,7 +165,8 @@ export async function listTransactions(
     baseConditions.push(inArray(transactions.id, tagSubquery));
   }
   if (filters.search) {
-    const like = `%${filters.search}%`;
+    const escaped = filters.search.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const like = `%${escaped}%`;
     const searchCondition = or(
       ilike(transactions.description, like),
       ilike(transactions.sourceName, like),

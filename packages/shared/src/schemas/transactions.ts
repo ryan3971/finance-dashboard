@@ -5,8 +5,6 @@ import {
   ISO_DATE_REGEX,
   NEED_WANT_OPTIONS,
 } from '../constants';
-// FIELD_LIMITS.TRANSACTION_DESCRIPTION_MAX is the authoritative cap for the description column.
-// NOTE_MAX governs the note column only. Do not conflate them.
 import { z } from 'zod';
 
 // ─── Transaction Schemas ─────────────────────────────────────────────────────────────────

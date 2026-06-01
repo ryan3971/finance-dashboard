@@ -141,6 +141,13 @@
       "when": 1780282009288,
       "tag": "0019_clean_rule_need_want_na",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1780282803719,
+      "tag": "0020_clean_transaction_need_want_na",
+      "breakpoints": true
     }
   ]
 }
