@@ -305,12 +305,14 @@ export function RulesTab() {
     await update.mutateAsync({ id: original.id, input });
     closeModal();
 
-    const categoryChanged =
+    const ruleChanged =
       (input.categoryId !== undefined && input.categoryId !== original.categoryId) ||
       (input.subcategoryId !== undefined && input.subcategoryId !== original.subcategoryId) ||
       (input.needWant !== undefined && input.needWant !== original.needWant) ||
-      (input.flagForReview !== undefined && input.flagForReview !== original.flagForReview);
-    if (categoryChanged) {
+      (input.flagForReview !== undefined && input.flagForReview !== original.flagForReview) ||
+      (input.keyword !== undefined && input.keyword !== original.keyword) ||
+      (input.matchType !== undefined && input.matchType !== original.matchType);
+    if (ruleChanged) {
       setReapplyRuleId(original.id);
     }
   }

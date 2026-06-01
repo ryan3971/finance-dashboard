@@ -389,6 +389,11 @@ export const helpContent = {
           "While reviewing a flagged transaction, check 'Save as rule' before saving. This creates a rule from the category you assigned, so similar transactions are categorized automatically on future imports.",
       },
       {
+        heading: 'Applying a rule to existing transactions',
+        description:
+          'After editing a rule, you are offered the option to apply the updated categorization to existing transactions that match the rule. This re-categorizes transactions previously assigned by a rule, by AI, or left uncategorized — but intentionally skips any transaction you have categorized manually. To update a manually categorized transaction, open it in the transaction list and change its category directly.',
+      },
+      {
         heading: 'Apply Rules',
         description:
           'The Apply Rules button on the Transactions page re-runs all rules against existing transactions that have no category. Use it after adding new rules to categorize transactions that were previously left unresolved without needing to re-import.',
