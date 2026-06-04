@@ -1,6 +1,7 @@
 import { alias } from 'drizzle-orm/pg-core';
 import { and, eq, gte, lt, sql } from 'drizzle-orm';
 import { accounts, categories, transactions } from '@/db/schema';
+import { resolvedRefundExclusion } from '@/pipelines/refund-detection/refund-exclusion';
 import { db } from '@/db';
 import Decimal from 'decimal.js';
 import type {
@@ -51,7 +52,8 @@ export async function queryMonthlyExpenses(
         eq(transactions.isTransfer, false),
         eq(transactions.isInvestmentContribution, false),
         gte(transactions.date, startDate),
-        lt(transactions.date, endDate)
+        lt(transactions.date, endDate),
+        resolvedRefundExclusion(userId)
       )
     )
     .groupBy(monthExpr, transactions.needWant);
@@ -151,7 +153,8 @@ export async function queryExpensesByCategory(
         eq(transactions.isTransfer, false),
         eq(transactions.isInvestmentContribution, false),
         gte(transactions.date, startDate),
-        lt(transactions.date, endDate)
+        lt(transactions.date, endDate),
+        resolvedRefundExclusion(userId)
       )
     )
     .groupBy(monthExpr, categoryAlias.name, subcategoryAlias.name);

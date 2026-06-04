@@ -13,6 +13,7 @@ import type {
   RebalancingGroup,
   RebalancingGroupTransaction,
   RebalancingGroupsResponse,
+  RebalancingGroupType,
   RebalancingRole,
   RebalancingStatus,
 } from '@finance/shared/types/rebalancing';
@@ -35,8 +36,9 @@ type AddTransactionInput = z.infer<typeof addGroupTransactionSchema>;
 interface GroupRow {
   id: string;
   label: string;
-  // Drizzle types text() as string; the DB CHECK constraint ensures this is
-  // always a valid RebalancingStatus. The assertion lives in queryGroupRows.
+  // Drizzle types text() as string; DB CHECK constraints ensure these are
+  // always valid RebalancingStatus/RebalancingGroupType. Narrowed in queryGroupRows.
+  type: RebalancingGroupType;
   status: RebalancingStatus;
   myShareOverride: string | null;
   flaggedForReview: boolean;
@@ -118,6 +120,7 @@ function assembleGroup(
   return {
     id: group.id,
     label: group.label,
+    type: group.type,
     status: group.status,
     myShareOverride:
       group.myShareOverride !== null
@@ -135,6 +138,7 @@ function assembleGroup(
 const groupColumns = {
   id: rebalancingGroups.id,
   label: rebalancingGroups.label,
+  type: rebalancingGroups.type,
   status: rebalancingGroups.status,
   myShareOverride: rebalancingGroups.myShareOverride,
   flaggedForReview: rebalancingGroups.flaggedForReview,
@@ -142,7 +146,7 @@ const groupColumns = {
 };
 
 function narrowStatus(status: string): RebalancingStatus {
-  if (status !== 'open' && status !== 'resolved')
+  if (status !== 'open' && status !== 'resolved' && status !== 'dismissed')
     throw new Error(`Invalid rebalancing status in DB: ${status}`);
   return status;
 }
@@ -151,6 +155,12 @@ function narrowRole(role: string): RebalancingRole {
   if (role !== 'source' && role !== 'offset')
     throw new Error(`Invalid rebalancing role in DB: ${role}`);
   return role;
+}
+
+function narrowType(type: string): RebalancingGroupType {
+  if (type !== 'rebalancing' && type !== 'refund')
+    throw new Error(`Invalid rebalancing group type in DB: ${type}`);
+  return type;
 }
 
 /**
@@ -174,7 +184,7 @@ async function queryGroupRows(
         : eq(rebalancingGroups.userId, userId)
     )
     .orderBy(rebalancingGroups.createdAt);
-  return rows.map((r) => ({ ...r, status: narrowStatus(r.status) }));
+  return rows.map((r) => ({ ...r, type: narrowType(r.type), status: narrowStatus(r.status) }));
 }
 
 /**
@@ -311,6 +321,7 @@ export async function createGroup(
       .values({
         userId,
         label: input.label,
+        type: input.type ?? 'rebalancing',
         status: 'open' satisfies RebalancingStatus,
         myShareOverride:
           input.myShareOverride !== undefined

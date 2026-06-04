@@ -7,7 +7,7 @@ import type {
 import { rebalancingKeys, dashboardKeys, transactionKeys } from '@/lib/queryKeys';
 import api from '@/lib/api';
 import { toast } from 'sonner';
-import { TOAST } from '@/lib/toastMessages';
+import { TOAST, refundDetectedMessage } from '@/lib/toastMessages';
 
 // ─── Input types ──────────────────────────────────────────────────────────────
 
@@ -156,5 +156,74 @@ export function useRemoveGroupMember() {
       toast.success(TOAST.REBALANCING_MEMBER_REMOVED);
     },
     onError: () => toast.error(TOAST.REBALANCING_MEMBER_REMOVE_FAILED),
+  });
+}
+
+export function useDetectRefunds() {
+  const invalidate = useInvalidateGroupsAndDashboards();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<{ created: number }>(
+        '/rebalancing/detect-refunds'
+      );
+      return data;
+    },
+    onSuccess: ({ created }) => {
+      invalidate();
+      if (created === 0) {
+        toast.info(TOAST.REFUND_DETECT_NONE);
+      } else {
+        toast.success(refundDetectedMessage(created));
+      }
+    },
+    onError: () => toast.error(TOAST.REFUND_DETECT_FAILED),
+  });
+}
+
+export function useConfirmRefund() {
+  const invalidate = useInvalidateGroupsAndDashboards();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      const { data } = await api.patch<RebalancingGroup>(
+        `/rebalancing/groups/${groupId}`,
+        { status: 'resolved' satisfies RebalancingStatus }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success(TOAST.REFUND_CONFIRMED);
+    },
+    onError: () => toast.error(TOAST.REFUND_CONFIRM_FAILED),
+  });
+}
+
+export function useDismissRefund() {
+  const invalidate = useInvalidateGroupsAndDashboards();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      await api.patch(`/rebalancing/groups/${groupId}`, {
+        status: 'dismissed' satisfies RebalancingStatus,
+      });
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success(TOAST.REFUND_DISMISSED);
+    },
+    onError: () => toast.error(TOAST.REFUND_DISMISS_FAILED),
+  });
+}
+
+export function useDeleteRefundGroup() {
+  const invalidate = useInvalidateGroupsAndDashboards();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      await api.delete(`/rebalancing/groups/${groupId}`);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success(TOAST.REFUND_DELETED);
+    },
+    onError: () => toast.error(TOAST.REFUND_DELETE_FAILED),
   });
 }

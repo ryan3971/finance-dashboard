@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/common/EmptyState';
+import { Button } from '@/components/ui/Button';
 import { useDelayedPending } from '@/hooks/useDelayedPending';
 import { useRebalancingGroups } from '@/features/transactions/hooks/useRebalancingGroups';
+import { useDetectRefunds } from '@/features/transactions/hooks/useRebalancingMutations';
 import { RebalancingGroupCard } from './RebalancingGroupCard';
 import { RebalancingFilterBar } from './RebalancingFilterBar';
 import { RebalancingStatsBar } from './RebalancingStatsBar';
+import { RefundGroupCard } from './RefundGroupCard';
+import { cn } from '@/lib/utils';
 import type { StatusFilter } from '../../types/rebalancingTypes';
+
+type TabType = 'rebalancing' | 'refunds';
 
 const SKELETON_COUNT = Array.from({ length: 3 }, (_, i) => `skeleton-${i}`);
 
@@ -37,17 +43,74 @@ function GroupSkeleton() {
   );
 }
 
+function TypeTabBar({
+  activeTab,
+  onTabChange,
+  refundCount,
+}: {
+  readonly activeTab: TabType;
+  readonly onTabChange: (tab: TabType) => void;
+  readonly refundCount: number;
+}) {
+  return (
+    <div className="flex gap-1 border-b border-border-subtle mb-4">
+      {(['rebalancing', 'refunds'] as const).map((tab) => (
+        <button
+          key={tab}
+          type="button"
+          onClick={() => onTabChange(tab)}
+          className={cn(
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize',
+            activeTab === tab
+              ? 'border-content-primary text-content-primary'
+              : 'border-transparent text-content-secondary hover:text-content-primary'
+          )}
+        >
+          {tab === 'refunds' && refundCount > 0 ? (
+            <span className="flex items-center gap-1.5">
+              Refunds
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-warning text-white text-xs font-semibold">
+                {refundCount}
+              </span>
+            </span>
+          ) : (
+            tab.charAt(0).toUpperCase() + tab.slice(1)
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function RebalancingTab() {
   const { data, isPending, isError } = useRebalancingGroups();
   const showSkeleton = useDelayedPending(isPending);
+  const [activeTab, setActiveTab] = useState<TabType>('rebalancing');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [labelSearch, setLabelSearch] = useState('');
+  const detectRefunds = useDetectRefunds();
 
-  const filtered = useMemo(() => {
-    const groups = data?.groups;
-    if (!groups?.length) return [];
+  const rebalancingGroups = useMemo(
+    () => (data?.groups ?? []).filter((g) => g.type === 'rebalancing'),
+    [data?.groups]
+  );
+
+  const refundGroups = useMemo(
+    () =>
+      (data?.groups ?? []).filter(
+        (g) => g.type === 'refund' && g.status !== 'dismissed'
+      ),
+    [data?.groups]
+  );
+
+  const pendingRefundCount = useMemo(
+    () => refundGroups.filter((g) => g.status === 'open').length,
+    [refundGroups]
+  );
+
+  const filteredRebalancing = useMemo(() => {
     const query = labelSearch.trim().toLowerCase();
-    return [...groups]
+    return [...rebalancingGroups]
       .sort((a, b) => {
         if (a.flaggedForReview !== b.flaggedForReview)
           return a.flaggedForReview ? -1 : 1;
@@ -61,7 +124,16 @@ export function RebalancingTab() {
         if (query && !g.label.toLowerCase().includes(query)) return false;
         return true;
       });
-  }, [data?.groups, statusFilter, labelSearch]);
+  }, [rebalancingGroups, statusFilter, labelSearch]);
+
+  const sortedRefunds = useMemo(
+    () =>
+      [...refundGroups].sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
+        return b.createdAt.localeCompare(a.createdAt);
+      }),
+    [refundGroups]
+  );
 
   if (showSkeleton) {
     return (
@@ -86,11 +158,16 @@ export function RebalancingTab() {
     );
   }
 
-  const groups = data?.groups ?? [];
+  const allGroups = data?.groups ?? [];
 
-  if (groups.length === 0) {
+  if (allGroups.length === 0 && activeTab === 'rebalancing') {
     return (
       <div className="mt-4">
+        <TypeTabBar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          refundCount={pendingRefundCount}
+        />
         <EmptyState
           message="No rebalancing groups yet."
           hint="Open any transaction's action menu to add it to a new or existing group."
@@ -100,27 +177,72 @@ export function RebalancingTab() {
   }
 
   return (
-    <div className="mt-4 space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <RebalancingStatsBar groups={groups} />
-        <RebalancingFilterBar
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
-          labelSearch={labelSearch}
-          onLabelSearch={setLabelSearch}
-        />
-      </div>
+    <div className="mt-4">
+      <TypeTabBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        refundCount={pendingRefundCount}
+      />
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          message="No groups match your filters."
-          hint="Try a different status tab or clear the search."
-        />
-      ) : (
+      {activeTab === 'rebalancing' && (
         <div className="space-y-3">
-          {filtered.map((group) => (
-            <RebalancingGroupCard key={group.id} group={group} />
-          ))}
+          {rebalancingGroups.length > 0 && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <RebalancingStatsBar groups={rebalancingGroups} />
+              <RebalancingFilterBar
+                statusFilter={statusFilter}
+                onStatusChange={setStatusFilter}
+                labelSearch={labelSearch}
+                onLabelSearch={setLabelSearch}
+              />
+            </div>
+          )}
+
+          {rebalancingGroups.length === 0 ? (
+            <EmptyState
+              message="No rebalancing groups yet."
+              hint="Open any transaction's action menu to add it to a new or existing group."
+            />
+          ) : filteredRebalancing.length === 0 ? (
+            <EmptyState
+              message="No groups match your filters."
+              hint="Try a different status tab or clear the search."
+            />
+          ) : (
+            <div className="space-y-3">
+              {filteredRebalancing.map((group) => (
+                <RebalancingGroupCard key={group.id} group={group} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'refunds' && (
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={detectRefunds.isPending}
+              onClick={() => detectRefunds.mutate()}
+            >
+              {detectRefunds.isPending ? 'Scanning…' : 'Detect Refunds'}
+            </Button>
+          </div>
+
+          {sortedRefunds.length === 0 ? (
+            <EmptyState
+              message="No refund pairs detected."
+              hint='Click "Detect Refunds" to scan for same-account charge and credit pairs.'
+            />
+          ) : (
+            <div className="space-y-3">
+              {sortedRefunds.map((group) => (
+                <RefundGroupCard key={group.id} group={group} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

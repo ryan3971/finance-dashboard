@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { updateUserConfigSchema } from '@finance/shared/schemas/user-config';
 import { toast } from 'sonner';
 import { parseAmount } from '@/lib/utils';
+import { TRANSFER_DETECTION_WINDOW_DAYS, REFUND_DETECTION_WINDOW_DAYS } from '@finance/shared/constants';
 import { Button } from '@/components/ui/Button';
 import { DeleteConfirmDialog } from '@/components/common/DeleteConfirmDialog';
 import { FormField } from '@/components/common/FormField';
@@ -45,6 +46,13 @@ const emergencyFundFormSchema = z.object({
 
 type EmergencyFundFormValues = z.infer<typeof emergencyFundFormSchema>;
 
+const detectionWindowsFormSchema = z.object({
+  transferDetectionWindowDays: z.coerce.number().int().min(1, 'Must be at least 1'),
+  refundDetectionWindowDays: z.coerce.number().int().min(1, 'Must be at least 1'),
+});
+
+type DetectionWindowsFormValues = z.infer<typeof detectionWindowsFormSchema>;
+
 export function PreferencesTab() {
   const navigate = useNavigate();
   const { data: config } = useUserConfig();
@@ -52,6 +60,7 @@ export function PreferencesTab() {
   const resetAccount = useResetAccount();
   const [serverError, setServerError] = useState<string | null>(null);
   const [efServerError, setEfServerError] = useState<string | null>(null);
+  const [windowServerError, setWindowServerError] = useState<string | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const {
@@ -76,6 +85,18 @@ export function PreferencesTab() {
     resolver: zodResolver(emergencyFundFormSchema),
     values: {
       emergencyFundTarget: parseAmount(config?.emergencyFundTarget),
+    },
+  });
+
+  const {
+    register: registerWindows,
+    handleSubmit: handleSubmitWindows,
+    formState: { errors: windowErrors },
+  } = useForm<DetectionWindowsFormValues>({
+    resolver: zodResolver(detectionWindowsFormSchema),
+    values: {
+      transferDetectionWindowDays: config?.transferDetectionWindowDays ?? TRANSFER_DETECTION_WINDOW_DAYS,
+      refundDetectionWindowDays: config?.refundDetectionWindowDays ?? REFUND_DETECTION_WINDOW_DAYS,
     },
   });
 
@@ -119,6 +140,20 @@ export function PreferencesTab() {
         onError: () => {
           setEfServerError(TOAST.CONFIG_EMERGENCY_FUND_SAVE_FAILED);
         },
+      }
+    );
+  }
+
+  function onSubmitDetectionWindows(values: DetectionWindowsFormValues) {
+    setWindowServerError(null);
+    updateConfig.mutate(
+      {
+        transferDetectionWindowDays: values.transferDetectionWindowDays,
+        refundDetectionWindowDays: values.refundDetectionWindowDays,
+      },
+      {
+        onSuccess: () => toast.success(TOAST.CONFIG_DETECTION_WINDOWS_SAVED),
+        onError: () => setWindowServerError(TOAST.CONFIG_DETECTION_WINDOWS_SAVE_FAILED),
       }
     );
   }
@@ -232,6 +267,57 @@ export function PreferencesTab() {
 
           {efServerError && (
             <p className="text-sm text-danger">{efServerError}</p>
+          )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            disabled={updateConfig.isPending}
+          >
+            {updateConfig.isPending ? 'Saving…' : 'Save'}
+          </Button>
+        </form>
+      </div>
+
+      <div className="bg-surface rounded-lg border border-border-base p-6">
+        <h2 className="text-sm font-semibold text-content-primary mb-1">
+          Detection Windows
+        </h2>
+        <p className="text-sm text-content-secondary mb-4">
+          Set the number of days used when scanning for transfer and refund pairs.
+        </p>
+        <form
+          onSubmit={(e) => {
+            void handleSubmitWindows(onSubmitDetectionWindows)(e);
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-sm">
+            <FormField
+              label="Transfer window (days)"
+              error={windowErrors.transferDetectionWindowDays?.message}
+            >
+              <Input
+                type="number"
+                min={1}
+                {...registerWindows('transferDetectionWindowDays')}
+              />
+            </FormField>
+            <FormField
+              label="Refund window (days)"
+              error={windowErrors.refundDetectionWindowDays?.message}
+            >
+              <Input
+                type="number"
+                min={1}
+                {...registerWindows('refundDetectionWindowDays')}
+              />
+            </FormField>
+          </div>
+
+          {windowServerError && (
+            <p className="text-sm text-danger">{windowServerError}</p>
           )}
 
           <Button

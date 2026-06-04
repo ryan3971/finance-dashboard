@@ -85,7 +85,8 @@ export async function queryResolvedGroupTransactions(
     .where(
       and(
         eq(rebalancingGroups.userId, userId),
-        eq(rebalancingGroups.status, 'resolved')
+        eq(rebalancingGroups.status, 'resolved'),
+        eq(rebalancingGroups.type, 'rebalancing')
       )
     );
 }

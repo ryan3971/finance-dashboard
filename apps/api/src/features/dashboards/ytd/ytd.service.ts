@@ -10,6 +10,7 @@ import type {
   YtdMonth,
 } from '@finance/shared/types/dashboard';
 import type { RebalancingAdjustments } from '@/pipelines/rebalancing/rebalancing-adjustments';
+import { resolvedRefundExclusion } from '@/pipelines/refund-detection/refund-exclusion';
 import { totalExpenseAdjForMonth } from '@/pipelines/rebalancing/rebalancing-adjustments';
 
 interface IncomeRow {
@@ -56,7 +57,8 @@ export async function queryYtdMonthlyIncome(
         eq(transactions.isIncome, true),
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
-        lt(transactions.date, endDate)
+        lt(transactions.date, endDate),
+        resolvedRefundExclusion(userId)
       )
     )
     .groupBy(monthExpr);
@@ -84,7 +86,8 @@ export async function queryYtdMonthlyExpenses(
         eq(transactions.isTransfer, false),
         eq(transactions.isInvestmentContribution, false),
         gte(transactions.date, startDate),
-        lt(transactions.date, endDate)
+        lt(transactions.date, endDate),
+        resolvedRefundExclusion(userId)
       )
     )
     .groupBy(monthExpr, transactions.needWant);

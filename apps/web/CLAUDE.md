@@ -484,6 +484,16 @@ Always use `AmountCell` (or equivalent logic):
 - `isTransfer` — internal transfer, excluded from totals; row gets `opacity-60`
 - `isInvestmentContribution` — excluded from expense totals; row gets `opacity-60`
 - Transfer candidate — `flaggedForReview && description matches TRANSFER_KEYWORDS` — shows confirm/dismiss UI in review panel
+- Member of a resolved refund group (`type = 'refund'`, `status = 'resolved'`) — excluded from all dashboard totals; refund group card gets `opacity-50`
+
+### Rebalancing Tab
+
+The Rebalancing tab in `TransactionsPage` has two sub-views toggled by a tab bar:
+
+- **Rebalancing** — investment rebalancing groups (`type = 'rebalancing'`). Manually created, managed via `RebalancingGroupCard`. Uses the proportional adjustment pipeline for dashboard impact.
+- **Refunds** — same-account charge+credit pairs (`type = 'refund'`). Auto-detected via `useDetectRefunds` mutation (calls `POST /api/v1/rebalancing/detect-refunds`). Displayed via `RefundGroupCard`. Open groups show Confirm / Dismiss actions; resolved groups are shown dimmed (`opacity-50`). Confirming = PATCH status to `'resolved'`; dismissing = DELETE the group.
+
+Pending refund count (open refund groups) is shown as a badge on the Refunds tab. Hooks: `useDetectRefunds`, `useConfirmRefund`, `useDismissRefund` — all in `useRebalancingMutations.ts`.
 
 ### Import Result Summary
 

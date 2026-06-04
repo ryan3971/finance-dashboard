@@ -3,9 +3,19 @@ import Decimal from 'decimal.js';
 import { config } from '@/lib/config';
 import { db } from '@/db';
 import { logger } from '@/middleware/logger';
-import { transactions } from '@/db/schema';
-import { CATEGORY_SOURCE, TRANSFER_KEYWORDS } from '@finance/shared/constants';
+import { transactions, userConfig } from '@/db/schema';
+import { CATEGORY_SOURCE, TRANSFER_DETECTION_WINDOW_DAYS, TRANSFER_KEYWORDS } from '@finance/shared/constants';
 import { TransferError, TransferErrorCode } from './transfer-detection.errors';
+
+async function getTransferWindowDays(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ transferDetectionWindowDays: userConfig.transferDetectionWindowDays })
+    .from(userConfig)
+    .where(eq(userConfig.userId, userId))
+    .limit(1);
+  // User DB value > env var > shared constant fallback
+  return row?.transferDetectionWindowDays ?? config.transferWindowDays ?? TRANSFER_DETECTION_WINDOW_DAYS;
+}
 
 export interface TransferCandidate {
   transactionId: string;
@@ -54,7 +64,7 @@ export async function detectTransfers(
 
   // Batch all amount-pair lookups into one query, then match in memory per txn.
   // This avoids an N+1 pattern (one DB round-trip per transaction).
-  const windowDays = config.transferWindowDays;
+  const windowDays = await getTransferWindowDays(userId);
   const dates = activeTxns.map((t) => t.date);
   const batchWindowStart = offsetDate(
     dates.reduce((a, b) => (a < b ? a : b)),

@@ -8,6 +8,8 @@ import { createApp } from '@/app';
 import { categoryFixture } from '@/testing/fixtures/category.fixture';
 import { transactionFixture } from '@/testing/fixtures/transaction.fixture';
 import request from 'supertest';
+import { db } from '@/db';
+import { rebalancingGroupTransactions, rebalancingGroups } from '@/db/schema';
 
 const DEFAULT_ACCOUNT_DATA = {
   name: 'Chequing',
@@ -547,5 +549,121 @@ describe('GET /api/v1/dashboard/expenses/categories', () => {
     expect(res.status).toBe(200);
     const body = res.body as CategoriesBody;
     expect(body.rows).toEqual([]);
+  });
+});
+
+// ─── Refund group exclusion ───────────────────────────────────────────────────
+
+describe('Refund group exclusion from expenses', () => {
+  it('excludes both sides of a resolved refund group from expense totals', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'Credit',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+      currency: 'CAD',
+    });
+
+    // An unrelated expense that should still appear
+    await transactionFixture(accountId, { date: '2025-05-15', amount: '-100.00', needWant: 'Need' });
+
+    // The refund pair: charge + credit
+    const charge = await transactionFixture(accountId, { date: '2025-05-01', amount: '-50.00', needWant: 'Want' });
+    const credit = await transactionFixture(accountId, { date: '2025-05-10', amount: '50.00' });
+
+    // Create a resolved refund group
+    const [resolvedGroup] = await db
+      .insert(rebalancingGroups)
+      .values({ userId: user.id, label: 'Refund', type: 'refund', status: 'resolved' })
+      .returning();
+    const resolvedGroupId = resolvedGroup?.id;
+    expect(resolvedGroupId).toBeDefined();
+    await db.insert(rebalancingGroupTransactions).values([
+      { groupId: resolvedGroupId as string, transactionId: charge.id, role: 'source' },
+      { groupId: resolvedGroupId as string, transactionId: credit.id, role: 'offset' },
+    ]);
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/expenses?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { months: { month: number; total: number }[] };
+    const may = body.months.find((m) => m.month === 5);
+    // Only the unrelated $100 expense should be counted; refund pair nets to zero and is excluded
+    expect(may?.total).toBe(100);
+  });
+
+  it('does not exclude transactions in an open (unconfirmed) refund group', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'Credit',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+      currency: 'CAD',
+    });
+
+    const charge = await transactionFixture(accountId, { date: '2025-06-01', amount: '-60.00', needWant: 'Need' });
+    const credit = await transactionFixture(accountId, { date: '2025-06-05', amount: '60.00' });
+
+    // Open refund group — not yet confirmed
+    const [openGroup] = await db
+      .insert(rebalancingGroups)
+      .values({ userId: user.id, label: 'Pending Refund', type: 'refund', status: 'open' })
+      .returning();
+    const openGroupId = openGroup?.id;
+    expect(openGroupId).toBeDefined();
+    await db.insert(rebalancingGroupTransactions).values([
+      { groupId: openGroupId as string, transactionId: charge.id, role: 'source' },
+      { groupId: openGroupId as string, transactionId: credit.id, role: 'offset' },
+    ]);
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/expenses?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { months: { month: number; total: number }[] };
+    const june = body.months.find((m) => m.month === 6);
+    // Open group not excluded — charge and credit both counted, net = 0
+    expect(june?.total).toBe(0);
+  });
+
+  it('does not exclude transactions in a dismissed refund group', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'Credit',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+      currency: 'CAD',
+    });
+
+    const charge = await transactionFixture(accountId, { date: '2025-07-01', amount: '-70.00', needWant: 'Need' });
+    const credit = await transactionFixture(accountId, { date: '2025-07-05', amount: '70.00' });
+
+    // Dismissed refund group — user said "not a refund"
+    const [dismissedGroup] = await db
+      .insert(rebalancingGroups)
+      .values({ userId: user.id, label: 'Dismissed Refund', type: 'refund', status: 'dismissed' })
+      .returning();
+    const dismissedGroupId = dismissedGroup?.id;
+    expect(dismissedGroupId).toBeDefined();
+    await db.insert(rebalancingGroupTransactions).values([
+      { groupId: dismissedGroupId as string, transactionId: charge.id, role: 'source' },
+      { groupId: dismissedGroupId as string, transactionId: credit.id, role: 'offset' },
+    ]);
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/expenses?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { months: { month: number; total: number }[] };
+    const july = body.months.find((m) => m.month === 7);
+    // Dismissed group not excluded — charge and credit both counted, net = 0
+    expect(july?.total).toBe(0);
   });
 });

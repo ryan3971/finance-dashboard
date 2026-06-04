@@ -1,5 +1,6 @@
 export type RebalancingRole = 'source' | 'offset';
-export type RebalancingStatus = 'open' | 'resolved';
+export type RebalancingStatus = 'open' | 'resolved' | 'dismissed';
+export type RebalancingGroupType = 'rebalancing' | 'refund';
 
 export interface RebalancingGroupTransaction {
   transactionId: string;
@@ -15,6 +16,7 @@ export interface RebalancingGroupTransaction {
 export interface RebalancingGroup {
   id: string;
   label: string;
+  type: RebalancingGroupType;
   status: RebalancingStatus;
   myShareOverride: number | null;
   flaggedForReview: boolean;

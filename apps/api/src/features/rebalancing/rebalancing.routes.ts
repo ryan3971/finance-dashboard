@@ -17,6 +17,7 @@ import {
   removeGroupTransaction,
   updateGroup,
 } from './rebalancing.service';
+import { detectRefunds } from '@/pipelines/refund-detection/refund-detection.service';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,6 +25,15 @@ router.use(requireAuth);
 const memberParamsSchema = z.object({
   id: z.string().uuid(),
   transactionId: z.string().uuid(),
+});
+
+// POST /api/v1/rebalancing/detect-refunds
+// Returns 200 (not 201) because the response is a command summary
+// { created: N } rather than a created resource. Callers use the count
+// to display a toast; they re-fetch the groups list separately.
+router.post('/detect-refunds', async (req: Request, res: Response) => {
+  const result = await detectRefunds(getAuthUser(req).id);
+  res.json(result);
 });
 
 // GET /api/v1/rebalancing/groups

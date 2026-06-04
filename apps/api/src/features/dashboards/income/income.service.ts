@@ -1,5 +1,6 @@
 import { and, eq, gte, lt, sql } from 'drizzle-orm';
 import { accounts, transactions } from '@/db/schema';
+import { resolvedRefundExclusion } from '@/pipelines/refund-detection/refund-exclusion';
 import { db } from '@/db';
 import Decimal from 'decimal.js';
 import type {
@@ -48,7 +49,8 @@ export async function queryMonthlyIncome(
         eq(transactions.isIncome, true),
         eq(transactions.isTransfer, false),
         gte(transactions.date, startDate),
-        lt(transactions.date, endDate)
+        lt(transactions.date, endDate),
+        resolvedRefundExclusion(userId)
       )
     )
     .groupBy(monthExpr);

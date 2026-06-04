@@ -77,6 +77,14 @@ export const TOAST = {
   REBALANCING_MEMBER_ADD_FAILED: 'Failed to add transaction to group',
   REBALANCING_MEMBER_REMOVED: 'Transaction removed from group',
   REBALANCING_MEMBER_REMOVE_FAILED: 'Failed to remove transaction from group',
+  REFUND_DETECT_NONE: 'No new refund pairs found',
+  REFUND_DETECT_FAILED: 'Failed to detect refunds',
+  REFUND_CONFIRMED: 'Refund confirmed',
+  REFUND_CONFIRM_FAILED: 'Failed to confirm refund',
+  REFUND_DISMISSED: 'Refund dismissed',
+  REFUND_DISMISS_FAILED: 'Failed to dismiss refund',
+  REFUND_DELETED: 'Refund deleted',
+  REFUND_DELETE_FAILED: 'Failed to delete refund',
   // Sample data
   SAMPLE_DATA_LOADED: 'Sample data loaded',
   SAMPLE_DATA_CONFLICT: 'Reset your account before loading sample data',
@@ -86,6 +94,8 @@ export const TOAST = {
   CONFIG_ALLOCATIONS_SAVE_FAILED: 'Failed to save preferences. Please try again.',
   CONFIG_EMERGENCY_FUND_SAVED: 'Emergency fund target saved',
   CONFIG_EMERGENCY_FUND_SAVE_FAILED: 'Failed to save emergency fund target. Please try again.',
+  CONFIG_DETECTION_WINDOWS_SAVED: 'Detection windows saved',
+  CONFIG_DETECTION_WINDOWS_SAVE_FAILED: 'Failed to save detection windows. Please try again.',
   // Investments
   CONTRIBUTION_ROOM_SAVED: 'Contribution room updated',
   CONTRIBUTION_ROOM_SAVE_FAILED: 'Failed to update contribution room',
@@ -107,3 +117,7 @@ export const TOAST = {
   TAG_DELETED: 'Tag deleted',
   TAG_DELETE_FAILED: 'Failed to delete tag',
 } as const;
+
+export function refundDetectedMessage(n: number): string {
+  return `${n} refund pair${n === 1 ? '' : 's'} detected`;
+}
