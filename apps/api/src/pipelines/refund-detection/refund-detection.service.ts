@@ -59,9 +59,16 @@ async function getRefundWindowDays(userId: string): Promise<number> {
 export async function detectRefunds(userId: string): Promise<{ created: number }> {
   const windowDays = await getRefundWindowDays(userId);
 
+  // Scoped to the current user so the subquery only touches this user's
+  // groups rather than scanning every row in the table.
   const groupedSubquery = db
     .select({ id: rebalancingGroupTransactions.transactionId })
-    .from(rebalancingGroupTransactions);
+    .from(rebalancingGroupTransactions)
+    .innerJoin(
+      rebalancingGroups,
+      eq(rebalancingGroupTransactions.groupId, rebalancingGroups.id)
+    )
+    .where(eq(rebalancingGroups.userId, userId));
 
   const eligible = await db
     .select({
@@ -108,25 +115,28 @@ export async function detectRefunds(userId: string): Promise<{ created: number }
     );
 
   const matchedIds = new Set<string>();
-  let created = 0;
+  const pairs: { chargeId: string; creditId: string }[] = [];
 
   for (const txn of eligible) {
     if (matchedIds.has(txn.id)) continue;
 
-    const inverseAmount = negateAmount(txn.amount);
     const windowStart = offsetDate(txn.date, -windowDays);
     const windowEnd = offsetDate(txn.date, windowDays);
 
     // Pick the temporally closest candidate to avoid pairing a charge with the
     // wrong month's refund when the same amount recurs on a regular schedule.
+    // Use Decimal comparison to be immune to numeric format differences ("50"
+    // vs "50.00") even though Drizzle consistently returns two decimal places
+    // for numeric(12,2) columns.
     const txnTime = new Date(txn.date).getTime();
+    const txnDecimal = new Decimal(txn.amount);
     const match = pairPool
       .filter(
         (m) =>
           !matchedIds.has(m.id) &&
           m.id !== txn.id &&
           m.accountId === txn.accountId &&
-          m.amount === inverseAmount &&
+          new Decimal(m.amount).plus(txnDecimal).isZero() &&
           m.date >= windowStart &&
           m.date <= windowEnd
       )
@@ -142,10 +152,17 @@ export async function detectRefunds(userId: string): Promise<{ created: number }
     matchedIds.add(match.id);
 
     // Charge (negative) is source; credit (positive) is offset.
-    const chargeId = new Decimal(txn.amount).isNegative() ? txn.id : match.id;
-    const creditId = new Decimal(txn.amount).isNegative() ? match.id : txn.id;
+    const chargeId = txnDecimal.isNegative() ? txn.id : match.id;
+    const creditId = txnDecimal.isNegative() ? match.id : txn.id;
+    pairs.push({ chargeId, creditId });
+  }
 
-    await db.transaction(async (tx) => {
+  if (pairs.length === 0) return { created: 0 };
+
+  // All groups are created inside a single transaction so detection is
+  // atomic — either all pairs are recorded or none are.
+  await db.transaction(async (tx) => {
+    for (const { chargeId, creditId } of pairs) {
       const [group] = await tx
         .insert(rebalancingGroups)
         .values({
@@ -162,10 +179,8 @@ export async function detectRefunds(userId: string): Promise<{ created: number }
         { groupId: group.id, transactionId: chargeId, role: 'source' },
         { groupId: group.id, transactionId: creditId, role: 'offset' },
       ]);
-    });
+    }
+  });
 
-    created++;
-  }
-
-  return { created };
+  return { created: pairs.length };
 }

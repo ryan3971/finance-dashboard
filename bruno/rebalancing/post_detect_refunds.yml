@@ -1,0 +1,19 @@
+info:
+  name: post_detect_refunds
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{localhost}}/api/v1/rebalancing/detect-refunds"
+  body:
+    type: none
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

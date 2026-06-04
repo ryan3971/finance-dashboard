@@ -18,22 +18,28 @@ import {
   useDismissRefund,
 } from '@/features/transactions/hooks/useRebalancingMutations';
 
-function fmtDate(dateStr: string): string {
+// Appends a compact year suffix ("'24") when showYear is true, which is used
+// when the charge and credit fall in different calendar years.
+function fmtDate(dateStr: string, showYear: boolean): string {
   const parts = dateStr.split('-');
+  const year = parts[0] ?? '';
   const month = parseInt(parts[1] ?? '1', 10);
   const day = parseInt(parts[2] ?? '1', 10);
-  return `${MONTH_LABELS[month - 1] ?? parts[1]} ${day}`;
+  const base = `${MONTH_LABELS[month - 1] ?? parts[1]} ${day}`;
+  return showYear ? `${base} '${year.slice(2)}` : base;
 }
 
 function RefundTransactionRow({
   label,
   date,
+  showYear,
   description,
   accountName,
   amount,
 }: {
   readonly label: string;
   readonly date: string;
+  readonly showYear: boolean;
   readonly description: string;
   readonly accountName: string;
   readonly amount: string;
@@ -42,8 +48,8 @@ function RefundTransactionRow({
   const isCredit = parsed > 0;
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-t border-border-subtle text-sm">
-      <span className="w-14 shrink-0 text-content-muted font-mono text-xs">
-        {fmtDate(date)}
+      <span className="w-16 shrink-0 text-content-muted font-mono text-xs">
+        {fmtDate(date, showYear)}
       </span>
       <span className="w-12 shrink-0 text-xs font-semibold text-content-muted uppercase tracking-wider">
         {label}
@@ -84,6 +90,9 @@ export function RefundGroupCard({
 
   const source = group.transactions.find((t) => t.role === 'source');
   const offset = group.transactions.find((t) => t.role === 'offset');
+  // Show the year suffix when charge and credit fall in different calendar years
+  // (possible within the 90-day detection window near a year boundary).
+  const crossYear = source?.date.slice(0, 4) !== offset?.date.slice(0, 4);
 
   function handleDeleteConfirm() {
     deleteRefundGroup.mutate(group.id, {
@@ -140,6 +149,7 @@ export function RefundGroupCard({
           <RefundTransactionRow
             label="Charge"
             date={source.date}
+            showYear={crossYear}
             description={source.description}
             accountName={source.accountName}
             amount={source.amount}
@@ -149,6 +159,7 @@ export function RefundGroupCard({
           <RefundTransactionRow
             label="Credit"
             date={offset.date}
+            showYear={crossYear}
             description={offset.description}
             accountName={offset.accountName}
             amount={offset.amount}
