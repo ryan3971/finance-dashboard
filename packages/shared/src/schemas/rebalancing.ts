@@ -19,7 +19,7 @@ export const updateRebalancingGroupSchema = z
       .min(1, 'Label is required')
       .max(REBALANCING_GROUP_LABEL_MAX)
       .optional(),
-    status: z.enum(['open', 'resolved']).optional(),
+    status: z.enum(['open', 'resolved', 'dismissed']).optional(),
     myShareOverride: z.number().positive().nullable().optional(),
     flaggedForReview: z.boolean().optional(),
   })

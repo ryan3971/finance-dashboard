@@ -8,12 +8,21 @@ import { assertDefined } from '@/lib/assert';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Uses UTC arithmetic to avoid local-timezone day-boundary shifts.
+// new Date("YYYY-MM-DD") parses as UTC midnight, but getDate()/setDate()
+// operate in local time — in a non-UTC environment the result would be off
+// by one day. Splitting the string and using Date.UTC keeps everything UTC.
 function offsetDate(dateStr: string, days: number): string {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  const parts = dateStr.split('-').map(Number);
+  const y = parts[0] ?? 0;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
+// Amount comparison uses string equality because Drizzle returns numeric(12,2)
+// columns with consistent two-decimal formatting ("50.00", not "50"). If that
+// ever changes, the match will silently fail — a Decimal comparison would be safer.
 function negateAmount(amount: string): string {
   if (new Decimal(amount).isZero()) return amount.replace(/^-/, '');
   return amount.startsWith('-') ? amount.slice(1) : `-${amount}`;

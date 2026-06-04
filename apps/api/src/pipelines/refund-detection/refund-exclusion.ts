@@ -9,6 +9,12 @@ import { transactions } from '@/db/schema';
  *
  * The userId filter on rebalancing_groups scopes the subquery to the requesting
  * user, avoiding a full-table scan across all users' resolved refund groups.
+ *
+ * Uses raw SQL rather than a Drizzle subquery because Drizzle's type system
+ * does not support NOT IN (SELECT ...) natively. Drizzle parameterizes the
+ * interpolated userId so there is no injection risk. Table names are hardcoded
+ * strings — a DB rename would not be caught by TypeScript, so keep in sync
+ * with schema.ts if tables are ever renamed.
  */
 export function resolvedRefundExclusion(userId: string) {
   return sql`${transactions.id} NOT IN (

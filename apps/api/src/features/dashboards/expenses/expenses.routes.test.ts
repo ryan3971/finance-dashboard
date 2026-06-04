@@ -630,4 +630,40 @@ describe('Refund group exclusion from expenses', () => {
     // Open group not excluded — charge and credit both counted, net = 0
     expect(june?.total).toBe(0);
   });
+
+  it('does not exclude transactions in a dismissed refund group', async () => {
+    const { accessToken, user } = await registerUser(app);
+    const accountId = await createAccount(app, accessToken, {
+      name: 'Credit',
+      type: 'credit',
+      institution: 'amex',
+      isCredit: true,
+      currency: 'CAD',
+    });
+
+    const charge = await transactionFixture(accountId, { date: '2025-07-01', amount: '-70.00', needWant: 'Need' });
+    const credit = await transactionFixture(accountId, { date: '2025-07-05', amount: '70.00' });
+
+    // Dismissed refund group — user said "not a refund"
+    const [dismissedGroup] = await db
+      .insert(rebalancingGroups)
+      .values({ userId: user.id, label: 'Dismissed Refund', type: 'refund', status: 'dismissed' })
+      .returning();
+    const dismissedGroupId = dismissedGroup?.id;
+    expect(dismissedGroupId).toBeDefined();
+    await db.insert(rebalancingGroupTransactions).values([
+      { groupId: dismissedGroupId as string, transactionId: charge.id, role: 'source' },
+      { groupId: dismissedGroupId as string, transactionId: credit.id, role: 'offset' },
+    ]);
+
+    const res = await request(app)
+      .get('/api/v1/dashboard/expenses?year=2025')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as { months: { month: number; total: number }[] };
+    const july = body.months.find((m) => m.month === 7);
+    // Dismissed group not excluded — charge and credit both counted, net = 0
+    expect(july?.total).toBe(0);
+  });
 });
