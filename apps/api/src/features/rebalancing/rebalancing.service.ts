@@ -146,7 +146,7 @@ const groupColumns = {
 };
 
 function narrowStatus(status: string): RebalancingStatus {
-  if (status !== 'open' && status !== 'resolved')
+  if (status !== 'open' && status !== 'resolved' && status !== 'dismissed')
     throw new Error(`Invalid rebalancing status in DB: ${status}`);
   return status;
 }
