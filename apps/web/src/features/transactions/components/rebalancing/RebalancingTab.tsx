@@ -96,7 +96,10 @@ export function RebalancingTab() {
   );
 
   const refundGroups = useMemo(
-    () => (data?.groups ?? []).filter((g) => g.type === 'refund'),
+    () =>
+      (data?.groups ?? []).filter(
+        (g) => g.type === 'refund' && g.status !== 'dismissed'
+      ),
     [data?.groups]
   );
 

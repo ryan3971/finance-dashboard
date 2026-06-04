@@ -337,7 +337,7 @@ export const rebalancingGroups = pgTable(
   (t) => [
     check(
       'rebalancing_groups_status_check',
-      sql`${t.status} IN ('open', 'resolved')`
+      sql`${t.status} IN ('open', 'resolved', 'dismissed')`
     ),
     check(
       'rebalancing_groups_type_check',

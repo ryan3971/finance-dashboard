@@ -1,0 +1,2 @@
+ALTER TABLE "rebalancing_groups" DROP CONSTRAINT "rebalancing_groups_status_check";--> statement-breakpoint
+ALTER TABLE "rebalancing_groups" ADD CONSTRAINT "rebalancing_groups_status_check" CHECK ("rebalancing_groups"."status" IN ('open', 'resolved', 'dismissed'));

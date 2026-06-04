@@ -202,7 +202,9 @@ export function useDismissRefund() {
   const invalidate = useInvalidateGroupsAndDashboards();
   return useMutation({
     mutationFn: async (groupId: string) => {
-      await api.delete(`/rebalancing/groups/${groupId}`);
+      await api.patch(`/rebalancing/groups/${groupId}`, {
+        status: 'dismissed' satisfies RebalancingStatus,
+      });
     },
     onSuccess: () => {
       invalidate();

@@ -1,5 +1,5 @@
 export type RebalancingRole = 'source' | 'offset';
-export type RebalancingStatus = 'open' | 'resolved';
+export type RebalancingStatus = 'open' | 'resolved' | 'dismissed';
 export type RebalancingGroupType = 'rebalancing' | 'refund';
 
 export interface RebalancingGroupTransaction {
