@@ -246,43 +246,53 @@ export const helpContent = {
   },
 
   'transactions.rebalancing': {
-    title: 'Rebalancing Groups',
-    body: 'Rebalancing groups let you link related transactions — such as split expenses, reimbursements, or refunds — so that only your net cost appears in dashboard totals.',
+    title: 'Rebalancing & Refunds',
+    body: 'The Rebalancing tab has two sub-views: Rebalancing for manually managed expense groups, and Refunds for automatically detected charge-and-credit pairs.',
     sections: [
+      {
+        heading: 'Rebalancing groups',
+        description:
+          'Link related transactions — such as split expenses or reimbursements — so that only your net cost appears in dashboard totals. Each group has source transactions (original expenses) and offset transactions (reimbursements received). Only resolved groups affect dashboard totals.',
+      },
       {
         heading: 'Stats bar',
         description:
-          'Shows a summary across all groups: total count, open groups awaiting resolution, resolved groups, and groups flagged for review. Use these to quickly gauge how many outstanding items need attention.',
-      },
-      {
-        heading: 'Filtering and search',
-        description:
-          'Filter groups by status (All, Flagged, Open, Resolved) and search by label to quickly locate a specific group. Filters apply together — for example, Flagged + a label search narrows to flagged groups matching that name.',
-      },
-      {
-        heading: 'Flagged groups',
-        description:
-          'A group is flagged for review when its calculated share may not reflect reality — for example, when offset amounts are incomplete or when a transaction in the group has been modified. Review flagged groups to confirm the share is correct, then mark it resolved.',
-      },
-      {
-        heading: 'Sources and offsets',
-        description:
-          'Each group contains source transactions (the original expenses you paid) and offset transactions (reimbursements or payments received from others). The dashboard subtracts the offset total from the source total, so only your net share affects spending figures.',
+          'Shows a summary across all rebalancing groups: total count, open groups awaiting resolution, resolved groups, and groups flagged for review.',
       },
       {
         heading: 'My share',
         description:
-          'Your net cost after offsets are applied. If the offsets do not fully cover the sources, the remainder is counted against your spending totals. A manual override is available on each group if the calculated share does not reflect reality — the original calculated amount is shown in parentheses when an override is active.',
+          'Your net cost after offsets are applied. A manual override is available on each group if the calculated share does not reflect reality — the original calculated amount is shown in parentheses when an override is active.',
       },
       {
-        heading: 'Open vs resolved',
+        heading: 'Flagged groups',
         description:
-          'Only resolved groups are factored into dashboard totals. Mark a group as resolved once all offsets have been received. You can re-open it at any time if circumstances change.',
+          'A group is flagged for review when its calculated share may not reflect reality — for example, when offset amounts are incomplete or a transaction in the group has been modified. Review flagged groups to confirm the share is correct, then mark it resolved.',
       },
       {
-        heading: 'Creating a group',
+        heading: 'Creating a rebalancing group',
         description:
-          'Switch to the Transactions tab, open any transaction involved in the expense, and use the Rebalancing action to add it to a new or existing group. Assign it a role — source or offset — then add the remaining transactions the same way.',
+          'Open any transaction in the Transactions tab and use the Rebalancing action to add it to a new or existing group. Assign it a role — source or offset — then add the remaining transactions the same way.',
+      },
+      {
+        heading: 'Refund detection',
+        description:
+          'The Refunds sub-tab automatically finds same-account transaction pairs where a charge and a credit cancel each other out — such as a purchase and its corresponding refund or rebate. Click "Detect Refunds" to scan for new pairs within the configured detection window.',
+      },
+      {
+        heading: 'Confirm vs Dismiss a refund',
+        description:
+          'Confirm marks the pair as a confirmed refund — both transactions are excluded from all dashboard totals immediately. Dismiss marks the pair as not a refund, hides it from this list, and prevents it from being re-detected in future scans. If a dismissed pair genuinely needs adjustment, use a rebalancing group to handle it manually.',
+      },
+      {
+        heading: 'Deleting a confirmed refund',
+        description:
+          'A Delete button appears on confirmed refund groups. Deleting a confirmed refund permanently removes the group and returns both transactions to your dashboard totals. Use this to undo a confirmation made in error.',
+      },
+      {
+        heading: 'Detection window',
+        description:
+          'The window controls how far apart two transactions can be and still be considered a pair. The default is 90 days. Adjust it in Config → Preferences under Detection Windows.',
       },
     ],
   },
@@ -414,6 +424,11 @@ export const helpContent = {
         heading: 'Emergency fund target',
         description:
           'The savings balance you are working toward. Displayed as a progress bar in the Snapshot Accounts card. Progress is calculated from the combined balance of all chequing accounts.',
+      },
+      {
+        heading: 'Detection windows',
+        description:
+          'Controls how far apart two transactions can be and still be matched as a transfer or refund pair. Transfer Detection Window is the look-ahead window used when identifying internal transfers between accounts. Refund Detection Window is the window used by the automatic refund scanner — pairs further apart than this will not be detected. Both default to system values if left blank.',
       },
       {
         heading: 'Reset Account',
