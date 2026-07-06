@@ -58,3 +58,7 @@ override.tf.json
 
 # Other
 aws.md
+
+# Toolkit verification run (temporary, removed at closeout)
+/VERIFICATION.md
+/verification-evidence/

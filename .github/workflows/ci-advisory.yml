@@ -1,0 +1,32 @@
+# dev-toolkit CI baseline: advisory job. Scheduled weekly + manual dispatch only.
+# Never a merge blocker — audit noise as a gate trains bypass. Findings land in the job
+# summary for a weekly triage habit. A separate file from validate.yml so it carries no
+# risk to the "Validate" workflow name that deploy-api.yml/deploy-frontend.yml key off of.
+name: ci-advisory
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # weekly
+  workflow_dispatch:
+
+jobs:
+  advisory:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: dependency audit (advisory)
+        run: |
+          echo "## pnpm audit" >> "$GITHUB_STEP_SUMMARY"
+          (pnpm audit 2>&1 | tail -20 || true) >> "$GITHUB_STEP_SUMMARY"
+      - name: outdated majors report (advisory)
+        run: |
+          echo "## pnpm outdated" >> "$GITHUB_STEP_SUMMARY"
+          (pnpm outdated -r 2>&1 | head -40 || true) >> "$GITHUB_STEP_SUMMARY"
