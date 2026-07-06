@@ -1,4 +1,3 @@
-// toolkit verification 4.2: trivial staleness-trigger comment, reverted after the check
 import { Router } from 'express';
 
 const router = Router();
