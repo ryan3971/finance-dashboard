@@ -1,12 +1,18 @@
 # API — CLAUDE.md
 
-Guidance specific to `apps/api`. See the root [`CLAUDE.md`](../../CLAUDE.md) for monorepo-wide conventions.
+`apps/api` specifics. Monorepo-wide conventions (dashboard layer rules, `@finance/shared` imports,
+type assertions) are in the root [`CLAUDE.md`](../../CLAUDE.md).
 
-## Architecture
+Writing or changing a test → read [`docs/testing.md`](docs/testing.md).
 
-### Directory structure (`src/`)
+Endpoint request and response shapes live in the Bruno collection (`bruno/`, one folder per feature)
+and the Zod schemas in `packages/shared/src/schemas/`. This file carries the invariants and reasons
+behind the endpoints, which those sources do not state.
 
-Feature-based modules under `features/`. Features with separate read and write concerns split into two route files (if there are enough endpoints to warrant this separation):
+## Layout (`src/`)
+
+One folder per feature under `features/`. A feature with enough endpoints to warrant it splits reads
+and writes into two route files:
 
 ```
 features/transactions/
@@ -17,220 +23,161 @@ features/transactions/
   transactions.routes.test.ts
 ```
 
-Features include: `accounts`, `transactions`, `categories`, `categorization-rules`, `rule-suggestions`, `imports`, `rebalancing`, `tags`, `transfers`, `user-config`, `seed` (admin data seeding), and `dashboards/` (see below).
+`pipelines/` holds logic shared across features: `categorization/` (AI providers + rules engine),
+`investments/` (the investment insert path), `rebalancing/` (adjustments consumed by dashboard
+services), `transfer-detection/`. `src/lib/config.ts` loads config once at startup and is the single
+source of truth for env vars.
 
-Other top-level directories:
-- `db/` — Drizzle schema, migrations. `db/seeders/` contains the seeding scripts; `db/seeds/` holds the seed data organized by environment (`staging/`, `system/`, `test/`)
-- `middleware/` — Global error handler (catches `DomainError`, `ZodError`, and `multer` errors) and Pino logger (`httpLogger` request middleware, `closeFileLog()` for graceful shutdown drain)
-- `lib/` — Config loader, JWT helpers, `requireAuth` middleware and `getAuthUser` helper (`auth.ts`), API-only constants (`constants.ts`), reusable Zod schemas (`common-schemas.ts`)
-- `pipelines/` — Cross-feature logic: `categorization/` (AI + rules engine), `rebalancing/` (adjustment computation for dashboard services), `transfer-detection/`
-- `routes/` — Health check route
-- `scripts/` — Environment scripts: `dev.ts`, `staging.ts`, `production.ts`, and seed/backfill utilities
-- `testing/` — Vitest setup, shared test helpers, fixtures, seeders, seeds, and sample CSV files
+## Layer responsibilities
 
-Entry: `server.ts` loads config, initialises Sentry (`instrument.ts`), then starts the app defined in `app.ts`.
+- **Route** — validate input with Zod (reusable param schemas such as `idParamsSchema` come from
+  `src/lib/common-schemas.ts`), call services, shape the response. Business logic stays out.
+- **Service** — business logic and domain rules, throwing `DomainError` for violations. HTTP status
+  codes never appear here.
+- **DB** (Drizzle) — data access only.
 
-Config is loaded once at startup via `src/lib/config.ts` — the single source of truth for all env vars in the API.
+Service functions return data or `null`, and the route layer turns `null` into a 404. The exception
+is a mutation that verifies ownership before writing (confirm, dismiss): those throw a domain error,
+since `null` out of a `void` function tells the route layer nothing.
 
-### Layer responsibilities
+## Code conventions
 
-- **Route layer** — validate input with Zod, call services, translate `null` to 404, return shaped responses. No business logic.
-- **Service layer** — business logic, domain rules. Never uses HTTP status codes. Throws `DomainError` for business rule violations. Does not query the DB directly in dashboard features — receives pre-aggregated data as parameters.
-- **DB layer** (Drizzle queries) — data access only. For dashboard features: aggregation only, never returns raw transaction arrays.
+- Express v5 forwards rejected promises to error middleware on its own, so async route handlers need
+  no try/catch. (One deliberate exception: SSE, below.)
+- `req.user` is typed optional by Express but is always set after `requireAuth`. Use
+  `getAuthUser(req)` from `@/lib/auth` rather than `req.user!` — it throws a descriptive error when
+  called outside a guarded route, turning misuse into a runtime failure instead of a silent
+  `undefined`.
+- An API-only constant used in 2+ files belongs in `src/lib/constants.ts` (`@/lib/constants`).
 
-## Auth Flow
+## Error handling
 
-- Access token: short-lived JWT, sent as `Authorization: Bearer` header
-- Refresh token: longer-lived JWT, stored in HttpOnly cookie (path `/api/v1/auth`)
-- `requireAuth` middleware validates the Bearer token and attaches `req.user` (`{ id, email }`)
-- Refresh tokens are rotated on each use
+Business rule violations are thrown as domain errors: `src/lib/domain-error.ts` holds the base class
+and `src/features/auth/auth.errors.ts` is the reference implementation. Each feature owns a
+`<feature>.errors.ts` defining its codes, messages, and HTTP status mapping. The global handler in
+`src/middleware/error-handler.ts` handles `DomainError` generically plus `ZodError` (→ 400) and
+`multer.MulterError`, so route handlers catch none of them.
+
+## Auth flow
+
+Access token is a short-lived JWT sent as `Authorization: Bearer`. The refresh token is a
+longer-lived JWT in an HttpOnly cookie scoped to path `/api/v1/auth`, rotated on each use.
+`requireAuth` validates the Bearer token and attaches `req.user` (`{ id, email }`).
 
 ## Database
 
-PostgreSQL 15 via Docker (`docker-compose.yml`). Drizzle ORM with generated migrations.
-
-- Dev DB: `finance_dev`, Test DB: `finance_test` — both on port `5434`
-- Schema: `src/db/schema.ts`
-- Tests switch to `DATABASE_URL_TEST` automatically via `testing/setup.ts`
-- Tests run in parallel (`fileParallelism: true`). Isolation is achieved by scoping all data to a per-worker user ID — see `src/testing/test-helpers.ts`.
-
-Drizzle generates migration filenames automatically — do not rename them. Run `pnpm db:migrate` (dev) or `pnpm --filter api db:migrate:test` (test) after generating a new migration. The ECS deploy pipeline runs migrations as a one-off task before updating the service — never deploy API changes that require a migration without including the migration in the same commit.
-
-## API Patterns
-
-### Code conventions
-
-- Service functions return data or `null` — the route layer translates `null` to 404. Services do not throw for not-found cases. Exception: mutation functions that verify ownership before writing (e.g. confirm, dismiss) should throw a domain error when the record is not found — returning `null` from a `void` function is meaningless and the route layer has nothing to check.
-- Express v5 is in use. Async route handlers do **not** need try/catch — Express v5 automatically forwards rejected promises to error-handling middleware.
-- Zod validation happens at the route layer before calling services. Reusable param schemas (e.g. `idParamsSchema`) live in `src/lib/common-schemas.ts` — import from there instead of inlining duplicate schemas in route files.
-- `req.user` is typed as optional by Express but is always present after `requireAuth`. Use `getAuthUser(req)` (from `@/lib/auth`) instead of `req.user!` — it throws a descriptive error if called outside a guarded route, catching misuse at runtime rather than silently returning `undefined`.
-
-### Error handling
-
-Services never use HTTP status codes. Business rule violations are thrown as domain errors — see `src/lib/domain-error.ts` for the base class and `src/features/auth/auth.errors.ts` for the reference implementation. Each feature owns a `<feature>.errors.ts` file that defines its error codes, messages, and HTTP status mapping. The global error handler in `src/middleware/error-handler.ts` handles `DomainError` instances generically, and also catches `ZodError` (→ 400) and `multer.MulterError`. Route handlers do not need to catch these.
-
-### Investment transaction endpoints
-
-`GET /api/v1/investments/transactions` — paginated list of investment transactions for the authenticated user, with optional filters (`accountId`, `action`, `symbol`, `startDate`, `endDate`). Response includes `source: 'csv' | 'manual'` on each row.
-
-`POST /api/v1/investments/transactions` — create a manual investment transaction. Body validated against `createManualInvestmentTransactionSchema` (`packages/shared/src/schemas/investments.ts`). The client applies the sign to `amount` before posting; the API stores it as-is. `rawAction` is set equal to `action` by the service. Returns `201` with `InvestmentTransactionRow`.
-
-Key behaviours:
-- Account must belong to the authenticated user (→ 403) and must be an investment account type (tfsa, fhsa, rrsp, non-registered) (→ 400 `INVALID_ACCOUNT_TYPE_FOR_TRANSACTION`).
-- Duplicate detection uses `compositeKey` (same algorithm as the import pipeline). A collision returns 409 `DUPLICATE_INVESTMENT_TRANSACTION`.
-- `insertInvestmentTransaction` in `investments.repository.ts` is the single shared insert path used by both the import pipeline (`processInvestmentRow`) and manual entry. Do not add a second insert path.
-- `source` column on `investment_transactions` distinguishes provenance: `'csv'` for imported rows, `'manual'` for entries created via this endpoint.
-
-`GET /api/v1/investments/monthly-breakdown?year=` — combined 12-month breakdown (contributed, deployed, uninvestedDelta, target) plus an `accounts` array of per-account breakdowns. Each account entry includes `annualLimit` (from `contributionRecords`) and its own 12-month rows and totals. Account ordering: TFSA → RRSP → FHSA → non-registered.
-
-`GET /api/v1/investments/contribution-room?year=` — per-registered-account contribution room. Supports a TFSA carry-forward estimate from prior-year data.
-
-`PUT /api/v1/investments/contribution-room/:accountId/:year` — upsert the `annualLimit`, `roomCarried`, and `roomCarriedConfirmed` fields for a registered account. Returns 204.
-
-### Categorization rules endpoints
-
-`GET /api/v1/categorization-rules` — returns all rules for the authenticated user, ordered by priority descending. Each rule includes `matchType: 'substring' | 'wildcard'`.
-
-`POST /api/v1/categorization-rules` — creates a new rule; returns `201` with the full rule shape including joined `categoryName`/`subcategoryName`.
-
-`PATCH /api/v1/categorization-rules/:id` — partial update; accepts `matchType` along with all other rule fields.
-
-`DELETE /api/v1/categorization-rules/:id` — deletes the rule.
-
-Rules with `matchType: 'wildcard'` use `*` (any chars) and `?` (one char) wildcards. The pattern is anchored (`^...$`) — add `*` prefix/suffix to match substrings. Implemented in `rules-engine.ts` via `descriptionMatchesRule`.
-
-### Bulk apply-rules endpoint
-
-`POST /api/v1/transactions/apply-rules` runs all of a user's categorization rules against eligible transactions, excluding transfers. Returns `{ applied: number, skipped: number }`.
-
-**Candidate query** (`fetchRuleApplicableTransactions`): targets `categorySource IN ('default', 'ai')` — rules overwrite both. Manual and rule-applied transactions are excluded implicitly. This replaced the previous `categoryId IS NULL OR flaggedForReview = true` filter, which was missing AI-categorized transactions.
-
-Implementation notes:
-- The route is defined **before** `/:id` routes in `transactions-mutation.routes.ts` so Express does not match the literal string `apply-rules` as a transaction id.
-- The service (`applyRulesToUncategorized`) loads rules once via `loadRules(userId)`, then groups matching transactions by their categorization outcome fingerprint to issue one `inArray` UPDATE per unique outcome — avoiding one query per transaction.
-- `needWant` is coerced to `null` for income transactions at the service layer, matching the behaviour of `patchTransaction`.
-
-### PATCH /api/v1/transactions/:id
-
-Accepted body fields: `categoryId`, `subcategoryId`, `needWant`, `note`, `createRule`, `isInvestmentContribution`. All optional.
-
-`isInvestmentContribution: boolean` — marks a transaction as an outgoing investment contribution (e.g. a bank debit to Questrade). When true, the transaction is:
-- Included in `monthlyIncome.actualInvestments` on the snapshot, reducing `spendingIncome`.
-- Excluded from `monthlyExpenses` totals (in addition to the existing `isTransfer` exclusion) to prevent double-counting.
-
-This flag is independent of `isTransfer`. A contribution that is also detected as a transfer will be handled correctly — it is excluded from income already via the transfer path and excluded from expenses via both the transfer and contribution filters.
-
-### Retroactive rule application
-
-When a rule is created via `POST /rule-suggestions/:id/accept` or via `PATCH /transactions/:id` with `createRule: true` (and no existing rule for the same keyword), `applyRuleRetroactively` is called within the **same DB transaction** as rule creation. It applies the same candidate filter as the bulk apply-rules endpoint (`categorySource IN ('default', 'ai')`, non-transfer) but scoped to the single new rule. Both endpoints return `retroactivelyApplied: number` alongside their normal response fields.
-
-- `applyRuleRetroactively(tx, rule, userId)` is exported from `transactions.service.ts` and imported by `rule-suggestions.service.ts` to keep transaction logic in one place.
-- `RetroactiveRule` is the exported interface for the rule parameter — a subset of `LoadedRule` fields sufficient for matching and categorization.
-- For `patchTransaction`: if a rule already existed for the keyword, `retroactivelyApplied` is `0` (no new rule created, no retroactive work done).
-- The patched transaction itself is excluded from retroactive candidates because its `categorySource` is set to `'manual'` before `applyRuleRetroactively` runs.
-
-### Rule suggestions endpoints
-
-`GET /api/v1/rule-suggestions` — returns all `pending` suggestions for the authenticated user, ordered by confidence descending. Suggestions are generated automatically during import when the AI categorizes a transaction with `categorySource = 'ai'` (see `maybeSuggestRule` in `import.service.ts`). Deduplication is enforced by a partial unique index on `(user_id, lower(suggested_keyword)) WHERE status = 'pending'`.
-
-`POST /api/v1/rule-suggestions/:id/accept` — body overrides are optional; omitting uses the suggestion's stored values. Coerces `needWant = 'NA'` → `null` before calling `createRule`. Runs in a DB transaction. After the rule is created, calls `applyRuleRetroactively` (exported from `transactions.service.ts`) to immediately update all eligible transactions (`categorySource IN ('default', 'ai')`, non-transfer) that match the new rule's keyword. Returns `201` with `{ ...ruleFields, retroactivelyApplied: number }`.
-
-`POST /api/v1/rule-suggestions/:id/dismiss` — marks `status = 'dismissed'`. Returns `204`.
-
-Both mutating endpoints return `409` if the suggestion is already accepted or dismissed.
-
-### SSE streaming routes
-
-`POST /api/v1/imports/upload/stream` uses Server-Sent Events. The handler intentionally wraps `processImport` in try/catch **despite Express 5's automatic async error propagation** — because `res.flushHeaders()` has already been called before the async work begins, leaving the SSE response body open. Express's error middleware cannot write a JSON error body to an already-open stream. The catch block emits a `{ stage: 'error', message }` SSE event and the finally block calls `res.end()`. Do not remove this try/catch or replace it with Express propagation.
-
-### Constants
-
-Before adding a constant, decide where it belongs: if it's needed by the web app too, it goes in `packages/shared/src/constants.ts` — import with `@finance/shared/constants`. If it's API-only and appears in 2+ files, it goes in `src/lib/constants.ts` — import with `@/lib/constants`.
-
-## Data Access
-
-Always scope `select()` to the columns actually needed. Use `db.transaction()` when multiple writes must succeed or fail together. Functions that may be called inside a transaction accept an optional `tx: typeof db | DbTransaction` parameter (see `src/db/index.ts`) defaulting to `db`.
-
-Avoid N+1 query patterns — never issue a `db.select()` inside a loop over rows. Instead, batch with `inArray` before the loop and do in-memory matching per row.
-
-Drizzle returns `numeric` columns as strings. Never use `parseFloat` or other floating-point conversions on money amounts in service or DB logic — use `Decimal.js` for all arithmetic. At the API response boundary, convert to `number` via `new Decimal(s).toNumber()` so the client receives a JSON number. Dashboard response types in `@finance/shared` use `number` (not `string`) for monetary amount fields.
-
-## Dashboard Features
-
-Dashboard routes live in `features/dashboards/`. Each tab is a separate sub-feature with its own route file and service:
-
-```
-features/dashboards/
-  income/
-  expenses/
-  snapshot/   (also has snapshot.repository.ts — a repository layer for queries too complex to inline in the service)
-  ytd/
-```
-
-`anticipated-budget` is a standalone feature at `features/anticipated-budget/`, not under `features/dashboards/`.
-
-**DB queries** use Drizzle `.groupBy()` and aggregate functions (`sql<number>`). They return summary rows, never raw transaction arrays. Scope every query with `userId` from `req.user`.
-
-**Service functions** receive aggregated rows and apply business logic:
-- Apply `user_config` percentage fields (`needs_percentage`, `wants_percentage`, `investments_percentage`) to derive target splits
-- Compute spending income (income minus investment contributions)
-- Compute net income per column (total, wants, needs)
-- Apply rebalancing group offsets via `pipelines/rebalancing/rebalancing-adjustments.ts`
-
-**Response shapes** are flat objects or arrays of flat objects — no nested pagination wrappers. Dashboard endpoints are not paginated.
-
-**`user_config` percentage fields** sum to 100 and are validated at the API boundary with Zod. Applied to income side only — not used to classify expense transactions.
-
-**Anticipated budget schema:**
-- `anticipated_budget` — one row per named entry (`id`, `userId`, `categoryId` FK, `name`, `need_want`, `is_income`, `monthly_amount` nullable, `notes` nullable, `effective_year`)
-- `anticipated_budget_months` — per-month overrides (`id`, `anticipated_budget_id` FK, `month` 1–12, `amount`)
-- If no override rows exist, `monthly_amount` applies to all 12 months
-- If only override rows exist (e.g. car insurance), the entry is irregular — months without a row contribute zero
-
-**Running balances** are computed from transaction history (`SUM(amount)` ordered by date) — there is no denormalised balance column in the accounts table. Always derive current balance from transactions. A snapshot pattern (materialised balance) is deferred.
-
-## Testing Strategy
-
-Tests live in `src/testing/`. The suite is integration-only — there are no separate unit test files. Tests run in parallel against a real database (`finance_test`). Each worker uses a unique email suffix (injected by `registerUser()`) so users created by different workers never collide on the unique constraint. `cleanDatabase()` deletes only rows owned by users registered in the current file — system rows (`userId IS NULL`) are never touched.
-
-### What to assert
-
-- Assert against the external contract (status codes, response body fields, side effects) — never against internal implementation details.
-- If you can refactor internals without changing observable behavior, tests should stay green. If observable behavior changes, tests should fail.
-
-### Hardcoding values
-
-- Always hardcode expected values in assertions (status codes, field values, error messages). Never derive them dynamically from the application code under test.
-- Use `toMatchObject` over deep equality when only a subset of fields defines the contract. This keeps tests resilient to additive changes (new fields) while still catching regressions on the fields that matter.
-
-### Schema / type validation
-
-- Do not import Zod schemas or shared type definitions into tests. If the schema changes, the test should catch it — importing the same schema means both sides change together and the regression is silently missed.
-- Define expected shapes inline in the test as a local interface or inline cast. This also serves as documentation of the endpoint contract.
-
-### Handling `any` on response bodies
-
-Cast response bodies to a local interface to resolve unsafe member access lint errors:
-
-```ts
-interface ResponseBody {
-  year: number;
-  title: string;
-}
-const body = response.body as ResponseBody;
-expect(body.year).toBe(2024);
-```
-
-- Type casts on response bodies are acceptable in tests. The assertions that follow are the actual safety net — the cast just satisfies the type checker.
-- Do not cast inputs to the functions/services under test. Those should be properly typed so TypeScript catches mismatches between test data and function signatures.
-- Do not suppress lint errors with `eslint-disable` or `as any`.
+PostgreSQL 15 via Docker (`docker-compose.yml`), Drizzle ORM with generated migrations. Dev
+database `finance_dev`, test database `finance_test`; schema is `src/db/schema.ts`.
+
+Drizzle names migration files itself — leave those names alone. After generating one, run
+`pnpm db:migrate` (dev) or `pnpm --filter api db:migrate:test` (test). The ECS deploy pipeline runs
+migrations as a one-off task before updating the service, so a migration ships in the same commit as
+the API change that needs it.
+
+## Data access
+
+Scope `select()` to the columns actually needed. Use `db.transaction()` when multiple writes must
+succeed or fail together; a function that may run inside one takes an optional
+`tx: typeof db | DbTransaction` parameter (see `src/db/index.ts`) defaulting to `db`.
+
+Batch queries with `inArray` before a loop and match in memory per row — a `db.select()` inside a
+loop over rows is the N+1 pattern this rule exists to prevent.
+
+Drizzle returns `numeric` columns as strings. Money arithmetic in service and DB logic goes through
+`Decimal.js`; `parseFloat` and other floating-point conversions lose precision. At the response
+boundary, convert with `new Decimal(s).toNumber()` so the client gets a JSON number — dashboard
+response types in `@finance/shared` type monetary fields as `number`.
+
+## Feature invariants
+
+**Investment transactions** — an account must belong to the authenticated user (→ 403) and be an
+investment type (tfsa, fhsa, rrsp, non-registered) (→ 400 `INVALID_ACCOUNT_TYPE_FOR_TRANSACTION`).
+Duplicate detection uses `compositeKey`, the same algorithm as the import pipeline, returning 409
+`DUPLICATE_INVESTMENT_TRANSACTION` on collision. `insertInvestmentTransaction` in
+`pipelines/investments/investment-insert.ts` is the single insert path, shared by the import pipeline
+(`processInvestmentRow`) and manual entry — both provenances flow through it, distinguished by the
+`source` column (`'csv'` | `'manual'`). The client applies the sign to `amount` before posting and
+the API stores it as-is; the service sets `rawAction` equal to `action`.
+
+**Wildcard rules** — `matchType: 'wildcard'` supports `*` (any chars) and `?` (one char), anchored
+`^...$`, so substring matching needs an explicit `*` prefix or suffix. Implemented by
+`descriptionMatchesRule` in `pipelines/categorization/rules-engine.ts`.
+
+**Bulk apply-rules** (`POST /api/v1/transactions/apply-rules`) — the candidate query
+(`fetchRuleApplicableTransactions`) targets non-transfer transactions with
+`categorySource IN ('default', 'ai')`, which rules overwrite, implicitly excluding manual and
+already-rule-applied transactions. This replaced a `categoryId IS NULL OR flaggedForReview = true`
+filter that missed AI-categorized transactions. Three things hold it together: the route is
+registered **before** the `/:id` routes in `transactions-mutation.routes.ts` so Express does not read
+`apply-rules` as an id; the service (`applyRulesToUncategorized`) loads rules once via
+`loadRules(userId)` and groups matches by categorization outcome to issue one `inArray` UPDATE per
+unique outcome rather than one per transaction; and `needWant` is coerced to `null` for income
+transactions, matching `patchTransaction`.
+
+**Retroactive rule application** — creating a rule through `POST /rule-suggestions/:id/accept`, or
+`PATCH /transactions/:id` with `createRule: true` and no existing rule for the keyword, calls
+`applyRuleRetroactively` inside the **same DB transaction** as the rule creation. It applies the
+bulk endpoint's candidate filter scoped to the one new rule, and both endpoints return
+`retroactivelyApplied: number`. `applyRuleRetroactively(tx, rule, userId)` is exported from
+`transactions.service.ts` and imported by `rule-suggestions.service.ts`, keeping transaction logic
+in one place; `RetroactiveRule` is the exported parameter interface, a subset of `LoadedRule`. When a
+rule already existed for the keyword, `retroactivelyApplied` is `0`. The patched transaction excludes
+itself from candidates because its `categorySource` is `'manual'` by the time the call runs.
+
+**Rule suggestions** — generated during import when the AI categorizes a transaction with
+`categorySource = 'ai'` (`maybeSuggestRule` in `import.service.ts`). A partial unique index on
+`(user_id, lower(suggested_keyword)) WHERE status = 'pending'` enforces deduplication. Accept coerces
+`needWant = 'NA'` → `null` before calling `createRule`. Both mutating endpoints return 409 when the
+suggestion is already accepted or dismissed.
+
+**`isInvestmentContribution`** on `PATCH /api/v1/transactions/:id` marks an outgoing contribution
+(e.g. a bank debit to Questrade). It lands in `monthlyIncome.actualInvestments` on the snapshot,
+reducing `spendingIncome`, and is excluded from `monthlyExpenses` totals to prevent double-counting.
+It is independent of `isTransfer`: a contribution also detected as a transfer is excluded from income
+via the transfer path and from expenses via both filters.
+
+**SSE streaming** — `POST /api/v1/imports/upload/stream` wraps `processImport` in try/catch
+deliberately, against the Express 5 convention above. `res.flushHeaders()` has already run by the
+time the async work starts, so the response body is open and Express's error middleware cannot write
+a JSON error into it. The catch emits a `{ stage: 'error', message }` SSE event and the finally block
+calls `res.end()`. Keep this try/catch.
+
+## Dashboard features
+
+Dashboard routes live in `features/dashboards/`, one sub-feature per tab: `income/`, `expenses/`,
+`snapshot/`, `ytd/`. Investments and anticipated-budget are top-level features, not dashboard
+sub-features, even though the web app presents them as dashboard tabs.
+
+The root layer rules map onto functions, not files. A dashboard service exports async `query*`
+functions (Drizzle `.groupBy()` + `sql<number>` aggregates, scoped by `userId`) and a pure
+`build*Response` function that takes those rows as parameters, along with the user config and
+rebalancing adjustments (`pipelines/rebalancing/rebalancing-adjustments.ts`) where it needs them. The route runs the queries in
+parallel and passes the results to the builder. `snapshot/` moves its queries out to
+`snapshot.repository.ts`, leaving its service builder-only.
+
+Spending income is income minus investment contributions. Responses are flat objects or arrays of
+them; dashboard endpoints are not paginated.
+
+**`user_config` percentages** sum to 100, validated at the API boundary with Zod, and apply to the
+income side only — they never classify expense transactions.
+
+**Anticipated budget schema** — `anticipated_budget` holds one row per named entry (`id`, `userId`,
+`categoryId` FK, `name`, `need_want`, `is_income`, `monthly_amount` nullable, `notes` nullable,
+`effective_year`), and `anticipated_budget_months` holds per-month overrides (`id`,
+`anticipated_budget_id` FK, `month` 1–12, `amount`). With no override rows, `monthly_amount` applies
+to all 12 months. With only override rows (car insurance, say), the entry is irregular and months
+without a row contribute zero.
+
+**Running balances** are derived from transaction history (`SUM(amount)` ordered by date) — the
+accounts table carries no denormalised balance column, and a materialised snapshot pattern is
+deferred.
 
 ## Observability
 
-HTTP request logging uses Pino via `httpLogger` middleware (mounted in `app.ts`). Log level is configured via `LOG_LEVEL` env var (`debug | info | warn | error`) in `src/lib/config.ts`.
+HTTP request logging is Pino via `httpLogger` (`src/middleware/logger.ts`), mounted in `app.ts`, at
+the level set by `LOG_LEVEL`. On graceful shutdown call `closeFileLog()` from the same file to drain
+the write stream — `logger.flush()` alone leaves writes in flight.
 
-On graceful shutdown, call `closeFileLog()` (from `src/middleware/`) to drain the write stream before the process exits — `logger.flush()` alone is not sufficient.
+## AI categorization
 
-## AI Categorization
-
-Pluggable provider (Anthropic or OpenAI) configured via `AI_PROVIDER` env var. Disabled by default (`ENABLE_AI_CATEGORIZATION=false`) to avoid API costs in development.
+Providers (Anthropic, OpenAI) live in `pipelines/categorization/`, selected by `AI_PROVIDER`.

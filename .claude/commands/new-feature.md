@@ -93,8 +93,8 @@ List every test that must be written or updated. Be specific about file paths an
 Check each item:
 
 - [ ] Root `CLAUDE.md` — does anything in the Shared Conventions, Dashboard Layer Responsibilities, or Tooling sections need updating?
-- [ ] `apps/api/CLAUDE.md` — new endpoint, service pattern, or DB constraint worth capturing?
-- [ ] `apps/web/CLAUDE.md` — new component pattern, query key convention, or routing change?
+- [ ] `apps/api/CLAUDE.md` — new invariant, service pattern, or DB constraint worth capturing? (endpoint shapes go in `bruno/`, not here) `apps/api/docs/testing.md` — new testing convention?
+- [ ] `apps/web/CLAUDE.md` — query key convention or routing change? `apps/web/docs/design-system.md` — new component pattern?
 - [ ] `docs/` — does any existing doc cover this feature area? Update it rather than creating a new file.
 - [ ] Bruno collection (`bruno/`) — add a request for every new endpoint so the collection stays the source of truth for manual API testing.
 

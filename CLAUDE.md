@@ -1,122 +1,86 @@
 # Finance Dashboard
 
-Personal finance dashboard for tracking transactions, accounts, budgets, and spending patterns across income, expenses, and investments.
+## Workspaces
 
-## Monorepo Structure
+Pnpm monorepo. Read the workspace doc before writing code in it:
 
-Pnpm monorepo with three workspaces:
-
-- **`apps/api`** — Express 5 REST API (Node/TypeScript) — see [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md)
-- **`apps/web`** — React 18 SPA (Vite, TanStack Router, TanStack Query) — see [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md)
-- **`packages/shared`** — Zod schemas and TypeScript types consumed by both apps
+- **`apps/api`** — Express 5 REST API. Routes, services, DB queries, migrations, API tests → [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md)
+- **`apps/web`** — React 18 SPA (Vite, TanStack Router/Query). Components, routes, hooks, data fetching → [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md)
+- **`packages/shared`** — Zod schemas, types, constants consumed by both apps. Conventions below.
 
 ## Commands
 
-**From the repo root:**
+Root scripts (`dev`, `build`, `typecheck`, `lint`, `test`) and per-workspace scripts are in the
+`package.json` files. The invocations worth knowing:
 
 ```bash
-pnpm dev              # Start all apps in watch mode
-pnpm build            # Build all workspaces
-pnpm typecheck        # Type-check all workspaces
-pnpm lint             # ESLint across all workspaces
-pnpm test             # Run all tests
-
-pnpm db:migrate       # Run migrations against DATABASE_URL (dev)
-pnpm db:studio        # Open Drizzle Studio
-pnpm seed:dev         # Seed accounts, categories, rules, transactions, anticipated budget, and rebalancing groups (finance_dev only)
-pnpm seed:system      # Seed system categories and categorization rules only
+pnpm --filter api vitest run src/features/accounts/accounts.routes.test.ts  # single test file
+pnpm --filter api db:migrate:test   # migrate the TEST db; db:migrate targets dev
+pnpm --filter api seed:system       # system categories + rules only (no root alias)
+pnpm seed:dev                       # full dev fixture set — finance_dev only
 ```
-
-**Scoped to the API:**
-
-```bash
-pnpm --filter api test           # Run full test suite once
-pnpm --filter api test:watch     # Watch mode
-pnpm --filter api db:migrate:test  # Migrate test DB
-```
-
-**Run a single test file:**
-
-```bash
-pnpm --filter api vitest run src/features/accounts/accounts.routes.test.ts
-```
-
-**When working in a git worktree (`.claude/worktrees/`):**
-
-Run `/worktree-init` at the start of the session before writing any code. It sets up node_modules junctions, copies the .env, and documents how to generate migrations and run tests from the worktree.
 
 ## Environment
 
-Each app has its own `.env` — copy the relevant `.env.example` before starting.
-
-**`apps/api/.env`** — backend config:
-
-```
-DATABASE_URL          # Dev DB connection (postgres://...localhost:5434/finance_dev)
-DATABASE_URL_TEST     # Test DB connection (postgres://...localhost:5434/finance_test)
-JWT_SECRET            # 32-byte hex — generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-JWT_REFRESH_SECRET    # Separate 32-byte hex secret
-PORT=3000
-NODE_ENV=development
-LOG_LEVEL=debug       # debug | info | warn | error
-CORS_ORIGIN=http://localhost:5173
-ENABLE_AI_CATEGORIZATION=false
-AI_PROVIDER=anthropic  # or openai
-AI_CONFIDENCE_THRESHOLD=0.70
-TRANSFER_DETECTION_WINDOW_DAYS=3
-ANTHROPIC_API_KEY     # Required when ENABLE_AI_CATEGORIZATION=true and AI_PROVIDER=anthropic
-OPENAI_API_KEY        # Required when AI_PROVIDER=openai
-SENTRY_DSN            # Error tracking — leave blank in local dev
-```
-
-**`apps/web/.env`** — frontend config:
-
-```
-VITE_API_URL=http://localhost:3000   # API base URL (proxied via Vite in dev)
-VITE_ENV=development
-VITE_SENTRY_DSN=                     # Error tracking — leave blank in local dev
-```
+Each app needs its own `.env`, copied from its `.env.example`. Those files carry the current
+variable list and the constraints on each value — read them rather than assuming a default.
+`ENABLE_AI_CATEGORIZATION=false` in local dev, to avoid API costs.
 
 ## Shared Conventions
 
 ### `packages/shared`
 
-`@finance/shared` exports Zod schemas, TypeScript types, and shared constants (`packages/shared/src/constants.ts`) used by both the API and the web app. Use sub-path imports — `@finance/shared/constants`, `@finance/shared/schemas/<name>`, `@finance/shared/types/<name>` — never the bare `@finance/shared` package root. If a literal value must be consistent across both apps, it belongs in `constants.ts` — do not duplicate it.
+Import through sub-paths: `@finance/shared/constants`, `@finance/shared/schemas/<name>`,
+`@finance/shared/types/<name>`. A literal value that must agree across both apps belongs in
+`packages/shared/src/constants.ts`, defined once.
 
 ### Barrel files
 
-Do not create barrel files (`index.ts` files whose sole purpose is re-exporting from other files) inside `apps/api` or `apps/web`. They force Vite's dev server to eagerly load every module they re-export, hurting cold-start and HMR times, and they provide no benefit inside an application bundle.
+Inside `apps/api` and `apps/web`, import each module by its own path. A barrel (`index.ts` that only
+re-exports) makes Vite's dev server eagerly load every module behind it, hurting cold start and HMR,
+and buys nothing inside an application bundle.
 
-A flat barrel at the `packages/shared` package boundary is acceptable if there is a clear reason, but prefer sub-path imports. Never add intermediate barrels inside `packages/shared` (e.g. `schemas/index.ts`, `types/index.ts`).
+Inside `packages/shared`, the sub-path exports are the interface; a flat barrel at the package
+boundary is acceptable with a clear reason, and intermediate barrels (`schemas/index.ts`,
+`types/index.ts`) are not.
 
 ### TypeScript
 
-Avoid type assertions (`as SomeType`). Fix the type gap at its source instead — narrow the type on the interface, use a type guard, or parse with a Zod schema. Only use an assertion as a last resort, and always add a comment explaining why it is unavoidable.
+Fix a type gap at its source: narrow the type on the interface, add a type guard, or parse with a Zod
+schema. Reach for an assertion (`as SomeType`) only when none of those work, and comment why.
 
 ## Dashboard Layer Responsibilities
 
-These rules apply to every dashboard feature (income, expenses, snapshot, YTD, anticipated budget). Violating them produces incorrect behaviour or unmaintainable code — follow them strictly.
+Applies to every dashboard feature (income, expenses, snapshot, YTD, anticipated budget).
 
-**DB layer** — aggregation and filtering only. Returns summary numbers (monthly totals, grouped sums). Never returns raw transaction rows to the dashboard layer.
+**DB layer** — aggregation and filtering only. Returns summary numbers (monthly totals, grouped
+sums), never raw transaction rows.
 
-**Service layer** — business logic applied to aggregated values. Applies `user_config` percentage splits (needs/wants/investments), computes derived fields (spending income, net income), and applies rebalancing group offsets. Does not reformat for the client.
+**Service layer** — business logic over aggregated values. Applies `user_config` percentage splits
+(needs/wants/investments), computes derived fields (spending income, net income), applies
+rebalancing group offsets. Leaves formatting alone.
 
-**Client layer** — presentation derivations only. Formats numbers, derives percentages from returned totals, decides colour states. Never re-aggregates raw data.
+**Client layer** — presentation only. Formats numbers, derives percentages from returned totals,
+decides colour states. Re-aggregating raw data here is the bug this rule exists to prevent.
 
-**API discipline** — query parameters (e.g. `?year=YYYY`) filter the same response shape; they do not change it. When the response shape changes, that is a different endpoint. Dashboard endpoints are separate from transaction endpoints — they return pre-shaped aggregates, never filtered transaction lists.
+**API discipline** — query parameters (e.g. `?year=YYYY`) filter within one response shape. A
+different response shape is a different endpoint. Dashboard endpoints return pre-shaped aggregates;
+transaction endpoints return lists; they stay separate.
 
-Before writing any dashboard feature, answer these three questions:
+Answer all three before opening a file:
 
 1. What does the DB query return?
 2. What does the service layer do with it?
 3. What shape does the API response have?
 
-Do not touch a file until all three are answered.
-
 ## Tooling
 
-If the TypeScript language server reports unexpected errors (e.g. "Unsafe call of a type that could not be resolved") after editing a file — particularly after adding a new export or changing an import — restart the TS server before investigating further. These are stale diagnostics that clear on restart and are not real errors.
+IDE diagnostics that appear right after you add an export or change an import (e.g. "Unsafe call of
+a type that could not be resolved") are usually stale TS-server state. Confirm with
+`pnpm typecheck` before acting on them.
 
-The API `tsc --noEmit` output includes pre-existing TS5107 and TS5101 deprecation warnings (`moduleResolution=node10`, `baseUrl`) that are not real errors — ignore them when checking typecheck output for regressions.
+API `tsc --noEmit` emits pre-existing TS5107 and TS5101 deprecation warnings
+(`moduleResolution=node10`, `baseUrl`). Treat only new errors as regressions.
 
-The Bruno collection (`bruno/`) lives in the monorepo root only and is not present in git worktrees. Add new requests to the main project directory.
+The Bruno collection (`bruno/`) exists in the monorepo root only, not in worktrees. Add new requests
+in the main project directory.
