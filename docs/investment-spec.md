@@ -1,4 +1,8 @@
 # Investments Feature Spec
+
+> **Implemented** in #23 (`444647b`, Chunks 1–7). Kept as the design record; the code is the
+> source of truth where they differ. The "Pre-implementation" status lines below are historical.
+
 **Version:** v1.0 — May 2026 **Author:** Ryan **Status:** Draft — Pre-implementation
 
 ---

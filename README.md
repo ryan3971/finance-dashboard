@@ -117,9 +117,10 @@ pnpm db:migrate
 ### 5. (Optional) Seed sample data
 
 ```bash
-pnpm seed:dev        # categories and sample transactions
-pnpm seed:rules      # categorization rules
+pnpm seed:dev        # system and user categories, rules, sample accounts and transactions
 ```
+
+`pnpm --filter api seed:system` seeds only the system categories and rules.
 
 ### 6. Start all apps
 
@@ -152,7 +153,7 @@ Example — run one file:
 pnpm --filter api vitest run src/features/accounts/accounts.routes.test.ts
 ```
 
-Tests run **serially** to avoid database race conditions. The test runner switches the active database connection to `DATABASE_URL_TEST` via the Vitest setup file.
+Test files run **in parallel** (`fileParallelism: true`). Each worker scopes its rows to its own test user, so workers don't collide; see [`apps/api/docs/testing.md`](apps/api/docs/testing.md). The test runner switches the active database connection to `DATABASE_URL_TEST` via the Vitest setup file.
 
 ---
 
