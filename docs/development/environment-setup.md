@@ -35,24 +35,9 @@ The web app has its own env file (optional — defaults work for local dev):
 cp apps/web/.env.example apps/web/.env
 ```
 
-Key API variables:
-
-| Variable                        | Default                                                      | Notes                                                        |
-| ------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `DATABASE_URL`                  | `postgresql://postgres:postgres@localhost:5434/finance_dev`  | Dev DB                                                       |
-| `DATABASE_URL_TEST`             | `postgresql://postgres:postgres@localhost:5434/finance_test` | Test DB                                                      |
-| `JWT_SECRET`                    | —                                                            | Generate a 32-byte hex value                                 |
-| `JWT_REFRESH_SECRET`            | —                                                            | Generate a separate 32-byte hex value                        |
-| `PORT`                          | `3000`                                                       | API port                                                     |
-| `LOG_LEVEL`                     | `debug`                                                      | pino log level (`debug`, `info`, `warn`, `error`)            |
-| `CORS_ORIGIN`                   | `http://localhost:5173`                                      | Web dev server origin                                        |
-| `ENABLE_AI_CATEGORIZATION`      | `false`                                                      | Set to `true` only if you want to use AI during import       |
-| `AI_PROVIDER`                   | `anthropic`                                                  | `anthropic` or `openai`                                      |
-| `ANTHROPIC_API_KEY`             | —                                                            | Required when `AI_PROVIDER=anthropic` and AI is enabled      |
-| `OPENAI_API_KEY`                | —                                                            | Required when `AI_PROVIDER=openai` and AI is enabled         |
-| `AI_CONFIDENCE_THRESHOLD`       | `0.70`                                                       | Minimum confidence score for AI to apply a category          |
-| `TRANSFER_DETECTION_WINDOW_DAYS`| `3`                                                          | Day window for matching transfer pairs                       |
-| `SENTRY_DSN`                    | —                                                            | Leave blank in local dev                                     |
+The full variable list, with each value's constraints, lives in each app's `.env.example` — read it
+rather than relying on a copy here. Keep `ENABLE_AI_CATEGORIZATION=false` in local dev to avoid API
+costs.
 
 ## 3. Start the database
 
@@ -104,7 +89,7 @@ pnpm db:studio          # Open Drizzle Studio (visual DB browser) — requires t
 After editing `apps/api/src/db/schema.ts`, generate a new migration and apply it:
 
 ```bash
-pnpm db:generate                    # generates a new SQL migration file under src/db/migrations/
+pnpm --filter api db:generate      # generates a new SQL migration file under src/db/migrations/
 pnpm db:migrate                     # applies it to finance_dev
 pnpm --filter api db:migrate:test   # applies it to finance_test
 ```
@@ -141,13 +126,13 @@ The API container needs to reach postgres over Docker's internal network:
 docker network ls | grep finance
 ```
 
-The name will be something like `finance-dashbard_default`. Use it in the next step.
+The name will be something like `finance-dashboard_default`. Use it in the next step.
 
 ### 3. Run the container
 
 ```bash
 docker run --rm \
-  --network financedashbard_default \
+  --network finance-dashboard_default \
   -p 3000:3000 \
   -e NODE_ENV=production \
   -e DATABASE_URL=postgresql://postgres:postgres@postgres:5432/finance_dev \
@@ -201,7 +186,7 @@ This replicates the ECS migration task that runs before each deploy:
 
 ```bash
 docker run --rm \
-  --network financedashbard_default \
+  --network finance-dashboard_default \
   -e DATABASE_URL=postgresql://postgres:postgres@postgres:5432/finance_dev \
   --workdir /app/apps/api \
   finance-api:test \

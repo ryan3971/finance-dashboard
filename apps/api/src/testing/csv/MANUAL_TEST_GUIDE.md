@@ -1,6 +1,6 @@
-\*\*\*\*# Manual Test Guide
+# Manual Test Guide
 
-This guide walks through importing the `*_manual.csv` fixtures and verifying that
+This guide walks through importing the `td.csv`, `amex.csv`, and `cibc.csv` fixtures in this folder and verifying that
 rules, categorization, transfer detection, and dashboard values are all correct.
 
 All data is for **March 2026**. Keep the dashboard year filter set to **2026**.
@@ -52,9 +52,9 @@ logic applies to the AMEX payment after TD is already in the DB.
 | CREDIT CARD PYMT MSP     | No       | —          | No keyword; AMEX not imported yet |
 | All others               | No       | —          |                                   |
 
-> **Note on E-TRANSFER OUT \*\*\*abc:** The categorization rule for `e-transfer`
-> (needWant = `ADD`) also flags this transaction for review independently of transfer
-> detection. The ADD sentinel means: no category assigned, flagged pending human judgment.
+> **Note on E-TRANSFER OUT \*\*\*abc:** The `e-transfer` system rule (no category,
+> `needWant` null, `flagForReview: true`) also flags this transaction for review independently
+> of transfer detection: no category assigned, flagged pending human judgment.
 > Both flags are set; confirming it as a transfer clears them both.
 
 ### After AMEX import
@@ -106,13 +106,13 @@ Transfers confirmed in section 4 are marked with _(transfer)_.
 
 | Description                 | Category         | Subcategory | Need/Want | isIncome | Notes                                                                                         |
 | --------------------------- | ---------------- | ----------- | --------- | -------- | --------------------------------------------------------------------------------------------- |
-| PRODIGY EDUCATION INC PAYRL | Salary           | Paycheque   | NA        | true     | Keyword: `prodigy educati`                                                                    |
-| GST GST TAX REFUND          | Government       | GST         | NA        | true     | Keyword: `gst gst`                                                                            |
+| PRODIGY EDUCATION INC PAYRL | Salary           | Paycheque   | —         | true     | Keyword: `prodigy educati`                                                                    |
+| GST GST TAX REFUND          | Government       | GST         | —         | true     | Keyword: `gst gst`                                                                            |
 | WALMART GROCERY STORE 321   | Food             | Groceries   | Need      | false    | Keyword: `walmart`                                                                            |
 | PRESTO TOPUP                | Transport        | Transit     | Need      | false    | Keyword: `presto`                                                                             |
 | CREDIT CARD PYMT MSP        | Uncategorized    | —           | —         | false    | No rule match; _(transfer)_ after step 2                                                      |
-| E-TRANSFER OUT \*\*\*abc    | — (ADD sentinel) | —           | —         | false    | Keyword `e-transfer`, needWant=ADD → no category assigned, flagged; _(transfer)_ after step 1 |
-| E-TRANSFER OUT \*\*\*zzz    | — (ADD sentinel) | —           | —         | false    | Same as above, no pair; _(transfer)_ after step 3                                             |
+| E-TRANSFER OUT \*\*\*abc    | — (flag-only)   | —           | —         | false    | Keyword `e-transfer`, flag-only rule → no category assigned, flagged; _(transfer)_ after step 1 |
+| E-TRANSFER OUT \*\*\*zzz    | — (flag-only)   | —           | —         | false    | Same as above, no pair; _(transfer)_ after step 3                                             |
 | CORNER STORE 456            | Uncategorized    | —           | —         | false    | No rule match                                                                                 |
 | TIM HORTONS #227            | Food             | Eating Out  | Want      | false    | Keyword: `tim hortons`                                                                        |
 
@@ -124,7 +124,7 @@ Transfers confirmed in section 4 are marked with _(transfer)_.
 | NETFLIX.COM SUBSCRIPTION     | Subscriptions | Media               | Want      | false    | Keyword: `netflix`                                                                                                                                                                         |
 | SHOPPERS DRUG MART 312       | Health        | Pharmacy            | Need      | false    | Keyword: `shoppers drug`                                                                                                                                                                   |
 | AMZN MKTP CA\*123ABC         | Shopping      | Online Retail       | Want      | false    | Keyword: `amzn`                                                                                                                                                                            |
-| PAYMENT RECEIVED - THANK YOU | Transfer      | Credit Card Payment | NA        | true     | Keyword: `payment received`; _(transfer)_ after step 2. isIncome=true because the adapter negates the CSV amount (-245.00 → +245.00); excluded from income dashboard once isTransfer=true. |
+| PAYMENT RECEIVED - THANK YOU | Transfer      | Credit Card Payment | —         | true     | Keyword: `payment received`; _(transfer)_ after step 2. isIncome=true because the adapter negates the CSV amount (-245.00 → +245.00); excluded from income dashboard once isTransfer=true. |
 | SUNRISE BOUTIQUE 99812       | Uncategorized | —                   | —         | false    | No rule match                                                                                                                                                                              |
 
 > **AMEX amount sign convention:** the CSV amount is positive for charges and negative
@@ -140,7 +140,7 @@ Transfers confirmed in section 4 are marked with _(transfer)_.
 | TIM HORTONS 3351 VANCOUVER, BC        | Food          | Eating Out          | Want      | false    | Keyword: `tim hortons`                                                                                                                                                                                |
 | LCBO #456 VANCOUVER, BC               | Food          | Alcohol             | Want      | false    | Keyword: `lcbo`                                                                                                                                                                                       |
 | SPOTIFY CANADA                        | Subscriptions | Media               | Want      | false    | Keyword: `spotify`                                                                                                                                                                                    |
-| PAYMENT THANK YOU/MERCI               | Transfer      | Credit Card Payment | NA        | true     | Keyword: `payment thank you`; _(transfer)_ after step 1. isIncome=true because the credit column value (+500.00) is stored as a positive amount; excluded from income dashboard once isTransfer=true. |
+| PAYMENT THANK YOU/MERCI               | Transfer      | Credit Card Payment | —         | true     | Keyword: `payment thank you`; _(transfer)_ after step 1. isIncome=true because the credit column value (+500.00) is stored as a positive amount; excluded from income dashboard once isTransfer=true. |
 | HARDWARE SUPPLY 789 BURNABY, BC       | Uncategorized | —                   | —         | false    | No rule match                                                                                                                                                                                         |
 
 ---
@@ -226,7 +226,7 @@ January and February have no data and should show as zero/empty.
 | --------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Rule match → category             | All non-transfer, non-uncategorized rows                      | Rules engine applies correct category, subcategory, and Need/Want                      |
 | Want on debit account             | TD TIM HORTONS #227                                           | Want aggregation works for chequing accounts, not only credit cards                    |
-| ADD sentinel                      | TD E-TRANSFER OUT \*\*\*abc, TD E-TRANSFER OUT \*\*\*zzz      | `needWant=ADD` rule flags for review without assigning a category                      |
+| Flag-only rule                    | TD E-TRANSFER OUT \*\*\*abc, TD E-TRANSFER OUT \*\*\*zzz      | `flagForReview` rule flags for review without assigning a category                    |
 | No rule match                     | CORNER STORE 456, SUNRISE BOUTIQUE 99812, HARDWARE SUPPLY 789 | Transactions fall back to Uncategorized                                                |
 | HIGH confidence transfer          | TD E-TRANSFER OUT \*\*\*abc ↔ CIBC PAYMENT THANK YOU/MERCI    | Both description keyword and inverse amount pair detected                              |
 | HIGH confidence transfer          | AMEX PAYMENT RECEIVED ↔ TD CREDIT CARD PYMT MSP               | Pair found across accounts; only the description-matched side is auto-flagged          |

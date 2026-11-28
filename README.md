@@ -2,7 +2,8 @@
 
 A full-stack personal finance dashboard for tracking income, expenses, accounts, and budgets with automatic transaction categorization. Built to replace a manually maintained Excel workbook, the goal was a proper data model, multi-account support, and dashboard views that update in real time rather than requiring formula maintenance.
 
-> **Live Demo:** [https://app.ryantyrrell.ca/]
+> The hosted deployment is offline; the app runs locally. The AWS stack is documented in
+> [`docs/development/infrastructure.md`](docs/development/infrastructure.md).
 
 ---
 
@@ -41,8 +42,8 @@ finance-dashboard/
 ├── packages/
 │   └── shared/           # Zod schemas, TypeScript types, and shared constants
 │                         # consumed by both apps via sub-path imports
-├── bruno/                # Bruno API collection (dev + production environments)
-├── docs/                 # Infrastructure, seeding, and setup guides
+├── bruno/                # Bruno API collection — see bruno/README.md
+├── docs/                 # Setup, seeding, and infrastructure guides
 ├── infra/                # Deployment configuration
 └── scripts/              # Root-level helper scripts
 ```
@@ -85,20 +86,17 @@ pnpm install
 
 ### 2. Configure environment
 
+Each app has its own `.env`:
+
 ```bash
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 ```
 
-Open `apps/api/.env` and set the required values:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5434/finance_dev
-DATABASE_URL_TEST=postgresql://postgres:postgres@localhost:5434/finance_test
-JWT_SECRET=          # 32-byte hex: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-JWT_REFRESH_SECRET=  # separate 32-byte hex
-PORT=3000
-CORS_ORIGIN=http://localhost:5173
-```
+Each `.env.example` lists every variable and its constraints. Generate `JWT_SECRET` and
+`JWT_REFRESH_SECRET` as described in
+[`docs/development/environment-setup.md`](docs/development/environment-setup.md#2-configure-environment-variables),
+which is the detailed setup guide.
 
 ### 3. Start the database
 
@@ -120,7 +118,8 @@ pnpm db:migrate
 pnpm seed:dev        # system and user categories, rules, sample accounts and transactions
 ```
 
-`pnpm --filter api seed:system` seeds only the system categories and rules.
+`pnpm --filter api seed:system` seeds only the system categories and rules. Every seed script is
+described in [`docs/development/seeding-layer.md`](docs/development/seeding-layer.md).
 
 ### 6. Start all apps
 
@@ -159,14 +158,8 @@ Test files run **in parallel** (`fileParallelism: true`). Each worker scopes its
 
 ## API Testing
 
-A [Bruno](https://www.usebruno.com/) collection lives in the `bruno/` folder at the repo root. It covers all API endpoints across two environments:
-
-| Environment | Base URL |
-|---|---|
-| `dev` | `http://localhost:3000` |
-| `production` | `https://app.ryantyrrell.ca/` |
-
-Open Bruno, select **Open Collection**, and point it at the `bruno/` directory. Switch environments using the environment selector in the top-right corner.
+A [Bruno](https://www.usebruno.com/) collection in `bruno/` covers the API. Setup, environments and
+the folder layout are in [`bruno/README.md`](bruno/README.md).
 
 ---
 
@@ -174,9 +167,10 @@ Open Bruno, select **Open Collection**, and point it at the `bruno/` directory. 
 
 | Document | Description |
 |---|---|
-| [`docs/development/infrastructure.md`](docs/development/infrastructure.md) | AWS deployment architecture |
+| [`docs/development/infrastructure.md`](docs/development/infrastructure.md) | AWS deployment architecture and runbook (dormant) |
 | [`docs/development/environment-setup.md`](docs/development/environment-setup.md) | Detailed local setup guide |
 | [`docs/development/seeding-layer.md`](docs/development/seeding-layer.md) | Seeding strategy and environments |
+| [`bruno/README.md`](bruno/README.md) | Bruno API collection |
 | [`CLAUDE.md`](CLAUDE.md) | Monorepo-level conventions and commands |
 | [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) | API architecture rules and patterns |
 | [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) | Frontend architecture rules and patterns |

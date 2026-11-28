@@ -54,7 +54,7 @@ In any semantic context, reach for these named tokens rather than the raw Tailwi
 
 ## Spacing
 
-- **Page layout** — `max-w-6xl mx-auto px-4 py-6`, applied by `PageLayout`
+- **Page layout** — `max-w-6xl mx-auto px-3 sm:px-4 py-6`, applied by `PageLayout`
 - **Between form fields** — `space-y-4`
 - **Inline / drawer panel interior** — `px-4 py-4 space-y-4`
 

@@ -161,8 +161,9 @@ formatting.
 ## Domain conventions
 
 **Categories** — `Category` carries `isIncome: boolean` and `subcategories[]`. Display path uses
-`Category › Subcategory`. `NeedWant` is `'Need' | 'Want' | 'NA'`; `Need` renders an `info` badge,
-`Want` an `accent` badge, `NA` nothing.
+`Category › Subcategory`. Need/Want is `'Need'`, `'Want'`, or `null` (unclassified); `Need` renders an `info` badge, `Want` an
+`accent` badge, `null` nothing. `NeedWant` still lists `'NA'` as a wire-compat shim — no UI offers
+it, and it's never read as its own class (ADR 0019, #43).
 
 **Transaction states** — `flaggedForReview` needs categorization; `isTransfer` marks an internal
 transfer excluded from totals; `isInvestmentContribution` is excluded from expense totals. A
