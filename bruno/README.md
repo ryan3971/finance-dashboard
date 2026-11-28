@@ -30,7 +30,7 @@ The `dev` environment is pre-configured and ready to use out of the box.
 | `questRrspAccountId` | *(UUID)* | Matches seeded dev data |
 | `tdAccountId` | *(UUID)* | Matches seeded dev data |
 
-The `production` environment exists as a placeholder with no variables defined.
+The `production` environment is an empty placeholder with no variables — production is switched off and the app runs locally only.
 
 ## Collection Structure
 
@@ -49,11 +49,11 @@ Folders are listed in display order.
 | `anticipated-budget` | CRUD for budget entries and per-month overrides |
 | `user-config` | Get, update, and reset user config and allocation percentages |
 | `dashboard` | Snapshot, income, expenses, expense categories, and YTD aggregates |
+| `investments` | Investment summary, investment transactions, and contribution room |
 | `rebalancing` | Manage rebalancing groups and their linked transactions |
 | `categorization-rules` | List, update, and delete auto-categorization rules |
+| `rule-suggestions` | List, accept, and dismiss AI-generated rule suggestions |
 | `seed` | Trigger dev seed data load via the API |
-
-There is also a top-level `sentry-test` request that hits `/debug-sentry` — useful only for verifying that Sentry error tracking is wired up correctly.
 
 ## Typical Workflow
 

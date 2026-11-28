@@ -2,6 +2,11 @@
 
 > **Implemented** in #23 (`444647b`, Chunks 1–7). Kept as the design record; the code is the
 > source of truth where they differ. The "Pre-implementation" status lines below are historical.
+>
+> **Likely superseded — can be deleted.** The code has moved past this spec: `GET /summary` is
+> gone, and `riskLevel` (listed as deferred) shipped along with `/risk-settings`,
+> `/transactions/:id/risk-level`, `/risk-budget`, and `/monthly-breakdown`. Kept for now; history
+> lives in #23 and git.
 
 **Version:** v1.0 — May 2026 **Author:** Ryan **Status:** Draft — Pre-implementation
 

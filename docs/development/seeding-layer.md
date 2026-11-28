@@ -19,7 +19,7 @@ Three environments, three data sets:
 | Env | Path | Contents |
 |-----|------|----------|
 | `system` | `db/seeds/system/` | Full production set — 92 categories, 60+ rules |
-| `staging` | `db/seeds/staging/` | Staging/dev set — categories, rules, accounts, anticipated budget, rebalancing groups, CSV fixtures |
+| `staging` | `db/seeds/staging/` | Staging set — categories, rules, accounts, transactions, anticipated budget, rebalancing groups, tags, user config, investment transactions, contribution records, CSV fixtures |
 | `test` | `db/seeds/test/` | Minimal frozen set — shared source of truth for tests and local dev |
 
 CSV fixtures for staging live at `db/seeds/staging/csv/`. Test CSVs stay at `testing/csv/`.
@@ -100,24 +100,26 @@ CSV path is resolved inside the seeder based on `env`:
 
 ## CLI scripts (`scripts/`)
 
+Only `seed:dev` has a root alias; run the others with `pnpm --filter api <script>`.
+
 ### `pnpm seed:dev`
 
-Bootstraps `finance_dev` with staging sample data. Idempotent — safe to re-run.
+Bootstraps `finance_dev` with the `test` data set. Idempotent — safe to re-run.
 
 ```
-1. addSystemCategories('staging')
-2. addSystemRules('staging')
+1. addSystemCategories('test')
+2. addSystemRules('test')
 3. Ensure dev user (dev@example.com / password123)
 4. seedSampleAccounts + seedSampleTransactions
 5. seedSampleAnticipatedBudget
 6. seedSampleRebalancingGroups
 ```
 
-### `pnpm seed:staging`
+### `pnpm --filter api seed:staging`
 
-Same flow as `seed:dev` but targets the staging database.
+Same flow as `seed:dev`, but with the `staging` data set and against the staging database.
 
-### `pnpm seed:production`
+### `pnpm --filter api seed:production`
 
 System data only — no users, no sample data.
 
@@ -128,28 +130,25 @@ System data only — no users, no sample data.
 4. backfillRulesToAllUsers()
 ```
 
-### `pnpm seed:system --env=<env>`
+### `pnpm --filter api seed:system --env=<env>`
 
 Add system categories and rules for a specific environment.
 
 ```bash
-pnpm seed:system --env=system   # production data set
-pnpm seed:system --env=staging  # staging data set
-pnpm seed:system --env=test     # test data set
+pnpm --filter api seed:system --env=system   # production data set
+pnpm --filter api seed:system --env=staging  # staging data set
+pnpm --filter api seed:system --env=test     # test data set
 ```
 
-### `pnpm remove:system --env=<env>`
+There is no CLI script for removal; `removeSystemRules` / `removeSystemCategories` are called from
+code only.
 
-Remove all system (userId=null) rules then categories. The `--env` flag is accepted
-for symmetry but not used — all system rows are removed regardless of which set
-was used to seed them.
-
-### `pnpm seed:user --userId=<uuid> [--env=staging|test]`
+### `pnpm --filter api seed:user --userId=<uuid> [--env=staging|test]`
 
 Seed a full fixture data set into an existing user's account. The user must have
 no accounts yet. Defaults to `--env=staging`.
 
-### `pnpm backfill:categories` / `pnpm backfill:rules`
+### `pnpm --filter api backfill:categories` / `pnpm --filter api backfill:rules`
 
 Find users who have no per-user category/rule copies and seed them. Run after
 updating the system data set in production.
@@ -160,13 +159,17 @@ updating the system data set in production.
 
 ### `POST /api/v1/seed/load` — Load sample data
 
-Calls `loadSampleData(userId)`, which:
+Calls `loadSampleData(userId)` in `features/seed/seed.service.ts`, which reads the `staging` data
+set directly (it does not use the `db/seeders/` sample seeders):
 
 1. Checks the user has no accounts (throws `SeedError.ACCOUNTS_EXIST` → 409 if they do)
-2. Calls the four sample seeders with `env = 'staging'`
-3. On any error after accounts are inserted — compensating delete of all the user's accounts (FK cascades clean up transactions and imports)
-
-The import pipeline (`processImport`) issues its own DB writes and cannot join a caller-supplied transaction, so the load cannot be made atomic. The compensating delete is the rollback mechanism. The 409 guard ensures this path is only entered for a user with no prior accounts, so the compensating delete cannot remove real user data.
+2. Inserts the staging categories and rules as user-level rows, outside the main transaction and
+   idempotently, so they are committed before the rules are loaded and a retry is safe
+3. In **one DB transaction**: accounts, transactions (categorized with the loaded rules),
+   anticipated budget entries, rebalancing groups, user config, tags, investment transactions, and
+   contribution records. Any error rolls the whole load back — there is no compensating delete.
+4. After that transaction commits, runs `detectTransfers` on the inserted transactions
+   (`detectTransfers` opens its own transaction, so it can't be nested inside the load).
 
 ### `POST /api/v1/user-config/reset` — Reset account
 
@@ -175,17 +178,19 @@ Calls `deleteAllUserData(userId)` in a single transaction, then re-seeds default
 Deletion order (required by foreign key constraints):
 
 1. `transactions` (via account IDs — no direct `userId` column)
-2. `imports`
-3. `accounts`
-4. `categorizationRules`
-5. `categories` (user-owned rows only — `userId IS NOT NULL`)
-6. `tags`
-7. `anticipatedBudgetMonths` (via budget IDs — no direct `userId` column)
-8. `anticipatedBudget`
-9. `userConfig`
-10. `rebalancingGroups` (`rebalancingGroupTransactions` cascades automatically)
+2. `investmentTransactions` (via account IDs)
+3. `contributionRecords` (via account IDs)
+4. `imports`
+5. `accounts`
+6. `categorizationRules`
+7. `categories` (user-owned rows only — `userId IS NOT NULL`)
+8. `tags`
+9. `anticipatedBudgetMonths` (via budget IDs — no direct `userId` column)
+10. `anticipatedBudget`
+11. `userConfig`
+12. `rebalancingGroups` (`rebalancingGroupTransactions` cascades automatically)
 
-Every delete is scoped to the calling user's ID. Tables without a direct `userId` column (`transactions`, `anticipatedBudgetMonths`) require a preliminary select to collect the relevant parent IDs before the scoped `inArray` delete.
+Every delete is scoped to the calling user's ID. Tables without a direct `userId` column (`transactions`, `investmentTransactions`, `contributionRecords`, `anticipatedBudgetMonths`) require a preliminary select to collect the relevant parent IDs before the scoped `inArray` delete.
 
 ---
 
